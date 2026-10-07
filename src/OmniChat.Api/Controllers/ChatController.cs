@@ -25,12 +25,14 @@ public class ChatController : ControllerBase
         Response.ContentType = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
         Response.Headers["Connection"] = "keep-alive";
+        Response.Headers["X-Accel-Buffering"] = "no"; 
 
         try
         {
             await foreach (var token in _chatService.StreamChatResponseAsync(request, cancellationToken))
             {
-                var sseData = $"data: {JsonSerializer.Serialize(new { content = token })}\n\n";
+                var sseData = $"data: {JsonSerializer.Serialize(new { content = token })}
+\n";
                 var bytes = Encoding.UTF8.GetBytes(sseData);
                 
                 await Response.Body.WriteAsync(bytes, cancellationToken);
