@@ -1,0 +1,12 @@
+# Node
+node_modules/
+frontend/dist/
+
+# .NET
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Env & secrets — API key tidak boleh masuk repo
+appsettings.Development.json
+.env
