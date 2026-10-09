@@ -6,7 +6,23 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddHttpClient();
+
+// Configure CORS for Web UI (Next.js / React frontend)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
+// Configure HttpClient for streaming LLM calls without 100-second timeout
+builder.Services.AddHttpClient("LLMClient", client =>
+{
+    client.Timeout = Timeout.InfiniteTimeSpan;
+});
 
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
@@ -20,6 +36,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

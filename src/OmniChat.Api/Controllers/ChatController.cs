@@ -31,8 +31,7 @@ public class ChatController : ControllerBase
         {
             await foreach (var token in _chatService.StreamChatResponseAsync(request, cancellationToken))
             {
-                var sseData = $"data: {JsonSerializer.Serialize(new { content = token })}
-\n";
+                var sseData = $"data: {JsonSerializer.Serialize(new { content = token })}\n\n";
                 var bytes = Encoding.UTF8.GetBytes(sseData);
                 
                 await Response.Body.WriteAsync(bytes, cancellationToken);
