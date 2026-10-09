@@ -1,6 +1,7 @@
+using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 
@@ -19,34 +20,44 @@ public class ChatService : IChatService
         _logger = logger;
     }
 
+    // yield return TIDAK boleh di dalam try-catch (CS1626/CS1631).
+    // Solusi: pattern Channel — producer task makan error di try-catch,
+    // iterator hanya membaca channel yang sudah bersih.
     public async IAsyncEnumerable<string> StreamChatResponseAsync(
-        ChatRequest request, 
+        ChatRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var endpoint = request.UseHermesBridge 
-            ? _configuration["Hermes:Endpoint"] ?? "http://localhost:5000/v1/chat/completions"
-            : _configuration["LLM:Endpoint"] ?? "https://openrouter.ai/api/v1/chat/completions";
+        var channel = Channel.CreateUnbounded<string>();
+        var producer = Task.Run(() => ProduceTokensAsync(channel.Writer, request, cancellationToken), cancellationToken);
 
-        var client = _httpClientFactory.CreateClient("LLMClient");
-        
-        var payload = new
+        await foreach (var token in channel.Reader.ReadAllAsync(cancellationToken))
         {
-            model = request.Model,
-            messages = request.Messages.Select(m => new { role = m.Role, content = m.Content }),
-            stream = true
-        };
+            yield return token;
+        }
 
-        var jsonContent = new StringContent(
-            JsonSerializer.Serialize(payload), 
-            Encoding.UTF8, 
-            "application/json");
+        await producer; // propagate cancellation/exception akhir bila perlu
+    }
 
-        HttpRequestMessage httpRequest;
+    private async Task ProduceTokensAsync(ChannelWriter<string> writer, ChatRequest request, CancellationToken ct)
+    {
         try
         {
-            httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            var endpoint = request.UseHermesBridge
+                ? _configuration["Hermes:Endpoint"] ?? "http://localhost:5000/v1/chat/completions"
+                : _configuration["LLM:Endpoint"] ?? "https://openrouter.ai/api/v1/chat/completions";
+
+            var client = _httpClientFactory.CreateClient("LLMClient");
+
+            var payload = new
             {
-                Content = jsonContent
+                model = request.Model,
+                messages = request.Messages.Select(m => new { role = m.Role, content = m.Content }),
+                stream = true
+            };
+
+            var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
             };
 
             if (!request.UseHermesBridge)
@@ -58,65 +69,70 @@ public class ChatService : IChatService
                 }
             }
 
-            using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-            
+            using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync(cancellationToken);
+                var errorContent = await response.Content.ReadAsStringAsync(ct);
                 _logger.LogError("LLM API error: {StatusCode} - {Content}", response.StatusCode, errorContent);
-                yield return $"[Error: Provider responded with status {response.StatusCode}]";
-                yield break;
+                await writer.WriteAsync($"[Error: Provider responded with status {response.StatusCode}]", ct);
+                writer.TryComplete();
+                return;
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
             while (!reader.EndOfStream)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var line = await reader.ReadLineAsync(cancellationToken);
+                ct.ThrowIfCancellationRequested();
+                var line = await reader.ReadLineAsync(ct);
 
                 if (string.IsNullOrWhiteSpace(line)) continue;
+                if (!line.StartsWith("data: ")) continue;
 
-                if (line.StartsWith("data: "))
+                var data = line["data: ".Length..].Trim();
+                if (data == "[DONE]") break;
+
+                try
                 {
-                    var data = line["data: ".Length..].Trim();
-                    if (data == "[DONE]") break;
-
-                    try
+                    using var doc = JsonDocument.Parse(data);
+                    if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
                     {
-                        using var doc = JsonDocument.Parse(data);
-                        var root = doc.RootElement;
-                        if (root.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+                        var firstChoice = choices[0];
+                        if (firstChoice.TryGetProperty("delta", out var delta) &&
+                            delta.TryGetProperty("content", out var contentProp))
                         {
-                            var firstChoice = choices[0];
-                            if (firstChoice.TryGetProperty("delta", out var delta) &&
-                                delta.TryGetProperty("content", out var contentProp))
+                            var text = contentProp.GetString();
+                            if (!string.IsNullOrEmpty(text))
                             {
-                                var text = contentProp.GetString();
-                                if (!string.IsNullOrEmpty(text))
-                                {
-                                    yield return text;
-                                }
+                                await writer.WriteAsync(text, ct);
                             }
                         }
                     }
-                    catch (JsonException)
-                    {
-                        // Ignore malformed JSON chunks
-                    }
+                }
+                catch (JsonException)
+                {
+                    // Ignore malformed JSON chunks
                 }
             }
+
+            writer.TryComplete();
+        }
+        catch (OperationCanceledException)
+        {
+            writer.TryComplete();
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to connect to LLM/Hermes endpoint. Falling back to simulation mode for development.");
-            
-            yield return "Halo Rholly! [Fallback Mode] ";
-            await Task.Delay(150, cancellationToken);
-            yield return "Backend OmniChat .NET 10 berhasil memproses request Anda ";
-            await Task.Delay(150, cancellationToken);
-            yield return request.UseHermesBridge ? "via Hermes Bridge." : "via Direct Provider.";
+            _logger.LogWarning(ex, "Failed to connect to LLM/Hermes endpoint. Falling back to simulation mode.");
+            await writer.WriteAsync("Halo Rholly! [Fallback Mode] ", CancellationToken.None);
+            await Task.Delay(150, CancellationToken.None);
+            await writer.WriteAsync("Backend OmniChat .NET 10 berhasil memproses request Anda ", CancellationToken.None);
+            await Task.Delay(150, CancellationToken.None);
+            await writer.WriteAsync(request.UseHermesBridge ? "via Hermes Bridge." : "via Direct Provider.", CancellationToken.None);
+            writer.TryComplete();
         }
     }
 }
