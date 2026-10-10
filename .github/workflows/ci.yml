@@ -16,7 +16,10 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - name: Restore & Build
-        run: dotnet build src/OmniChat.Api/OmniChat.Api.csproj -c Release
+        run: dotnet build OmniChat.slnx -c Release
+
+      - name: Test
+        run: dotnet test OmniChat.slnx -c Release --no-build --verbosity normal
 
   frontend:
     name: React Build
