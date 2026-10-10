@@ -1,6 +1,8 @@
+using OmniChat.Api.Infrastructure.Health;
 using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Services;
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+
+// Uptime source for the enriched health response
+builder.Services.AddSingleton<ServiceStartTime>();
 
 // Configure CORS: honour Cors:AllowedOrigins from config; fall back to AllowAll when none set
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -70,13 +75,20 @@ app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddle
 // Correlation id: echo/propagate X-Correlation-Id and scope logs to it
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.CorrelationIdMiddleware>();
 
+// Access log: structured per-request line (method, path, status, duration, correlation id)
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.RequestLoggingMiddleware>();
+
 // API-key authentication (pass-through when Security:ApiKey is not configured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();
 
 app.UseCors("AppPolicy");
 app.UseRateLimiter();
 
-app.MapHealthChecks("/health");
+// Health check: JSON body with status/version/uptime + per-check detail
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = HealthResponseWriter.WriteAsync
+});
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
