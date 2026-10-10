@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="OpenAI" Version="2.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
     <!-- Pin Microsoft.OpenApi 2.12.0: fixes GHSA-v5pm-xwqc-g5wc (circular ref stack overflow), matches AspNetCore.OpenApi 10.0.12 transitive -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.12.0" />
   </ItemGroup>

@@ -27,6 +27,13 @@ public class ApiKeyMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        // A valid JWT (see JwtAuthenticationMiddleware) already authenticated this request.
+        if (JwtAuthenticationMiddleware.IsAuthenticated(context))
+        {
+            await _next(context);
+            return;
+        }
+
         if (string.IsNullOrEmpty(_configuredApiKey) || IsExempt(context.Request.Path))
         {
             await _next(context);

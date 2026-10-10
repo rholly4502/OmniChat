@@ -1,3 +1,4 @@
+using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Api.Infrastructure.Health;
 using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Services;
@@ -13,6 +14,11 @@ builder.Services.AddHealthChecks();
 
 // Uptime source for the enriched health response
 builder.Services.AddSingleton<ServiceStartTime>();
+
+// JWT bearer authentication (dual-auth with the API key). Inert until Security:Jwt:SigningKey is set.
+var jwtOptions = new JwtOptions();
+builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
+builder.Services.AddSingleton(new JwtTokenValidator(jwtOptions));
 
 // Configure CORS: honour Cors:AllowedOrigins from config; fall back to AllowAll when none set
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
@@ -77,6 +83,9 @@ app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.CorrelationIdMiddleware
 
 // Access log: structured per-request line (method, path, status, duration, correlation id)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.RequestLoggingMiddleware>();
+
+// JWT bearer authentication: validates Authorization: Bearer tokens (pass-through when unconfigured)
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.JwtAuthenticationMiddleware>();
 
 // API-key authentication (pass-through when Security:ApiKey is not configured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();

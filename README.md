@@ -23,6 +23,7 @@ Web UI dengan 2 mode:
 - ✅ CI/CD pipeline (GitHub Actions — backend + frontend)
 - ✅ Structured access logging (method, path, status, duration, correlation id)
 - ✅ Enriched health check (`/health` → JSON: status, version, uptime)
+- ✅ JWT bearer authentication (HMAC-SHA256, validates signature/issuer/audience/lifetime) alongside the API key
 
 ## Prerequisites
 
@@ -40,7 +41,7 @@ OmniChat/
 │   ├── Controllers/           → ChatController (SSE endpoint)
 │   ├── Domain/Models/         → ChatRequest, ChatMessage
 │   ├── Application/Interfaces/→ IChatService
-│   ├── Infrastructure/        → ChatService, Middleware
+│   ├── Infrastructure/        → ChatService, Middleware, Auth (JwtTokenValidator)
 │   ├── Program.cs             → App entry point + DI + rate limiting
 │   └── appsettings*.json      → Environment-based config
 ├── frontend/                  → React + TypeScript + Vite + Tailwind v4
@@ -118,6 +119,23 @@ data: {"content":"!"}
 data: [DONE]
 ```
 
+### Authentication
+
+Protected endpoints accept **either** scheme (both are inert until configured):
+
+- `X-Api-Key: <key>` — set via `Security:ApiKey` (constant-time compare).
+- `Authorization: Bearer <jwt>` — enabled when `Security:Jwt:SigningKey` is set.
+
+Rules: exempt paths (`/health`, `/openapi`) always pass; a present-but-invalid bearer token returns
+`401` (no fallback); with no bearer token the request falls back to the API key when one is configured.
+
+```json
+"Security": {
+  "ApiKey": "",
+  "Jwt": { "SigningKey": "", "Issuer": "OmniChat", "Audience": "OmniChat" }
+}
+```
+
 ### `GET /health` — Health Check
 
 Returns `200 OK` with a JSON body when the service is running:
@@ -143,6 +161,7 @@ Returns `200 OK` with a JSON body when the service is running:
 - `Microsoft.OpenApi` pinned to 2.12.0 (fixes GHSA-v5pm-xwqc-g5wc)
 - Solution uses `.slnx` format (.NET 10 XML-based solution)
 - Rate limiting: token bucket, 10 req/min per IP (returns 429 on excess)
+- Authentication: dual scheme — `ApiKeyMiddleware` + `JwtAuthenticationMiddleware` (JWT validated by `JwtTokenValidator`, claim names kept verbatim via `MapInboundClaims=false`)
 
 ## Milestones
 
@@ -151,3 +170,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 3** ✅ — Docker, env config, rate limiting, integration tests, deployment guide, API-key auth, CORS, correlation ID, CI/CD
 - **Milestone 4** ✅ — Security & observability hardening (API-key auth, correlation-id, configurable CORS)
 - **Milestone 5** ✅ — Observability & production readiness (request logging, enriched JSON health check, rate-limit integration coverage) — 46 tests, 0 warnings
+- **Milestone 6** ✅ — JWT bearer authentication (dual-auth with API key, HMAC-SHA256 validation, unit + integration coverage) — 67 tests, 0 warnings
