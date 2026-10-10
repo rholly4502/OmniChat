@@ -74,3 +74,6 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+// Make Program class accessible to integration test project (WebApplicationFactory<Program>)
+public partial class Program { }
