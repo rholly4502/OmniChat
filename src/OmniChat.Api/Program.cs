@@ -9,14 +9,16 @@ builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 
-// Configure CORS for Web UI (Next.js / React frontend)
+// Configure CORS: honour Cors:AllowedOrigins from config; fall back to AllowAll when none set
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AppPolicy", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        if (allowedOrigins.Length > 0)
+            policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        else
+            policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
 
@@ -65,10 +67,13 @@ if (app.Environment.IsDevelopment())
 // Global exception handling — must be early in the pipeline
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddleware>();
 
+// Correlation id: echo/propagate X-Correlation-Id and scope logs to it
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.CorrelationIdMiddleware>();
+
 // API-key authentication (pass-through when Security:ApiKey is not configured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();
 
-app.UseCors("AllowAll");
+app.UseCors("AppPolicy");
 app.UseRateLimiter();
 
 app.MapHealthChecks("/health");
