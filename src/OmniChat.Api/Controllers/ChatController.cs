@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
 using System.Text;
@@ -6,8 +7,13 @@ using System.Text.Json;
 
 namespace OmniChat.Api.Controllers;
 
+/// <summary>
+/// Chat endpoint that streams LLM responses via Server-Sent Events (SSE).
+/// Supports both Hermes Bridge mode and Direct LLM mode.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Tags("Chat")]
 public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
@@ -19,7 +25,22 @@ public class ChatController : ControllerBase
         _logger = logger;
     }
 
+    /// <summary>
+    /// Streams a chat completion as SSE events. Each event is `data: {"content":"..."}`.
+    /// Terminated by `data: [DONE]`.
+    /// </summary>
+    /// <param name="request">Chat request containing model, messages, and mode toggle.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <returns>SSE stream of chat tokens.</returns>
+    /// <response code="200">SSE stream of tokens.</response>
+    /// <response code="400">Invalid request body.</response>
+    /// <response code="429">Rate limit exceeded.</response>
     [HttpPost("stream")]
+    [EnableRateLimiting("per-ip")]
+    [Produces("text/event-stream")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
         if (!ModelState.IsValid)
