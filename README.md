@@ -17,6 +17,10 @@ Web UI dengan 2 mode:
 - ✅ Docker containerization (multi-stage build)
 - ✅ Integration tests (WebApplicationFactory)
 - ✅ OpenAPI documentation
+- ✅ API-key authentication middleware (constant-time compare, exempt `/health`)
+- ✅ Correlation ID middleware (`X-Correlation-Id` header + logging scope)
+- ✅ Configurable CORS policy per environment
+- ✅ CI/CD pipeline (GitHub Actions — backend + frontend)
 
 ## Prerequisites
 
@@ -133,5 +137,5 @@ Returns `200 OK` when the service is running.
 ## Milestones
 
 - **Milestone 1** ✅ — Core SSE streaming, Clean Architecture, Hermes Bridge + Direct LLM
-- **Milestone 2** ✅ — Quality, testing, resilience, frontend polish (11 tests, 0 warnings)
-- **Milestone 3** ✅ — Docker, env config, rate limiting, integration tests, deployment guide
+- **Milestone 2** ✅ — Quality, testing, resilience, frontend polish (33 tests, 0 warnings)
+- **Milestone 3** ✅ — Docker, env config, rate limiting, integration tests, deployment guide, API-key auth, CORS, correlation ID, CI/CD
