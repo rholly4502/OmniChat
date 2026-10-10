@@ -1,16 +1,58 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 type Role = 'user' | 'assistant';
-interface Message { role: Role; content: string; }
+
+interface Message {
+  role: Role;
+  content: string;
+}
+
+interface ModelOption {
+  id: string;
+  label: string;
+}
 
 const API_URL = '/api/chat/stream';
+
+const AGENT_MODELS: ModelOption[] = [
+  { id: 'hermes', label: 'Hermes (Default)' },
+  { id: 'claude-sonnet', label: 'Claude Sonnet' },
+  { id: 'gpt-4o', label: 'GPT-4o' },
+];
+
+const DIRECT_MODELS: ModelOption[] = [
+  { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 (Free)' },
+  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (Free)' },
+  { id: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (Free)' },
+];
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [useAgent, setUseAgent] = useState(true);
   const [streaming, setStreaming] = useState(false);
+  const [model, setModel] = useState('hermes');
   const abortRef = useRef<AbortController | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const models = useAgent ? AGENT_MODELS : DIRECT_MODELS;
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+  }, [messages]);
+
+  function toggleMode() {
+    const next = !useAgent;
+    setUseAgent(next);
+    setModel(next ? AGENT_MODELS[0].id : DIRECT_MODELS[0].id);
+  }
+
+  function stopStreaming() {
+    abortRef.current?.abort();
+  }
 
   async function send() {
     if (!input.trim() || streaming) return;
@@ -28,9 +70,9 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: useAgent ? 'hermes' : 'nvidia/nemotron-3.5-lightning:free',
+          model,
           useHermesBridge: useAgent,
-          messages: history.map(m => ({ role: m.role, content: m.content })),
+          messages: history.map((m) => ({ role: m.role, content: m.content })),
         }),
         signal: ctrl.signal,
       });
@@ -53,7 +95,7 @@ export default function App() {
           try {
             const parsed = JSON.parse(data);
             if (parsed.content) {
-              setMessages(prev => {
+              setMessages((prev) => {
                 const copy = [...prev];
                 copy[copy.length - 1] = {
                   role: 'assistant',
@@ -62,12 +104,29 @@ export default function App() {
                 return copy;
               });
             }
-          } catch { /* skip partial chunk */ }
+          } catch {
+            /* skip partial chunk */
+          }
         }
       }
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
-        setMessages(prev => [...prev.slice(0, -1), { role: 'assistant', content: '⚠️ Koneksi ke backend gagal. Pastikan API .NET berjalan.' }]);
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          {
+            role: 'assistant',
+            content: '⚠️ Koneksi ke backend gagal. Pastikan API .NET berjalan.',
+          },
+        ]);
+      } else {
+        // On abort: remove empty assistant placeholder, keep partial content
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant' && !last.content) {
+            return [...prev.slice(0, -1)];
+          }
+          return prev;
+        });
       }
     } finally {
       setStreaming(false);
@@ -88,16 +147,34 @@ export default function App() {
             <input
               type="checkbox"
               checked={useAgent}
-              onChange={e => setUseAgent(e.target.checked)}
+              onChange={toggleMode}
               className="h-4 w-4 accent-cyan-500"
             />
             <div>
-              <div className="text-sm font-semibold">{useAgent ? '🤖 Agent Mode' : '⚡ Direct Mode'}</div>
+              <div className="text-sm font-semibold">
+                {useAgent ? '🤖 Agent Mode' : '⚡ Direct Mode'}
+              </div>
               <div className="text-xs text-slate-500">
                 {useAgent ? 'Hermes Gateway (tools + memory)' : 'Langsung ke LLM (cepat)'}
               </div>
             </div>
           </label>
+        </div>
+
+        {/* Model Selector */}
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500 font-medium">Model</label>
+          <select
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500"
+          >
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button
@@ -110,20 +187,38 @@ export default function App() {
 
       {/* Main */}
       <main className="flex-1 flex flex-col">
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
           {messages.length === 0 && (
             <div className="h-full flex items-center justify-center text-slate-600 text-sm">
-              Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'}
+              Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
+              {models.find((m) => m.id === model)?.label}
             </div>
           )}
           {messages.map((m, i) => (
-            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
-                m.role === 'user'
-                  ? 'bg-cyan-600 text-white rounded-br-sm'
-                  : 'bg-slate-900 border border-slate-800 rounded-bl-sm'
-              }`}>
-                {m.content || <span className="text-slate-500 italic">thinking…</span>}
+            <div
+              key={i}
+              className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div
+                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm ${
+                  m.role === 'user'
+                    ? 'bg-cyan-600 text-white rounded-br-sm'
+                    : 'bg-slate-900 border border-slate-800 rounded-bl-sm'
+                }`}
+              >
+                {m.role === 'assistant' && !m.content ? (
+                  <span className="inline-flex gap-1 items-center py-1">
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:200ms]" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:400ms]" />
+                  </span>
+                ) : m.role === 'assistant' ? (
+                  <div className="md-body">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                  </div>
+                ) : (
+                  <span className="whitespace-pre-wrap">{m.content}</span>
+                )}
               </div>
             </div>
           ))}
@@ -134,19 +229,28 @@ export default function App() {
           <div className="flex gap-2">
             <input
               value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && send()}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
               disabled={streaming}
               className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-cyan-500 disabled:opacity-50"
             />
-            <button
-              onClick={send}
-              disabled={streaming || !input.trim()}
-              className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-6 text-sm font-semibold transition"
-            >
-              Kirim
-            </button>
+            {streaming ? (
+              <button
+                onClick={stopStreaming}
+                className="bg-red-600 hover:bg-red-500 rounded-xl px-6 text-sm font-semibold transition"
+              >
+                ⏹ Stop
+              </button>
+            ) : (
+              <button
+                onClick={send}
+                disabled={!input.trim()}
+                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-6 text-sm font-semibold transition"
+              >
+                Kirim
+              </button>
+            )}
           </div>
         </div>
       </main>
