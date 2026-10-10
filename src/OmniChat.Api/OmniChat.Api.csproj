@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="OpenAI" Version="2.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0" />
-    <!-- Pin transitive Microsoft.OpenApi: 2.0.0 punya high-severity advisory GHSA-v5pm-xwqc-g5wc -->
-    <PackageReference Include="Microsoft.OpenApi" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <!-- Pin Microsoft.OpenApi 2.12.0: fixes GHSA-v5pm-xwqc-g5wc (circular ref stack overflow), matches AspNetCore.OpenApi 10.0.12 transitive -->
+    <PackageReference Include="Microsoft.OpenApi" Version="2.12.0" />
   </ItemGroup>
 
 </Project>
