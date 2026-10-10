@@ -5,6 +5,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddHealthChecks();
 
 // Configure CORS for Web UI (Next.js / React frontend)
 builder.Services.AddCors(options =>
@@ -33,7 +34,12 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi(); // /openapi/v1.json
 }
 
+// Global exception handling — must be early in the pipeline
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddleware>();
+
 app.UseCors("AllowAll");
+
+app.MapHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

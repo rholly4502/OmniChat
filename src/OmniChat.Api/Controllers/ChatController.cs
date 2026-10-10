@@ -22,6 +22,17 @@ public class ChatController : ControllerBase
     [HttpPost("stream")]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
+        if (!ModelState.IsValid)
+        {
+            Response.StatusCode = StatusCodes.Status400BadRequest;
+            Response.ContentType = "application/json";
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+            await Response.WriteAsJsonAsync(new { errors }, cancellationToken);
+            return;
+        }
+
         Response.ContentType = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
         Response.Headers["Connection"] = "keep-alive";
