@@ -83,10 +83,10 @@ public class ChatService : IChatService
             using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
-            while (!reader.EndOfStream)
+            string? line;
+            while ((line = await reader.ReadLineAsync(ct)) != null)
             {
                 ct.ThrowIfCancellationRequested();
-                var line = await reader.ReadLineAsync(ct);
 
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!line.StartsWith("data: ")) continue;
