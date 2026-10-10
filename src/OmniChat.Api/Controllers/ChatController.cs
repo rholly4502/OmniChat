@@ -17,13 +17,24 @@ namespace OmniChat.Api.Controllers;
 public class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
+    private readonly IModelCatalogService _modelCatalogService;
     private readonly ILogger<ChatController> _logger;
 
-    public ChatController(IChatService chatService, ILogger<ChatController> logger)
+    public ChatController(IChatService chatService, IModelCatalogService modelCatalogService, ILogger<ChatController> logger)
     {
         _chatService = chatService;
+        _modelCatalogService = modelCatalogService;
         _logger = logger;
     }
+
+    /// <summary>
+    /// Returns the model catalog advertised to clients, grouped by chat mode.
+    /// </summary>
+    /// <returns>JSON object with <c>agent</c> and <c>direct</c> model arrays.</returns>
+    /// <response code="200">Model catalog.</response>
+    [HttpGet("/api/models")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public ActionResult<ModelCatalog> GetModels() => Ok(_modelCatalogService.GetCatalog());
 
     /// <summary>
     /// Streams a chat completion as SSE events. Each event is `data: {"content":"..."}`.

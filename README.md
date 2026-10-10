@@ -24,6 +24,7 @@ Web UI dengan 2 mode:
 - ✅ Structured access logging (method, path, status, duration, correlation id)
 - ✅ Enriched health check (`/health` → JSON: status, version, uptime)
 - ✅ JWT bearer authentication (HMAC-SHA256, validates signature/issuer/audience/lifetime) alongside the API key
+- ✅ Dynamic model catalog (`GET /api/models`) — backend-configured, consumed by the UI
 
 ## Prerequisites
 
@@ -98,6 +99,18 @@ cd frontend && npm run build
 ```
 
 ## API
+
+### `GET /api/models` — Model Catalog
+
+Returns the selectable models grouped by chat mode (values come from the `Models` config section).
+
+```json
+{
+  "agent":  [ { "id": "hermes", "label": "Hermes (Default)" } ],
+  "direct": [ { "id": "nvidia/nemotron-3.5-lightning:free", "label": "Nemotron 3.5 (Free)" } ]
+}
+```
+
 
 ### `POST /api/chat/stream` — SSE Endpoint
 

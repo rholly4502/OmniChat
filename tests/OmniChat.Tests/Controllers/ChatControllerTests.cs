@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -6,6 +7,7 @@ using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
+using OmniChat.Infrastructure.Services;
 
 namespace OmniChat.Tests.Controllers;
 
@@ -21,8 +23,11 @@ public class ChatControllerTests
     public ChatControllerTests()
     {
         _chatServiceMock = new Mock<IChatService>();
+        var catalogService = new ModelCatalogService(
+            new ConfigurationBuilder().Build());
         _controller = new ChatController(
             _chatServiceMock.Object,
+            catalogService,
             NullLogger<ChatController>.Instance);
 
         // Set up a real HttpContext for SSE streaming
@@ -151,5 +156,16 @@ public class ChatControllerTests
         Assert.Equal("no-cache", _controller.Response.Headers["Cache-Control"]);
         Assert.Equal("keep-alive", _controller.Response.Headers["Connection"]);
         Assert.Equal("no", _controller.Response.Headers["X-Accel-Buffering"]);
+    }
+
+    [Fact]
+    public void GetModels_ReturnsOkWithCatalog()
+    {
+        var result = _controller.GetModels();
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var catalog = Assert.IsType<ModelCatalog>(ok.Value);
+        Assert.NotEmpty(catalog.Agent);
+        Assert.NotEmpty(catalog.Direct);
     }
 }

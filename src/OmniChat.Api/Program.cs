@@ -41,6 +41,7 @@ builder.Services.AddHttpClient("LLMClient", client =>
 
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 
 // Rate limiting: token bucket — 10 requests/minute per client IP
 builder.Services.AddRateLimiter(options =>

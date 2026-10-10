@@ -16,13 +16,13 @@ interface ModelOption {
 
 const API_URL = '/api/chat/stream';
 
-const AGENT_MODELS: ModelOption[] = [
+const DEFAULT_AGENT_MODELS: ModelOption[] = [
   { id: 'hermes', label: 'Hermes (Default)' },
   { id: 'claude-sonnet', label: 'Claude Sonnet' },
   { id: 'gpt-4o', label: 'GPT-4o' },
 ];
 
-const DIRECT_MODELS: ModelOption[] = [
+const DEFAULT_DIRECT_MODELS: ModelOption[] = [
   { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 (Free)' },
   { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (Free)' },
   { id: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (Free)' },
@@ -34,10 +34,34 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [model, setModel] = useState('hermes');
+  const [catalog, setCatalog] = useState<{ agent: ModelOption[]; direct: ModelOption[] }>({
+    agent: DEFAULT_AGENT_MODELS,
+    direct: DEFAULT_DIRECT_MODELS,
+  });
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const models = useAgent ? AGENT_MODELS : DIRECT_MODELS;
+  const models = useAgent ? catalog.agent : catalog.direct;
+
+  // Load the model catalog from the backend; keep local defaults if unavailable.
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/models')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((data: { agent?: ModelOption[]; direct?: ModelOption[] }) => {
+        if (cancelled) return;
+        setCatalog({
+          agent: data.agent?.length ? data.agent : DEFAULT_AGENT_MODELS,
+          direct: data.direct?.length ? data.direct : DEFAULT_DIRECT_MODELS,
+        });
+      })
+      .catch(() => {
+        /* offline / unauthorised — keep defaults */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -47,7 +71,7 @@ export default function App() {
   function toggleMode() {
     const next = !useAgent;
     setUseAgent(next);
-    setModel(next ? AGENT_MODELS[0].id : DIRECT_MODELS[0].id);
+    setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
   }
 
   function stopStreaming() {
@@ -77,7 +101,18 @@ export default function App() {
         signal: ctrl.signal,
       });
 
-      const reader = res.body!.getReader();
+      if (!res.ok || !res.body) {
+        const detail = res.status === 401 ? 'Autentikasi diperlukan (401).'
+          : res.status === 429 ? 'Terlalu banyak permintaan (429). Coba lagi nanti.'
+          : `Backend menolak permintaan (${res.status}).`;
+        setMessages((prev) => [
+          ...prev.slice(0, -1),
+          { role: 'assistant', content: `⚠️ ${detail}` },
+        ]);
+        return;
+      }
+
+      const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
 
