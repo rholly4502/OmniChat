@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OmniChat.Api/OmniChat.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/OmniChat.Tests/OmniChat.Tests.csproj" />
+  </Folder>
+</Solution>
