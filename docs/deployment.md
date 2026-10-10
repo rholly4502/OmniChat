@@ -8,15 +8,34 @@
 
 ## Environment Variables
 
+Copy `.env.example` to `.env` and fill in real values — never commit `.env` or any secret:
+
+```bash
+cp .env.example .env
+# edit .env, then:
+docker compose up -d --build
+```
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ASPNETCORE_ENVIRONMENT` | `Production` | .NET environment |
 | `ASPNETCORE_URLS` | `http://+:5184` | Backend listen URL |
-| `Hermes__Endpoint` | `http://localhost:5000/v1/chat/completions` | Hermes Gateway URL |
+| `Hermes__Endpoint` | `http://host.docker.internal:5000/v1/chat/completions` | Hermes Gateway URL (host, reachable via `host.docker.internal`) |
 | `LLM__Endpoint` | `https://openrouter.ai/api/v1/chat/completions` | Direct LLM provider URL |
-| `LLM__ApiKey` | (empty) | OpenRouter API key (Direct mode only) |
+| `LLM_API_KEY` | (empty) | OpenRouter API key — maps to `LLM__ApiKey` (Direct mode only) |
+| `Security__ApiKey` | (empty) | Backend API key clients send as `X-Api-Key` |
+| `Cors__AllowedOrigins` | (empty) | Comma-separated browser origins allowed to call the API |
+| `Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer` validation |
+| `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
 
-> **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys.
+> **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
+
+> **⚠️ Security warning — do not expose this stack without an API key.**
+> If `Security__ApiKey` is empty the backend is **open**: the API-key middleware
+> lets every request through. Likewise an empty `Cors__AllowedOrigins` falls back
+> to `AllowAnyOrigin`, so any website can call the API. For any public or shared
+> deployment set **both** a long random `Security__ApiKey` and an explicit
+> `Cors__AllowedOrigins` list, and terminate TLS at a reverse proxy.
 
 ## Docker Deployment
 
@@ -42,7 +61,13 @@ docker compose logs -f backend
 
 ### Frontend API Proxy
 
-The frontend dev server proxies `/api/*` to the backend. In production (Docker), configure your reverse proxy (nginx, Caddy) to route:
+Both `npm run dev` **and** `vite preview` proxy `/api/*` to the backend (see
+`preview.proxy` in `frontend/vite.config.ts`) — the frontend Docker image serves
+with `vite preview`, so the proxy must exist there too. The target defaults to
+`http://localhost:5184` and is overridden in Docker via `VITE_API_PROXY_TARGET`
+(`http://backend:5184`).
+
+Optionally front the stack with a reverse proxy (nginx, Caddy) instead:
 - `/api/*` → `backend:5184`
 - `/*` → `frontend:4173`
 
@@ -115,7 +140,8 @@ cd frontend && npm run build
 
 ## Security Notes
 
-- Never commit API keys to `appsettings.json`. Use environment variables or user-secrets.
+- Never commit secrets. Put real values in `.env` (git-ignored) — see `.env.example`.
+- Set `Security__ApiKey` and `Cors__AllowedOrigins` for any non-local deployment; empty values leave the API open (see the warning above).
 - `appsettings.Development.json` contains localhost-only endpoints (no secrets).
 - Rate limiting protects against abuse on the chat endpoint.
-- HTTPS redirection is enabled in production (`UseHttpsRedirection`).
+- HTTPS redirection (`UseHttpsRedirection`) runs **only outside Production**. In Docker the app serves plain HTTP behind a TLS-terminating reverse proxy; the redirect is disabled in Production to avoid loops/broken requests.

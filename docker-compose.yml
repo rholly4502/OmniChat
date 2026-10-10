@@ -5,11 +5,19 @@ services:
       dockerfile: Dockerfile
     ports:
       - "5184:5184"
+    # host.docker.internal resolves to the Docker host on Linux
+    # (Docker Desktop provides it automatically; native Linux needs this mapping).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5184
-      - Hermes__Endpoint=http://localhost:5000/v1/chat/completions
+      # Hermes gateway runs on the host — localhost would mean THIS container.
+      - Hermes__Endpoint=${Hermes__Endpoint:-http://host.docker.internal:5000/v1/chat/completions}
       - LLM__ApiKey=${LLM_API_KEY:-}
+      - Security__ApiKey=${Security__ApiKey:-}
+      - Cors__AllowedOrigins=${Cors__AllowedOrigins:-}
+      - Jwt__SigningKey=${Jwt__SigningKey:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s
@@ -24,6 +32,10 @@ services:
       dockerfile: frontend/Dockerfile
     ports:
       - "4173:4173"
+    environment:
+      # `vite preview` proxies /api to this target (localhost would be the
+      # frontend container itself). Read when the preview server starts.
+      - VITE_API_PROXY_TARGET=http://backend:5184
     depends_on:
       backend:
         condition: service_healthy

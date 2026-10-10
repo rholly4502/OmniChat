@@ -21,7 +21,9 @@ builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 builder.Services.AddSingleton(new JwtTokenValidator(jwtOptions));
 
 // Configure CORS: honour Cors:AllowedOrigins from config; fall back to AllowAll when none set
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var allowedOrigins = (builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
+    .Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .ToArray();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AppPolicy", policy =>
@@ -99,7 +101,14 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = HealthResponseWriter.WriteAsync
 });
-app.UseHttpsRedirection();
+// HTTPS redirection only outside Production: in Docker the app listens on plain
+// HTTP and the reverse proxy (nginx) terminates TLS, so redirecting to HTTPS
+// here would loop or break requests.
+if (!app.Environment.IsProduction())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthorization();
 app.MapControllers();
 
