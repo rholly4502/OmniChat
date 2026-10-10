@@ -65,6 +65,9 @@ if (app.Environment.IsDevelopment())
 // Global exception handling — must be early in the pipeline
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddleware>();
 
+// API-key authentication (pass-through when Security:ApiKey is not configured)
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();
+
 app.UseCors("AllowAll");
 app.UseRateLimiter();
 
