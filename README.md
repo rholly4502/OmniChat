@@ -21,6 +21,8 @@ Web UI dengan 2 mode:
 - ✅ Correlation ID middleware (`X-Correlation-Id` header + logging scope)
 - ✅ Configurable CORS policy per environment
 - ✅ CI/CD pipeline (GitHub Actions — backend + frontend)
+- ✅ Structured access logging (method, path, status, duration, correlation id)
+- ✅ Enriched health check (`/health` → JSON: status, version, uptime)
 
 ## Prerequisites
 
@@ -118,7 +120,15 @@ data: [DONE]
 
 ### `GET /health` — Health Check
 
-Returns `200 OK` when the service is running.
+Returns `200 OK` with a JSON body when the service is running:
+```json
+{
+  "status": "Healthy",
+  "version": "1.0.0.0",
+  "uptimeSeconds": 42,
+  "checks": []
+}
+```
 
 ## Architecture
 
@@ -139,3 +149,5 @@ Returns `200 OK` when the service is running.
 - **Milestone 1** ✅ — Core SSE streaming, Clean Architecture, Hermes Bridge + Direct LLM
 - **Milestone 2** ✅ — Quality, testing, resilience, frontend polish (33 tests, 0 warnings)
 - **Milestone 3** ✅ — Docker, env config, rate limiting, integration tests, deployment guide, API-key auth, CORS, correlation ID, CI/CD
+- **Milestone 4** ✅ — Security & observability hardening (API-key auth, correlation-id, configurable CORS)
+- **Milestone 5** ✅ — Observability & production readiness (request logging, enriched JSON health check, rate-limit integration coverage) — 46 tests, 0 warnings
