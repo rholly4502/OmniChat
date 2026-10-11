@@ -235,4 +235,38 @@ public class DeploymentConfigTests
         var source = Read("src/OmniChat.Api/Domain/Models/ChatRequest.cs");
         Assert.Contains("MaxLength(8000", source);
     }
+
+    // ── Milestone 14: API response quality polish ──
+
+    [Fact]
+    public void ProgramCs_HasRateLimitOnRejectedCallback()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("OnRejected", program);
+        Assert.Contains("RetryAfter", program);
+    }
+
+    [Fact]
+    public void ProgramCs_HasResponseCompression()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("AddResponseCompression", program);
+        Assert.Contains("UseResponseCompression", program);
+        Assert.Contains("text/event-stream", program);
+    }
+
+    [Fact]
+    public void ChatController_ModelsEndpointHasResponseCache()
+    {
+        var controller = Read("src/OmniChat.Api/Controllers/ChatController.cs");
+        Assert.Contains("ResponseCache", controller);
+        Assert.Contains("Duration = 60", controller);
+    }
+
+    [Fact]
+    public void Frontend_HandlesRetryAfterHeader()
+    {
+        var app = Read("frontend/src/App.tsx");
+        Assert.Contains("Retry-After", app);
+    }
 }

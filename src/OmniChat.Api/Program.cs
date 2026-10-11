@@ -5,6 +5,7 @@ using OmniChat.Infrastructure.Services;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,18 @@ builder.Services.Configure<HostOptions>(options =>
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
+
+// Response compression for non-streaming JSON responses (health, models).
+// SSE (text/event-stream) is excluded — compressing streaming responses breaks chunk delivery.
+builder.Services.AddResponseCompression(options =>
+{
+    options.Providers.Add<BrotliCompressionProvider>();
+    options.Providers.Add<GzipCompressionProvider>();
+    options.ExcludedMimeTypes = [.. options.ExcludedMimeTypes, "text/event-stream"];
+});
+builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
+
 
 // Uptime source for the enriched health response
 builder.Services.AddSingleton<ServiceStartTime>();
@@ -67,6 +80,18 @@ builder.Services.AddSingleton<StartupConfigValidator>();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        // Tell the client how many seconds to wait before retrying.
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("F0");
+        }
+        context.HttpContext.Response.ContentType = "application/json";
+        await context.HttpContext.Response.WriteAsJsonAsync(
+            new { error = "Rate limit exceeded. Please retry after the Retry-After delay." },
+            cancellationToken);
+    };
     options.AddTokenBucketLimiter("chatPolicy", tokenOptions =>
     {
         tokenOptions.TokenLimit = 10;
@@ -90,6 +115,10 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// Enable response compression (must be before middleware that might write responses).
+app.UseResponseCompression();
+
 
 // Validate security-sensitive config at startup — logs warnings for insecure production settings.
 app.Services.GetRequiredService<StartupConfigValidator>().Validate(app.Environment.IsProduction());

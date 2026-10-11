@@ -33,6 +33,7 @@ public class ChatController : ControllerBase
     /// <returns>JSON object with <c>agent</c> and <c>direct</c> model arrays.</returns>
     /// <response code="200">Model catalog.</response>
     [HttpGet("/api/models")]
+    [ResponseCache(Duration = 60, Location = ResponseCacheLocation.Any)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public ActionResult<ModelCatalog> GetModels() => Ok(_modelCatalogService.GetCatalog());
 

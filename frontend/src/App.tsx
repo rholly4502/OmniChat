@@ -116,8 +116,12 @@ export default function App() {
       });
 
       if (!res.ok || !res.body) {
+        const retryAfter = res.headers.get('Retry-After');
         const detail = res.status === 401 ? 'Autentikasi diperlukan (401). Masukkan API key di sidebar.'
-          : res.status === 429 ? 'Terlalu banyak permintaan (429). Coba lagi nanti.'
+          : res.status === 429
+            ? retryAfter
+              ? `Terlalu banyak permintaan (429). Coba lagi dalam ${retryAfter} detik.`
+              : 'Terlalu banyak permintaan (429). Coba lagi nanti.'
           : res.status === 400 ? 'Permintaan tidak valid (400). Periksa input.'
           : `Backend menolak permintaan (${res.status}).`;
         setMessages((prev) => [

@@ -32,11 +32,13 @@ Web UI dengan 2 mode:
 - ✅ Input validation hardening (`ChatRequest`: model max 100 chars, messages max 50 items; `ChatMessage`: role whitelist `[user|assistant|system]`, content max 8000 chars)
 - ✅ Graceful shutdown (30s timeout — in-flight SSE streams complete during container stop)
 - ✅ Docker Compose memory limits (backend 512 MB, frontend 256 MB)
-
-- ✅ Docker Compose memory limits (backend 512 MB, frontend 256 MB)
 - ✅ Frontend API key authentication (sidebar input, localStorage persistence, `X-Api-Key` header sent on every API request)
 - ✅ JSON structured logging in production (`Console:json` formatter — machine-readable for ELK / Grafana Loki)
 - ✅ Integration test coverage for `/api/models` auth (401 without key, 200 with key)
+- ✅ Rate-limit `Retry-After` header (429 responses include seconds-to-retry + JSON error body)
+- ✅ Response compression (Brotli + Gzip for JSON endpoints; SSE excluded)
+- ✅ Model catalog cache headers (`Cache-Control: public, max-age=60` on `/api/models`)
+- ✅ Frontend 429 handling (reads `Retry-After` header and shows retry countdown)
 
 ## Prerequisites
 
@@ -171,6 +173,11 @@ The frontend includes an **API Key** input in the sidebar (stored in `localStora
 }
 ```
 
+### OpenAPI Schema (Development only)
+
+In Development mode, the raw OpenAPI schema is served at `/openapi/v1.json`.
+This is disabled in Production to avoid exposing API metadata.
+
 ### `GET /health` — Health Check
 
 Returns `200 OK` with a JSON body when the service is running:
@@ -230,3 +237,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 11** ✅ — Production startup validation & request safety: `StartupConfigValidator` logs warnings for empty `Security:ApiKey`, `Cors:AllowedOrigins`, and `Security:Jwt:SigningKey` in Production; Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention); JWT issuer/audience env vars documented and forwarded by docker-compose; README typo fixed — 105 tests, 0 warnings
 - **Milestone 12** ✅ — Input validation & production hardening: `ChatRequest`/`ChatMessage` input validation (model max 100 chars, messages max 50 items, role whitelist `user|assistant|system`, content max 8000 chars); graceful shutdown timeout (30s for in-flight SSE streams); Docker Compose memory limits (backend 512 MB, frontend 256 MB); 21 new tests (validation unit + integration + deployment config guards) — 126 tests, 0 warnings
 - **Milestone 13** ✅ — Frontend API key authentication (sidebar input with localStorage persistence, `X-Api-Key` header on every API request, auto-refresh model catalog on key change); JSON structured logging in production (`Console:json` formatter for ELK/Loki); integration tests for `/api/models` auth (401 without key, 200 with key) — 128 tests, 0 warnings
+- **Milestone 14** ✅ — API response quality polish: rate-limit `Retry-After` header + JSON error body on 429; response compression (Brotli + Gzip for `/health` and `/api/models`, SSE excluded); `Cache-Control: public, max-age=60` on `/api/models`; frontend reads `Retry-After` and shows retry countdown; README duplicate fix + OpenAPI docs note — 133 tests, 0 warnings
