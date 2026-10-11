@@ -132,4 +132,55 @@ public class DeploymentConfigTests
         var program = Read("src/OmniChat.Api/Program.cs");
         Assert.Contains("AddServerHeader", program);
     }
+
+    [Fact]
+    public void EnvExample_DocumentsJwtIssuerAndAudience()
+    {
+        var envExample = Read(".env.example");
+        Assert.Contains("Security__Jwt__Issuer=", envExample);
+        Assert.Contains("Security__Jwt__Audience=", envExample);
+    }
+
+    [Fact]
+    public void DockerCompose_ForwardsJwtIssuerAndAudience()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.Contains("Security__Jwt__Issuer=", compose);
+        Assert.Contains("Security__Jwt__Audience=", compose);
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsKestrelMaxRequestBodySize()
+    {
+        var envExample = Read(".env.example");
+        Assert.Contains("Kestrel__MaxRequestBodySizeBytes", envExample);
+    }
+
+    [Fact]
+    public void DockerCompose_ForwardsKestrelMaxRequestBodySize()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.Contains("Kestrel__MaxRequestBodySizeBytes", compose);
+    }
+
+    [Fact]
+    public void AppSettings_HasKestrelMaxRequestBodySize()
+    {
+        var appsettings = Read("src/OmniChat.Api/appsettings.json");
+        Assert.Contains("MaxRequestBodySizeBytes", appsettings);
+    }
+
+    [Fact]
+    public void ProgramCs_RegistersStartupConfigValidator()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("StartupConfigValidator", program);
+    }
+
+    [Fact]
+    public void ProgramCs_ConfiguresMaxRequestBodySize()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("MaxRequestBodySize", program);
+    }
 }

@@ -27,6 +27,8 @@ Web UI dengan 2 mode:
 - ✅ Dynamic model catalog (`GET /api/models`) — backend-configured, consumed by the UI
 - ✅ `.dockerignore` + curl-equipped runtime image (working healthcheck; no secrets/artifacts in the build context)
 - ✅ Security response headers middleware (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-Permitted-Cross-Domain-Policies`) + `Server` header suppression
+- ✅ Startup configuration validation (warns on empty API key / CORS / JWT signing key in production)
+- ✅ Request body size limit (Kestrel `MaxRequestBodySize`, configurable, default 10 MB)
 
 ## Prerequisites
 
@@ -172,12 +174,15 @@ Returns `200 OK` with a JSON body when the service is running:
 | `LLM_API_KEY` | `LLM:ApiKey` | No | OpenRouter API key for Direct mode. Leave empty for Hermes-only use |
 | `Security__ApiKey` | `Security:ApiKey` | **Yes (prod)** | API key sent via `X-Api-Key` header. **Empty = open access** |
 | `Security__Jwt__SigningKey` | `Security:Jwt:SigningKey` | No | HMAC-SHA256 key for JWT validation. Empty = JWT auth disabled |
+| `Security__Jwt__Issuer` | `Security:Jwt:Issuer` | No (default: `OmniChat`) | JWT issuer claim |
+| `Security__Jwt__Audience` | `Security:Jwt:Audience` | No (default: `OmniChat`) | JWT audience claim |
+| `Kestrel__MaxRequestBodySizeBytes` | `Kestrel:MaxRequestBodySizeBytes` | No (default: 10 MB) | Max request body size in bytes (DoS prevention) |
 | `Cors__AllowedOrigins` | `Cors:AllowedOrigins` | **Yes (prod)** | Comma-separated allowed origins. **Empty = allow any origin** |
 | `VITE_API_PROXY_TARGET` | — | No (Docker override) | Frontend `/api` proxy target. Docker sets `http://backend:5184` |
 
 > **⚠️ Security:** `Security__ApiKey` and `Cors__AllowedOrigins` **must** be set in any non-local deployment. Empty values mean the API is open and accepts requests from any origin.
 
-## ## Architecture
+## Architecture
 
 **Clean Architecture Lite:**
 - **Domain** — `ChatRequest`, `ChatMessage` (models + validation)
@@ -204,3 +209,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 8** ✅ — Deployment config correctness (env-var ↔ config-section names verified, `Security__Jwt__SigningKey` fix, `LLM__Endpoint` forwarded, deployment-config regression guard) — 76 tests, 0 warnings
 - **Milestone 9** ✅ — Container & deployment hardening: runtime image now installs `curl` so the docker-compose healthcheck actually passes (previously `curl` was missing → backend permanently `unhealthy` → frontend never started); added root `.dockerignore` (excludes `.env`/`node_modules`/`bin`/`obj` from the build context); reproducible frontend runtime image (`npm ci` from the lockfile); `Dockerfile` `HEALTHCHECK` for plain `docker run` — 80 tests, 0 warnings
 - **Milestone 10** ✅ — Security headers & production hardening: `SecurityHeadersMiddleware` adds `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Permitted-Cross-Domain-Policies: none` to every response; Kestrel `Server` header suppressed (`AddServerHeader = false`); README env-var reference table added — 90 tests, 0 warnings
+- **Milestone 11** ✅ — Production startup validation & request safety: `StartupConfigValidator` logs warnings for empty `Security:ApiKey`, `Cors:AllowedOrigins`, and `Security:Jwt:SigningKey` in Production; Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention); JWT issuer/audience env vars documented and forwarded by docker-compose; README typo fixed — 105 tests, 0 warnings

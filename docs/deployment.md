@@ -25,7 +25,10 @@ docker compose up -d --build
 | `LLM_API_KEY` | (empty) | OpenRouter API key — maps to `LLM__ApiKey` (Direct mode only) |
 | `Security__ApiKey` | (empty) | Backend API key clients send as `X-Api-Key` |
 | `Cors__AllowedOrigins` | (empty) | Comma-separated browser origins allowed to call the API |
-| `Security__Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer` validation |
+| `Security__Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer <token>` validation |
+| `Security__Jwt__Issuer` | `OmniChat` | JWT issuer claim (`Security:Jwt:Issuer`) |
+| `Security__Jwt__Audience` | `OmniChat` | JWT audience claim (`Security:Jwt:Audience`) |
+| `Kestrel__MaxRequestBodySizeBytes` | `10485760` (10 MB) | Maximum request body size in bytes (DoS prevention) |
 | `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
 
 > **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
@@ -156,4 +159,6 @@ cd frontend && npm run build
 - Set `Security__ApiKey` and `Cors__AllowedOrigins` for any non-local deployment; empty values leave the API open (see the warning above).
 - `appsettings.Development.json` contains localhost-only endpoints (no secrets).
 - Rate limiting protects against abuse on the chat endpoint.
+- **Startup configuration validation:** in Production the backend logs warnings at startup when `Security:ApiKey`, `Cors:AllowedOrigins`, or `Security:Jwt:SigningKey` is empty. Check the logs after `docker compose up` to catch misconfigurations before they become security incidents.
+- **Request body size limit:** Kestrel rejects requests exceeding `Kestrel:MaxRequestBodySizeBytes` (default 10 MB) with HTTP 413, preventing DoS via oversized payloads.
 - HTTPS redirection (`UseHttpsRedirection`) runs **only outside Production**. In Docker the app serves plain HTTP behind a TLS-terminating reverse proxy; the redirect is disabled in Production to avoid loops/broken requests.

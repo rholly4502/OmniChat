@@ -9,7 +9,12 @@ using Microsoft.AspNetCore.RateLimiting;
 var builder = WebApplication.CreateBuilder(args);
 
 // Suppress the "Server: Kestrel" response header (security: don't reveal server technology)
-builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    // Limit request body size to prevent DoS via oversized payloads (default: 10 MB).
+    options.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Kestrel:MaxRequestBodySizeBytes") ?? 10_485_760;
+});
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -48,6 +53,9 @@ builder.Services.AddHttpClient("LLMClient", client =>
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 
+// Startup configuration validator — warns on insecure production settings
+builder.Services.AddSingleton<StartupConfigValidator>();
+
 // Rate limiting: token bucket — 10 requests/minute per client IP
 builder.Services.AddRateLimiter(options =>
 {
@@ -75,6 +83,9 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// Validate security-sensitive config at startup — logs warnings for insecure production settings.
+app.Services.GetRequiredService<StartupConfigValidator>().Validate(app.Environment.IsProduction());
 
 if (app.Environment.IsDevelopment())
 {

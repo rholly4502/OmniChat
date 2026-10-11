@@ -18,7 +18,10 @@ services:
       - Security__ApiKey=${Security__ApiKey:-}
       - Cors__AllowedOrigins=${Cors__AllowedOrigins:-}
       - Security__Jwt__SigningKey=${Security__Jwt__SigningKey:-}
+      - Security__Jwt__Issuer=${Security__Jwt__Issuer:-OmniChat}
+      - Security__Jwt__Audience=${Security__Jwt__Audience:-OmniChat}
       - LLM__Endpoint=${LLM__Endpoint:-https://openrouter.ai/api/v1/chat/completions}
+      - Kestrel__MaxRequestBodySizeBytes=${Kestrel__MaxRequestBodySizeBytes:-10485760}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s
