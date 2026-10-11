@@ -39,6 +39,7 @@ Web UI dengan 2 mode:
 - ✅ Response compression (Brotli + Gzip for JSON endpoints; SSE excluded)
 - ✅ Model catalog cache headers (`Cache-Control: public, max-age=60` on `/api/models`)
 - ✅ Frontend 429 handling (reads `Retry-After` header and shows retry countdown)
+- ✅ RFC 7807 ProblemDetails standardization — all error responses (400, 401, 429, 500) use `application/problem+json` with consistent `{ title, status, detail, instance, traceId }` schema
 
 ## Prerequisites
 
@@ -152,7 +153,7 @@ data: [DONE]
 - `messages[].role` — must be `user`, `assistant`, or `system`
 - `messages[].content` — required, max 8000 characters
 
-Invalid input returns `400 Bad Request` with a JSON error body listing the violations.
+Invalid input returns `400 Bad Request` as an RFC 7807 `ValidationProblemDetails` response (see [Error Responses](#error-responses) below).
 
 ### Authentication
 
@@ -187,6 +188,41 @@ Returns `200 OK` with a JSON body when the service is running:
   "version": "1.0.0.0",
   "uptimeSeconds": 42,
   "checks": []
+}
+```
+
+## Error Responses
+
+All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807) format with `application/problem+json` content type. Every error includes a `traceId` for correlating with server logs.
+
+**Common structure:**
+```json
+{
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Missing or invalid API key.",
+  "instance": "/api/chat/stream",
+  "traceId": "00-abc123..."
+}
+```
+
+| Status | Title | When |
+|--------|-------|------|
+| 400 | Validation Failed | Invalid request body (missing/empty fields, role not in `user\|assistant\|system`, etc.) — includes an `errors` dictionary |
+| 401 | Unauthorized | Missing or invalid `X-Api-Key` / `Authorization: Bearer` token |
+| 429 | Too Many Requests | Rate limit exceeded — includes a `Retry-After` header (seconds) |
+| 500 | Internal Server Error | Unhandled server exception — `detail` is generic, `traceId` for debugging |
+
+**Validation error example (400):**
+```json
+{
+  "title": "Validation Failed",
+  "status": 400,
+  "errors": {
+    "Messages": ["The Messages field is required."],
+    "Model": ["The Model field is required."]
+  },
+  "traceId": "00-abc123..."
 }
 ```
 
@@ -237,4 +273,5 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 11** ✅ — Production startup validation & request safety: `StartupConfigValidator` logs warnings for empty `Security:ApiKey`, `Cors:AllowedOrigins`, and `Security:Jwt:SigningKey` in Production; Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention); JWT issuer/audience env vars documented and forwarded by docker-compose; README typo fixed — 105 tests, 0 warnings
 - **Milestone 12** ✅ — Input validation & production hardening: `ChatRequest`/`ChatMessage` input validation (model max 100 chars, messages max 50 items, role whitelist `user|assistant|system`, content max 8000 chars); graceful shutdown timeout (30s for in-flight SSE streams); Docker Compose memory limits (backend 512 MB, frontend 256 MB); 21 new tests (validation unit + integration + deployment config guards) — 126 tests, 0 warnings
 - **Milestone 13** ✅ — Frontend API key authentication (sidebar input with localStorage persistence, `X-Api-Key` header on every API request, auto-refresh model catalog on key change); JSON structured logging in production (`Console:json` formatter for ELK/Loki); integration tests for `/api/models` auth (401 without key, 200 with key) — 128 tests, 0 warnings
-- **Milestone 14** ✅ — API response quality polish: rate-limit `Retry-After` header + JSON error body on 429; response compression (Brotli + Gzip for `/health` and `/api/models`, SSE excluded); `Cache-Control: public, max-age=60` on `/api/models`; frontend reads `Retry-After` and shows retry countdown; README duplicate fix + OpenAPI docs note — 133 tests, 0 warnings
+- **Milestone 14** ✅ — API response quality polish: rate-limit `Retry-After` header + JSON error body on 429; response compression (Brotli + Gzip for `/health` and `/api/models`, SSE excluded); `Cache-Control: public, max-age=60` on `/api/models`; frontend reads `Retry-After` and shows retry countdown; README duplicate fix + OpenAPI docs note — 137 tests, 0 warnings
+- **Milestone 15** ✅ — RFC 7807 ProblemDetails standardization: all error responses (400 validation, 401 auth, 429 rate limit, 500 server error) now use `application/problem+json` with consistent `{ title, status, detail, instance, traceId }` schema; `AddProblemDetails()` + custom `ApiBehaviorOptions.InvalidModelStateResponseFactory` registered; `ProblemDetailsJson` helper (camelCase serialization); 13 new tests (6 ProblemDetails integration + 7 deployment config guards) — 150 tests, 0 warnings

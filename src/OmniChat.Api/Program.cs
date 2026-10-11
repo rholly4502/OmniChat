@@ -5,6 +5,7 @@ using OmniChat.Infrastructure.Services;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,6 +27,25 @@ builder.Services.Configure<HostOptions>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// RFC 7807 ProblemDetails: standardize all error responses to a consistent,
+// machine-readable format with `application/problem+json` content type.
+builder.Services.AddProblemDetails();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var details = new ValidationProblemDetails(context.ModelState)
+        {
+            Title = "Validation Failed",
+        };
+        details.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+        return new BadRequestObjectResult(details)
+        {
+            ContentTypes = { "application/problem+json" }
+        };
+    };
+});
 builder.Services.AddHealthChecks();
 
 // Response compression for non-streaming JSON responses (health, models).
@@ -87,10 +107,17 @@ builder.Services.AddRateLimiter(options =>
         {
             context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("F0");
         }
-        context.HttpContext.Response.ContentType = "application/json";
-        await context.HttpContext.Response.WriteAsJsonAsync(
-            new { error = "Rate limit exceeded. Please retry after the Retry-After delay." },
-            cancellationToken);
+        context.HttpContext.Response.ContentType = "application/problem+json";
+        var problem = new ProblemDetails
+        {
+            Title = "Too Many Requests",
+            Status = StatusCodes.Status429TooManyRequests,
+            Detail = "Rate limit exceeded. Please retry after the Retry-After delay.",
+            Instance = context.HttpContext.Request.Path.Value,
+        };
+        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
+        await context.HttpContext.Response.WriteAsync(
+            System.Text.Json.JsonSerializer.Serialize(problem, global::OmniChat.Api.Infrastructure.ProblemDetailsJson.Options), cancellationToken);
     };
     options.AddTokenBucketLimiter("chatPolicy", tokenOptions =>
     {

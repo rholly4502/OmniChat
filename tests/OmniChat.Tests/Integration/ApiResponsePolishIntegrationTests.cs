@@ -38,7 +38,7 @@ public class ApiResponsePolishIntegrationTests
     }
 
     [Fact]
-    public async Task RateLimited429_ReturnsJsonErrorBody()
+    public async Task RateLimited429_ReturnsProblemDetailsBody()
     {
         using var factory = new WebApplicationFactory<Program>();
         using var client = factory.CreateClient();
@@ -52,7 +52,10 @@ public class ApiResponsePolishIntegrationTests
         using var throttled = await client.PostAsync("/api/chat/stream", InvalidBody());
         Assert.Equal(HttpStatusCode.TooManyRequests, throttled.StatusCode);
         Assert.NotNull(throttled.Content.Headers.ContentType);
-        Assert.StartsWith("application/json", throttled.Content.Headers.ContentType!.MediaType!);
+        Assert.Equal("application/problem+json", throttled.Content.Headers.ContentType!.MediaType);
+        var body = await throttled.Content.ReadAsStringAsync();
+        Assert.Contains("\"title\"", body);
+        Assert.Contains("\"traceId\"", body);
     }
 
     // ── Response compression ──

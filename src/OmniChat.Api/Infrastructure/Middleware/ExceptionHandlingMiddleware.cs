@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
 namespace OmniChat.Api.Infrastructure.Middleware;
@@ -34,15 +35,18 @@ public class ExceptionHandlingMiddleware
                 context.Request.Method, context.Request.Path);
 
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/json";
+            context.Response.ContentType = "application/problem+json";
 
-            var errorResponse = JsonSerializer.Serialize(new
+            var problem = new ProblemDetails
             {
-                error = "An unexpected error occurred.",
-                traceId = context.TraceIdentifier
-            });
+                Title = "Internal Server Error",
+                Status = StatusCodes.Status500InternalServerError,
+                Detail = "An unexpected error occurred.",
+                Instance = context.Request.Path.Value,
+            };
+            problem.Extensions["traceId"] = context.TraceIdentifier;
 
-            await context.Response.WriteAsync(errorResponse);
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problem, ProblemDetailsJson.Options), context.RequestAborted);
         }
     }
 }

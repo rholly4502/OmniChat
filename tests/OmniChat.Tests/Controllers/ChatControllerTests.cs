@@ -114,7 +114,7 @@ public class ChatControllerTests
     }
 
     [Fact]
-    public async Task StreamChat_WithInvalidModel_Returns400()
+    public async Task StreamChat_WithInvalidModel_Returns400ProblemDetails()
     {
         // Arrange: add model validation error
         _controller.ModelState.AddModelError("Messages", "Messages cannot be empty.");
@@ -129,9 +129,15 @@ public class ChatControllerTests
         // Act
         await _controller.StreamChat(request, CancellationToken.None);
 
-        // Assert: returns 400 Bad Request
+        // Assert: returns 400 Bad Request with RFC 7807 ProblemDetails format
         Assert.Equal(StatusCodes.Status400BadRequest, _controller.Response.StatusCode);
-        Assert.StartsWith("application/json", _controller.Response.ContentType);
+        Assert.Equal("application/problem+json", _controller.Response.ContentType);
+        _controller.Response.Body.Position = 0;
+        using var reader = new StreamReader(_controller.Response.Body);
+        var body = await reader.ReadToEndAsync();
+        Assert.Contains("\"title\"", body);
+        Assert.Contains("validation", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("errors", body);
     }
 
     [Fact]

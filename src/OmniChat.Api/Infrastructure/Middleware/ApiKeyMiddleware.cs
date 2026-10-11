@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -50,9 +51,16 @@ public class ApiKeyMiddleware
                 context.Request.Method, context.Request.Path);
 
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(
-                JsonSerializer.Serialize(new { error = "Missing or invalid API key." }));
+            context.Response.ContentType = "application/problem+json";
+            var problem = new ProblemDetails
+            {
+                Title = "Unauthorized",
+                Status = StatusCodes.Status401Unauthorized,
+                Detail = "Missing or invalid API key.",
+                Instance = context.Request.Path.Value,
+            };
+            problem.Extensions["traceId"] = context.TraceIdentifier;
+            await context.Response.WriteAsync(JsonSerializer.Serialize(problem, ProblemDetailsJson.Options));
             return;
         }
 

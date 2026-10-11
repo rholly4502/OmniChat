@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using OmniChat.Api.Infrastructure.Auth;
 
@@ -91,8 +92,15 @@ public sealed class JwtAuthenticationMiddleware
     private static async Task RejectAsync(HttpContext context)
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = "application/json";
-        await context.Response.WriteAsync(
-            JsonSerializer.Serialize(new { error = "Missing or invalid bearer token." }));
+        context.Response.ContentType = "application/problem+json";
+        var problem = new ProblemDetails
+        {
+            Title = "Unauthorized",
+            Status = StatusCodes.Status401Unauthorized,
+            Detail = "Missing or invalid bearer token.",
+            Instance = context.Request.Path.Value,
+        };
+        problem.Extensions["traceId"] = context.TraceIdentifier;
+        await context.Response.WriteAsync(JsonSerializer.Serialize(problem, ProblemDetailsJson.Options));
     }
 }

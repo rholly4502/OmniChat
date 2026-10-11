@@ -87,7 +87,7 @@ public class ApiKeyMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_Unauthorized_WritesJsonError()
+    public async Task InvokeAsync_Unauthorized_WritesProblemDetails()
     {
         var mw = new ApiKeyMiddleware(_ => Task.CompletedTask,
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
@@ -95,9 +95,15 @@ public class ApiKeyMiddlewareTests
 
         await mw.InvokeAsync(ctx);
 
+        Assert.Equal("application/problem+json", ctx.Response.ContentType);
         ctx.Response.Body.Position = 0;
         using var reader = new StreamReader(ctx.Response.Body);
         var body = await reader.ReadToEndAsync();
+        // ProblemDetails (RFC 7807) structure
+        Assert.Contains("\"title\"", body);
+        Assert.Contains("\"status\":401", body);
+        Assert.Contains("\"detail\"", body);
         Assert.Contains("api key", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"traceId\"", body);
     }
 }

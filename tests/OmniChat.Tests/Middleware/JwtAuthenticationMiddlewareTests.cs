@@ -121,16 +121,22 @@ public class JwtAuthenticationMiddlewareTests
     }
 
     [Fact]
-    public async Task Enabled_InvalidBearer_WritesJsonError()
+    public async Task Enabled_InvalidBearer_WritesProblemDetails()
     {
         var mw = Middleware(() => { }, enabled: true);
         var ctx = Context("/api/chat/stream", "Bearer garbage");
 
         await mw.InvokeAsync(ctx);
 
+        Assert.Equal("application/problem+json", ctx.Response.ContentType);
         ctx.Response.Body.Position = 0;
         using var reader = new StreamReader(ctx.Response.Body);
         var body = await reader.ReadToEndAsync();
+        // ProblemDetails (RFC 7807) structure
+        Assert.Contains("\"title\"", body);
+        Assert.Contains("\"status\":401", body);
+        Assert.Contains("\"detail\"", body);
         Assert.Contains("bearer token", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"traceId\"", body);
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using OmniChat.Api.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
@@ -55,14 +56,19 @@ public class ChatController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
+        // [ApiController] + ApiBehaviorOptions handle invalid model state automatically
+        // in the MVC pipeline. This manual check provides defense-in-depth and makes
+        // the controller unit-testable (action filters don't run in direct unit tests).
         if (!ModelState.IsValid)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            Response.ContentType = "application/json";
-            var errors = ModelState.Values
-                .SelectMany(v => v.Errors)
-                .Select(e => e.ErrorMessage);
-            await Response.WriteAsJsonAsync(new { errors }, cancellationToken);
+            Response.ContentType = "application/problem+json";
+            var details = new ValidationProblemDetails(ModelState)
+            {
+                Title = "Validation Failed",
+            };
+            details.Extensions["traceId"] = HttpContext.TraceIdentifier;
+            await Response.WriteAsync(JsonSerializer.Serialize(details, ProblemDetailsJson.Options), cancellationToken);
             return;
         }
 

@@ -269,4 +269,61 @@ public class DeploymentConfigTests
         var app = Read("frontend/src/App.tsx");
         Assert.Contains("Retry-After", app);
     }
+
+    // ── Milestone 15: ProblemDetails standardization ──
+
+    [Fact]
+    public void ProgramCs_RegistersProblemDetails()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("AddProblemDetails", program);
+    }
+
+    [Fact]
+    public void ProgramCs_ConfiguresApiBehaviorOptions()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("InvalidModelStateResponseFactory", program);
+        Assert.Contains("ValidationProblemDetails", program);
+        Assert.Contains("traceId", program);
+    }
+
+    [Fact]
+    public void ExceptionHandlingMiddleware_UsesProblemJsonContentType()
+    {
+        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/ExceptionHandlingMiddleware.cs");
+        Assert.Contains("application/problem+json", src);
+        Assert.Contains("ProblemDetails", src);
+    }
+
+    [Fact]
+    public void ApiKeyMiddleware_UsesProblemJsonContentType()
+    {
+        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/ApiKeyMiddleware.cs");
+        Assert.Contains("application/problem+json", src);
+        Assert.Contains("ProblemDetails", src);
+    }
+
+    [Fact]
+    public void JwtAuthMiddleware_UsesProblemJsonContentType()
+    {
+        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/JwtAuthenticationMiddleware.cs");
+        Assert.Contains("application/problem+json", src);
+        Assert.Contains("ProblemDetails", src);
+    }
+
+    [Fact]
+    public void RateLimiter_UsesProblemJsonContentType()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("application/problem+json", program);
+    }
+
+    [Fact]
+    public void ProblemDetailsJsonHelper_Exists()
+    {
+        var src = Read("src/OmniChat.Api/Infrastructure/ProblemDetailsJson.cs");
+        Assert.Contains("JsonSerializerDefaults.Web", src);
+        Assert.Contains("ProblemDetailsJson", src);
+    }
 }

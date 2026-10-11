@@ -52,18 +52,18 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_GeneralException_SetsJsonContentType()
+    public async Task InvokeAsync_GeneralException_SetsProblemJsonContentType()
     {
         var mw = CreateMiddleware(_ => throw new InvalidOperationException("boom"));
         var ctx = Context();
 
         await mw.InvokeAsync(ctx);
 
-        Assert.Equal("application/json", ctx.Response.ContentType);
+        Assert.Equal("application/problem+json", ctx.Response.ContentType);
     }
 
     [Fact]
-    public async Task InvokeAsync_GeneralException_ReturnsJsonWithErrorAndTraceId()
+    public async Task InvokeAsync_GeneralException_ReturnsProblemDetailsWithTraceId()
     {
         var mw = CreateMiddleware(_ => throw new InvalidOperationException("boom"));
         var ctx = Context();
@@ -74,7 +74,12 @@ public class ExceptionHandlingMiddlewareTests
         using var reader = new StreamReader(ctx.Response.Body);
         var body = await reader.ReadToEndAsync();
 
+        // ProblemDetails (RFC 7807) structure
+        Assert.Contains("\"title\"", body);
+        Assert.Contains("\"status\":500", body);
+        Assert.Contains("\"detail\"", body);
         Assert.Contains("unexpected error", body, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("\"traceId\"", body);
         Assert.Contains("test-trace-id", body);
     }
 }
