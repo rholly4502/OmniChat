@@ -25,6 +25,7 @@ Web UI dengan 2 mode:
 - ✅ Enriched health check (`/health` → JSON: status, version, uptime)
 - ✅ JWT bearer authentication (HMAC-SHA256, validates signature/issuer/audience/lifetime) alongside the API key
 - ✅ Dynamic model catalog (`GET /api/models`) — backend-configured, consumed by the UI
+- ✅ `.dockerignore` + curl-equipped runtime image (working healthcheck; no secrets/artifacts in the build context)
 
 ## Prerequisites
 
@@ -186,3 +187,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 6** ✅ — JWT bearer authentication (dual-auth with API key, HMAC-SHA256 validation, unit + integration coverage) — 67 tests, 0 warnings
 - **Milestone 7** ✅ — Dynamic model catalog (`GET /api/models`), backend-configured, consumed by the UI — 72 tests, 0 warnings
 - **Milestone 8** ✅ — Deployment config correctness (env-var ↔ config-section names verified, `Security__Jwt__SigningKey` fix, `LLM__Endpoint` forwarded, deployment-config regression guard) — 76 tests, 0 warnings
+- **Milestone 9** ✅ — Container & deployment hardening: runtime image now installs `curl` so the docker-compose healthcheck actually passes (previously `curl` was missing → backend permanently `unhealthy` → frontend never started); added root `.dockerignore` (excludes `.env`/`node_modules`/`bin`/`obj` from the build context); reproducible frontend runtime image (`npm ci` from the lockfile); `Dockerfile` `HEALTHCHECK` for plain `docker run` — 80 tests, 0 warnings

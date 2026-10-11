@@ -37,6 +37,18 @@ docker compose up -d --build
 > deployment set **both** a long random `Security__ApiKey` and an explicit
 > `Cors__AllowedOrigins` list, and terminate TLS at a reverse proxy.
 
+## Container Image Notes
+
+- **Health check needs `curl`.** The `mcr.microsoft.com/dotnet/aspnet` runtime image does **not** bundle
+  `curl` (or `wget`). The backend `Dockerfile` therefore installs `curl` in the runtime stage so the
+  `docker-compose.yml` healthcheck (`curl -f http://localhost:5184/health`) — and the image's own
+  `HEALTHCHECK` — pass. Without it the backend stays `unhealthy` and the frontend, which waits on
+  `depends_on: backend: condition: service_healthy`, never starts.
+- **`.dockerignore`.** A root `.dockerignore` keeps `.env` (secrets), `node_modules/`, `bin/`, `obj/` and
+  `.git/` out of the build context, so credentials never reach an image layer and image builds stay lean.
+- **Reproducible frontend image.** The frontend runtime stage installs `vite` via `npm ci` from
+  `package-lock.json` (pinned) instead of a floating `npm install`.
+
 ## Docker Deployment
 
 ### Quick Start
