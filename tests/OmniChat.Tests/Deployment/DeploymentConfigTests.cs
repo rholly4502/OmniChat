@@ -1,6 +1,7 @@
 using System.IO;
 using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Api.Infrastructure.Networking;
+using OmniChat.Infrastructure.Services;
 
 namespace OmniChat.Tests.Deployment;
 
@@ -395,5 +396,62 @@ public class DeploymentConfigTests
     {
         // Guards against a rename that would silently stop binding the config.
         Assert.Equal("ReverseProxy", ReverseProxyOptions.SectionName);
+    }
+
+    // ── Milestone 17: model-catalog configurability ──
+
+    [Fact]
+    public void DockerCompose_ForwardsModelCatalog()
+    {
+        var compose = Read("docker-compose.yml");
+
+        Assert.Contains($"{EnvPrefix(ModelCatalogService.AgentSection)}=", compose);
+        Assert.Contains($"{EnvPrefix(ModelCatalogService.DirectSection)}=", compose);
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsModelCatalog()
+    {
+        var env = Read(".env.example");
+
+        Assert.Contains($"{EnvPrefix(ModelCatalogService.AgentSection)}=", env);
+        Assert.Contains($"{EnvPrefix(ModelCatalogService.DirectSection)}=", env);
+    }
+
+    [Fact]
+    public void DeploymentDoc_DocumentsModelCatalog()
+    {
+        var doc = Read("docs/deployment.md");
+
+        Assert.Contains(EnvPrefix(ModelCatalogService.AgentSection), doc);
+        Assert.Contains(EnvPrefix(ModelCatalogService.DirectSection), doc);
+    }
+
+    [Fact]
+    public void AppSettings_DeclaresModelsSection()
+    {
+        // The catalog must be discoverable/overridable from a config file too.
+        Assert.Contains("Models", Read("src/OmniChat.Api/appsettings.json"));
+    }
+
+    [Fact]
+    public void DockerCompose_FrontendHasHealthcheck()
+    {
+        // The frontend service must have its own readiness probe so `docker compose ps`
+        // reports whether the preview server is actually serving. It uses Node's global
+        // `fetch`, so it must NOT depend on curl/wget being present in node:22-alpine.
+        var compose = Read("docker-compose.yml");
+        var frontendBlock = compose[compose.IndexOf("  frontend:", StringComparison.Ordinal)..];
+
+        Assert.Contains("healthcheck", frontendBlock);
+
+        // Inspect the actual probe command, not comments around it.
+        var testLine = frontendBlock
+            .Split('\n')
+            .First(line => line.Contains("test:", StringComparison.Ordinal));
+        Assert.Contains("node", testLine);
+        Assert.Contains("fetch(", testLine);
+        Assert.DoesNotContain("curl", testLine);
+        Assert.DoesNotContain("wget", testLine);
     }
 }

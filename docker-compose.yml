@@ -26,6 +26,9 @@ services:
       - ReverseProxy__KnownProxies=${ReverseProxy__KnownProxies:-}
       - ReverseProxy__KnownNetworks=${ReverseProxy__KnownNetworks:-}
       - ReverseProxy__ForwardLimit=${ReverseProxy__ForwardLimit:-1}
+      # Model catalog — optional JSON arrays (see .env.example). Empty = built-in defaults.
+      - Models__Agent=${Models__Agent:-}
+      - Models__Direct=${Models__Direct:-}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s
@@ -51,6 +54,14 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    # Readiness: `node -e fetch(...)` (Node 22 ships a global fetch) so the probe needs
+    # no curl/wget that may be missing from node:22-alpine. r.ok => 0, else 1.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:4173/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     deploy:
       resources:

@@ -34,6 +34,8 @@ docker compose up -d --build
 | `ReverseProxy__KnownNetworks` | (empty) | Comma-separated trusted proxy CIDR networks (e.g. `172.18.0.0/16`) |
 | `ReverseProxy__ForwardLimit` | `1` | Max forwarded entries to process |
 | `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
+| `Models__Agent` | built-in | Hermes/Agent model list (JSON array of `{"Id","Label"}`). Empty = defaults |
+| `Models__Direct` | built-in | Direct-provider model list (JSON array of `{"Id","Label"}`). Empty = defaults |
 
 > **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
 
@@ -89,6 +91,19 @@ with `vite preview`, so the proxy must exist there too. The target defaults to
 Optionally front the stack with a reverse proxy (nginx, Caddy) instead:
 - `/api/*` → `backend:5184`
 - `/*` → `frontend:4173`
+
+### Model Catalog
+
+`GET /api/models` returns the models grouped by chat mode. Override the built-in
+list with a JSON array per mode — one env var each, no indexed keys required:
+
+```
+Models__Agent=[{"Id":"hermes","Label":"Hermes (Default)"},{"Id":"gpt-4o","Label":"GPT-4o"}]
+Models__Direct=[{"Id":"meta-llama/llama-3.3-70b-instruct:free","Label":"Llama 3.3 70B (Free)"}]
+```
+
+Indexed keys (`Models__Agent__0__Id=…`) also work and take precedence. Unset or
+malformed values fall back to the defaults (a typo never blocks startup).
 
 ## Reverse Proxy (Nginx Example)
 
@@ -147,6 +162,7 @@ other source is still ignored. See `.env.example` for the full set of
 
 - **Backend:** `GET /health` → `200 OK`
 - **Docker:** Healthcheck configured in docker-compose (30s interval, 3 retries)
+- **Frontend:** `GET /` → `200 OK`; the `frontend` docker-compose service has its own healthcheck (30s interval, 3 retries) that uses `node -e "fetch(...)"`, so it needs no `curl`/`wget` in the image
 
 ## Rate Limiting
 

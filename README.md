@@ -119,6 +119,9 @@ cd frontend && npm run build
 
 Returns the selectable models grouped by chat mode (values come from the `Models` config section).
 
+Configure via the `Models` config section (see [Environment Variables](#environment-variables)):
+a JSON array in `Models__Agent`/`Models__Direct`, indexed keys, or `appsettings.json`. Unset/invalid values fall back to the built-in list.
+
 ```json
 {
   "agent":  [ { "id": "hermes", "label": "Hermes (Default)" } ],
@@ -244,6 +247,8 @@ All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.iet
 | `ReverseProxy__KnownNetworks` | `ReverseProxy:KnownNetworks` | No (empty) | Comma-separated trusted proxy CIDR networks (e.g. `172.18.0.0/16`) |
 | `ReverseProxy__ForwardLimit` | `ReverseProxy:ForwardLimit` | No (default: `1`) | Max forwarded entries to process (only the closest proxy at `1`) |
 | `VITE_API_PROXY_TARGET` | — | No (Docker override) | Frontend `/api` proxy target. Docker sets `http://backend:5184` |
+| `Models__Agent` | `Models:Agent` | No (built-in defaults) | Hermes/Agent model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults. Indexed keys (`Models__Agent__0__Id=…`) also work and win when both are set |
+| `Models__Direct` | `Models:Direct` | No (built-in defaults) | Direct-provider model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults |
 
 > **⚠️ Security:** `Security__ApiKey` and `Cors__AllowedOrigins` **must** be set in any non-local deployment. Empty values mean the API is open and accepts requests from any origin.
 
@@ -280,3 +285,4 @@ All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.iet
 - **Milestone 14** ✅ — API response quality polish: rate-limit `Retry-After` header + JSON error body on 429; response compression (Brotli + Gzip for `/health` and `/api/models`, SSE excluded); `Cache-Control: public, max-age=60` on `/api/models`; frontend reads `Retry-After` and shows retry countdown; README duplicate fix + OpenAPI docs note — 137 tests, 0 warnings
 - **Milestone 15** ✅ — RFC 7807 ProblemDetails standardization: all error responses (400 validation, 401 auth, 429 rate limit, 500 server error) now use `application/problem+json` with consistent `{ title, status, detail, instance, traceId }` schema; `AddProblemDetails()` + custom `ApiBehaviorOptions.InvalidModelStateResponseFactory` registered; `ProblemDetailsJson` helper (camelCase serialization); 13 new tests (6 ProblemDetails integration + 7 deployment config guards) — 150 tests, 0 warnings
 - **Milestone 16** ✅ — Reverse-proxy forwarded headers: `ForwardedHeadersSetup` + `ReverseProxyOptions` (`ReverseProxy:*` section) wire `UseForwardedHeaders` (`X-Forwarded-For`/`X-Forwarded-Proto`) so the per-IP rate limiter and request logs see the real client behind nginx/Caddy instead of the proxy address; opt-in (`Enabled=false` default), trust is additive (loopback defaults preserved, spoofed headers from unlisted peers ignored), CIDR parsing via `System.Net.IPNetwork`; `StartupConfigValidator` warns when enabled with no trusted proxies; docker-compose/`.env.example`/`README`/`deployment.md` updated — 184 tests, 0 warnings
+- **Milestone 17** ✅ — Model-catalog configurability & deployment-config completeness: `ModelCatalogService` exposes public section constants and accepts a single JSON-array env var (`Models__Agent`/`Models__Direct`) in addition to indexed keys, with malformed JSON logged and falling back to defaults; docker-compose forwards the catalog vars; `.env.example`, README and `deployment.md` document them; the `frontend` docker-compose service gains a `node`-based readiness healthcheck (no curl/wget dependency); deployment-config regression guards extended — 189 tests, 0 warnings

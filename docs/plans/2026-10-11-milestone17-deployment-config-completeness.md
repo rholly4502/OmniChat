@@ -61,8 +61,8 @@ healthcheck. STATELESS — no DB, no EF Core, no persistence.
 
 ### Task 3 — appsettings.json declares the Models section
 - File: `src/OmniChat.Api/appsettings.json`
-- Steps: add `Models.Agent[]` / `Models.Direct[]` matching the code defaults.
-- Commit.
+- **Already satisfied on inspection** — the file already declares `Models.Agent[]` / `Models.Direct[]`
+  matching the code defaults. No edit needed; recorded here so the finding is not re-investigated.
 
 ### Task 4 — frontend readiness healthcheck
 - File: `docker-compose.yml`
