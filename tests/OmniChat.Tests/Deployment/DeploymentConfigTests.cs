@@ -116,4 +116,20 @@ public class DeploymentConfigTests
         Assert.Contains("npm ci", dockerfile);
         Assert.DoesNotContain("npm install vite", dockerfile);
     }
+
+    [Fact]
+    public void ProgramCs_RegistersSecurityHeadersMiddleware()
+    {
+        // Security headers middleware must be wired into the pipeline.
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("SecurityHeadersMiddleware", program);
+    }
+
+    [Fact]
+    public void ProgramCs_SuppressesServerHeader()
+    {
+        // The "Server: Kestrel" header reveals server technology — suppress it.
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("AddServerHeader", program);
+    }
 }

@@ -8,6 +8,9 @@ using Microsoft.AspNetCore.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Suppress the "Server: Kestrel" response header (security: don't reveal server technology)
+builder.WebHost.ConfigureKestrel(options => options.AddServerHeader = false);
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
@@ -77,6 +80,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi(); // /openapi/v1.json
 }
+
+// Security headers: set standard response headers on every response (X-Content-Type-Options, X-Frame-Options, etc.)
+app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.SecurityHeadersMiddleware>();
 
 // Global exception handling — must be early in the pipeline
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddleware>();
