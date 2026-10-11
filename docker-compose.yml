@@ -17,7 +17,8 @@ services:
       - LLM__ApiKey=${LLM_API_KEY:-}
       - Security__ApiKey=${Security__ApiKey:-}
       - Cors__AllowedOrigins=${Cors__AllowedOrigins:-}
-      - Jwt__SigningKey=${Jwt__SigningKey:-}
+      - Security__Jwt__SigningKey=${Security__Jwt__SigningKey:-}
+      - LLM__Endpoint=${LLM__Endpoint:-https://openrouter.ai/api/v1/chat/completions}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s

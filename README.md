@@ -184,3 +184,5 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 4** ✅ — Security & observability hardening (API-key auth, correlation-id, configurable CORS)
 - **Milestone 5** ✅ — Observability & production readiness (request logging, enriched JSON health check, rate-limit integration coverage) — 46 tests, 0 warnings
 - **Milestone 6** ✅ — JWT bearer authentication (dual-auth with API key, HMAC-SHA256 validation, unit + integration coverage) — 67 tests, 0 warnings
+- **Milestone 7** ✅ — Dynamic model catalog (`GET /api/models`), backend-configured, consumed by the UI — 72 tests, 0 warnings
+- **Milestone 8** ✅ — Deployment config correctness (env-var ↔ config-section names verified, `Security__Jwt__SigningKey` fix, `LLM__Endpoint` forwarded, deployment-config regression guard) — 76 tests, 0 warnings

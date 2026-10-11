@@ -21,11 +21,11 @@ docker compose up -d --build
 | `ASPNETCORE_ENVIRONMENT` | `Production` | .NET environment |
 | `ASPNETCORE_URLS` | `http://+:5184` | Backend listen URL |
 | `Hermes__Endpoint` | `http://host.docker.internal:5000/v1/chat/completions` | Hermes Gateway URL (host, reachable via `host.docker.internal`) |
-| `LLM__Endpoint` | `https://openrouter.ai/api/v1/chat/completions` | Direct LLM provider URL |
+| `LLM__Endpoint` | `https://openrouter.ai/api/v1/chat/completions` | Direct LLM provider URL (forwarded by docker-compose) |
 | `LLM_API_KEY` | (empty) | OpenRouter API key — maps to `LLM__ApiKey` (Direct mode only) |
 | `Security__ApiKey` | (empty) | Backend API key clients send as `X-Api-Key` |
 | `Cors__AllowedOrigins` | (empty) | Comma-separated browser origins allowed to call the API |
-| `Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer` validation |
+| `Security__Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer` validation |
 | `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
 
 > **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
