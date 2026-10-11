@@ -15,6 +15,7 @@ interface ModelOption {
 }
 
 const API_URL = '/api/chat/stream';
+const API_KEY_STORAGE = 'omnichat_api_key';
 
 const DEFAULT_AGENT_MODELS: ModelOption[] = [
   { id: 'hermes', label: 'Hermes (Default)' },
@@ -34,6 +35,7 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [streaming, setStreaming] = useState(false);
   const [model, setModel] = useState('hermes');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
   const [catalog, setCatalog] = useState<{ agent: ModelOption[]; direct: ModelOption[] }>({
     agent: DEFAULT_AGENT_MODELS,
     direct: DEFAULT_DIRECT_MODELS,
@@ -43,10 +45,19 @@ export default function App() {
 
   const models = useAgent ? catalog.agent : catalog.direct;
 
+  // Persist API key to localStorage
+  useEffect(() => {
+    if (apiKey) localStorage.setItem(API_KEY_STORAGE, apiKey);
+    else localStorage.removeItem(API_KEY_STORAGE);
+  }, [apiKey]);
+
   // Load the model catalog from the backend; keep local defaults if unavailable.
+  // Re-fetch when apiKey changes so a newly-entered key picks up the real catalog.
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/models')
+    fetch('/api/models', {
+      headers: apiKey ? { 'X-Api-Key': apiKey } : undefined,
+    })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((data: { agent?: ModelOption[]; direct?: ModelOption[] }) => {
         if (cancelled) return;
@@ -61,7 +72,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [apiKey]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -90,9 +101,12 @@ export default function App() {
     abortRef.current = ctrl;
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (apiKey) headers['X-Api-Key'] = apiKey;
+
       const res = await fetch(API_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           model,
           useHermesBridge: useAgent,
@@ -102,8 +116,9 @@ export default function App() {
       });
 
       if (!res.ok || !res.body) {
-        const detail = res.status === 401 ? 'Autentikasi diperlukan (401).'
+        const detail = res.status === 401 ? 'Autentikasi diperlukan (401). Masukkan API key di sidebar.'
           : res.status === 429 ? 'Terlalu banyak permintaan (429). Coba lagi nanti.'
+          : res.status === 400 ? 'Permintaan tidak valid (400). Periksa input.'
           : `Backend menolak permintaan (${res.status}).`;
         setMessages((prev) => [
           ...prev.slice(0, -1),
@@ -210,6 +225,24 @@ export default function App() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* API Key */}
+        <div className="space-y-1">
+          <label className="text-xs text-slate-500 font-medium flex items-center gap-1">
+            API Key
+            <span className="text-[10px]">{apiKey ? '🔒' : '🔓'}</span>
+          </label>
+          <input
+            type="password"
+            value={apiKey}
+            onChange={(e) => setApiKey(e.target.value)}
+            placeholder="(kosong = tanpa auth)"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500"
+          />
+          <p className="text-[10px] text-slate-600">
+            {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
+          </p>
         </div>
 
         <button

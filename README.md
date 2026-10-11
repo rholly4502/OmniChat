@@ -33,6 +33,11 @@ Web UI dengan 2 mode:
 - ✅ Graceful shutdown (30s timeout — in-flight SSE streams complete during container stop)
 - ✅ Docker Compose memory limits (backend 512 MB, frontend 256 MB)
 
+- ✅ Docker Compose memory limits (backend 512 MB, frontend 256 MB)
+- ✅ Frontend API key authentication (sidebar input, localStorage persistence, `X-Api-Key` header sent on every API request)
+- ✅ JSON structured logging in production (`Console:json` formatter — machine-readable for ELK / Grafana Loki)
+- ✅ Integration test coverage for `/api/models` auth (401 without key, 200 with key)
+
 ## Prerequisites
 
 - .NET SDK 10.0+ ([download](https://dotnet.microsoft.com/download))
@@ -157,6 +162,8 @@ Protected endpoints accept **either** scheme (both are inert until configured):
 Rules: exempt paths (`/health`, `/openapi`) always pass; a present-but-invalid bearer token returns
 `401` (no fallback); with no bearer token the request falls back to the API key when one is configured.
 
+The frontend includes an **API Key** input in the sidebar (stored in `localStorage`). When set, the key is sent as the `X-Api-Key` header on every API request (`/api/models` and `/api/chat/stream`). Leave it empty for unsecured local development.
+
 ```json
 "Security": {
   "ApiKey": "",
@@ -222,3 +229,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 10** ✅ — Security headers & production hardening: `SecurityHeadersMiddleware` adds `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Permitted-Cross-Domain-Policies: none` to every response; Kestrel `Server` header suppressed (`AddServerHeader = false`); README env-var reference table added — 90 tests, 0 warnings
 - **Milestone 11** ✅ — Production startup validation & request safety: `StartupConfigValidator` logs warnings for empty `Security:ApiKey`, `Cors:AllowedOrigins`, and `Security:Jwt:SigningKey` in Production; Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention); JWT issuer/audience env vars documented and forwarded by docker-compose; README typo fixed — 105 tests, 0 warnings
 - **Milestone 12** ✅ — Input validation & production hardening: `ChatRequest`/`ChatMessage` input validation (model max 100 chars, messages max 50 items, role whitelist `user|assistant|system`, content max 8000 chars); graceful shutdown timeout (30s for in-flight SSE streams); Docker Compose memory limits (backend 512 MB, frontend 256 MB); 21 new tests (validation unit + integration + deployment config guards) — 126 tests, 0 warnings
+- **Milestone 13** ✅ — Frontend API key authentication (sidebar input with localStorage persistence, `X-Api-Key` header on every API request, auto-refresh model catalog on key change); JSON structured logging in production (`Console:json` formatter for ELK/Loki); integration tests for `/api/models` auth (401 without key, 200 with key) — 128 tests, 0 warnings
