@@ -97,4 +97,34 @@ public class ChatEndpointIntegrationTests : IClassFixture<WebApplicationFactory<
         // SSE stream should terminate with [DONE]
         Assert.Contains(lines, l => l.Contains("[DONE]"));
     }
+
+    [Fact]
+    public async Task ChatStream_InvalidRole_Returns400()
+    {
+        // Arrange — invalid role triggers RegularExpression validation
+        var invalidBody = """{"model":"test","messages":[{"role":"admin","content":"hi"}]}""";
+        var content = new StringContent(invalidBody, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/chat/stream", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChatStream_TooManyMessages_Returns400()
+    {
+        // Arrange — 51 messages exceeds the MaxLength(50) limit
+        var oneMsg = "{\"role\":\"user\",\"content\":\"hi\"}";
+        var msgs = string.Join(",", Enumerable.Range(0, 51).Select(_ => oneMsg));
+        var invalidBody = "{\"model\":\"test\",\"messages\":[" + msgs + "]}";
+        var content = new StringContent(invalidBody, Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/chat/stream", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

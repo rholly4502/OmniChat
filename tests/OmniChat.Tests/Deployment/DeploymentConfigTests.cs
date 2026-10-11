@@ -183,4 +183,56 @@ public class DeploymentConfigTests
         var program = Read("src/OmniChat.Api/Program.cs");
         Assert.Contains("MaxRequestBodySize", program);
     }
+
+    [Fact]
+    public void DockerCompose_HasBackendMemoryLimit()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.Contains("memory: 512M", compose);
+    }
+
+    [Fact]
+    public void DockerCompose_HasFrontendMemoryLimit()
+    {
+        var compose = Read("docker-compose.yml");
+        Assert.Contains("memory: 256M", compose);
+    }
+
+    [Fact]
+    public void ProgramCs_ConfiguresGracefulShutdownTimeout()
+    {
+        // SSE streams are long-lived; the default 5s shutdown timeout
+        // would cut them off abruptly during container stop.
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("ShutdownTimeout", program);
+    }
+
+    [Fact]
+    public void ChatRequest_HasModelMaxLengthValidation()
+    {
+        var source = Read("src/OmniChat.Api/Domain/Models/ChatRequest.cs");
+        Assert.Contains("MaxLength(100", source);
+    }
+
+    [Fact]
+    public void ChatRequest_HasMessagesMaxCountValidation()
+    {
+        var source = Read("src/OmniChat.Api/Domain/Models/ChatRequest.cs");
+        Assert.Contains("MaxLength(50", source);
+    }
+
+    [Fact]
+    public void ChatMessage_HasRoleValidation()
+    {
+        var source = Read("src/OmniChat.Api/Domain/Models/ChatRequest.cs");
+        Assert.Contains("RegularExpression", source);
+        Assert.Contains("user|assistant|system", source);
+    }
+
+    [Fact]
+    public void ChatMessage_HasContentMaxLengthValidation()
+    {
+        var source = Read("src/OmniChat.Api/Domain/Models/ChatRequest.cs");
+        Assert.Contains("MaxLength(8000", source);
+    }
 }

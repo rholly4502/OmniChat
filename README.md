@@ -29,6 +29,9 @@ Web UI dengan 2 mode:
 - ✅ Security response headers middleware (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `X-Permitted-Cross-Domain-Policies`) + `Server` header suppression
 - ✅ Startup configuration validation (warns on empty API key / CORS / JWT signing key in production)
 - ✅ Request body size limit (Kestrel `MaxRequestBodySize`, configurable, default 10 MB)
+- ✅ Input validation hardening (`ChatRequest`: model max 100 chars, messages max 50 items; `ChatMessage`: role whitelist `[user|assistant|system]`, content max 8000 chars)
+- ✅ Graceful shutdown (30s timeout — in-flight SSE streams complete during container stop)
+- ✅ Docker Compose memory limits (backend 512 MB, frontend 256 MB)
 
 ## Prerequisites
 
@@ -136,6 +139,14 @@ data: {"content":"!"}
 data: [DONE]
 ```
 
+**Validation rules:**
+- `model` — required, max 100 characters
+- `messages` — required, 1–50 items
+- `messages[].role` — must be `user`, `assistant`, or `system`
+- `messages[].content` — required, max 8000 characters
+
+Invalid input returns `400 Bad Request` with a JSON error body listing the violations.
+
 ### Authentication
 
 Protected endpoints accept **either** scheme (both are inert until configured):
@@ -210,3 +221,4 @@ Returns `200 OK` with a JSON body when the service is running:
 - **Milestone 9** ✅ — Container & deployment hardening: runtime image now installs `curl` so the docker-compose healthcheck actually passes (previously `curl` was missing → backend permanently `unhealthy` → frontend never started); added root `.dockerignore` (excludes `.env`/`node_modules`/`bin`/`obj` from the build context); reproducible frontend runtime image (`npm ci` from the lockfile); `Dockerfile` `HEALTHCHECK` for plain `docker run` — 80 tests, 0 warnings
 - **Milestone 10** ✅ — Security headers & production hardening: `SecurityHeadersMiddleware` adds `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `X-Permitted-Cross-Domain-Policies: none` to every response; Kestrel `Server` header suppressed (`AddServerHeader = false`); README env-var reference table added — 90 tests, 0 warnings
 - **Milestone 11** ✅ — Production startup validation & request safety: `StartupConfigValidator` logs warnings for empty `Security:ApiKey`, `Cors:AllowedOrigins`, and `Security:Jwt:SigningKey` in Production; Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention); JWT issuer/audience env vars documented and forwarded by docker-compose; README typo fixed — 105 tests, 0 warnings
+- **Milestone 12** ✅ — Input validation & production hardening: `ChatRequest`/`ChatMessage` input validation (model max 100 chars, messages max 50 items, role whitelist `user|assistant|system`, content max 8000 chars); graceful shutdown timeout (30s for in-flight SSE streams); Docker Compose memory limits (backend 512 MB, frontend 256 MB); 21 new tests (validation unit + integration + deployment config guards) — 126 tests, 0 warnings

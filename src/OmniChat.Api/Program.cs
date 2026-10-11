@@ -16,6 +16,13 @@ builder.WebHost.ConfigureKestrel(options =>
     options.Limits.MaxRequestBodySize = builder.Configuration.GetValue<long?>("Kestrel:MaxRequestBodySizeBytes") ?? 10_485_760;
 });
 
+// Graceful shutdown: give in-flight SSE streams up to 30s to finish during container stop
+// (default is 5s — too short for long-lived streaming connections).
+builder.Services.Configure<HostOptions>(options =>
+{
+    options.ShutdownTimeout = TimeSpan.FromSeconds(30);
+});
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
