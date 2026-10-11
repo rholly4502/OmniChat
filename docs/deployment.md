@@ -29,6 +29,10 @@ docker compose up -d --build
 | `Security__Jwt__Issuer` | `OmniChat` | JWT issuer claim (`Security:Jwt:Issuer`) |
 | `Security__Jwt__Audience` | `OmniChat` | JWT audience claim (`Security:Jwt:Audience`) |
 | `Kestrel__MaxRequestBodySizeBytes` | `10485760` (10 MB) | Maximum request body size in bytes (DoS prevention) |
+| `ReverseProxy__Enabled` | `false` | Process forwarded headers from trusted proxies (`true` only behind a reverse proxy) |
+| `ReverseProxy__KnownProxies` | (empty) | Comma-separated trusted proxy IPs |
+| `ReverseProxy__KnownNetworks` | (empty) | Comma-separated trusted proxy CIDR networks (e.g. `172.18.0.0/16`) |
+| `ReverseProxy__ForwardLimit` | `1` | Max forwarded entries to process |
 | `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
 
 > **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
@@ -121,12 +125,32 @@ server {
 }
 ```
 
+### Restoring the real client IP
+
+The nginx config above already sets `X-Forwarded-For` and `X-Real-IP`, but the
+backend ignores forwarded headers unless you opt in. Set the following in `.env`
+so the per-IP rate limiter and access logs see the real client instead of the
+proxy's address (which would collapse every client into a single 10 req/min
+bucket):
+
+```
+ReverseProxy__Enabled=true
+# The Docker bridge network — trust the proxy running in a sibling container:
+ReverseProxy__KnownNetworks=172.18.0.0/16
+```
+
+Only the proxies/networks listed are trusted; spoofed `X-Forwarded-For` from any
+other source is still ignored. See `.env.example` for the full set of
+`ReverseProxy__*` options.
+
 ## Health Checks
 
 - **Backend:** `GET /health` → `200 OK`
 - **Docker:** Healthcheck configured in docker-compose (30s interval, 3 retries)
 
 ## Rate Limiting
+
+> **Behind a reverse proxy?** Enable `ReverseProxy__Enabled=true` (see `Reverse Proxy` above) or the limiter partitions on the proxy address and every client shares one 10 req/min bucket.
 
 The API enforces a **token bucket** rate limit of 10 requests/minute per client IP on the `/api/chat/stream` endpoint. Exceeding the limit returns `429 Too Many Requests`.
 

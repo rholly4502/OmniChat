@@ -179,4 +179,62 @@ public class StartupConfigValidatorTests
 
         Assert.Contains(logger.Entries, e => e.Message.Contains("Cors"));
     }
+
+    [Fact]
+    public void Validate_ProductionReverseProxyEnabledWithoutTrustedProxies_LogsWarning()
+    {
+        // Enabled but no KnownProxies/KnownNetworks: only loopback is trusted, so the
+        // real client IP is never recovered — worth a warning.
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = "signing-key",
+            ["ReverseProxy:Enabled"] = "true"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Warning && e.Message.Contains("ReverseProxy"));
+    }
+
+    [Fact]
+    public void Validate_ProductionReverseProxyEnabledWithKnownNetwork_NoWarning()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = "signing-key",
+            ["ReverseProxy:Enabled"] = "true",
+            ["ReverseProxy:KnownNetworks:0"] = "172.18.0.0/16"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.Empty(logger.Entries);
+    }
+
+    [Fact]
+    public void Validate_ProductionReverseProxyDisabled_NoWarning()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = "signing-key",
+            ["ReverseProxy:Enabled"] = "false"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.Empty(logger.Entries);
+    }
 }

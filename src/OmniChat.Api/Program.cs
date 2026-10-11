@@ -7,6 +7,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.HttpOverrides;
+using OmniChat.Api.Infrastructure.Networking;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,16 @@ builder.Services.Configure<HostOptions>(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+
+// Reverse-proxy support: process X-Forwarded-For / X-Forwarded-Proto from trusted
+// proxies so rate limiting and access logs see the real client address. Disabled
+// unless ReverseProxy:Enabled=true, so a direct deployment is unaffected.
+var reverseProxy = builder.Configuration.GetSection(ReverseProxyOptions.SectionName).Get<ReverseProxyOptions>()
+    ?? new ReverseProxyOptions();
+if (reverseProxy.Enabled)
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options => ForwardedHeadersSetup.Apply(options, reverseProxy));
+}
 
 // RFC 7807 ProblemDetails: standardize all error responses to a consistent,
 // machine-readable format with `application/problem+json` content type.
@@ -142,6 +154,13 @@ builder.Services.AddRateLimiter(options =>
 });
 
 var app = builder.Build();
+
+// Forwarded headers first: everything downstream (rate limiting, request logging)
+// must observe the real client address and scheme when running behind a proxy.
+if (reverseProxy.Enabled)
+{
+    app.UseForwardedHeaders();
+}
 
 // Enable response compression (must be before middleware that might write responses).
 app.UseResponseCompression();

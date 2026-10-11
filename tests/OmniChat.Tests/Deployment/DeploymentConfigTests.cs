@@ -1,5 +1,6 @@
 using System.IO;
 using OmniChat.Api.Infrastructure.Auth;
+using OmniChat.Api.Infrastructure.Networking;
 
 namespace OmniChat.Tests.Deployment;
 
@@ -325,5 +326,74 @@ public class DeploymentConfigTests
         var src = Read("src/OmniChat.Api/Infrastructure/ProblemDetailsJson.cs");
         Assert.Contains("JsonSerializerDefaults.Web", src);
         Assert.Contains("ProblemDetailsJson", src);
+    }
+
+    // ── Milestone 16: reverse-proxy forwarded headers ──
+
+    [Fact]
+    public void DockerCompose_ForwardsReverseProxySettings()
+    {
+        var prefix = EnvPrefix(ReverseProxyOptions.SectionName);
+        var compose = Read("docker-compose.yml");
+
+        Assert.Contains($"{prefix}__Enabled=", compose);
+        Assert.Contains($"{prefix}__KnownNetworks=", compose);
+        Assert.Contains($"{prefix}__KnownProxies=", compose);
+        Assert.Contains($"{prefix}__ForwardLimit=", compose);
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsReverseProxySettings()
+    {
+        var prefix = EnvPrefix(ReverseProxyOptions.SectionName);
+        var env = Read(".env.example");
+
+        Assert.Contains($"{prefix}__Enabled=", env);
+        Assert.Contains($"{prefix}__KnownNetworks=", env);
+    }
+
+    [Fact]
+    public void DeploymentDoc_DocumentsReverseProxy()
+    {
+        Assert.Contains(ReverseProxyOptions.SectionName, Read("docs/deployment.md"));
+    }
+
+    [Fact]
+    public void AppSettings_DeclareReverseProxySection()
+    {
+        Assert.Contains(ReverseProxyOptions.SectionName, Read("src/OmniChat.Api/appsettings.json"));
+    }
+
+    [Fact]
+    public void ProgramCs_EnablesForwardedHeadersThroughTheSetupHelper()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+
+        Assert.Contains("UseForwardedHeaders", program);
+        Assert.Contains("ForwardedHeadersSetup.Apply", program);
+        Assert.Contains(ReverseProxyOptions.SectionName, program);
+    }
+
+    [Fact]
+    public void ProgramCs_AppliesForwardedHeadersBeforeRateLimiter()
+    {
+        // Ordering is correctness, not style: if the rate limiter runs before the
+        // forwarded headers are applied it partitions on the proxy's IP and every
+        // client shares one bucket.
+        var program = Read("src/OmniChat.Api/Program.cs");
+        var forwarded = program.IndexOf("UseForwardedHeaders", StringComparison.Ordinal);
+        var rateLimiter = program.IndexOf("UseRateLimiter", StringComparison.Ordinal);
+
+        Assert.True(forwarded >= 0, "UseForwardedHeaders must be present in Program.cs");
+        Assert.True(rateLimiter >= 0, "UseRateLimiter must be present in Program.cs");
+        Assert.True(forwarded < rateLimiter,
+            "UseForwardedHeaders must be registered before UseRateLimiter so rate limiting sees the real client IP");
+    }
+
+    [Fact]
+    public void ReverseProxyOptions_UsesForwardedHeadersSectionName()
+    {
+        // Guards against a rename that would silently stop binding the config.
+        Assert.Equal("ReverseProxy", ReverseProxyOptions.SectionName);
     }
 }

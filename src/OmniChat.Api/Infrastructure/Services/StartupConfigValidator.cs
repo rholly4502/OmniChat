@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using OmniChat.Api.Infrastructure.Networking;
 using Microsoft.Extensions.Logging;
 
 namespace OmniChat.Infrastructure.Services;
@@ -24,6 +25,8 @@ public class StartupConfigValidator
     ///   <item>Empty <c>Security:ApiKey</c> — the API is open (no authentication).</item>
     ///   <item>Empty <c>Cors:AllowedOrigins</c> — any website can call the API.</item>
     ///   <item>Empty <c>Security:Jwt:SigningKey</c> — JWT authentication is disabled.</item>
+    ///   <item><c>ReverseProxy:Enabled</c> with no trusted proxies/networks — the real client
+    ///   IP cannot be recovered, so per-IP rate limiting treats every client as one.</item>
     /// </list>
     /// Non-production environments are skipped (these settings are expected to be
     /// empty during local development).
@@ -53,6 +56,18 @@ public class StartupConfigValidator
         {
             _logger.LogWarning(
                 "Security:Jwt:SigningKey is empty — JWT authentication is disabled. Set a signing key via the Security__Jwt__SigningKey environment variable to enable Bearer token auth.");
+        }
+
+        var proxy = _configuration.GetSection(ReverseProxyOptions.SectionName).Get<ReverseProxyOptions>();
+        if (proxy is { Enabled: true })
+        {
+            var hasTrustedProxy = proxy.KnownProxies.Any(p => !string.IsNullOrWhiteSpace(p))
+                || proxy.KnownNetworks.Any(n => !string.IsNullOrWhiteSpace(n));
+            if (!hasTrustedProxy)
+            {
+                _logger.LogWarning(
+                    "ReverseProxy:Enabled is true but ReverseProxy:KnownProxies and ReverseProxy:KnownNetworks are both empty — only loopback proxies are trusted, so the real client IP is not restored and per-IP rate limiting may collapse all clients into one bucket. Set ReverseProxy__KnownNetworks (e.g. the Docker bridge CIDR) or ReverseProxy__KnownProxies.");
+            }
         }
     }
 }
