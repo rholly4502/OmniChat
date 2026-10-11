@@ -174,4 +174,77 @@ public class ChatControllerTests
         Assert.NotEmpty(catalog.Agent);
         Assert.NotEmpty(catalog.Direct);
     }
+
+    [Fact]
+    public async Task StreamChat_WhenServiceThrows_SendsSanitizedErrorEvent()
+    {
+        // Arrange: service throws an exception with a sensitive message mid-stream
+        var sensitiveMessage = "Connection to http://internal-host:5000 failed with API key sk-secret-123";
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(ThrowingAsyncEnumerable(sensitiveMessage));
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true
+        };
+
+        // Act
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        // Assert: the SSE error event must be sent but must NOT contain the exception message
+        _controller.Response.Body.Position = 0;
+        using var reader = new StreamReader(_controller.Response.Body);
+        var output = await reader.ReadToEndAsync();
+
+        // The error event should be present
+        Assert.Contains("error", output);
+
+        // The sensitive exception details must NOT leak to the client
+        Assert.DoesNotContain(sensitiveMessage, output);
+        Assert.DoesNotContain("sk-secret-123", output);
+        Assert.DoesNotContain("internal-host", output);
+    }
+
+    [Fact]
+    public async Task StreamChat_WhenServiceThrows_SendsGenericErrorMessage()
+    {
+        // Arrange
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(ThrowingAsyncEnumerable("System.Net.Sockets.SocketException: Connection refused"));
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true
+        };
+
+        // Act
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        // Assert: the error event contains a generic message, not the exception details
+        _controller.Response.Body.Position = 0;
+        using var reader = new StreamReader(_controller.Response.Body);
+        var output = await reader.ReadToEndAsync();
+
+        Assert.Contains("An internal error occurred", output);
+        Assert.DoesNotContain("SocketException", output);
+        Assert.DoesNotContain("Connection refused", output);
+    }
+
+    /// <summary>
+    /// Creates an IAsyncEnumerable that yields one empty token, then throws.
+    /// The yield is required for the async-iterator to compile (CS8419);
+    /// the exception exercises the controller's catch block.
+    /// </summary>
+    private static async IAsyncEnumerable<string> ThrowingAsyncEnumerable(string exceptionMessage)
+    {
+        await Task.Yield();
+        yield return string.Empty; // satisfy async-iterator requirement
+        throw new InvalidOperationException(exceptionMessage);
+    }
 }

@@ -130,9 +130,44 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        // Assert: error message about status code
+        // Assert: sanitized error message — must NOT leak the upstream status code
         Assert.Single(tokens);
-        Assert.Contains("InternalServerError", tokens[0]);
+        Assert.Contains("Error", tokens[0]);
+        Assert.DoesNotContain("InternalServerError", tokens[0]);
+        Assert.DoesNotContain("500", tokens[0]);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_WhenNonSuccessStatus_DoesNotLeakProviderDetails()
+    {
+        // Arrange: handler returns 401 with a sensitive error body (e.g. API key hint)
+        var sensitiveBody = """{"error":{"message":"Invalid API key: sk-or-v1-abc123","code":"invalid_api_key"}}""";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.Unauthorized)
+        {
+            Content = new StringContent(sensitiveBody)
+        });
+
+        var request = new ChatRequest
+        {
+            Model = "test-model",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = false
+        };
+
+        // Act
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(request))
+        {
+            tokens.Add(token);
+        }
+
+        // Assert: the sensitive upstream body must NOT appear in the client-facing token
+        Assert.Single(tokens);
+        var errorToken = tokens[0];
+        Assert.DoesNotContain("sk-or-v1", errorToken);
+        Assert.DoesNotContain("invalid_api_key", errorToken);
+        Assert.DoesNotContain("Unauthorized", errorToken);
+        Assert.DoesNotContain("401", errorToken);
     }
 
     [Fact]

@@ -98,7 +98,10 @@ public class ChatController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error occurred during chat SSE streaming.");
-            var errorData = $"data: {JsonSerializer.Serialize(new { error = ex.Message })}\n\n";
+            // Sanitize: never send internal exception details to the client.
+            // The SSE response has already started (200 OK), so ExceptionHandlingMiddleware
+            // cannot intervene — send a generic error event instead of ex.Message.
+            var errorData = $"data: {JsonSerializer.Serialize(new { error = "An internal error occurred during streaming." })}\n\n";
             await Response.Body.WriteAsync(Encoding.UTF8.GetBytes(errorData), cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }

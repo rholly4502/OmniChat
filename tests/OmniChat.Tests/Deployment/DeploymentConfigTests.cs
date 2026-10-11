@@ -454,4 +454,47 @@ public class DeploymentConfigTests
         Assert.DoesNotContain("curl", testLine);
         Assert.DoesNotContain("wget", testLine);
     }
+
+    // ── Milestone 18: project metadata & SSE error sanitization ──
+
+    [Fact]
+    public void LicenseFile_ExistsAndContainsMitText()
+    {
+        // A portfolio project must have a LICENSE file — without one the code is
+        // "all rights reserved" by default. MIT is the expected license.
+        Assert.True(Exists("LICENSE"), "LICENSE file is missing from the repo root");
+        var license = Read("LICENSE");
+        Assert.Contains("MIT License", license, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Permission is hereby granted", license, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ChatController_SseErrorEvent_DoesNotLeakExceptionMessage()
+    {
+        // Guard: the SSE error event in ChatController must send a generic message,
+        // not ex.Message (which could leak internal URLs, API keys, or stack traces).
+        var controller = Read("src/OmniChat.Api/Controllers/ChatController.cs");
+
+        // The error event must contain a generic, fixed message
+        Assert.Contains("An internal error occurred during streaming", controller);
+
+        // Must NOT use ex.Message or ex.ToString() in client-facing output
+        Assert.DoesNotContain("error = ex.Message", controller);
+        Assert.DoesNotContain("error = ex.ToString()", controller);
+    }
+
+    [Fact]
+    public void ChatService_ErrorMessage_DoesNotLeakStatusCode()
+    {
+        // Guard: ChatService must not write the upstream provider's HTTP status code
+        // to the SSE channel — it goes straight to the client.
+        var service = Read("src/OmniChat.Api/Infrastructure/Services/ChatService.cs");
+
+        // Must contain the sanitized generic message
+        Assert.Contains("The AI provider returned an error", service);
+
+        // Must NOT contain the old status-code-leaking format
+        Assert.DoesNotContain("Provider responded with status", service);
+        Assert.DoesNotContain("{response.StatusCode}", service);
+    }
 }

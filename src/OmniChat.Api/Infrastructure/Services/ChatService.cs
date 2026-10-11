@@ -75,7 +75,8 @@ public class ChatService : IChatService
             {
                 var errorContent = await response.Content.ReadAsStringAsync(ct);
                 _logger.LogError("LLM API error: {StatusCode} - {Content}", response.StatusCode, errorContent);
-                await writer.WriteAsync($"[Error: Provider responded with status {response.StatusCode}]", ct);
+                // Sanitize: don't reveal the upstream provider's HTTP status to the client.
+                await writer.WriteAsync("[Error: The AI provider returned an error. Please try again.]", ct);
                 writer.TryComplete();
                 return;
             }

@@ -148,7 +148,20 @@ export default function App() {
           if (data === '[DONE]') continue;
           try {
             const parsed = JSON.parse(data);
-            if (parsed.content) {
+            if (parsed.error) {
+              // Backend sent a sanitized error event — display it to the user.
+              setMessages((prev) => {
+                const copy = [...prev];
+                const last = copy[copy.length - 1];
+                copy[copy.length - 1] = {
+                  role: 'assistant',
+                  content: last.content
+                    ? `${last.content}\n\n⚠️ ${parsed.error}`
+                    : `⚠️ ${parsed.error}`,
+                };
+                return copy;
+              });
+            } else if (parsed.content) {
               setMessages((prev) => {
                 const copy = [...prev];
                 copy[copy.length - 1] = {
