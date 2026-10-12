@@ -220,12 +220,12 @@ export default function App() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-cyan-400">OmniChat</h1>
-            <p className="text-xs text-slate-500">Hybrid AI Dashboard · .NET 10</p>
+            <p className="text-xs text-slate-400">Hybrid AI Dashboard · .NET 10</p>
           </div>
           {/* Close button (mobile only) */}
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-slate-500 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg"
+            className="md:hidden text-slate-400 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Close sidebar"
           >
             ✕
@@ -245,7 +245,7 @@ export default function App() {
               <div className="text-sm font-semibold">
                 {useAgent ? '🤖 Agent Mode' : '⚡ Direct Mode'}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-400">
                 {useAgent ? 'Hermes Gateway (tools + memory)' : 'Langsung ke LLM (cepat)'}
               </div>
             </div>
@@ -254,11 +254,11 @@ export default function App() {
 
         {/* Model Selector */}
         <div className="space-y-1">
-          <label htmlFor="model-select" className="text-xs text-slate-500 font-medium">Model</label>
+          <label htmlFor="model-select" className="text-xs text-slate-400 font-medium">Model</label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 min-h-[44px]"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="model-select"
           >
             {models.map((m) => (
@@ -269,7 +269,7 @@ export default function App() {
 
         {/* API Key */}
         <div className="space-y-1">
-          <label htmlFor="api-key-input" className="text-xs text-slate-500 font-medium flex items-center gap-1">
+          <label htmlFor="api-key-input" className="text-xs text-slate-400 font-medium flex items-center gap-1">
             API Key
             <span className="text-xs">{apiKey ? '🔒' : '🔓'}</span>
           </label>
@@ -278,17 +278,17 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="(kosong = tanpa auth)"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 min-h-[44px]"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="api-key-input"
           />
-          <p className="text-xs text-slate-600">
+          <p className="text-xs text-slate-400">
             {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
           </p>
         </div>
 
         <button
           onClick={() => setMessages([])}
-          className="mt-auto text-xs text-slate-500 hover:text-red-400 transition text-left py-3 min-h-[44px] flex items-center"
+          className="mt-auto text-xs text-slate-400 hover:text-red-400 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
         >
           ✕ Clear chat
         </button>
@@ -300,7 +300,7 @@ export default function App() {
         <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg"
+            className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Open menu"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -310,7 +310,7 @@ export default function App() {
             </svg>
           </button>
           <span className="text-sm font-semibold text-cyan-400">OmniChat</span>
-          <span className="text-xs text-slate-500 ml-auto">
+          <span className="text-xs text-slate-400 ml-auto">
             {useAgent ? '🤖 Agent' : '⚡ Direct'}
           </span>
         </div>
@@ -318,7 +318,7 @@ export default function App() {
         {/* Messages */}
         <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
-            <div className="h-full flex items-center justify-center text-slate-600 text-sm text-center px-4">
+            <div className="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
               Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
               {models.find((m) => m.id === model)?.label}
             </div>
@@ -367,12 +367,12 @@ export default function App() {
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
               disabled={streaming}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 md:px-4 py-3 text-base md:text-sm outline-none focus:border-cyan-500 disabled:opacity-50 min-h-[44px]"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 md:px-4 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 disabled:opacity-50 min-h-[44px]"
             />
             {streaming ? (
               <button
                 onClick={stopStreaming}
-                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center"
+                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
               >
                 ⏹ Stop
               </button>
@@ -380,7 +380,7 @@ export default function App() {
               <button
                 onClick={send}
                 disabled={!input.trim()}
-                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center"
+                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
               >
                 Kirim
               </button>
