@@ -19,10 +19,10 @@ WORKDIR /app
 # can bind.
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
-# Copy the minimal preview-only config as vite.config.ts so `vite preview`
-# picks up allowedHosts, proxy, port, and host settings without importing
-# dev-only packages (vitest, react plugin, tailwindcss plugin).
-COPY --chown=node:node frontend/vite.preview.config.ts ./vite.config.ts
+# Copy the minimal preview-only config as vite.config.js (.js not .ts
+# so Vite loads it directly without bundling = no temp file = no EACCES
+# on the root-owned /app/ directory).
+COPY --chown=node:node frontend/vite.preview.config.js ./vite.config.js
 RUN npm ci
 USER node
 

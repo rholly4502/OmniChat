@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 
 /**
  * Minimal config for `vite preview` in production (Docker runtime stage).
- * The full vite.config.ts imports vitest/config + dev plugins (react,
- * tailwindcss) which aren't needed when serving the already-built dist/.
+ * Uses .js (not .ts) so Vite doesn't need to bundle it = no temp file
+ * written to /app/ (which the non-root `node` user can't write to).
  */
 const apiTarget = process.env.VITE_API_PROXY_TARGET ?? 'http://localhost:5184'
 
