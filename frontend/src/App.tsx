@@ -72,6 +72,15 @@ export default function App() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setSidebarOpen(false);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
+
   function toggleMode() {
     const next = !useAgent;
     setUseAgent(next);
@@ -262,7 +271,7 @@ export default function App() {
         <div className="space-y-1">
           <label htmlFor="api-key-input" className="text-xs text-slate-500 font-medium flex items-center gap-1">
             API Key
-            <span className="text-[10px]">{apiKey ? '🔒' : '🔓'}</span>
+            <span className="text-xs">{apiKey ? '🔒' : '🔓'}</span>
           </label>
           <input
             type="password"
@@ -272,7 +281,7 @@ export default function App() {
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 min-h-[44px]"
             id="api-key-input"
           />
-          <p className="text-[10px] text-slate-600">
+          <p className="text-xs text-slate-600">
             {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
           </p>
         </div>
@@ -352,6 +361,8 @@ export default function App() {
           <div className="flex gap-2">
             <input
               value={input}
+              enterKeyHint="send"
+              autoComplete="off"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
