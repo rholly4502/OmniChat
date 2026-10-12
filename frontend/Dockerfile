@@ -19,6 +19,9 @@ WORKDIR /app
 # can bind.
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
+# vite.config.ts is needed at runtime — `vite preview` reads it for
+# allowedHosts, proxy, port, and host settings.
+COPY --chown=node:node frontend/vite.config.ts ./
 RUN npm ci
 USER node
 
