@@ -1,4 +1,4 @@
-# ── Stage 1: Build ──
+# Stage 1: Build React app
 FROM node:22-alpine AS build
 WORKDIR /app
 
@@ -8,25 +8,10 @@ RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
-# ── Stage 2: Serve via Vite preview ──
-FROM node:22-alpine AS runtime
-WORKDIR /app
+# Stage 2: Serve static files with nginx
+FROM nginx:alpine
 
-# Copy the built assets and lockfile as the non-root `node` user (UID 1000,
-# built into node:22-alpine). npm ci runs as root (root-owned node_modules
-# are read-only and readable by node). `vite preview` only reads from dist/
-# and node_modules/ — no write access needed. Port 4173 > 1024 so non-root
-# can bind.
-COPY --from=build --chown=node:node /app/dist ./dist
-COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
-# Copy the minimal preview-only config as vite.config.js (.js not .ts
-# so Vite loads it directly without bundling = no temp file = no EACCES
-# on the root-owned /app/ directory).
-COPY --chown=node:node frontend/vite.preview.config.js ./vite.config.js
-RUN npm ci
-USER node
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 4173
-# `vite preview` proxies /api to $VITE_API_PROXY_TARGET (see frontend/vite.config.ts);
-# docker-compose sets it to http://backend:5184.
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
