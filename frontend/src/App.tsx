@@ -216,7 +216,7 @@ export default function App() {
           {/* Close button (mobile only) */}
           <button
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-slate-500 hover:text-slate-200 p-2 -mr-2"
+            className="md:hidden text-slate-500 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg"
             aria-label="Close sidebar"
           >
             ✕
@@ -245,11 +245,12 @@ export default function App() {
 
         {/* Model Selector */}
         <div className="space-y-1">
-          <label className="text-xs text-slate-500 font-medium">Model</label>
+          <label htmlFor="model-select" className="text-xs text-slate-500 font-medium">Model</label>
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-cyan-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 min-h-[44px]"
+            id="model-select"
           >
             {models.map((m) => (
               <option key={m.id} value={m.id}>{m.label}</option>
@@ -259,7 +260,7 @@ export default function App() {
 
         {/* API Key */}
         <div className="space-y-1">
-          <label className="text-xs text-slate-500 font-medium flex items-center gap-1">
+          <label htmlFor="api-key-input" className="text-xs text-slate-500 font-medium flex items-center gap-1">
             API Key
             <span className="text-[10px]">{apiKey ? '🔒' : '🔓'}</span>
           </label>
@@ -268,7 +269,8 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="(kosong = tanpa auth)"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-cyan-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 min-h-[44px]"
+            id="api-key-input"
           />
           <p className="text-[10px] text-slate-600">
             {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
@@ -277,7 +279,7 @@ export default function App() {
 
         <button
           onClick={() => setMessages([])}
-          className="mt-auto text-xs text-slate-500 hover:text-red-400 transition text-left py-2"
+          className="mt-auto text-xs text-slate-500 hover:text-red-400 transition text-left py-3 min-h-[44px] flex items-center"
         >
           ✕ Clear chat
         </button>
@@ -286,10 +288,10 @@ export default function App() {
       {/* Main */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Mobile top bar */}
-        <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950">
+        <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-slate-400 hover:text-cyan-400 p-1.5 -ml-1"
+            className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg"
             aria-label="Open menu"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -305,7 +307,7 @@ export default function App() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
             <div className="h-full flex items-center justify-center text-slate-600 text-sm text-center px-4">
               Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
@@ -346,7 +348,7 @@ export default function App() {
         </div>
 
         {/* Input */}
-        <div className="p-3 md:p-4 border-t border-slate-800">
+        <div className="p-3 md:p-4 border-t border-slate-800" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
           <div className="flex gap-2">
             <input
               value={input}

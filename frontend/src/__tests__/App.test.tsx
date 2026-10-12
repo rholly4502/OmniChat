@@ -67,7 +67,10 @@ describe('App', () => {
 
   it('renders the OmniChat title', () => {
     render(<App />);
-    expect(screen.getByText('OmniChat')).toBeInTheDocument();
+    // OmniChat appears in both the sidebar <h1> and the mobile top bar <span>
+    const titles = screen.getAllByText('OmniChat');
+    expect(titles.length).toBeGreaterThanOrEqual(1);
+    expect(titles[0]).toBeInTheDocument();
   });
 
   it('renders the subtitle', () => {

@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Mobile UX globals */
+html {
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+
 /* Markdown rendering styles for assistant messages */
 .md-body {
   line-height: 1.6;
