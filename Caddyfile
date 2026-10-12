@@ -1,0 +1,11 @@
+# Caddyfile — reverse proxy + auto SSL (Let's Encrypt)
+# Ganti your-domain.com dengan domain kamu
+your-domain.com {
+	# API requests -> backend (flush_interval -1 = SSE streaming tanpa buffering)
+	reverse_proxy /api/* backend:5184 {
+		flush_interval -1
+	}
+
+	# Everything else -> frontend
+	reverse_proxy /* frontend:4173
+}
