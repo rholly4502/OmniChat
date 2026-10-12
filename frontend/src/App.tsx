@@ -36,6 +36,7 @@ export default function App() {
   const [streaming, setStreaming] = useState(false);
   const [model, setModel] = useState('hermes');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [catalog, setCatalog] = useState<{ agent: ModelOption[]; direct: ModelOption[] }>({
     agent: DEFAULT_AGENT_MODELS,
     direct: DEFAULT_DIRECT_MODELS,
@@ -45,14 +46,11 @@ export default function App() {
 
   const models = useAgent ? catalog.agent : catalog.direct;
 
-  // Persist API key to localStorage
   useEffect(() => {
     if (apiKey) localStorage.setItem(API_KEY_STORAGE, apiKey);
     else localStorage.removeItem(API_KEY_STORAGE);
   }, [apiKey]);
 
-  // Load the model catalog from the backend; keep local defaults if unavailable.
-  // Re-fetch when apiKey changes so a newly-entered key picks up the real catalog.
   useEffect(() => {
     let cancelled = false;
     fetch('/api/models', {
@@ -66,15 +64,10 @@ export default function App() {
           direct: data.direct?.length ? data.direct : DEFAULT_DIRECT_MODELS,
         });
       })
-      .catch(() => {
-        /* offline / unauthorised — keep defaults */
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [apiKey]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
@@ -149,7 +142,6 @@ export default function App() {
           try {
             const parsed = JSON.parse(data);
             if (parsed.error) {
-              // Backend sent a sanitized error event — display it to the user.
               setMessages((prev) => {
                 const copy = [...prev];
                 const last = copy[copy.length - 1];
@@ -171,22 +163,16 @@ export default function App() {
                 return copy;
               });
             }
-          } catch {
-            /* skip partial chunk */
-          }
+          } catch {}
         }
       }
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          {
-            role: 'assistant',
-            content: '⚠️ Koneksi ke backend gagal. Pastikan API .NET berjalan.',
-          },
+          { role: 'assistant', content: '⚠️ Koneksi ke backend gagal. Pastikan API .NET berjalan.' },
         ]);
       } else {
-        // On abort: remove empty assistant placeholder, keep partial content
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last && last.role === 'assistant' && !last.content) {
@@ -202,14 +188,43 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100">
+    <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden">
+      {/* Mobile overlay backdrop */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-72 border-r border-slate-800 p-4 flex flex-col gap-4">
-        <h1 className="text-xl font-bold text-cyan-400">OmniChat</h1>
-        <p className="text-xs text-slate-500">Hybrid AI Dashboard · .NET 10</p>
+      <aside
+        className={`
+          fixed md:static inset-y-0 left-0 z-50
+          w-72 border-r border-slate-800 p-4 flex flex-col gap-4
+          bg-slate-950
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+        `}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-cyan-400">OmniChat</h1>
+            <p className="text-xs text-slate-500">Hybrid AI Dashboard · .NET 10</p>
+          </div>
+          {/* Close button (mobile only) */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden text-slate-500 hover:text-slate-200 p-2 -mr-2"
+            aria-label="Close sidebar"
+          >
+            ✕
+          </button>
+        </div>
 
         {/* Mode Toggle */}
-        <div className="mt-4 space-y-2">
+        <div className="mt-2 space-y-2">
           <label className="flex items-center gap-3 cursor-pointer bg-slate-900 rounded-lg p-3 border border-slate-800 hover:border-cyan-600 transition">
             <input
               type="checkbox"
@@ -234,12 +249,10 @@ export default function App() {
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-cyan-500"
           >
             {models.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.label}
-              </option>
+              <option key={m.id} value={m.id}>{m.label}</option>
             ))}
           </select>
         </div>
@@ -255,7 +268,7 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="(kosong = tanpa auth)"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm outline-none focus:border-cyan-500"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-cyan-500"
           />
           <p className="text-[10px] text-slate-600">
             {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
@@ -264,17 +277,37 @@ export default function App() {
 
         <button
           onClick={() => setMessages([])}
-          className="mt-auto text-xs text-slate-500 hover:text-red-400 transition text-left"
+          className="mt-auto text-xs text-slate-500 hover:text-red-400 transition text-left py-2"
         >
           ✕ Clear chat
         </button>
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col">
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+      <main className="flex-1 flex flex-col min-w-0">
+        {/* Mobile top bar */}
+        <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-slate-400 hover:text-cyan-400 p-1.5 -ml-1"
+            aria-label="Open menu"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <span className="text-sm font-semibold text-cyan-400">OmniChat</span>
+          <span className="text-xs text-slate-500 ml-auto">
+            {useAgent ? '🤖 Agent' : '⚡ Direct'}
+          </span>
+        </div>
+
+        {/* Messages */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
-            <div className="h-full flex items-center justify-center text-slate-600 text-sm">
+            <div className="h-full flex items-center justify-center text-slate-600 text-sm text-center px-4">
               Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
               {models.find((m) => m.id === model)?.label}
             </div>
@@ -285,11 +318,14 @@ export default function App() {
               className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm ${
-                  m.role === 'user'
+                className={`
+                  max-w-[85%] md:max-w-[75%] rounded-2xl px-3.5 md:px-4 py-2.5 md:py-3
+                  text-sm leading-relaxed break-words
+                  ${m.role === 'user'
                     ? 'bg-cyan-600 text-white rounded-br-sm'
                     : 'bg-slate-900 border border-slate-800 rounded-bl-sm'
-                }`}
+                  }
+                `}
               >
                 {m.role === 'assistant' && !m.content ? (
                   <span className="inline-flex gap-1 items-center py-1">
@@ -310,7 +346,7 @@ export default function App() {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-slate-800">
+        <div className="p-3 md:p-4 border-t border-slate-800">
           <div className="flex gap-2">
             <input
               value={input}
@@ -318,12 +354,12 @@ export default function App() {
               onKeyDown={(e) => e.key === 'Enter' && send()}
               placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
               disabled={streaming}
-              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-cyan-500 disabled:opacity-50"
+              className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 md:px-4 py-3 text-base md:text-sm outline-none focus:border-cyan-500 disabled:opacity-50 min-h-[44px]"
             />
             {streaming ? (
               <button
                 onClick={stopStreaming}
-                className="bg-red-600 hover:bg-red-500 rounded-xl px-6 text-sm font-semibold transition"
+                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center"
               >
                 ⏹ Stop
               </button>
@@ -331,7 +367,7 @@ export default function App() {
               <button
                 onClick={send}
                 disabled={!input.trim()}
-                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-6 text-sm font-semibold transition"
+                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center"
               >
                 Kirim
               </button>
