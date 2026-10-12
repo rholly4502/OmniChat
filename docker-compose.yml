@@ -29,6 +29,9 @@ services:
       # Model catalog — optional JSON arrays (see .env.example). Empty = built-in defaults.
       - Models__Agent=${Models__Agent:-}
       - Models__Direct=${Models__Direct:-}
+      # Rate limiting — token bucket per IP. Defaults: 10 tokens / 60s.
+      - RateLimit__TokenLimit=${RateLimit__TokenLimit:-10}
+      - RateLimit__ReplenishmentPeriodSeconds=${RateLimit__ReplenishmentPeriodSeconds:-60}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s

@@ -13,7 +13,7 @@ Web UI dengan 2 mode:
 - ✅ Model selector dropdown
 - ✅ Health check endpoint (`/health`)
 - ✅ Global exception handling middleware
-- ✅ Rate limiting (10 req/min per IP)
+- ✅ Configurable rate limiting (token-bucket per IP — tune via `RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`, default 10 req/min)
 - ✅ Docker containerization (multi-stage build)
 - ✅ Integration tests (WebApplicationFactory)
 - ✅ OpenAPI documentation
@@ -310,6 +310,8 @@ cd frontend && npm run build
 | `VITE_API_PROXY_TARGET` | — | No (Docker override) | Frontend `/api` proxy target. Docker sets `http://backend:5184` |
 | `Models__Agent` | `Models:Agent` | No (built-in defaults) | Hermes/Agent model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults. Indexed keys (`Models__Agent__0__Id=…`) also work and win when both are set |
 | `Models__Direct` | `Models:Direct` | No (built-in defaults) | Direct-provider model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults |
+| `RateLimit__TokenLimit` | `RateLimit:TokenLimit` | No (default: `10`) | Max requests per period per client IP (token-bucket) |
+| `RateLimit__ReplenishmentPeriodSeconds` | `RateLimit:ReplenishmentPeriodSeconds` | No (default: `60`) | Token replenishment period in seconds |
 
 > **⚠️ Security:** `Security__ApiKey` and `Cors__AllowedOrigins` **must** be set in any non-local deployment. Empty values mean the API is open and accepts requests from any origin.
 

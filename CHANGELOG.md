@@ -6,6 +6,17 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 ## [Unreleased]
 
 ### Added
+- **Milestone 23** — Configurable rate limiting: the per-IP token-bucket rate
+  limiter (previously hardcoded to 10 req/min) is now configurable via two
+  environment variables: `RateLimit__TokenLimit` (default: 10) and
+  `RateLimit__ReplenishmentPeriodSeconds` (default: 60). Added `RateLimitOptions`
+  class in `Infrastructure/Networking/`; wired into `Program.cs` so both the
+  `chatPolicy` token-bucket limiter and the per-IP partition read the configured
+  values. `.env.example`, `docker-compose.yml`, `appsettings.json`, and the
+  README environment-variables table document the new settings. Backward
+  compatible: existing deployments without the new env vars use the same
+  10 req/min defaults. 9 new tests (4 unit, 1 integration with custom config,
+  4 deployment-config guards). 236 backend tests + 23 frontend tests, 0 warnings.
 - **Milestone 22** — Frontend component testing: added Vitest + @testing-library/react
   + @testing-library/jest-dom + jsdom to the frontend devDependencies; 23 component
   tests covering rendering (title, subtitle, mode toggle, model selector, API key

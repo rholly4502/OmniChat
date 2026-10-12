@@ -704,6 +704,43 @@ public class DeploymentConfigTests
         Assert.Contains("__tests__", tsconfig);
     }
 
+    // ── Milestone 23: configurable rate limiting ──
+
+    [Fact]
+    public void DockerCompose_ForwardsRateLimitSettings()
+    {
+        var prefix = EnvPrefix(RateLimitOptions.SectionName);
+        var compose = Read("docker-compose.yml");
+
+        Assert.Contains($"{prefix}__TokenLimit=", compose);
+        Assert.Contains($"{prefix}__ReplenishmentPeriodSeconds=", compose);
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsRateLimitSettings()
+    {
+        var prefix = EnvPrefix(RateLimitOptions.SectionName);
+        var env = Read(".env.example");
+
+        Assert.Contains($"{prefix}__TokenLimit=", env);
+        Assert.Contains($"{prefix}__ReplenishmentPeriodSeconds=", env);
+    }
+
+    [Fact]
+    public void AppSettings_DeclaresRateLimitSection()
+    {
+        Assert.Contains(RateLimitOptions.SectionName, Read("src/OmniChat.Api/appsettings.json"));
+    }
+
+    [Fact]
+    public void ProgramCs_ReadsRateLimitOptionsFromConfig()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("RateLimitOptions", program);
+        Assert.Contains("rateLimitOpts.TokenLimit", program);
+        Assert.Contains("rateLimitOpts.ReplenishmentPeriodSeconds", program);
+    }
+
     /// <summary>
     /// Extracts a markdown section starting at <paramref name="heading"/> up to the
     /// next heading of the same or higher level (## or ###).

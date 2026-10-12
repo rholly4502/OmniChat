@@ -112,7 +112,10 @@ builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 // Startup configuration validator — warns on insecure production settings
 builder.Services.AddSingleton<StartupConfigValidator>();
 
-// Rate limiting: token bucket — 10 requests/minute per client IP
+// Configurable rate limiting: token bucket per client IP.
+// Defaults: 10 tokens / 60s — tune via RateLimit__TokenLimit / RateLimit__ReplenishmentPeriodSeconds.
+var rateLimitOpts = builder.Configuration.GetSection(RateLimitOptions.SectionName).Get<RateLimitOptions>()
+    ?? new RateLimitOptions();
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -137,9 +140,9 @@ builder.Services.AddRateLimiter(options =>
     };
     options.AddTokenBucketLimiter("chatPolicy", tokenOptions =>
     {
-        tokenOptions.TokenLimit = 10;
-        tokenOptions.TokensPerPeriod = 10;
-        tokenOptions.ReplenishmentPeriod = TimeSpan.FromMinutes(1);
+        tokenOptions.TokenLimit = rateLimitOpts.TokenLimit;
+        tokenOptions.TokensPerPeriod = rateLimitOpts.TokenLimit;
+        tokenOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(rateLimitOpts.ReplenishmentPeriodSeconds);
         tokenOptions.AutoReplenishment = true;
     });
     options.AddPolicy("per-ip", context =>
@@ -147,9 +150,9 @@ builder.Services.AddRateLimiter(options =>
         var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return RateLimitPartition.GetTokenBucketLimiter(ipAddress, _ => new TokenBucketRateLimiterOptions
         {
-            TokenLimit = 10,
-            TokensPerPeriod = 10,
-            ReplenishmentPeriod = TimeSpan.FromMinutes(1),
+            TokenLimit = rateLimitOpts.TokenLimit,
+            TokensPerPeriod = rateLimitOpts.TokenLimit,
+            ReplenishmentPeriod = TimeSpan.FromSeconds(rateLimitOpts.ReplenishmentPeriodSeconds),
             AutoReplenishment = true,
             QueueLimit = 0,
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst

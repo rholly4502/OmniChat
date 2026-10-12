@@ -29,4 +29,28 @@ public class RateLimitIntegrationTests
         using var throttled = await client.PostAsync("/api/chat/stream", InvalidBody());
         Assert.Equal(HttpStatusCode.TooManyRequests, throttled.StatusCode);
     }
+
+    [Fact]
+    public async Task ChatStream_CustomRateLimit_Returns429AtConfiguredThreshold()
+    {
+        // Override RateLimit:TokenLimit to 2 so the bucket is small enough to exhaust
+        // quickly without firing 10 requests. ReplenishmentPeriod=3600 prevents tokens
+        // from refilling during the test.
+        using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder => builder
+                .UseSetting("RateLimit:TokenLimit", "2")
+                .UseSetting("RateLimit:ReplenishmentPeriodSeconds", "3600"));
+        using var client = factory.CreateClient();
+
+        // 2 requests fit within the custom token limit.
+        for (var i = 0; i < 2; i++)
+        {
+            using var allowed = await client.PostAsync("/api/chat/stream", InvalidBody());
+            Assert.Equal(HttpStatusCode.BadRequest, allowed.StatusCode);
+        }
+
+        // The 3rd request exhausts the 2-token bucket and must be rejected.
+        using var throttled = await client.PostAsync("/api/chat/stream", InvalidBody());
+        Assert.Equal(HttpStatusCode.TooManyRequests, throttled.StatusCode);
+    }
 }
