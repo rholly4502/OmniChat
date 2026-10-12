@@ -24,6 +24,11 @@ export default defineConfig({
   // Dockerfile serves with. Without this /api would 404 in Docker.
   preview: {
     proxy: apiProxy,
+    // Allow all host headers when behind a reverse proxy (Caddy/Nginx).
+    // Vite preview blocks non-localhost hosts by default since v5.
+    host: true,
+    port: 4173,
+    allowedHosts: true,
   },
   test: {
     environment: 'jsdom',
