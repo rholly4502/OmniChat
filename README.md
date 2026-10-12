@@ -78,15 +78,25 @@ OmniChat/
 └── OmniChat.slnx             → .NET 10 XML solution file
 ```
 
+
 ## API Reference
 
 ### Authentication
 
-All `/api/*` endpoints require an API key sent as the `X-Api-Key` header.
-If `Security__ApiKey` is empty the API is open (pass-through).
+Protected endpoints accept **either** scheme (both are inert until configured):
 
-JWT Bearer auth is optional — enable by setting `Security__Jwt__SigningKey`.
-When set, `Authorization: Bearer <token>` is validated (HMAC-SHA256, issuer + audience + lifetime).
+- `X-Api-Key: <key>` — set via `Security:ApiKey` (constant-time compare).
+- `Authorization: Bearer <token>` — enabled when `Security:Jwt:SigningKey` is set.
+  Validates HMAC-SHA256 signature, issuer, audience, and lifetime.
+
+Rules: exempt paths (`/health`, `/openapi`) always pass; a present-but-invalid
+bearer token returns `401` (no fallback); with no bearer token the request
+falls back to the API key when one is configured. If `Security:ApiKey` is empty
+the API is open (pass-through).
+
+The frontend includes an **API Key** input in the sidebar (stored in
+`localStorage`). When set, the key is sent as the `X-Api-Key` header on every
+API request (`/api/models` and `/api/chat/stream`).
 
 ### Endpoints
 
@@ -129,15 +139,22 @@ data: [DONE]
 data: {"error":"An internal error occurred during streaming."}
 ```
 
-**Validation constraints:**
-- `model` — max 100 chars
-- `messages` — max 50 items
-- `message.role` — `user` | `assistant` | `system`
-- `message.content` — max 8000 chars
+**Validation rules:**
+- `model` — required, max 100 characters
+- `messages` — required, 1–50 items
+- `messages[].role` — must be `user`, `assistant`, or `system`
+- `messages[].content` — required, max 8000 characters
+
+Invalid input returns `400 Bad Request` as an RFC 7807 `ValidationProblemDetails`
+response (see [Error Responses](#error-responses-rfc-7807) below).
 
 ### GET /api/models
 
 Returns the model catalog grouped by chat mode (`Cache-Control: public, max-age=60`).
+
+Configure via the `Models` config section (see [Environment Variables](#environment-variables)):
+a JSON array in `Models__Agent`/`Models__Direct`, indexed keys, or `appsettings.json`.
+Unset or malformed values fall back to the built-in list.
 
 **Response:**
 ```json
@@ -159,31 +176,56 @@ Returns enriched health information (exempt from auth).
 ```json
 {
   "status": "Healthy",
-  "version": "1.0.0",
-  "uptime": "00:05:23"
+  "version": "1.0.0.0",
+  "uptimeSeconds": 42,
+  "checks": []
 }
 ```
 
 ### Error Responses (RFC 7807)
 
-All errors use `application/problem+json` with a consistent schema:
+All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807)
+format with `application/problem+json` content type. Every error includes a
+`traceId` for correlating with server logs.
 
+**Common structure:**
 ```json
 {
-  "title": "Validation Failed",
-  "status": 400,
-  "errors": { "Messages": ["..."] },
+  "title": "Unauthorized",
+  "status": 401,
+  "detail": "Missing or invalid API key.",
   "instance": "/api/chat/stream",
   "traceId": "00-abc123..."
 }
 ```
 
-| Status | Title |
-|--------|-------|
-| 400 | Validation Failed |
-| 401 | Unauthorized |
-| 429 | Too Many Requests (includes `Retry-After` header) |
-| 500 | Internal Server Error |
+| Status | Title | When |
+|--------|-------|------|
+| 400 | Validation Failed | Invalid request body (missing/empty fields, role not in `user\|assistant\|system`, etc.) — includes an `errors` dictionary |
+| 401 | Unauthorized | Missing or invalid `X-Api-Key` / `Authorization: Bearer` token |
+| 429 | Too Many Requests | Rate limit exceeded — includes a `Retry-After` header (seconds) |
+| 500 | Internal Server Error | Unhandled server exception — `detail` is generic, `traceId` for debugging |
+
+**Validation error example (400):**
+```json
+{
+  "title": "Validation Failed",
+  "status": 400,
+  "errors": {
+    "Messages": ["The Messages field is required."],
+    "Model": ["The Model field is required."]
+  },
+  "traceId": "00-abc123..."
+}
+```
+
+### OpenAPI Schema (Development only)
+
+In Development mode, the OpenAPI schema is served at `/openapi/v1.json` with
+enriched document metadata (title, description, version, contact, MIT license)
+via `IOpenApiDocumentTransformer`. The schema includes all endpoint paths, HTTP
+methods, response status codes (200, 400, 401, 429), and content types.
+This is disabled in Production to avoid exposing API metadata.
 
 ### curl Examples
 
@@ -243,124 +285,6 @@ dotnet test OmniChat.slnx -c Release
 cd frontend && npm run build
 ```
 
-## API
-
-### `GET /api/models` — Model Catalog
-
-Returns the selectable models grouped by chat mode (values come from the `Models` config section).
-
-Configure via the `Models` config section (see [Environment Variables](#environment-variables)):
-a JSON array in `Models__Agent`/`Models__Direct`, indexed keys, or `appsettings.json`. Unset/invalid values fall back to the built-in list.
-
-```json
-{
-  "agent":  [ { "id": "hermes", "label": "Hermes (Default)" } ],
-  "direct": [ { "id": "nvidia/nemotron-3.5-lightning:free", "label": "Nemotron 3.5 (Free)" } ]
-}
-```
-
-
-### `POST /api/chat/stream` — SSE Endpoint
-
-**Body:**
-```json
-{
-  "model": "default",
-  "messages": [
-    { "role": "user", "content": "Hello!" }
-  ],
-  "useHermesBridge": true
-}
-```
-
-**Response:** `text/event-stream`
-```
-data: {"content":"Hello"}
-data: {"content":"!"}
-data: [DONE]
-```
-
-**Validation rules:**
-- `model` — required, max 100 characters
-- `messages` — required, 1–50 items
-- `messages[].role` — must be `user`, `assistant`, or `system`
-- `messages[].content` — required, max 8000 characters
-
-Invalid input returns `400 Bad Request` as an RFC 7807 `ValidationProblemDetails` response (see [Error Responses](#error-responses) below).
-
-### Authentication
-
-Protected endpoints accept **either** scheme (both are inert until configured):
-
-- `X-Api-Key: <key>` — set via `Security:ApiKey` (constant-time compare).
-- `Authorization: Bearer <jwt>` — enabled when `Security:Jwt:SigningKey` is set.
-
-Rules: exempt paths (`/health`, `/openapi`) always pass; a present-but-invalid bearer token returns
-`401` (no fallback); with no bearer token the request falls back to the API key when one is configured.
-
-The frontend includes an **API Key** input in the sidebar (stored in `localStorage`). When set, the key is sent as the `X-Api-Key` header on every API request (`/api/models` and `/api/chat/stream`). Leave it empty for unsecured local development.
-
-```json
-"Security": {
-  "ApiKey": "",
-  "Jwt": { "SigningKey": "", "Issuer": "OmniChat", "Audience": "OmniChat" }
-}
-```
-
-### OpenAPI Schema (Development only)
-
-In Development mode, the OpenAPI schema is served at `/openapi/v1.json` with enriched
-document metadata (title, description, version, contact, MIT license) via
-`IOpenApiDocumentTransformer`. The schema includes all endpoint paths, HTTP methods,
-response status codes (200, 400, 401, 429), and content types.
-This is disabled in Production to avoid exposing API metadata.
-
-### `GET /health` — Health Check
-
-Returns `200 OK` with a JSON body when the service is running:
-```json
-{
-  "status": "Healthy",
-  "version": "1.0.0.0",
-  "uptimeSeconds": 42,
-  "checks": []
-}
-```
-
-## Error Responses
-
-All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.ietf.org/doc/html/rfc7807) format with `application/problem+json` content type. Every error includes a `traceId` for correlating with server logs.
-
-**Common structure:**
-```json
-{
-  "title": "Unauthorized",
-  "status": 401,
-  "detail": "Missing or invalid API key.",
-  "instance": "/api/chat/stream",
-  "traceId": "00-abc123..."
-}
-```
-
-| Status | Title | When |
-|--------|-------|------|
-| 400 | Validation Failed | Invalid request body (missing/empty fields, role not in `user\|assistant\|system`, etc.) — includes an `errors` dictionary |
-| 401 | Unauthorized | Missing or invalid `X-Api-Key` / `Authorization: Bearer` token |
-| 429 | Too Many Requests | Rate limit exceeded — includes a `Retry-After` header (seconds) |
-| 500 | Internal Server Error | Unhandled server exception — `detail` is generic, `traceId` for debugging |
-
-**Validation error example (400):**
-```json
-{
-  "title": "Validation Failed",
-  "status": 400,
-  "errors": {
-    "Messages": ["The Messages field is required."],
-    "Model": ["The Model field is required."]
-  },
-  "traceId": "00-abc123..."
-}
-```
 
 ## Environment Variables
 
@@ -421,3 +345,4 @@ All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.iet
 - **Milestone 17** ✅ — Model-catalog configurability & deployment-config completeness: `ModelCatalogService` exposes public section constants and accepts a single JSON-array env var (`Models__Agent`/`Models__Direct`) in addition to indexed keys, with malformed JSON logged and falling back to defaults; docker-compose forwards the catalog vars; `.env.example`, README and `deployment.md` document them; the `frontend` docker-compose service gains a `node`-based readiness healthcheck (no curl/wget dependency); deployment-config regression guards extended — 189 tests, 0 warnings
 - **Milestone 18** ✅ — SSE error sanitization & project metadata: `ChatController.StreamChat` catch block now sends a generic `"An internal error occurred during streaming."` error event via `JsonSerializer.Serialize` instead of `ex.Message` (which could leak internal URLs, API keys, and stack traces to the client since the SSE response has already started and `ExceptionHandlingMiddleware` cannot intervene); `ChatService.ProduceTokensAsync` upstream-error message sanitized to not reveal the provider's HTTP status code; frontend `App.tsx` now handles `parsed.error` in SSE events and displays them to the user instead of silently ignoring them; MIT `LICENSE` file added; CI workflow updated with NuGet cache + frontend `npm run lint` step. 11 new tests (2 ChatController sanitization + 2 ChatService leak prevention + 3 deployment config guards + 4 updated existing tests). 200 tests, 0 warnings, frontend builds, CI green.
 - **Milestone 19** ✅ — OpenAPI document enrichment & CHANGELOG: `/openapi/v1.json` now carries document-level metadata (title "OmniChat API", description, version, contact, MIT license) via `IOpenApiDocumentTransformer` instead of bare defaults; `StreamChat` action declares `401 Unauthorized` in its OpenAPI response types (auth middleware can reject before the action runs); `CHANGELOG.md` added documenting all milestones (M1–M19) in Keep a Changelog format. 7 integration tests (OpenAPI metadata: title, version, description, contact, license, paths, status codes) + 4 deployment config guards. 211 tests, 0 warnings, frontend builds, CI green.
+- **Milestone 20** ✅ — Non-root container hardening + API reference docs: backend Dockerfile runs as `app` (UID 101); frontend runs as `node` (UID 1000); both use `--chown` on COPY, `no-new-privileges:true`, and `cap_drop: ALL` in docker-compose; README gains a structured API Reference section (endpoint table, curl examples, request/response schemas, SSE event format, RFC 7807 error table, validation constraints) — 219 tests, 0 warnings

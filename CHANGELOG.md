@@ -6,6 +6,14 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 ## [Unreleased]
 
 ### Added
+- **Milestone 21** — README documentation consolidation: merged the two
+  overlapping API sections ("## API Reference" + "## API" + "## Error Responses")
+  into a single structured section; fixed the health-check response example to
+  match the actual `HealthResponseWriter` output (`uptimeSeconds` integer, not
+  `uptime` string); added M20 to the README milestones list; standardised curl
+  placeholder text. 4 new deployment-config guard tests (single API section,
+  health example format, milestones list includes M20, OpenAPI subsection
+  preserved). 223 tests, 0 warnings.
 - **Milestone 20** — Non-root container hardening + API reference:
   - Backend Dockerfile runs as `app` (UID 101, built into aspnet:10.0); frontend
     runs as `node` (UID 1000, built into node:22-alpine). Both use `--chown` on

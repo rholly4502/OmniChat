@@ -610,4 +610,76 @@ public class DeploymentConfigTests
         Assert.Contains("ALL", frontendBlock);
     }
 
+    // ── Milestone 21: README documentation consolidation ──
+
+    [Fact]
+    public void Readme_HasSingleApiReferenceSection()
+    {
+        // The README previously had two overlapping API sections ("## API Reference" and
+        // "## API") plus a separate "## Error Responses" section that duplicated content.
+        // After consolidation there should be exactly one "## API Reference" and no
+        // standalone "## API" or "## Error Responses" sections.
+        var readme = Read("README.md");
+
+        Assert.Contains("## API Reference", readme);
+        // No duplicate/legacy top-level API or error-response sections.
+        Assert.DoesNotContain("\n## API\n", readme);
+        Assert.DoesNotContain("\n## Error Responses\n", readme);
+    }
+
+    [Fact]
+    public void Readme_HealthExample_MatchesActualResponseFormat()
+    {
+        // The README health example must match the actual HealthResponseWriter output:
+        // the field is "uptimeSeconds" (integer), NOT "uptime" (string).
+        // A stale example misleads anyone copying it into monitoring tooling.
+        var readme = Read("README.md");
+        var healthSection = ExtractSection(readme, "### GET /health");
+
+        Assert.Contains("uptimeSeconds", healthSection);
+        Assert.DoesNotContain("\"uptime\"", healthSection);
+        Assert.Contains("checks", healthSection);
+    }
+
+    [Fact]
+    public void Readme_MilestonesList_IncludesMilestone20()
+    {
+        // M20 (non-root containers + API reference docs) was committed but missing
+        // from the README milestones list. Guard against it disappearing again.
+        var readme = Read("README.md");
+        var milestonesSection = ExtractSection(readme, "## Milestones");
+
+        Assert.Contains("Milestone 19", milestonesSection);
+        Assert.Contains("Milestone 20", milestonesSection);
+    }
+
+    [Fact]
+    public void Readme_HasOpenApiSchemaSubsection()
+    {
+        // The OpenAPI Schema subsection was in the old "## API" section. After
+        // consolidation it must still exist somewhere under API Reference.
+        var readme = Read("README.md");
+        Assert.Contains("### OpenAPI Schema", readme);
+        Assert.Contains("IOpenApiDocumentTransformer", readme);
+    }
+
+    /// <summary>
+    /// Extracts a markdown section starting at <paramref name="heading"/> up to the
+    /// next heading of the same or higher level (## or ###).
+    /// </summary>
+    private static string ExtractSection(string markdown, string heading)
+    {
+        var start = markdown.IndexOf(heading, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Section '{heading}' not found in markdown");
+
+        // Find the next ## or ### heading after this one (at the start of a line).
+        var searchFrom = start + heading.Length;
+        var nextHeading = markdown.IndexOf("\n## ", searchFrom, StringComparison.Ordinal);
+        if (nextHeading < 0)
+            nextHeading = markdown.Length;
+
+        return markdown[start..nextHeading];
+    }
+
+
 }
