@@ -438,8 +438,8 @@ public class DeploymentConfigTests
     public void DockerCompose_FrontendHasHealthcheck()
     {
         // The frontend service must have its own readiness probe so `docker compose ps`
-        // reports whether the preview server is actually serving. It uses Node's global
-        // `fetch`, so it must NOT depend on curl/wget being present in node:22-alpine.
+        // reports whether nginx is actually serving. nginx:alpine ships BusyBox wget
+        // (no curl), so the probe uses wget to hit the frontend HTTP server.
         var compose = Read("docker-compose.yml");
         var frontendBlock = compose[compose.IndexOf("  frontend:", StringComparison.Ordinal)..];
 
@@ -449,10 +449,10 @@ public class DeploymentConfigTests
         var testLine = frontendBlock
             .Split('\n')
             .First(line => line.Contains("test:", StringComparison.Ordinal));
-        Assert.Contains("node", testLine);
-        Assert.Contains("fetch(", testLine);
+        // nginx:alpine has BusyBox wget, not curl.
+        Assert.Contains("wget", testLine);
+        Assert.Contains("4173", testLine);
         Assert.DoesNotContain("curl", testLine);
-        Assert.DoesNotContain("wget", testLine);
     }
 
     // ── Milestone 18: project metadata & SSE error sanitization ──
@@ -559,18 +559,19 @@ public class DeploymentConfigTests
     [Fact]
     public void FrontendDockerfile_RunsAsNonRootUser()
     {
-        // The frontend container must not run as root. node:22-alpine ships a
-        // `node` user (UID 1000) — the Dockerfile must switch to it.
+        // The frontend container must not run as root. nginx:alpine ships a
+        // `nginx` user (UID 101) — the Dockerfile must switch to it.
         var dockerfile = Read("frontend/Dockerfile");
-        Assert.Contains("USER node", dockerfile);
+        Assert.Contains("USER nginx", dockerfile);
     }
 
     [Fact]
     public void FrontendDockerfile_CopiesAssetsAsNonRootOwner()
     {
-        // Built assets must be owned by the `node` user so vite preview can read them.
+        // nginx cache/temp dirs and static assets must be owned by the `nginx` user
+        // so the non-root container can read them without CAP_CHOWN.
         var dockerfile = Read("frontend/Dockerfile");
-        Assert.Contains("--chown=node:node", dockerfile);
+        Assert.Contains("nginx:nginx", dockerfile);
     }
 
     [Fact]
@@ -739,6 +740,77 @@ public class DeploymentConfigTests
         Assert.Contains("RateLimitOptions", program);
         Assert.Contains("rateLimitOpts.TokenLimit", program);
         Assert.Contains("rateLimitOpts.ReplenishmentPeriodSeconds", program);
+    }
+
+
+    // ── Milestone 24: nginx frontend proxy + non-root fix ──
+
+    [Fact]
+    public void FrontendNginxConfig_ProxiesApiToBackend()
+    {
+        // The frontend Docker image serves with nginx (not vite preview), so
+        // nginx.conf must proxy /api/* to the backend service. Without this, API
+        // calls from the Docker frontend get 404 (nginx serves index.html instead).
+        var nginxConf = Read("frontend/nginx.conf");
+        Assert.Contains("location /api/", nginxConf);
+        Assert.Contains("proxy_pass", nginxConf);
+        Assert.Contains("backend:5184", nginxConf);
+    }
+
+    [Fact]
+    public void FrontendNginxConfig_HasSseProxySupport()
+    {
+        // SSE streaming requires proxy_buffering off and a long read timeout,
+        // otherwise nginx buffers chunks and the client sees nothing until the
+        // stream completes.
+        var nginxConf = Read("frontend/nginx.conf");
+        Assert.Contains("proxy_buffering off", nginxConf);
+        Assert.Contains("proxy_read_timeout", nginxConf);
+        Assert.Contains("Connection", nginxConf);
+    }
+
+    [Fact]
+    public void FrontendNginxConfig_ListensOnCorrectPort()
+    {
+        var nginxConf = Read("frontend/nginx.conf");
+        Assert.Contains("listen 4173", nginxConf);
+    }
+
+    [Fact]
+    public void FrontendNginxConfig_HasSpaFallback()
+    {
+        var nginxConf = Read("frontend/nginx.conf");
+        Assert.Contains("try_files $uri $uri/ /index.html", nginxConf);
+    }
+
+    [Fact]
+    public void FrontendDockerfile_PrecreatesNginxCacheDirs()
+    {
+        // The Dockerfile must pre-create and chown nginx cache/temp dirs so the
+        // container can run as non-root (USER nginx) without CAP_CHOWN.
+        var dockerfile = Read("frontend/Dockerfile");
+        Assert.Contains("/var/cache/nginx", dockerfile);
+        Assert.Contains("chown", dockerfile);
+    }
+
+    [Fact]
+    public void FrontendDockerfile_FixesPidPathForNonRoot()
+    {
+        // The default PID path (/var/run/nginx.pid) is not writable by non-root.
+        // The Dockerfile must redirect it to /tmp.
+        var dockerfile = Read("frontend/Dockerfile");
+        Assert.Contains("/tmp/nginx.pid", dockerfile);
+    }
+
+    [Fact]
+    public void DockerCompose_FrontendDoesNotPassViteProxyTarget()
+    {
+        // VITE_API_PROXY_TARGET was for vite preview. Since the frontend now
+        // uses nginx with a hardcoded proxy_pass, this env var is unnecessary
+        // in Docker and should not be forwarded (avoids confusion).
+        var compose = Read("docker-compose.yml");
+        var frontendBlock = compose[compose.IndexOf("  frontend:", StringComparison.Ordinal)..];
+        Assert.DoesNotContain("VITE_API_PROXY_TARGET", frontendBlock);
     }
 
     /// <summary>

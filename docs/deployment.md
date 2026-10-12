@@ -33,9 +33,11 @@ docker compose up -d --build
 | `ReverseProxy__KnownProxies` | (empty) | Comma-separated trusted proxy IPs |
 | `ReverseProxy__KnownNetworks` | (empty) | Comma-separated trusted proxy CIDR networks (e.g. `172.18.0.0/16`) |
 | `ReverseProxy__ForwardLimit` | `1` | Max forwarded entries to process |
-| `VITE_API_PROXY_TARGET` | `http://backend:5184` (Docker) | Target the frontend `/api` proxy forwards to |
+| `VITE_API_PROXY_TARGET` | `http://localhost:5184` (local dev) | Vite dev/preview proxy target. Not used in Docker (nginx handles /api proxy) |
 | `Models__Agent` | built-in | Hermes/Agent model list (JSON array of `{"Id","Label"}`). Empty = defaults |
 | `Models__Direct` | built-in | Direct-provider model list (JSON array of `{"Id","Label"}`). Empty = defaults |
+| `RateLimit__TokenLimit` | `10` | Max requests per period per client IP (token-bucket) |
+| `RateLimit__ReplenishmentPeriodSeconds` | `60` | Token replenishment period in seconds |
 
 > **Note:** In .NET, use `__` (double underscore) in environment variables to override nested JSON config keys (e.g. `Security__ApiKey` → `Security:ApiKey`).
 
@@ -55,7 +57,7 @@ docker compose up -d --build
   `depends_on: backend: condition: service_healthy`, never starts.
 - **`.dockerignore`.** A root `.dockerignore` keeps `.env` (secrets), `node_modules/`, `bin/`, `obj/` and
   `.git/` out of the build context, so credentials never reach an image layer and image builds stay lean.
-- **Reproducible frontend image.** The frontend runtime stage installs `vite` via `npm ci` from
+- **Reproducible frontend image.** The frontend build stage uses `npm ci` from
   `package-lock.json` (pinned) instead of a floating `npm install`.
 
 ## Docker Deployment
@@ -78,17 +80,19 @@ docker compose logs -f backend
 | Service | Port | Description |
 |---------|------|-------------|
 | `backend` | 5184 | .NET 10 API (SSE streaming) |
-| `frontend` | 4173 | React/Vite preview server |
+| `frontend` | 4173 | nginx static server (React SPA + /api proxy) |
 
 ### Frontend API Proxy
 
-Both `npm run dev` **and** `vite preview` proxy `/api/*` to the backend (see
-`preview.proxy` in `frontend/vite.config.ts`) — the frontend Docker image serves
-with `vite preview`, so the proxy must exist there too. The target defaults to
-`http://localhost:5184` and is overridden in Docker via `VITE_API_PROXY_TARGET`
-(`http://backend:5184`).
+- **Local dev** (`npm run dev`): Vite's dev-server proxy forwards `/api/*` to the
+  backend (see `server.proxy` in `frontend/vite.config.ts`). The target defaults to
+  `http://localhost:5184` and is overridable via `VITE_API_PROXY_TARGET`.
+- **Docker**: The frontend Docker image uses **nginx** (not vite preview). The
+  `frontend/nginx.conf` proxies `/api/*` to `http://backend:5184` with SSE support
+  (`proxy_buffering off`, long `proxy_read_timeout`). No `VITE_API_PROXY_TARGET`
+  env var is needed in Docker — nginx handles the proxy at runtime.
 
-Optionally front the stack with a reverse proxy (nginx, Caddy) instead:
+Optionally front the stack with an external reverse proxy (nginx, Caddy) instead:
 - `/api/*` → `backend:5184`
 - `/*` → `frontend:4173`
 
@@ -96,7 +100,9 @@ Optionally front the stack with a reverse proxy (nginx, Caddy) instead:
 
 Both containers run as non-root users:
 - **Backend** — `app` (UID 101, built into `mcr.microsoft.com/dotnet/aspnet:10.0`)
-- **Frontend** — `node` (UID 1000, built into `node:22-alpine`)
+- **Frontend** — `nginx` (UID 101, built into `nginx:alpine`). The Dockerfile
+  pre-creates and chowns cache/temp dirs, fixes the PID path to `/tmp`, and removes
+  the `user` directive so nginx runs entirely as non-root without CAP_CHOWN.
 
 Files are copied with `--chown` so the non-root user can read them. Both services
 bind to ports >1024 (5184, 4173), which non-root users can bind to. Additionally:
@@ -175,7 +181,7 @@ other source is still ignored. See `.env.example` for the full set of
 
 - **Backend:** `GET /health` → `200 OK`
 - **Docker:** Healthcheck configured in docker-compose (30s interval, 3 retries)
-- **Frontend:** `GET /` → `200 OK`; the `frontend` docker-compose service has its own healthcheck (30s interval, 3 retries) that uses `node -e "fetch(...)"`, so it needs no `curl`/`wget` in the image
+- **Frontend:** `GET /` → `200 OK`; the `frontend` docker-compose service has its own healthcheck (30s interval, 3 retries) that uses BusyBox `wget` (bundled in `nginx:alpine`), so it needs no `curl` in the image
 
 ## Rate Limiting
 

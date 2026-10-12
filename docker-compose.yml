@@ -54,23 +54,22 @@ services:
       dockerfile: frontend/Dockerfile
     ports:
       - "4173:4173"
-    environment:
-      # `vite preview` proxies /api to this target (localhost would be the
-      # frontend container itself). Read when the preview server starts.
-      - VITE_API_PROXY_TARGET=http://backend:5184
     depends_on:
       backend:
         condition: service_healthy
-    # Readiness: `node -e fetch(...)` (Node 22 ships a global fetch) so the probe needs
-    # no curl/wget that may be missing from node:22-alpine. r.ok => 0, else 1.
+    # nginx serves static files and proxies /api/* to the backend service.
+    # nginx.conf handles the proxy — no vite env var needed.
     healthcheck:
+      # BusyBox wget is available in nginx:alpine (no curl needed).
       test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:4173/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    # nginx has its own security model (master=root, workers=nginx user).
-    # cap_drop/security_opt were for node:vite preview — not needed for nginx.
+    security_opt:
+      - "no-new-privileges:true"
+    cap_drop:
+      - ALL
     restart: unless-stopped
     deploy:
       resources:

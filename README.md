@@ -274,6 +274,10 @@ docker compose up -d --build
 # Frontend: http://localhost:4173
 ```
 
+The frontend Docker image uses **nginx** to serve static files and proxy `/api/*`
+to the backend (with SSE support — `proxy_buffering off`). No `VITE_API_PROXY_TARGET`
+needed in Docker; nginx.conf handles the proxy.
+
 Lihat [docs/deployment.md](docs/deployment.md) untuk panduan lengkap deployment.
 
 ## Testing
@@ -353,3 +357,4 @@ cd frontend && npm run build
 - **Milestone 19** ✅ — OpenAPI document enrichment & CHANGELOG: `/openapi/v1.json` now carries document-level metadata (title "OmniChat API", description, version, contact, MIT license) via `IOpenApiDocumentTransformer` instead of bare defaults; `StreamChat` action declares `401 Unauthorized` in its OpenAPI response types (auth middleware can reject before the action runs); `CHANGELOG.md` added documenting all milestones (M1–M19) in Keep a Changelog format. 7 integration tests (OpenAPI metadata: title, version, description, contact, license, paths, status codes) + 4 deployment config guards. 211 tests, 0 warnings, frontend builds, CI green.
 - **Milestone 20** ✅ — Non-root container hardening + API reference docs: backend Dockerfile runs as `app` (UID 101); frontend runs as `node` (UID 1000); both use `--chown` on COPY, `no-new-privileges:true`, and `cap_drop: ALL` in docker-compose; README gains a structured API Reference section (endpoint table, curl examples, request/response schemas, SSE event format, RFC 7807 error table, validation constraints) — 219 tests, 0 warnings
 - **Milestone 22** ✅ — Frontend component testing: Vitest + @testing-library/react + jsdom setup; 23 tests covering rendering, mode toggle, model catalog fetch with fallback, API key localStorage persistence, send/stop button interactions, and clear chat; CI runs `npm run test`; `tsconfig.app.json` excludes test files from production build typecheck — 223 backend tests + 23 frontend tests, 0 warnings, CI green.
+- **Milestone 24** ✅ — nginx frontend proxy fix + non-root hardening: fixed critical deployment blocker where `nginx.conf` had no `/api` proxy (API calls from Docker frontend got 404); added `/api/` location block with SSE support (`proxy_buffering off`, `proxy_read_timeout 86400s`); frontend Dockerfile now runs nginx as non-root (`USER nginx`, pre-created/chowned cache dirs, PID path → `/tmp`); re-enabled `cap_drop: ALL` + `no-new-privileges` on frontend service; removed stale `VITE_API_PROXY_TARGET` from docker-compose (nginx handles proxy); updated deployment docs, `.env.example`, and README to reflect nginx (not vite preview); 7 new deployment config tests (nginx proxy, SSE support, SPA fallback, non-root cache dirs, PID path, VITE var removal) — 243 backend tests, 0 warnings, CI green.

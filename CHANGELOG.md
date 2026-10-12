@@ -5,6 +5,40 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### Milestone 24 — nginx frontend proxy fix + non-root hardening
+
+#### Fixed
+- **Critical**: `frontend/nginx.conf` had no `/api` proxy location — API calls from
+  the Docker frontend returned 404 (nginx served `index.html` instead of proxying
+  to the backend). Added `location /api/` with `proxy_pass http://backend:5184`,
+  SSE support (`proxy_buffering off`, `proxy_read_timeout 86400s`), and standard
+  forwarded headers.
+- **Frontend Dockerfile** now runs nginx as non-root (`USER nginx`): pre-creates
+  and chowns cache/temp dirs, redirects PID path to `/tmp`, removes the `user`
+  directive — no CAP_CHOWN needed.
+- Re-enabled `cap_drop: ALL` + `no-new-privileges: true` on the frontend
+  docker-compose service (removed in a prior fix that was needed for root nginx
+  but is unnecessary with the non-root setup).
+- Removed stale `VITE_API_PROXY_TARGET` from docker-compose frontend environment
+  (nginx handles `/api` proxying; the env var was for vite preview, no longer used).
+
+#### Changed
+- `.env.example`: `VITE_API_PROXY_TARGET` documented as local-dev-only.
+- `docs/deployment.md`: updated all references from "vite preview" to nginx;
+  added `RateLimit__*` env vars to the table; updated non-root execution and
+  healthcheck descriptions.
+- `README.md`: Docker section now notes nginx serves static files + proxies `/api`.
+- Added Milestone 24 to the milestones list.
+
+#### Tests
+- 7 new deployment config tests: nginx `/api` proxy, SSE proxy support, listen port,
+  SPA fallback, non-root cache dirs, PID path fix, `VITE_API_PROXY_TARGET` removal.
+- Updated 3 existing tests to match the nginx-based frontend (USER nginx, chown,
+  wget healthcheck).
+- 243 backend tests total, 0 warnings.
+
+## [Unreleased]
+
 ### Added
 - **Milestone 23** — Configurable rate limiting: the per-IP token-bucket rate
   limiter (previously hardcoded to 10 req/min) is now configurable via two
