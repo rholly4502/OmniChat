@@ -66,10 +66,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    security_opt:
-      - "no-new-privileges:true"
-    cap_drop:
-      - ALL
+    # nginx has its own security model (master=root, workers=nginx user).
+    # cap_drop:ALL breaks nginx — it needs CAP_CHOWN for cache dirs.
     restart: unless-stopped
     deploy:
       resources:
