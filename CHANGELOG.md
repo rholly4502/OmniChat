@@ -6,6 +6,20 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 ## [Unreleased]
 
 ### Added
+- **Milestone 22** — Frontend component testing: added Vitest + @testing-library/react
+  + @testing-library/jest-dom + jsdom to the frontend devDependencies; 23 component
+  tests covering rendering (title, subtitle, mode toggle, model selector, API key
+  input), model catalog fetching (on mount, with X-Api-Key header, fallback to
+  built-in defaults on fetch failure/rejection, custom models from response),
+  mode toggle (switches between Agent/Direct, updates model selector), API key
+  persistence (localStorage set/remove, lock/unlock emoji indicator), send/stop
+  button interactions (disabled when empty, enabled on input, clears after send,
+  shows user message, shows stop button while streaming), and clear chat.
+  `vite.config.ts` gains `test` config (jsdom environment, globals, setupFiles);
+  `tsconfig.app.json` excludes test files from production build typecheck;
+  `tsconfig.test.json` provides IDE type support (not referenced by `tsc -b`);
+  CI workflow runs `npm run test` between lint and build. 223 backend tests +
+  23 frontend tests, 0 warnings, frontend builds, CI green.
 - **Milestone 21** — README documentation consolidation: merged the two
   overlapping API sections ("## API Reference" + "## API" + "## Error Responses")
   into a single structured section; fixed the health-check response example to

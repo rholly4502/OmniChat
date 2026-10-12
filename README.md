@@ -47,6 +47,7 @@ Web UI dengan 2 mode:
 - ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
 - ✅ Non-root container execution (backend: `app` UID 101, frontend: `node` UID 1000) + `no-new-privileges` + `cap_drop: ALL`
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
+- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — 23 tests covering rendering, mode toggle, model catalog fetch/fallback, API key persistence, input/send interactions)
 
 ## Prerequisites
 
@@ -278,10 +279,13 @@ Lihat [docs/deployment.md](docs/deployment.md) untuk panduan lengkap deployment.
 ## Testing
 
 ```bash
-# All tests (unit + integration)
+# Backend — all tests (unit + integration)
 dotnet test OmniChat.slnx -c Release
 
-# Frontend build check
+# Frontend — component tests (Vitest)
+cd frontend && npm run test
+
+# Frontend — production build check
 cd frontend && npm run build
 ```
 
@@ -346,3 +350,4 @@ cd frontend && npm run build
 - **Milestone 18** ✅ — SSE error sanitization & project metadata: `ChatController.StreamChat` catch block now sends a generic `"An internal error occurred during streaming."` error event via `JsonSerializer.Serialize` instead of `ex.Message` (which could leak internal URLs, API keys, and stack traces to the client since the SSE response has already started and `ExceptionHandlingMiddleware` cannot intervene); `ChatService.ProduceTokensAsync` upstream-error message sanitized to not reveal the provider's HTTP status code; frontend `App.tsx` now handles `parsed.error` in SSE events and displays them to the user instead of silently ignoring them; MIT `LICENSE` file added; CI workflow updated with NuGet cache + frontend `npm run lint` step. 11 new tests (2 ChatController sanitization + 2 ChatService leak prevention + 3 deployment config guards + 4 updated existing tests). 200 tests, 0 warnings, frontend builds, CI green.
 - **Milestone 19** ✅ — OpenAPI document enrichment & CHANGELOG: `/openapi/v1.json` now carries document-level metadata (title "OmniChat API", description, version, contact, MIT license) via `IOpenApiDocumentTransformer` instead of bare defaults; `StreamChat` action declares `401 Unauthorized` in its OpenAPI response types (auth middleware can reject before the action runs); `CHANGELOG.md` added documenting all milestones (M1–M19) in Keep a Changelog format. 7 integration tests (OpenAPI metadata: title, version, description, contact, license, paths, status codes) + 4 deployment config guards. 211 tests, 0 warnings, frontend builds, CI green.
 - **Milestone 20** ✅ — Non-root container hardening + API reference docs: backend Dockerfile runs as `app` (UID 101); frontend runs as `node` (UID 1000); both use `--chown` on COPY, `no-new-privileges:true`, and `cap_drop: ALL` in docker-compose; README gains a structured API Reference section (endpoint table, curl examples, request/response schemas, SSE event format, RFC 7807 error table, validation constraints) — 219 tests, 0 warnings
+- **Milestone 22** ✅ — Frontend component testing: Vitest + @testing-library/react + jsdom setup; 23 tests covering rendering, mode toggle, model catalog fetch with fallback, API key localStorage persistence, send/stop button interactions, and clear chat; CI runs `npm run test`; `tsconfig.app.json` excludes test files from production build typecheck — 223 backend tests + 23 frontend tests, 0 warnings, CI green.

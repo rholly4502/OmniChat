@@ -663,6 +663,47 @@ public class DeploymentConfigTests
         Assert.Contains("IOpenApiDocumentTransformer", readme);
     }
 
+
+    [Fact]
+    public void CiWorkflow_RunsFrontendTests()
+    {
+        // M22: the CI workflow must run `npm run test` between lint and build
+        // so frontend test regressions are caught in CI, not just locally.
+        var ci = Read(".github/workflows/ci.yml");
+        Assert.Contains("npm run test", ci);
+    }
+
+    [Fact]
+    public void FrontendPackageJson_HasTestScript()
+    {
+        // The frontend package.json must have a "test" script so `npm run test`
+        // works in CI and for local development.
+        var pkgJson = Read("frontend/package.json");
+        Assert.Contains("\"test\":", pkgJson);
+        Assert.Contains("vitest", pkgJson);
+    }
+
+    [Fact]
+    public void FrontendViteConfig_HasVitestTestSection()
+    {
+        // The vite.config.ts must include a vitest test section so `npm run test`
+        // picks up the jsdom environment and setup files.
+        var viteConfig = Read("frontend/vite.config.ts");
+        Assert.Contains("environment: 'jsdom'", viteConfig);
+        Assert.Contains("setupFiles", viteConfig);
+    }
+
+    [Fact]
+    public void TsConfigApp_ExcludesTestFiles()
+    {
+        // Test files must be excluded from the production build typecheck
+        // (tsc -b) so test-only imports (vitest, @testing-library) don't
+        // break the build.
+        var tsconfig = Read("frontend/tsconfig.app.json");
+        Assert.Contains("\"exclude\"", tsconfig);
+        Assert.Contains("__tests__", tsconfig);
+    }
+
     /// <summary>
     /// Extracts a markdown section starting at <paramref name="heading"/> up to the
     /// next heading of the same or higher level (## or ###).
