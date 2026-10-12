@@ -43,6 +43,7 @@ export default function App() {
   });
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const models = useAgent ? catalog.agent : catalog.direct;
 
@@ -79,6 +80,18 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
+
+  // Body scroll lock + focus restoration for mobile sidebar drawer
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+      const menuBtn = menuButtonRef.current;
+      return () => {
+        document.body.style.overflow = '';
+        menuBtn?.focus();
+      };
+    }
   }, [sidebarOpen]);
 
   function toggleMode() {
@@ -303,6 +316,7 @@ export default function App() {
         {/* Mobile top bar */}
         <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
           <button
+            ref={menuButtonRef}
             onClick={() => setSidebarOpen(true)}
             className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Open menu"

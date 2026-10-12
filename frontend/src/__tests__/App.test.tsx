@@ -295,4 +295,37 @@ describe('App', () => {
       expect(screen.getByText(/Mulai chat/)).toBeInTheDocument();
     });
   });
+
+  // ─── Sidebar Drawer (Mobile) ─────────────────────────────────
+
+  it('locks body scroll when sidebar is opened', () => {
+    render(<App />);
+    // Body overflow should be empty by default
+    expect(document.body.style.overflow).toBe('');
+    // Open the sidebar via the hamburger menu button
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    // Body scroll should now be locked
+    expect(document.body.style.overflow).toBe('hidden');
+  });
+
+  it('restores body scroll when sidebar is closed', () => {
+    render(<App />);
+    // Open the sidebar
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    expect(document.body.style.overflow).toBe('hidden');
+    // Close the sidebar via the close button
+    fireEvent.click(screen.getByLabelText('Close sidebar'));
+    // Body scroll should be restored
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('renders the sidebar with dialog role when open', () => {
+    render(<App />);
+    // Open the sidebar
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    // Sidebar should have role="dialog" and aria-modal="true"
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(dialog).toHaveAttribute('aria-label', 'Chat settings');
+  });
 });
