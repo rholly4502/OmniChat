@@ -69,10 +69,8 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-    security_opt:
-      - "no-new-privileges:true"
-    cap_drop:
-      - ALL
+    # nginx has its own security model (master=root, workers=nginx user).
+    # cap_drop/security_opt were for node:vite preview — not needed for nginx.
     restart: unless-stopped
     deploy:
       resources:
