@@ -497,4 +497,43 @@ public class DeploymentConfigTests
         Assert.DoesNotContain("Provider responded with status", service);
         Assert.DoesNotContain("{response.StatusCode}", service);
     }
+
+    // ── Milestone 19: OpenAPI document enrichment ──
+
+    [Fact]
+    public void ProgramCs_RegistersOpenApiDocumentTransformer()
+    {
+        var program = Read("src/OmniChat.Api/Program.cs");
+        Assert.Contains("AddDocumentTransformer", program);
+        Assert.Contains("OpenApiDocumentTransformer", program);
+    }
+
+    [Fact]
+    public void OpenApiDocumentTransformer_Exists()
+    {
+        Assert.True(Exists("src/OmniChat.Api/Infrastructure/OpenApi/OpenApiDocumentTransformer.cs"));
+        var src = Read("src/OmniChat.Api/Infrastructure/OpenApi/OpenApiDocumentTransformer.cs");
+        Assert.Contains("IOpenApiDocumentTransformer", src);
+        Assert.Contains("OmniChat API", src);
+        Assert.Contains("MIT", src);
+    }
+
+    [Fact]
+    public void ChatController_StreamChatHas401ResponseType()
+    {
+        // The auth middleware can reject a request with 401 before the action runs.
+        // The OpenAPI document should declare this response so clients know about it.
+        var controller = Read("src/OmniChat.Api/Controllers/ChatController.cs");
+        Assert.Contains("Status401Unauthorized", controller);
+    }
+
+    [Fact]
+    public void Changelog_ExistsAndDocumentsMilestones()
+    {
+        Assert.True(Exists("CHANGELOG.md"), "CHANGELOG.md must exist for portfolio readability");
+        var changelog = Read("CHANGELOG.md");
+        Assert.Contains("MIT License", changelog, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Milestone 1", changelog);
+        Assert.Contains("Milestone 18", changelog);
+    }
 }

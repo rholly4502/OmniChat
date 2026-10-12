@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.HttpOverrides;
 using OmniChat.Api.Infrastructure.Networking;
+using OmniChat.Api.Infrastructure.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,7 +29,10 @@ builder.Services.Configure<HostOptions>(options =>
 });
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<OpenApiDocumentTransformer>();
+});
 
 // Reverse-proxy support: process X-Forwarded-For / X-Forwarded-Proto from trusted
 // proxies so rate limiting and access logs see the real client address. Disabled

@@ -54,6 +54,7 @@ public class ChatController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
         // [ApiController] + ApiBehaviorOptions handle invalid model state automatically

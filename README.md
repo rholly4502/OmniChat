@@ -43,6 +43,8 @@ Web UI dengan 2 mode:
 - ✅ SSE error sanitization — mid-stream exceptions send a generic error event instead of leaking `ex.Message` (internal URLs, API keys, stack traces) to the client
 - ✅ Frontend SSE error event handling — `parsed.error` events from the backend are displayed to the user instead of being silently swallowed
 - ✅ MIT License — project is openly licensed for portfolio use
+- ✅ Enriched OpenAPI schema (`/openapi/v1.json` in Development) with document metadata (title, description, contact, MIT license) via `IOpenApiDocumentTransformer`
+- ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
 
 ## Prerequisites
 
@@ -182,7 +184,10 @@ The frontend includes an **API Key** input in the sidebar (stored in `localStora
 
 ### OpenAPI Schema (Development only)
 
-In Development mode, the raw OpenAPI schema is served at `/openapi/v1.json`.
+In Development mode, the OpenAPI schema is served at `/openapi/v1.json` with enriched
+document metadata (title, description, version, contact, MIT license) via
+`IOpenApiDocumentTransformer`. The schema includes all endpoint paths, HTTP methods,
+response status codes (200, 400, 401, 429), and content types.
 This is disabled in Production to avoid exposing API metadata.
 
 ### `GET /health` — Health Check
@@ -290,3 +295,4 @@ All error responses follow the [RFC 7807 ProblemDetails](https://datatracker.iet
 - **Milestone 16** ✅ — Reverse-proxy forwarded headers: `ForwardedHeadersSetup` + `ReverseProxyOptions` (`ReverseProxy:*` section) wire `UseForwardedHeaders` (`X-Forwarded-For`/`X-Forwarded-Proto`) so the per-IP rate limiter and request logs see the real client behind nginx/Caddy instead of the proxy address; opt-in (`Enabled=false` default), trust is additive (loopback defaults preserved, spoofed headers from unlisted peers ignored), CIDR parsing via `System.Net.IPNetwork`; `StartupConfigValidator` warns when enabled with no trusted proxies; docker-compose/`.env.example`/`README`/`deployment.md` updated — 184 tests, 0 warnings
 - **Milestone 17** ✅ — Model-catalog configurability & deployment-config completeness: `ModelCatalogService` exposes public section constants and accepts a single JSON-array env var (`Models__Agent`/`Models__Direct`) in addition to indexed keys, with malformed JSON logged and falling back to defaults; docker-compose forwards the catalog vars; `.env.example`, README and `deployment.md` document them; the `frontend` docker-compose service gains a `node`-based readiness healthcheck (no curl/wget dependency); deployment-config regression guards extended — 189 tests, 0 warnings
 - **Milestone 18** ✅ — SSE error sanitization & project metadata: `ChatController.StreamChat` catch block now sends a generic `"An internal error occurred during streaming."` error event via `JsonSerializer.Serialize` instead of `ex.Message` (which could leak internal URLs, API keys, and stack traces to the client since the SSE response has already started and `ExceptionHandlingMiddleware` cannot intervene); `ChatService.ProduceTokensAsync` upstream-error message sanitized to not reveal the provider's HTTP status code; frontend `App.tsx` now handles `parsed.error` in SSE events and displays them to the user instead of silently ignoring them; MIT `LICENSE` file added; CI workflow updated with NuGet cache + frontend `npm run lint` step. 11 new tests (2 ChatController sanitization + 2 ChatService leak prevention + 3 deployment config guards + 4 updated existing tests). 200 tests, 0 warnings, frontend builds, CI green.
+- **Milestone 19** ✅ — OpenAPI document enrichment & CHANGELOG: `/openapi/v1.json` now carries document-level metadata (title "OmniChat API", description, version, contact, MIT license) via `IOpenApiDocumentTransformer` instead of bare defaults; `StreamChat` action declares `401 Unauthorized` in its OpenAPI response types (auth middleware can reject before the action runs); `CHANGELOG.md` added documenting all milestones (M1–M19) in Keep a Changelog format. 7 integration tests (OpenAPI metadata: title, version, description, contact, license, paths, status codes) + 4 deployment config guards. 211 tests, 0 warnings, frontend builds, CI green.

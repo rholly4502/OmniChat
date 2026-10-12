@@ -1,0 +1,130 @@
+# Changelog
+
+All notable changes to OmniChat are documented here.
+The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
+
+## [Unreleased]
+
+### Added
+- **Milestone 19** — OpenAPI document enrichment: `/openapi/v1.json` now carries
+  title ("OmniChat API"), description, version, contact, and MIT license metadata
+  via `IOpenApiDocumentTransformer`. `StreamChat` declares `401 Unauthorized` in
+  its OpenAPI response types. Added `CHANGELOG.md` for portfolio readability.
+
+## [1.0.0] — 2026-10-11
+
+### Milestone 1 — Core SSE Streaming
+- Clean Architecture backend (Domain / Application / Infrastructure / Controllers)
+- `POST /api/chat/stream` SSE endpoint with `data: {"content":"..."}` events
+- Hermes Bridge mode (forwards to Hermes Agent Gateway) + Direct LLM mode (OpenRouter)
+- `Channel<T>` producer pattern for async streaming (yield cannot be in try/catch)
+- Fallback simulation mode when no LLM key is configured
+- React + TypeScript + Vite + Tailwind v4 frontend with markdown rendering (GFM)
+
+### Milestone 2 — Quality & Testing
+- xUnit + Moq test suite (33 tests, 0 warnings)
+- `TestableHttpMessageHandler` for HttpClient mocking
+- Frontend polish: auto-scroll, stop button, streaming indicator, model selector
+- `appsettings.Development.json` force-added (localhost endpoints, no secrets)
+
+### Milestone 3 — Production Readiness
+- Multi-stage Dockerfile + frontend Dockerfile + docker-compose orchestration
+- Environment-based config (`appsettings.Development.json` / `appsettings.Production.json`)
+- Rate limiting (token bucket, 10 req/min per IP, returns 429)
+- Integration tests via `WebApplicationFactory<Program>`
+- OpenAPI metadata, deployment guide, API-key auth middleware
+- CORS per-environment, correlation ID middleware
+- CI/CD pipeline (GitHub Actions — backend build+test + frontend lint+build)
+
+### Milestone 4 — Security & Observability
+- API-key authentication (constant-time compare, exempts `/health`)
+- Correlation ID middleware (`X-Correlation-Id` header + logging scope)
+- Configurable CORS policy
+
+### Milestone 5 — Observability Hardening
+- `RequestLoggingMiddleware` (method, path, status, duration, correlation id)
+- Enriched JSON `/health` endpoint (status, version, uptime via `ServiceStartTime`)
+- Rate-limit integration test (429 after 10 tokens) — 46 tests
+
+### Milestone 6 — JWT Authentication
+- JWT bearer auth (HMAC-SHA256, validates signature/issuer/audience/lifetime)
+- Dual-auth with API key (`JwtAuthenticationMiddleware` + `ApiKeyMiddleware`)
+- `JwtTokenValidator` with `MapInboundClaims=false` (claim names kept verbatim)
+- Inert until `Security:Jwt:SigningKey` is set — 67 tests
+
+### Milestone 7 — Dynamic Model Catalog
+- `GET /api/models` returns `{agent:[...], direct:[...]}` from config
+- `ModelCatalogService` bound to `Models` config section with built-in defaults
+- Frontend fetches `/api/models` at boot with local fallback — 72 tests
+
+### Milestone 8 — Deployment Config Correctness
+- `docker-compose.yml`: `Hermes__Endpoint` → `http://host.docker.internal:5000/v1/chat/completions`
+- `extra_hosts: ["host.docker.internal:host-gateway"]` on backend
+- `frontend/vite.config.ts`: `preview.proxy` (serves via `vite preview` in Docker)
+- `Program.cs`: `UseHttpsRedirection()` only outside Production (nginx terminates TLS)
+- Blank CORS origins filtered (empty env value falls back safely)
+- `.env.example` (tracked) + deployment guide `.env` workflow — 76 tests
+
+### Milestone 9 — Container & Deployment Hardening
+- Runtime image installs `curl` (aspnet image doesn't bundle it — dotnet-docker#2379)
+- Dockerfile `HEALTHCHECK` + root `.dockerignore` (no secrets/artifacts in build context)
+- Frontend runtime uses `npm ci` from `package-lock.json` (pinned, reproducible)
+- Deployment-config regression guards — 80 tests
+
+### Milestone 10 — Security Headers
+- `SecurityHeadersMiddleware`: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, `X-Permitted-Cross-Domain-Policies: none`
+- Kestrel `Server` header suppressed (`AddServerHeader = false`)
+- README env-var reference table — 90 tests
+
+### Milestone 11 — Startup Validation & Request Safety
+- `StartupConfigValidator`: warns in Production for empty API key, CORS origins, JWT signing key
+- Kestrel `MaxRequestBodySize` configurable (default 10 MB, DoS prevention)
+- JWT issuer/audience env vars documented and forwarded — 105 tests
+
+### Milestone 12 — Input Validation & Production Hardening
+- `ChatRequest`: model max 100 chars, messages max 50 items
+- `ChatMessage`: role whitelist `[user|assistant|system]`, content max 8000 chars
+- Graceful shutdown (30s timeout for in-flight SSE streams)
+- Docker Compose memory limits (backend 512 MB, frontend 256 MB) — 126 tests
+
+### Milestone 13 — Frontend Auth & JSON Logging
+- Sidebar API key input (localStorage, `X-Api-Key` header on every request)
+- Auto-refresh model catalog on key change
+- `appsettings.Production.json` JSON console formatter (ELK/Loki compatible)
+- Integration tests for `/api/models` auth (401 without key, 200 with key) — 128 tests
+
+### Milestone 14 — API Response Quality
+- Rate-limit `OnRejected`: `Retry-After` header + ProblemDetails JSON body on 429
+- Response compression (Brotli + Gzip for JSON; SSE excluded)
+- `Cache-Control: public, max-age=60` on `/api/models`
+- Frontend reads `Retry-After` and shows retry countdown — 137 tests
+
+### Milestone 15 — RFC 7807 ProblemDetails
+- All error responses (400, 401, 429, 500) use `application/problem+json`
+- Consistent `{ title, status, detail, instance, traceId }` schema
+- `AddProblemDetails()` + custom `InvalidModelStateResponseFactory`
+- `ProblemDetailsJson` helper (camelCase serialization) — 150 tests
+
+### Milestone 16 — Reverse-Proxy Forwarded Headers
+- `ForwardedHeadersSetup` + `ReverseProxyOptions` (`ReverseProxy:*` config section)
+- `UseForwardedHeaders` (`X-Forwarded-For`/`X-Forwarded-Proto`) — real client IP behind nginx/Caddy
+- Opt-in (`Enabled=false` default), trust additive (loopback defaults preserved)
+- CIDR parsing via `System.Net.IPNetwork` — 184 tests
+
+### Milestone 17 — Model-Catalog Configurability
+- `ModelCatalogService` accepts single JSON-array env var (`Models__Agent`/`Models__Direct`)
+- Malformed JSON logged and falls back to defaults
+- Docker-compose forwards catalog vars; frontend node-based readiness healthcheck — 189 tests
+
+### Milestone 18 — SSE Error Sanitization & Project Metadata
+- `ChatController.StreamChat` catch block sends generic error event (not `ex.Message`)
+- `ChatService.ProduceTokensAsync` upstream-error message sanitized (no HTTP status code)
+- Frontend `App.tsx` handles `parsed.error` in SSE events and displays them
+- MIT `LICENSE` file added; CI workflow: NuGet cache + frontend `npm run lint` — 200 tests
+
+---
+
+## License
+
+MIT License — see [LICENSE](LICENSE).
