@@ -45,6 +45,8 @@ Web UI dengan 2 mode:
 - ✅ MIT License — project is openly licensed for portfolio use
 - ✅ Enriched OpenAPI schema (`/openapi/v1.json` in Development) with document metadata (title, description, contact, MIT license) via `IOpenApiDocumentTransformer`
 - ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
+- ✅ Non-root container execution (backend: `app` UID 101, frontend: `node` UID 1000) + `no-new-privileges` + `cap_drop: ALL`
+- ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
 
 ## Prerequisites
 
@@ -74,6 +76,129 @@ OmniChat/
 ├── Dockerfile                 → Multi-stage backend build
 ├── docker-compose.yml         → Backend + Frontend orchestration
 └── OmniChat.slnx             → .NET 10 XML solution file
+```
+
+## API Reference
+
+### Authentication
+
+All `/api/*` endpoints require an API key sent as the `X-Api-Key` header.
+If `Security__ApiKey` is empty the API is open (pass-through).
+
+JWT Bearer auth is optional — enable by setting `Security__Jwt__SigningKey`.
+When set, `Authorization: Bearer <token>` is validated (HMAC-SHA256, issuer + audience + lifetime).
+
+### Endpoints
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| `POST` | `/api/chat/stream` | Stream chat completion (SSE) | ✅ |
+| `GET` | `/api/models` | Get model catalog | ✅ |
+| `GET` | `/health` | Health check (status, version, uptime) | ❌ |
+| `GET` | `/openapi/v1.json` | OpenAPI document (Development only) | ❌ |
+
+### POST /api/chat/stream
+
+Streams a chat completion as Server-Sent Events.
+
+**Request body:**
+```json
+{
+  "model": "hermes",
+  "useHermesBridge": true,
+  "messages": [
+    { "role": "user", "content": "Hello, how are you?" }
+  ]
+}
+```
+
+**Response:** `text/event-stream`
+
+```
+data: {"content":"Hello"}
+
+data: {"content":"! I'm "}
+
+data: {"content":"doing well."}
+
+data: [DONE]
+```
+
+**Error event (mid-stream):**
+```
+data: {"error":"An internal error occurred during streaming."}
+```
+
+**Validation constraints:**
+- `model` — max 100 chars
+- `messages` — max 50 items
+- `message.role` — `user` | `assistant` | `system`
+- `message.content` — max 8000 chars
+
+### GET /api/models
+
+Returns the model catalog grouped by chat mode (`Cache-Control: public, max-age=60`).
+
+**Response:**
+```json
+{
+  "agent": [
+    { "id": "hermes", "label": "Hermes (Default)" }
+  ],
+  "direct": [
+    { "id": "meta-llama/llama-3.3-70b-instruct:free", "label": "Llama 3.3 70B (Free)" }
+  ]
+}
+```
+
+### GET /health
+
+Returns enriched health information (exempt from auth).
+
+**Response:**
+```json
+{
+  "status": "Healthy",
+  "version": "1.0.0",
+  "uptime": "00:05:23"
+}
+```
+
+### Error Responses (RFC 7807)
+
+All errors use `application/problem+json` with a consistent schema:
+
+```json
+{
+  "title": "Validation Failed",
+  "status": 400,
+  "errors": { "Messages": ["..."] },
+  "instance": "/api/chat/stream",
+  "traceId": "00-abc123..."
+}
+```
+
+| Status | Title |
+|--------|-------|
+| 400 | Validation Failed |
+| 401 | Unauthorized |
+| 429 | Too Many Requests (includes `Retry-After` header) |
+| 500 | Internal Server Error |
+
+### curl Examples
+
+```bash
+# Chat stream (SSE) — -N disables buffering for streaming
+curl -N -H "X-Api-Key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"hermes","useHermesBridge":true,"messages":[{"role":"user","content":"Hello"}]}' \
+  http://localhost:5184/api/chat/stream
+
+# Get model catalog
+curl -H "X-Api-Key: YOUR_KEY" http://localhost:5184/api/models
+
+# Health check (no auth needed)
+curl http://localhost:5184/health
 ```
 
 ## Menjalankan

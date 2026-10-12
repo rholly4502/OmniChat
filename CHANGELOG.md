@@ -6,6 +6,16 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 ## [Unreleased]
 
 ### Added
+- **Milestone 20** — Non-root container hardening + API reference:
+  - Backend Dockerfile runs as `app` (UID 101, built into aspnet:10.0); frontend
+    runs as `node` (UID 1000, built into node:22-alpine). Both use `--chown` on
+    COPY so files are readable after the USER switch.
+  - `docker-compose.yml`: `security_opt: ["no-new-privileges:true"]` +
+    `cap_drop: ["ALL"]` on both services — prevents privilege escalation and drops
+    all Linux capabilities.
+  - README gains a structured API Reference section (endpoint table, curl
+    examples, request/response schemas, SSE event format, RFC 7807 error table,
+    validation constraints) — 219 tests
 - **Milestone 19** — OpenAPI document enrichment: `/openapi/v1.json` now carries
   title ("OmniChat API"), description, version, contact, and MIT license metadata
   via `IOpenApiDocumentTransformer`. `StreamChat` declares `401 Unauthorized` in

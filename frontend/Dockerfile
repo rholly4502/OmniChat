@@ -12,11 +12,15 @@ RUN npm run build
 FROM node:22-alpine AS runtime
 WORKDIR /app
 
-COPY --from=build /app/dist ./dist
-# Reinstall the runtime dependencies from the lockfile (`npm ci`) so `vite preview`
-# uses the exact pinned version instead of an unpinned, floating resolution.
-COPY frontend/package.json frontend/package-lock.json ./
+# Copy the built assets and lockfile as the non-root `node` user (UID 1000,
+# built into node:22-alpine). npm ci runs as root (root-owned node_modules
+# are read-only and readable by node). `vite preview` only reads from dist/
+# and node_modules/ — no write access needed. Port 4173 > 1024 so non-root
+# can bind.
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node frontend/package.json frontend/package-lock.json ./
 RUN npm ci
+USER node
 
 EXPOSE 4173
 # `vite preview` proxies /api to $VITE_API_PROXY_TARGET (see frontend/vite.config.ts);

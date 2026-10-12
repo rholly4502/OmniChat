@@ -23,7 +23,11 @@ RUN apt-get update \
     && apt-get install --yes --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=build /app/publish .
+# Copy the published app as the non-root `app` user (UID 101, built into the
+# aspnet base image since .NET 8). The app listens on port 5184 (>1024) so
+# non-root can bind. curl is installed system-wide and accessible to all users.
+COPY --from=build --chown=app:app /app/publish .
+USER app
 
 EXPOSE 5184
 

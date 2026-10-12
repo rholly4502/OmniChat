@@ -92,6 +92,19 @@ Optionally front the stack with a reverse proxy (nginx, Caddy) instead:
 - `/api/*` → `backend:5184`
 - `/*` → `frontend:4173`
 
+### Non-root Execution
+
+Both containers run as non-root users:
+- **Backend** — `app` (UID 101, built into `mcr.microsoft.com/dotnet/aspnet:10.0`)
+- **Frontend** — `node` (UID 1000, built into `node:22-alpine`)
+
+Files are copied with `--chown` so the non-root user can read them. Both services
+bind to ports >1024 (5184, 4173), which non-root users can bind to. Additionally:
+- `security_opt: ["no-new-privileges:true"]` — prevents privilege escalation via setuid binaries
+- `cap_drop: ["ALL"]` — drops all Linux capabilities (CAP_NET_ADMIN, CAP_SYS_ADMIN, etc.)
+
+These settings mean the processes cannot gain elevated privileges even if compromised.
+
 ### Model Catalog
 
 `GET /api/models` returns the models grouped by chat mode. Override the built-in

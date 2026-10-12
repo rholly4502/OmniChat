@@ -536,4 +536,78 @@ public class DeploymentConfigTests
         Assert.Contains("Milestone 1", changelog);
         Assert.Contains("Milestone 18", changelog);
     }
+
+    // ── Milestone 20: non-root container hardening ──
+
+    [Fact]
+    public void BackendDockerfile_RunsAsNonRootUser()
+    {
+        // The backend container must not run as root. The aspnet:10.0 base image
+        // ships an `app` user (UID 101) — the Dockerfile must switch to it.
+        var dockerfile = Read("Dockerfile");
+        Assert.Contains("USER app", dockerfile);
+    }
+
+    [Fact]
+    public void BackendDockerfile_CopiesAppAsNonRootOwner()
+    {
+        // Files must be owned by the `app` user so it can read them after the USER switch.
+        var dockerfile = Read("Dockerfile");
+        Assert.Contains("--chown=app:app", dockerfile);
+    }
+
+    [Fact]
+    public void FrontendDockerfile_RunsAsNonRootUser()
+    {
+        // The frontend container must not run as root. node:22-alpine ships a
+        // `node` user (UID 1000) — the Dockerfile must switch to it.
+        var dockerfile = Read("frontend/Dockerfile");
+        Assert.Contains("USER node", dockerfile);
+    }
+
+    [Fact]
+    public void FrontendDockerfile_CopiesAssetsAsNonRootOwner()
+    {
+        // Built assets must be owned by the `node` user so vite preview can read them.
+        var dockerfile = Read("frontend/Dockerfile");
+        Assert.Contains("--chown=node:node", dockerfile);
+    }
+
+    [Fact]
+    public void DockerCompose_BackendHasNoNewPrivileges()
+    {
+        // Prevent privilege escalation via setuid binaries inside the container.
+        var compose = Read("docker-compose.yml");
+        var backendBlock = compose[compose.IndexOf("  backend:", StringComparison.Ordinal)..compose.IndexOf("  frontend:", StringComparison.Ordinal)];
+        Assert.Contains("no-new-privileges", backendBlock);
+    }
+
+    [Fact]
+    public void DockerCompose_FrontendHasNoNewPrivileges()
+    {
+        var compose = Read("docker-compose.yml");
+        var frontendBlock = compose[compose.IndexOf("  frontend:", StringComparison.Ordinal)..];
+        Assert.Contains("no-new-privileges", frontendBlock);
+    }
+
+    [Fact]
+    public void DockerCompose_BackendDropsAllCapabilities()
+    {
+        // Drop ALL Linux capabilities — the backend only needs to bind to port 5184
+        // (>1024) and make HTTP calls. No CAP_NET_ADMIN, CAP_SYS_ADMIN, etc. needed.
+        var compose = Read("docker-compose.yml");
+        var backendBlock = compose[compose.IndexOf("  backend:", StringComparison.Ordinal)..compose.IndexOf("  frontend:", StringComparison.Ordinal)];
+        Assert.Contains("cap_drop", backendBlock);
+        Assert.Contains("ALL", backendBlock);
+    }
+
+    [Fact]
+    public void DockerCompose_FrontendDropsAllCapabilities()
+    {
+        var compose = Read("docker-compose.yml");
+        var frontendBlock = compose[compose.IndexOf("  frontend:", StringComparison.Ordinal)..];
+        Assert.Contains("cap_drop", frontendBlock);
+        Assert.Contains("ALL", frontendBlock);
+    }
+
 }
