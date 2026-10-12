@@ -84,6 +84,11 @@ body {
   margin: 0.5em 0;
   color: #94a3b8;
 }
+.md-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5em;
+}
 .md-body table {
   border-collapse: collapse;
   margin: 0.5em 0;

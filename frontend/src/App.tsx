@@ -203,11 +203,15 @@ export default function App() {
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
       {/* Sidebar */}
       <aside
+        role={sidebarOpen ? "dialog" : undefined}
+        aria-modal={sidebarOpen ? "true" : undefined}
+        aria-label="Chat settings"
         className={`
           fixed md:static inset-y-0 left-0 z-50
           w-72 border-r border-slate-800 p-4 flex flex-col gap-4
@@ -316,7 +320,8 @@ export default function App() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
+        <div ref={scrollRef} aria-live="polite"
+          className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
             <div className="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
               Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
@@ -346,7 +351,10 @@ export default function App() {
                   </span>
                 ) : m.role === 'assistant' ? (
                   <div className="md-body">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.content}</ReactMarkdown>
+                    <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{ table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div> }}
+                  >{m.content}</ReactMarkdown>
                   </div>
                 ) : (
                   <span className="whitespace-pre-wrap">{m.content}</span>
