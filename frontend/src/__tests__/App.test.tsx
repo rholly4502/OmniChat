@@ -328,4 +328,59 @@ describe('App', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
     expect(dialog).toHaveAttribute('aria-label', 'Chat settings');
   });
+
+  // ─── ARIA State & Focus Management ──────────────────────────
+
+  it('menu button has aria-expanded=false when sidebar is closed', () => {
+    render(<App />);
+    const menuBtn = screen.getByLabelText('Open menu');
+    expect(menuBtn).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('menu button has aria-expanded=true when sidebar is open', () => {
+    render(<App />);
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    const menuBtn = screen.getByLabelText('Open menu');
+    expect(menuBtn).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('menu button has aria-controls pointing to the sidebar', () => {
+    render(<App />);
+    const menuBtn = screen.getByLabelText('Open menu');
+    expect(menuBtn).toHaveAttribute('aria-controls', 'chat-sidebar');
+    // The sidebar should have the matching id
+    const sidebar = document.getElementById('chat-sidebar');
+    expect(sidebar).not.toBeNull();
+  });
+
+  it('moves focus to close button when sidebar opens', () => {
+    render(<App />);
+    const menuBtn = screen.getByLabelText('Open menu') as HTMLButtonElement;
+    menuBtn.focus();
+    expect(document.activeElement).toBe(menuBtn);
+    // Open the sidebar
+    fireEvent.click(menuBtn);
+    // Focus should move to the close button
+    const closeBtn = screen.getByLabelText('Close sidebar');
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it('restores focus to menu button when sidebar closes', () => {
+    render(<App />);
+    const menuBtn = screen.getByLabelText('Open menu') as HTMLButtonElement;
+    fireEvent.click(menuBtn);
+    // Focus is now on the close button
+    const closeBtn = screen.getByLabelText('Close sidebar');
+    expect(document.activeElement).toBe(closeBtn);
+    // Close the sidebar
+    fireEvent.click(closeBtn);
+    // Focus should be restored to the menu button
+    expect(document.activeElement).toBe(menuBtn);
+  });
+
+  it('messages container has aria-label', () => {
+    render(<App />);
+    const liveRegion = screen.getByLabelText('Chat messages');
+    expect(liveRegion).toHaveAttribute('aria-live', 'polite');
+  });
 });

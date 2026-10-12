@@ -44,6 +44,8 @@ export default function App() {
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
 
   const models = useAgent ? catalog.agent : catalog.direct;
 
@@ -76,20 +78,40 @@ export default function App() {
   useEffect(() => {
     if (!sidebarOpen) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setSidebarOpen(false);
+      if (e.key === 'Escape') {
+        setSidebarOpen(false);
+        return;
+      }
+      // Focus trap: keep Tab within the sidebar while open
+      if (e.key === 'Tab' && sidebarRef.current) {
+        const focusable = sidebarRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [sidebarOpen]);
 
-  // Body scroll lock + focus restoration for mobile sidebar drawer
+  // Body scroll lock + focus management for mobile sidebar drawer
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
-      const menuBtn = menuButtonRef.current;
+      // Move focus into the sidebar (close button)
+      closeButtonRef.current?.focus();
       return () => {
         document.body.style.overflow = '';
-        menuBtn?.focus();
+        menuButtonRef.current?.focus();
       };
     }
   }, [sidebarOpen]);
@@ -222,12 +244,14 @@ export default function App() {
 
       {/* Sidebar */}
       <aside
+        ref={sidebarRef}
+        id="chat-sidebar"
         role={sidebarOpen ? "dialog" : undefined}
         aria-modal={sidebarOpen ? "true" : undefined}
         aria-label="Chat settings"
         className={`
           fixed md:static inset-y-0 left-0 z-50
-          w-72 border-r border-slate-800 p-4 flex flex-col gap-4
+          w-[85vw] max-w-[18rem] border-r border-slate-800 p-4 flex flex-col gap-4
           bg-slate-950
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -241,6 +265,7 @@ export default function App() {
           </div>
           {/* Close button (mobile only) */}
           <button
+            ref={closeButtonRef}
             onClick={() => setSidebarOpen(false)}
             className="md:hidden text-slate-400 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Close sidebar"
@@ -318,6 +343,8 @@ export default function App() {
           <button
             ref={menuButtonRef}
             onClick={() => setSidebarOpen(true)}
+            aria-expanded={sidebarOpen}
+            aria-controls="chat-sidebar"
             className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Open menu"
           >
@@ -334,7 +361,7 @@ export default function App() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} aria-live="polite"
+        <div ref={scrollRef} aria-live="polite" aria-label="Chat messages"
           className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
             <div className="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
