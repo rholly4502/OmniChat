@@ -110,7 +110,11 @@ export default function App() {
   }, [apiKey]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    scrollRef.current?.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
   }, [messages]);
 
   useEffect(() => {
@@ -293,7 +297,7 @@ export default function App() {
           fixed md:static inset-y-0 left-0 z-50
           w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4 overflow-y-auto
           bg-slate-950
-          transform transition-transform duration-300 ease-in-out
+          transform transition-transform duration-300 ease-in-out will-change-transform
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
           md:translate-x-0
         `}
@@ -475,7 +479,7 @@ export default function App() {
             {streaming ? (
               <button
                 onClick={stopStreaming}
-                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -486,7 +490,7 @@ export default function App() {
               <button
                 onClick={send}
                 disabled={!input.trim()}
-                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
               >
                 Kirim
               </button>
