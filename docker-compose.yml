@@ -14,6 +14,7 @@ services:
       - ASPNETCORE_URLS=http://+:5184
       # Hermes gateway runs on the host — localhost would mean THIS container.
       - Hermes__Endpoint=${Hermes__Endpoint:-http://host.docker.internal:5000/v1/chat/completions}
+      - Hermes__ApiKey=${Hermes__ApiKey:-}
       - LLM__ApiKey=${LLM_API_KEY:-}
       - Security__ApiKey=${Security__ApiKey:-}
       - Cors__AllowedOrigins=${Cors__AllowedOrigins:-}
