@@ -109,11 +109,14 @@ export default function App() {
     return () => { cancelled = true; };
   }, [apiKey]);
 
+  const prevMsgCount = useRef(0);
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const isNewMessage = messages.length !== prevMsgCount.current;
+    prevMsgCount.current = messages.length;
     scrollRef.current?.scrollTo({
       top: scrollRef.current.scrollHeight,
-      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion || !isNewMessage ? 'auto' : 'smooth',
     });
   }, [messages]);
 
@@ -370,6 +373,9 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             autoComplete="off"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
             placeholder="(kosong = tanpa auth)"
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="api-key-input"
@@ -394,7 +400,7 @@ export default function App() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
         {/* Mobile top bar */}
         <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
           <button
