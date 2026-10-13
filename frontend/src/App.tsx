@@ -270,7 +270,10 @@ export default function App() {
             className="md:hidden text-slate-400 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Close sidebar"
           >
-            ✕
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
 
@@ -332,7 +335,13 @@ export default function App() {
           onClick={() => setMessages([])}
           className="mt-auto text-xs text-slate-400 hover:text-red-400 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
         >
-          ✕ Clear chat
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+          Clear chat
         </button>
       </aside>
 
@@ -421,9 +430,12 @@ export default function App() {
             {streaming ? (
               <button
                 onClick={stopStreaming}
-                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
               >
-                ⏹ Stop
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="mr-1" aria-hidden="true">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+                Stop
               </button>
             ) : (
               <button

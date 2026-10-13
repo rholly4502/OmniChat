@@ -264,7 +264,7 @@ describe('App', () => {
     fireEvent.click(screen.getByText('Kirim'));
     // While streaming, the stop button should appear
     await waitFor(() => {
-      expect(screen.getByText('⏹ Stop')).toBeInTheDocument();
+      expect(screen.getByText('Stop')).toBeInTheDocument();
     });
   });
 
