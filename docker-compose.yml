@@ -60,8 +60,8 @@ services:
     # nginx serves static files and proxies /api/* to the backend service.
     # nginx.conf handles the proxy — no vite env var needed.
     healthcheck:
-      # BusyBox wget is available in nginx:alpine (no curl needed).
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:4173/ || exit 1"]
+      # nginx:alpine has wget in BusyBox. Use -q for quiet, --spider for HEAD.
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:4173/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
