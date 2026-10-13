@@ -1,0 +1,29 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:  # manual trigger dari GitHub Actions tab
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            cd /opt/OmniChat
+            git pull origin main
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend backend
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            sleep 5
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+            echo "=== Health check ==="
+            curl -s -o /dev/null -w "%{http_code}" https://rhol-ai.tech || echo "health check failed"
