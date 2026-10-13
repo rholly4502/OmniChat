@@ -129,7 +129,7 @@ malformed values fall back to the defaults (a typo never blocks startup).
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com;
+    server_name rhol-ai.tech;
 
     # Frontend
     location / {
