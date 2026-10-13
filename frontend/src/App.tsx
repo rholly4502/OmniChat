@@ -451,7 +451,10 @@ export default function App() {
                   <div className="md-body">
                     <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
-                    components={{ table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div> }}
+                    components={{
+                      table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div>,
+                      img: (props) => <img {...props} loading="lazy" decoding="async" />,
+                    }}
                   >{m.content}</ReactMarkdown>
                   </div>
                 ) : (
