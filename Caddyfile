@@ -1,6 +1,9 @@
 # Caddyfile — reverse proxy + auto SSL (Let's Encrypt)
 # Ganti rhol-ai.tech dengan domain kamu
 rhol-ai.tech {
+	# Health check -> backend (public endpoint, no API key required)
+	reverse_proxy /health backend:5184
+
 	# API requests -> backend (flush_interval -1 = SSE streaming tanpa buffering)
 	reverse_proxy /api/* backend:5184 {
 		flush_interval -1
