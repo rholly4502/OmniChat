@@ -311,7 +311,7 @@ export default function App() {
           <button
             ref={closeButtonRef}
             onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-slate-400 hover:text-slate-200 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+            className="md:hidden text-slate-400 hover:text-slate-200 active:bg-slate-800/50 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Close sidebar"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -323,7 +323,7 @@ export default function App() {
 
         {/* Mode Toggle */}
         <div className="mt-2 space-y-2">
-          <label className="flex items-center gap-3 cursor-pointer bg-slate-900 rounded-lg p-3 border border-slate-800 hover:border-cyan-600 transition">
+          <label className="flex items-center gap-3 cursor-pointer bg-slate-900 rounded-lg p-3 border border-slate-800 hover:border-cyan-600 active:border-cyan-500 transition">
             <input
               type="checkbox"
               checked={useAgent}
@@ -369,6 +369,7 @@ export default function App() {
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
+            autoComplete="off"
             placeholder="(kosong = tanpa auth)"
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="api-key-input"
@@ -380,7 +381,7 @@ export default function App() {
 
         <button
           onClick={() => setMessages([])}
-          className="mt-auto text-xs text-slate-400 hover:text-red-400 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
+          className="mt-auto text-xs text-slate-400 hover:text-red-400 active:text-red-300 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1.5 -mt-0.5" aria-hidden="true">
             <polyline points="3 6 5 6 21 6" />
@@ -401,7 +402,7 @@ export default function App() {
             onClick={() => setSidebarOpen(true)}
             aria-expanded={sidebarOpen}
             aria-controls="chat-sidebar"
-            className="text-slate-400 hover:text-cyan-400 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+            className="text-slate-400 hover:text-cyan-400 active:bg-slate-800/50 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Open menu"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -418,7 +419,7 @@ export default function App() {
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} aria-live="polite" aria-label="Chat messages"
+        <div ref={scrollRef} aria-busy={streaming} aria-live="polite" aria-label="Chat messages"
           className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
           {messages.length === 0 && (
             <div className="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
@@ -482,7 +483,7 @@ export default function App() {
             {streaming ? (
               <button
                 onClick={stopStreaming}
-                className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                className="bg-red-600 hover:bg-red-500 active:bg-red-700 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -493,7 +494,7 @@ export default function App() {
               <button
                 onClick={send}
                 disabled={!input.trim()}
-                className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
               >
                 Kirim
               </button>
