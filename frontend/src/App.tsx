@@ -29,6 +29,44 @@ const DEFAULT_DIRECT_MODELS: ModelOption[] = [
   { id: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (Free)' },
 ];
 
+function BotIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="10" rx="2" />
+      <circle cx="12" cy="5" r="2" />
+      <path d="M12 7v4" />
+      <circle cx="8.5" cy="16" r="1" fill="currentColor" />
+      <circle cx="15.5" cy="16" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+function BoltIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </svg>
+  );
+}
+
+function LockIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
+
+function UnlockIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+    </svg>
+  );
+}
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -249,9 +287,10 @@ export default function App() {
         role={sidebarOpen ? "dialog" : undefined}
         aria-modal={sidebarOpen ? "true" : undefined}
         aria-label="Chat settings"
+        style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
         className={`
           fixed md:static inset-y-0 left-0 z-50
-          w-[85vw] max-w-[18rem] border-r border-slate-800 p-4 flex flex-col gap-4
+          w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4
           bg-slate-950
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -287,8 +326,9 @@ export default function App() {
               className="h-4 w-4 accent-cyan-500"
             />
             <div>
-              <div className="text-sm font-semibold">
-                {useAgent ? '🤖 Agent Mode' : '⚡ Direct Mode'}
+              <div className="text-sm font-semibold flex items-center gap-1.5">
+                {useAgent ? <BotIcon /> : <BoltIcon />}
+                {useAgent ? 'Agent Mode' : 'Direct Mode'}
               </div>
               <div className="text-xs text-slate-400">
                 {useAgent ? 'Hermes Gateway (tools + memory)' : 'Langsung ke LLM (cepat)'}
@@ -316,7 +356,9 @@ export default function App() {
         <div className="space-y-1">
           <label htmlFor="api-key-input" className="text-xs text-slate-400 font-medium flex items-center gap-1">
             API Key
-            <span className="text-xs">{apiKey ? '🔒' : '🔓'}</span>
+            <span data-testid={apiKey ? 'lock-icon' : 'unlock-icon'} className="inline-flex text-slate-400">
+              {apiKey ? <LockIcon /> : <UnlockIcon />}
+            </span>
           </label>
           <input
             type="password"
@@ -364,8 +406,9 @@ export default function App() {
             </svg>
           </button>
           <span className="text-sm font-semibold text-cyan-400">OmniChat</span>
-          <span className="text-xs text-slate-400 ml-auto">
-            {useAgent ? '🤖 Agent' : '⚡ Direct'}
+          <span className="text-xs text-slate-400 ml-auto inline-flex items-center gap-1">
+            {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
+            {useAgent ? 'Agent' : 'Direct'}
           </span>
         </div>
 
@@ -418,6 +461,7 @@ export default function App() {
         <div className="p-3 md:p-4 border-t border-slate-800" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
           <div className="flex gap-2">
             <input
+              aria-label="Ketik pesan"
               value={input}
               enterKeyHint="send"
               autoComplete="off"

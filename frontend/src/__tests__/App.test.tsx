@@ -209,18 +209,24 @@ describe('App', () => {
     expect(localStorage.getItem('omnichat_api_key')).toBeNull();
   });
 
-  it('shows lock emoji when API key is set', () => {
+  it('shows locked indicator when API key is set', () => {
     localStorage.setItem('omnichat_api_key', 'some-key');
     render(<App />);
-    expect(screen.getByText('🔒')).toBeInTheDocument();
+    expect(screen.getByTestId('lock-icon')).toBeInTheDocument();
   });
 
-  it('shows unlock emoji when API key is empty', () => {
+  it('shows unlocked indicator when API key is empty', () => {
     render(<App />);
-    expect(screen.getByText('🔓')).toBeInTheDocument();
+    expect(screen.getByTestId('unlock-icon')).toBeInTheDocument();
   });
 
   // ─── Send Button & Input ─────────────────────────────────────
+
+  it('chat input has aria-label for accessibility', () => {
+    render(<App />);
+    const input = screen.getByLabelText('Ketik pesan');
+    expect(input).toBeInTheDocument();
+  });
 
   it('disables send button when input is empty', () => {
     render(<App />);
