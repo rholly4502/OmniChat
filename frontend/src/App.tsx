@@ -147,9 +147,10 @@ export default function App() {
       document.body.style.overflow = 'hidden';
       // Move focus into the sidebar (close button)
       closeButtonRef.current?.focus();
+      const menuBtn = menuButtonRef.current;
       return () => {
         document.body.style.overflow = '';
-        menuButtonRef.current?.focus();
+        menuBtn?.focus();
       };
     }
   }, [sidebarOpen]);
@@ -290,7 +291,7 @@ export default function App() {
         style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
         className={`
           fixed md:static inset-y-0 left-0 z-50
-          w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4
+          w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4 overflow-y-auto
           bg-slate-950
           transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
@@ -343,7 +344,7 @@ export default function App() {
           <select
             value={model}
             onChange={(e) => setModel(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="model-select"
           >
             {models.map((m) => (
@@ -365,7 +366,7 @@ export default function App() {
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
             placeholder="(kosong = tanpa auth)"
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
             id="api-key-input"
           />
           <p className="text-xs text-slate-400">
@@ -476,7 +477,7 @@ export default function App() {
                 onClick={stopStreaming}
                 className="bg-red-600 hover:bg-red-500 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="mr-1" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <rect x="6" y="6" width="12" height="12" rx="2" />
                 </svg>
                 Stop
