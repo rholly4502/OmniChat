@@ -60,8 +60,18 @@ public class ChatService : IChatService
                 Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
             };
 
-            if (!request.UseHermesBridge)
+            if (request.UseHermesBridge)
             {
+                // Hermes Bridge: kirim Hermes API key sebagai Bearer token
+                var hermesKey = _configuration["Hermes:ApiKey"];
+                if (!string.IsNullOrEmpty(hermesKey))
+                {
+                    httpRequest.Headers.Add("Authorization", $"Bearer {hermesKey}");
+                }
+            }
+            else
+            {
+                // Direct mode: kirim LLM API key (OpenRouter) sebagai Bearer token
                 var apiKey = _configuration["LLM:ApiKey"];
                 if (!string.IsNullOrEmpty(apiKey))
                 {

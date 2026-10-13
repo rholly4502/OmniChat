@@ -68,6 +68,9 @@ services:
       start_period: 10s
     # nginx has its own security model (master=root, workers=nginx user).
     # cap_drop:ALL breaks nginx — it needs CAP_CHOWN for cache dirs.
+    # no-new-privileges is safe and doesn't interfere with nginx startup.
+    security_opt:
+      - no-new-privileges:true
     restart: unless-stopped
     deploy:
       resources:

@@ -44,6 +44,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "test-key"
         });
@@ -53,7 +54,7 @@ public class StartupConfigValidatorTests
         validator.Validate(isProduction: true);
 
         Assert.Contains(logger.Entries, e =>
-            e.Level == LogLevel.Warning && e.Message.Contains("ApiKey"));
+            e.Level == LogLevel.Warning && e.Message.Contains("Security:ApiKey is empty"));
     }
 
     [Fact]
@@ -62,6 +63,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Security:Jwt:SigningKey"] = "test-key"
         });
         var logger = CreateLogger();
@@ -79,6 +81,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = ""
         });
@@ -97,6 +100,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key"
         });
@@ -127,7 +131,7 @@ public class StartupConfigValidatorTests
     }
 
     [Fact]
-    public void Validate_ProductionAllInsecure_LogsThreeWarnings()
+    public void Validate_ProductionAllInsecure_LogsFourWarnings()
     {
         var config = BuildConfig(new Dictionary<string, string?>
         {
@@ -139,7 +143,7 @@ public class StartupConfigValidatorTests
 
         validator.Validate(isProduction: true);
 
-        Assert.Equal(3, logger.Entries.Count);
+        Assert.Equal(4, logger.Entries.Count);
         Assert.All(logger.Entries, e => Assert.Equal(LogLevel.Warning, e.Level));
     }
 
@@ -150,6 +154,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "   ",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "test-key"
         });
@@ -158,7 +163,7 @@ public class StartupConfigValidatorTests
 
         validator.Validate(isProduction: true);
 
-        Assert.Contains(logger.Entries, e => e.Message.Contains("ApiKey"));
+        Assert.Contains(logger.Entries, e => e.Message.Contains("Security:ApiKey"));
     }
 
     [Fact]
@@ -168,6 +173,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "",
             ["Cors:AllowedOrigins:1"] = "  ",
             ["Security:Jwt:SigningKey"] = "test-key"
@@ -188,6 +194,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key",
             ["ReverseProxy:Enabled"] = "true"
@@ -207,6 +214,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key",
             ["ReverseProxy:Enabled"] = "true",
@@ -226,6 +234,7 @@ public class StartupConfigValidatorTests
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key",
             ["ReverseProxy:Enabled"] = "false"
@@ -236,5 +245,24 @@ public class StartupConfigValidatorTests
         validator.Validate(isProduction: true);
 
         Assert.Empty(logger.Entries);
+    }
+
+    [Fact]
+    public void Validate_ProductionEmptyHermesApiKey_LogsWarning()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = "signing-key"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Warning && e.Message.Contains("Hermes:ApiKey is empty"));
     }
 }

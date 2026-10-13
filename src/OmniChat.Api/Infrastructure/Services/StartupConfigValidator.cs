@@ -43,6 +43,12 @@ public class StartupConfigValidator
                 "Security:ApiKey is empty — the API is open. Set a strong API key via the Security__ApiKey environment variable.");
         }
 
+        if (string.IsNullOrWhiteSpace(_configuration["Hermes:ApiKey"]))
+        {
+            _logger.LogWarning(
+                "Hermes:ApiKey is empty — Hermes Bridge mode will call the gateway without authentication. Set the Hermes API key via the Hermes__ApiKey environment variable.");
+        }
+
         var corsOrigins = (_configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
             .Where(o => !string.IsNullOrWhiteSpace(o))
             .ToArray();
