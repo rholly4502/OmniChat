@@ -356,9 +356,11 @@ export default function App() {
       }
     } catch (e) {
       if ((e as Error).name !== 'AbortError') {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        console.error('[OmniChat] Fetch error:', e);
         setMessages((prev) => [
           ...prev.slice(0, -1),
-          { role: 'assistant', content: '⚠️ Koneksi ke backend gagal. Pastikan API .NET berjalan.' },
+          { role: 'assistant', content: `⚠️ Koneksi ke backend gagal: ${errMsg}` },
         ]);
       } else {
         setMessages((prev) => {
