@@ -18,12 +18,71 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
+          # Abort the remote script on the first failing command. Without this a failed
+          # `git pull` was silently ignored and the build ran against stale source while
+          # the job still reported success.
+          script_stop: true
           script: |
+            set -euo pipefail
             cd /opt/OmniChat
-            git pull origin main
+
+            echo "=== Target commit: ${{ github.sha }} ==="
+
+            # The deploy checkout is READ-ONLY: origin/main is the source of truth.
+            # A dirty working tree previously made `git pull` abort, so the image was
+            # rebuilt from stale code. Preserve any local modification as a patch for
+            # review, then hard-sync to the pushed commit.
+            if ! git diff --quiet || ! git diff --cached --quiet; then
+              BACKUP="/tmp/omnichat-local-$(date +%Y%m%d-%H%M%S).patch"
+              git diff HEAD > "$BACKUP"
+              echo "WARNING: local modifications detected — saved to $BACKUP"
+              git status --short
+            fi
+
+            git fetch --prune origin main
+            git reset --hard origin/main
+            # Remove stray untracked build leftovers. No -x, so ignored files (.env) survive.
+            git clean -fd
+
+            DEPLOYED_SHA="$(git rev-parse HEAD)"
+            echo "=== Deployed commit: $DEPLOYED_SHA ==="
+            if [ "$DEPLOYED_SHA" != "${{ github.sha }}" ]; then
+              echo "ERROR: deployed commit $DEPLOYED_SHA != pushed commit ${{ github.sha }}"
+              exit 1
+            fi
+
+            echo "=== Building images ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend backend
+
+            echo "=== Starting services ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-            sleep 5
+
+            # Caddy mounts its config as a file, so it never notices Caddyfile edits on its
+            # own. Validate before reloading so a bad config fails the deploy loudly.
+            echo "=== Reloading Caddy ==="
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T caddy \
+              caddy validate --config /etc/caddy/Caddyfile
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T caddy \
+              caddy reload --config /etc/caddy/Caddyfile
+
+            echo "=== Waiting for backend health ==="
+            for i in $(seq 1 30); do
+              if curl -fsS http://localhost:5184/health > /dev/null; then
+                echo "backend healthy after ${i}s"
+                break
+              fi
+              if [ "$i" -eq 30 ]; then
+                echo "ERROR: backend did not become healthy within 30s"
+                docker compose -f docker-compose.yml -f docker-compose.prod.yml logs backend --tail=50
+                exit 1
+              fi
+              sleep 1
+            done
+
+            echo "=== Container status ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-            echo "=== Health check ==="
-            curl -s -o /dev/null -w "%{http_code}" https://rhol-ai.tech || echo "health check failed"
+
+            echo "=== Public health check ==="
+            curl -fsS -o /dev/null -w "https://rhol-ai.tech -> %{http_code}\n" https://rhol-ai.tech/health
+
+            echo "=== Deploy complete: $DEPLOYED_SHA ==="
