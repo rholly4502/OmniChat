@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
+import { CodeBlock } from '../App';
 
 /**
  * Frontend component tests for the OmniChat App.
@@ -388,5 +389,52 @@ describe('App', () => {
     render(<App />);
     const liveRegion = screen.getByLabelText('Chat messages');
     expect(liveRegion).toHaveAttribute('aria-live', 'polite');
+  });
+
+  // ─── CodeBlock (Copy Button) ────────────────────────────────
+
+  it('CodeBlock renders a copy button with correct aria-label', () => {
+    render(<CodeBlock>const x = 42;</CodeBlock>);
+    const btn = screen.getByRole('button', { name: 'Copy code to clipboard' });
+    expect(btn).toBeInTheDocument();
+  });
+
+  it('CodeBlock renders a pre element with the code content', () => {
+    const { container } = render(<CodeBlock>{'console.log("hello")'}</CodeBlock>);
+    const pre = container.querySelector('pre');
+    expect(pre).toBeInTheDocument();
+    expect(pre?.textContent).toBe('console.log("hello")');
+  });
+
+  it('copies code to clipboard when button is clicked', async () => {
+    const writeTextSpy = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeTextSpy;
+
+    render(<CodeBlock>{'const answer = 42;'}</CodeBlock>);
+    const btn = screen.getByRole('button', { name: 'Copy code to clipboard' });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(writeTextSpy).toHaveBeenCalledWith('const answer = 42;');
+    });
+  });
+
+  it('shows "Copied" text after clicking copy button', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+
+    render(<CodeBlock>{'npm run build'}</CodeBlock>);
+    const btn = screen.getByRole('button', { name: 'Copy code to clipboard' });
+    fireEvent.click(btn);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Code copied to clipboard' })).toBeInTheDocument();
+    });
+    expect(screen.getByText('Copied')).toBeInTheDocument();
+  });
+
+  it('CodeBlock button has focus-visible ring class for keyboard nav', () => {
+    render(<CodeBlock>{'test'}</CodeBlock>);
+    const btn = screen.getByRole('button', { name: 'Copy code to clipboard' });
+    expect(btn.className).toContain('focus-visible:ring');
   });
 });

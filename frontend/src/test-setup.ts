@@ -23,3 +23,12 @@ if (!window.matchMedia) {
     dispatchEvent: () => false,
   });
 }
+
+
+// jsdom does not implement navigator.clipboard — CodeBlock uses it for
+// copy-to-clipboard. Mock it with a vi.fn so tests can assert calls.
+if (!navigator.clipboard) {
+  navigator.clipboard = {
+    writeText: () => Promise.resolve(),
+  } as unknown as Navigator['clipboard'];
+}
