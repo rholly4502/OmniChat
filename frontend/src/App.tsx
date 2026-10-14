@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type ReactNode } from 'react';
+import { useRef, useState, useEffect, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -116,6 +116,8 @@ export default function App() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const touchDelta = useRef(0);
 
   const models = useAgent ? catalog.agent : catalog.direct;
 
@@ -193,6 +195,70 @@ export default function App() {
       };
     }
   }, [sidebarOpen]);
+
+  function handleTouchStart(e: ReactTouchEvent) {
+    const touch = e.touches[0];
+    if (!touch) return;
+    // Track for opening: only from left edge when sidebar is closed
+    if (!sidebarOpen && touch.clientX <= 20) {
+      touchStart.current = { x: touch.clientX, y: touch.clientY };
+    } else if (sidebarOpen) {
+      // Track for closing: any touch when sidebar is open
+      touchStart.current = { x: touch.clientX, y: touch.clientY };
+    }
+  }
+
+  function handleTouchMove(e: ReactTouchEvent) {
+    if (!touchStart.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const dx = touch.clientX - touchStart.current.x;
+    const dy = touch.clientY - touchStart.current.y;
+
+    // Cancel if primarily vertical (user is scrolling, not swiping)
+    if (Math.abs(dy) > Math.abs(dx)) {
+      if (touchDelta.current !== 0) {
+        const sb = sidebarRef.current;
+        if (sb) { sb.style.transform = ''; sb.style.transition = ''; }
+        touchDelta.current = 0;
+      }
+      return;
+    }
+
+    touchDelta.current = dx;
+    const sb = sidebarRef.current;
+    if (!sb) return;
+    const width = sb.offsetWidth;
+    if (!sidebarOpen) {
+      // Opening: sidebar is at -width, moving towards 0
+      const translate = Math.max(-width, Math.min(dx - width, 0));
+      sb.style.transform = `translateX(${translate}px)`;
+      sb.style.transition = 'none';
+    } else {
+      // Closing: sidebar is at 0, moving towards -width
+      const translate = Math.max(-width, Math.min(dx, 0));
+      sb.style.transform = `translateX(${translate}px)`;
+      sb.style.transition = 'none';
+    }
+  }
+
+  function handleTouchEnd() {
+    if (!touchStart.current) return;
+    touchStart.current = null;
+    const sb = sidebarRef.current;
+    if (!sb) { touchDelta.current = 0; return; }
+    const width = sb.offsetWidth;
+    const threshold = width * 0.3;
+    // Clear inline styles so CSS transition + Tailwind classes take over
+    sb.style.transform = '';
+    sb.style.transition = '';
+    if (!sidebarOpen && touchDelta.current > threshold) {
+      setSidebarOpen(true);
+    } else if (sidebarOpen && touchDelta.current < -threshold) {
+      setSidebarOpen(false);
+    }
+    touchDelta.current = 0;
+  }
 
   function toggleMode() {
     const next = !useAgent;
@@ -310,7 +376,12 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden">
+    <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+    >
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (
         <div

@@ -451,4 +451,69 @@ describe('App', () => {
     const btn = screen.getByRole('button', { name: 'Copy code to clipboard' });
     expect(btn.className).toContain('focus-visible:ring');
   });
+
+  // ─── Swipe Gesture (Mobile Sidebar) ──────────────────────────
+
+  it('opens sidebar on rightward edge swipe', () => {
+    render(<App />);
+    const sidebar = document.getElementById('chat-sidebar');
+    expect(sidebar?.className).toContain('-translate-x-full');
+
+    // Simulate rightward swipe from left edge (clientX=5 → clientX=200)
+    const root = document.querySelector('.flex.h-dvh') as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 5, clientY: 300 }] });
+    fireEvent.touchMove(root, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchEnd(root);
+
+    expect(sidebar?.className).toContain('translate-x-0');
+  });
+
+  it('closes sidebar on leftward swipe when open', () => {
+    render(<App />);
+    // Open sidebar first via button
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    const sidebar = document.getElementById('chat-sidebar');
+    expect(sidebar?.className).toContain('translate-x-0');
+
+    // Simulate leftward swipe (clientX=200 → clientX=20)
+    const root = document.querySelector('.flex.h-dvh') as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 200, clientY: 300 }] });
+    fireEvent.touchMove(root, { touches: [{ clientX: 20, clientY: 300 }] });
+    fireEvent.touchEnd(root);
+
+    expect(sidebar?.className).toContain('-translate-x-full');
+  });
+
+  it('does not open sidebar on swipe from non-edge position', () => {
+    render(<App />);
+    const sidebar = document.getElementById('chat-sidebar');
+    expect(sidebar?.className).toContain('-translate-x-full');
+
+    // Swipe right but starting from center (not left edge)
+    const root = document.querySelector('.flex.h-dvh') as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 150, clientY: 300 }] });
+    fireEvent.touchMove(root, { touches: [{ clientX: 300, clientY: 300 }] });
+    fireEvent.touchEnd(root);
+
+    // Sidebar should remain closed
+    expect(sidebar?.className).toContain('-translate-x-full');
+  });
+
+  it('does not trigger swipe on vertical scroll gesture', () => {
+    render(<App />);
+    // Open sidebar first
+    fireEvent.click(screen.getByLabelText('Open menu'));
+    const sidebar = document.getElementById('chat-sidebar');
+    expect(sidebar?.className).toContain('translate-x-0');
+
+    // Simulate primarily vertical movement (should not close)
+    const root = document.querySelector('.flex.h-dvh') as HTMLElement;
+    fireEvent.touchStart(root, { touches: [{ clientX: 100, clientY: 100 }] });
+    fireEvent.touchMove(root, { touches: [{ clientX: 105, clientY: 400 }] });
+    fireEvent.touchEnd(root);
+
+    // Sidebar should remain open
+    expect(sidebar?.className).toContain('translate-x-0');
+  });
+
 });
