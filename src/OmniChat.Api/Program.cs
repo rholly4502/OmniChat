@@ -196,6 +196,10 @@ app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.RequestLoggingMiddlewar
 // JWT bearer authentication: validates Authorization: Bearer tokens (pass-through when unconfigured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.JwtAuthenticationMiddleware>();
 
+// Routing must be registered before CORS so the CORS middleware can
+// match policies to endpoints and handle OPTIONS preflight correctly.
+app.UseRouting();
+
 // CORS must run BEFORE ApiKeyMiddleware so OPTIONS preflight requests
 // get a 204 response without requiring an API key.
 app.UseCors("AppPolicy");
