@@ -2,14 +2,29 @@ import { useRef, useState, useEffect, type ReactNode, type TouchEvent as ReactTo
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message, ModelCatalog } from './types';
+import { streamChat, ApiError } from './api';
 import {
-  API_URL,
   MODELS_URL,
   API_KEY_STORAGE,
   DEFAULT_AGENT_MODELS,
   DEFAULT_DIRECT_MODELS,
   DEFAULT_MODEL,
 } from './constants';
+
+/**
+ * Localized, user-facing message for a failed chat request. Kept in App.tsx
+ * (not api.ts) so the transport stays free of presentation strings.
+ */
+function describeApiError(err: ApiError): string {
+  if (err.status === 401) return 'Autentikasi diperlukan (401). Masukkan API key di sidebar.';
+  if (err.status === 429) {
+    return err.retryAfter
+      ? `Terlalu banyak permintaan (429). Coba lagi dalam ${err.retryAfter} detik.`
+      : 'Terlalu banyak permintaan (429). Coba lagi nanti.';
+  }
+  if (err.status === 400) return 'Permintaan tidak valid (400). Periksa input.';
+  return `Backend menolak permintaan (${err.status}).`;
+}
 
 function BotIcon({ size = 16 }: { size?: number }) {
   return (
@@ -264,79 +279,47 @@ export default function App() {
     abortRef.current = ctrl;
 
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (apiKey) headers['X-Api-Key'] = apiKey;
-
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          model,
-          useHermesBridge: useAgent,
-          messages: history.map((m) => ({ role: m.role, content: m.content })),
-        }),
+      for await (const chunk of streamChat({
+        model,
+        useHermesBridge: useAgent,
+        messages: history.map((m) => ({ role: m.role, content: m.content })),
+        apiKey,
         signal: ctrl.signal,
-      });
-
-      if (!res.ok || !res.body) {
-        const retryAfter = res.headers.get('Retry-After');
-        const detail = res.status === 401 ? 'Autentikasi diperlukan (401). Masukkan API key di sidebar.'
-          : res.status === 429
-            ? retryAfter
-              ? `Terlalu banyak permintaan (429). Coba lagi dalam ${retryAfter} detik.`
-              : 'Terlalu banyak permintaan (429). Coba lagi nanti.'
-          : res.status === 400 ? 'Permintaan tidak valid (400). Periksa input.'
-          : `Backend menolak permintaan (${res.status}).`;
+      })) {
+        if (chunk.error) {
+          const detail = chunk.error;
+          setMessages((prev) => {
+            const copy = [...prev];
+            const last = copy[copy.length - 1];
+            copy[copy.length - 1] = {
+              role: 'assistant',
+              content: last.content
+                ? `${last.content}\n\n⚠️ ${detail}`
+                : `⚠️ ${detail}`,
+            };
+            return copy;
+          });
+        } else if (chunk.content) {
+          const piece = chunk.content;
+          setMessages((prev) => {
+            const copy = [...prev];
+            copy[copy.length - 1] = {
+              role: 'assistant',
+              content: copy[copy.length - 1].content + piece,
+            };
+            return copy;
+          });
+        }
+      }
+    } catch (e) {
+      if (e instanceof ApiError) {
+        const detail = describeApiError(e);
         setMessages((prev) => [
           ...prev.slice(0, -1),
           { role: 'assistant', content: `⚠️ ${detail}` },
         ]);
         return;
       }
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const events = buffer.split('\n\n');
-        buffer = events.pop() ?? '';
-        for (const evt of events) {
-          if (!evt.startsWith('data: ')) continue;
-          const data = evt.slice(6).trim();
-          if (data === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.error) {
-              setMessages((prev) => {
-                const copy = [...prev];
-                const last = copy[copy.length - 1];
-                copy[copy.length - 1] = {
-                  role: 'assistant',
-                  content: last.content
-                    ? `${last.content}\n\n⚠️ ${parsed.error}`
-                    : `⚠️ ${parsed.error}`,
-                };
-                return copy;
-              });
-            } else if (parsed.content) {
-              setMessages((prev) => {
-                const copy = [...prev];
-                copy[copy.length - 1] = {
-                  role: 'assistant',
-                  content: copy[copy.length - 1].content + parsed.content,
-                };
-                return copy;
-              });
-            }
-          } catch {}
-        }
-      }
-    } catch (e) {
       if ((e as Error).name !== 'AbortError') {
         const errMsg = e instanceof Error ? e.message : String(e);
         console.error('[OmniChat] Fetch error:', e);
