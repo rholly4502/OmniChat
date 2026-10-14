@@ -401,7 +401,7 @@ export default function App() {
         style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
         className={`
           fixed md:static inset-y-0 left-0 z-50
-          w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4 overflow-y-auto
+          w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4 overflow-y-auto overscroll-y-contain
           bg-slate-950
           transform transition-transform duration-300 ease-in-out will-change-transform
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
