@@ -35,6 +35,13 @@ public class ApiKeyMiddleware
             return;
         }
 
+        // CORS preflight (OPTIONS) must pass without an API key
+        if (context.Request.Method == HttpMethods.Options)
+        {
+            await _next(context);
+            return;
+        }
+
         if (string.IsNullOrEmpty(_configuredApiKey) || IsExempt(context.Request.Path))
         {
             await _next(context);
