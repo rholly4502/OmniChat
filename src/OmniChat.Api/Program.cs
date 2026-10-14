@@ -196,10 +196,12 @@ app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.RequestLoggingMiddlewar
 // JWT bearer authentication: validates Authorization: Bearer tokens (pass-through when unconfigured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.JwtAuthenticationMiddleware>();
 
+// CORS must run BEFORE ApiKeyMiddleware so OPTIONS preflight requests
+// get a 204 response without requiring an API key.
+app.UseCors("AppPolicy");
+
 // API-key authentication (pass-through when Security:ApiKey is not configured)
 app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();
-
-app.UseCors("AppPolicy");
 app.UseRateLimiter();
 
 // Health check: JSON body with status/version/uptime + per-check detail
