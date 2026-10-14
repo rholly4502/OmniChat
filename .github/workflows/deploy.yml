@@ -18,11 +18,10 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          # Abort the remote script on the first failing command. Without this a failed
-          # `git pull` was silently ignored and the build ran against stale source while
-          # the job still reported success.
-          script_stop: true
           script: |
+            # Abort on the first failing command. Without this a failed `git pull` was
+            # silently ignored, the build ran against stale source, and the job still
+            # reported success.
             set -euo pipefail
             cd /opt/OmniChat
 
@@ -57,13 +56,18 @@ jobs:
             echo "=== Starting services ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-            # Caddy mounts its config as a file, so it never notices Caddyfile edits on its
-            # own. Validate before reloading so a bad config fails the deploy loudly.
-            echo "=== Reloading Caddy ==="
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T caddy \
-              caddy validate --config /etc/caddy/Caddyfile
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T caddy \
-              caddy reload --config /etc/caddy/Caddyfile
+            # The Caddy service bind-mounts the Caddyfile as a single FILE. A container that
+            # is already running keeps the mount it resolved at start-up, so a config edited
+            # on disk (git reset --hard, editor save) can stay invisible to `caddy reload`.
+            # Validate against the host file in a throwaway container — that always reads the
+            # current bytes — then force-recreate the service so the mount is re-resolved.
+            echo "=== Validating Caddyfile (from host) ==="
+            docker run --rm --entrypoint caddy \
+              -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
+              caddy:2-alpine validate --config /etc/caddy/Caddyfile
+
+            echo "=== Recreating Caddy so it picks up the Caddyfile ==="
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate caddy
 
             echo "=== Waiting for backend health ==="
             for i in $(seq 1 30); do
@@ -82,7 +86,23 @@ jobs:
             echo "=== Container status ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
-            echo "=== Public health check ==="
-            curl -fsS -o /dev/null -w "https://rhol-ai.tech -> %{http_code}\n" https://rhol-ai.tech/health
+            # Assert /health is answered by the API, not by the SPA. The frontend nginx serves
+            # index.html for unknown paths, so a 200 alone proves nothing — it previously hid
+            # a Caddy route that had stopped sending /health to the backend.
+            echo "=== Public health check (must reach the API) ==="
+            for i in $(seq 1 15); do
+              BODY="$(curl -fsS https://rhol-ai.tech/health 2>/dev/null || true)"
+              if printf '%s' "$BODY" | grep -q '"status"'; then
+                echo "/health served by the API: $BODY"
+                break
+              fi
+              if [ "$i" -eq 15 ]; then
+                echo "ERROR: /health is not reaching the API after 15 attempts."
+                echo "Last body: $BODY"
+                docker compose -f docker-compose.yml -f docker-compose.prod.yml logs caddy --tail=30
+                exit 1
+              fi
+              sleep 2
+            done
 
             echo "=== Deploy complete: $DEPLOYED_SHA ==="
