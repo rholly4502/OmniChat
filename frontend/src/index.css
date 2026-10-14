@@ -71,6 +71,16 @@ body {
   max-height: 24rem;
   margin: 0.5em 0;
 }
+/* Responsive top padding for code blocks — fits 44px mobile copy button */
+pre.code-block-pre {
+  padding-top: 3.25rem;
+}
+@media (min-width: 768px) {
+  pre.code-block-pre {
+    padding-top: 2.5rem;
+  }
+}
+
 .md-body pre code {
   background: none;
   color: #e2e8f0;
