@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Mvc;
-using OmniChat.Api.Infrastructure;
-using Microsoft.AspNetCore.RateLimiting;
-using OmniChat.Application.Interfaces;
-using OmniChat.Domain.Models;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using OmniChat.Api.Infrastructure;
+using OmniChat.Application.Interfaces;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Api.Controllers;
 
@@ -15,7 +15,7 @@ namespace OmniChat.Api.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Tags("Chat")]
-public class ChatController : ControllerBase
+public sealed class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
     private readonly IModelCatalogService _modelCatalogService;
@@ -47,14 +47,15 @@ public class ChatController : ControllerBase
     /// <returns>SSE stream of chat tokens.</returns>
     /// <response code="200">SSE stream of tokens.</response>
     /// <response code="400">Invalid request body.</response>
+    /// <response code="401">Missing or invalid credentials.</response>
     /// <response code="429">Rate limit exceeded.</response>
     [HttpPost("stream")]
-    [EnableRateLimiting("per-ip")]
+    [EnableRateLimiting("chat")]
     [Produces("text/event-stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
         // [ApiController] + ApiBehaviorOptions handle invalid model state automatically
@@ -63,7 +64,7 @@ public class ChatController : ControllerBase
         if (!ModelState.IsValid)
         {
             Response.StatusCode = StatusCodes.Status400BadRequest;
-            Response.ContentType = "application/problem+json";
+            Response.ContentType = ProblemDetailsResponse.ContentType;
             var details = new ValidationProblemDetails(ModelState)
             {
                 Title = "Validation Failed",
@@ -74,19 +75,15 @@ public class ChatController : ControllerBase
         }
 
         Response.ContentType = "text/event-stream";
-        Response.Headers["Cache-Control"] = "no-cache";
-        Response.Headers["Connection"] = "keep-alive";
-        Response.Headers["X-Accel-Buffering"] = "no"; 
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers.Connection = "keep-alive";
+        Response.Headers["X-Accel-Buffering"] = "no";
 
         try
         {
             await foreach (var token in _chatService.StreamChatResponseAsync(request, cancellationToken))
             {
-                var sseData = $"data: {JsonSerializer.Serialize(new { content = token })}\n\n";
-                var bytes = Encoding.UTF8.GetBytes(sseData);
-                
-                await Response.Body.WriteAsync(bytes, cancellationToken);
-                await Response.Body.FlushAsync(cancellationToken);
+                await WriteEventAsync(new { content = token }, cancellationToken);
             }
 
             await Response.Body.WriteAsync(Encoding.UTF8.GetBytes("data: [DONE]\n\n"), cancellationToken);
@@ -102,9 +99,17 @@ public class ChatController : ControllerBase
             // Sanitize: never send internal exception details to the client.
             // The SSE response has already started (200 OK), so ExceptionHandlingMiddleware
             // cannot intervene — send a generic error event instead of ex.Message.
-            var errorData = $"data: {JsonSerializer.Serialize(new { error = "An internal error occurred during streaming." })}\n\n";
-            await Response.Body.WriteAsync(Encoding.UTF8.GetBytes(errorData), cancellationToken);
-            await Response.Body.FlushAsync(cancellationToken);
+            await WriteEventAsync(
+                new { error = "An internal error occurred during streaming." },
+                CancellationToken.None);
         }
+    }
+
+    /// <summary>Serialises <paramref name="payload"/> as one SSE <c>data:</c> frame and flushes it.</summary>
+    private async Task WriteEventAsync(object payload, CancellationToken cancellationToken)
+    {
+        var frame = $"data: {JsonSerializer.Serialize(payload)}\n\n";
+        await Response.Body.WriteAsync(Encoding.UTF8.GetBytes(frame), cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
     }
 }

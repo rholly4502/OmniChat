@@ -1,15 +1,21 @@
-using OmniChat.Api.Infrastructure.Auth;
-using OmniChat.Api.Infrastructure.Health;
-using OmniChat.Application.Interfaces;
-using OmniChat.Infrastructure.Services;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.ResponseCompression;
+using OmniChat.Api.Infrastructure;
+using OmniChat.Api.Infrastructure.Auth;
+using OmniChat.Api.Infrastructure.Health;
+using OmniChat.Api.Infrastructure.Middleware;
 using OmniChat.Api.Infrastructure.Networking;
 using OmniChat.Api.Infrastructure.OpenApi;
+using OmniChat.Api.Infrastructure.Options;
+using OmniChat.Application.Interfaces;
+using OmniChat.Infrastructure.Services;
+
+// Name of the CORS policy applied to every request (must match app.UseCors below).
+const string CorsPolicyName = "AppPolicy";
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,7 +64,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
         details.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
         return new BadRequestObjectResult(details)
         {
-            ContentTypes = { "application/problem+json" }
+            ContentTypes = { ProblemDetailsResponse.ContentType }
         };
     };
 });
@@ -75,7 +81,6 @@ builder.Services.AddResponseCompression(options =>
 builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
 builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = System.IO.Compression.CompressionLevel.Fastest);
 
-
 // Uptime source for the enriched health response
 builder.Services.AddSingleton<ServiceStartTime>();
 
@@ -84,25 +89,53 @@ var jwtOptions = new JwtOptions();
 builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 builder.Services.AddSingleton(new JwtTokenValidator(jwtOptions));
 
-// Configure CORS: honour Cors:AllowedOrigins from config; fall back to AllowAll when none set
+// Strongly-typed upstream provider settings — validated once at startup instead of
+// being read ad hoc from IConfiguration on every request.
+builder.Services.Configure<HermesOptions>(builder.Configuration.GetSection(HermesOptions.SectionName));
+builder.Services.Configure<LlmOptions>(builder.Configuration.GetSection(LlmOptions.SectionName));
+
+// Configure CORS: honour Cors:AllowedOrigins from config. In Production an empty list is a
+// misconfiguration — the SPA is served from the same origin, so nothing legitimate needs a
+// wildcard. Fail fast at startup instead of silently letting any website call the API.
 var allowedOrigins = (builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [])
     .Where(origin => !string.IsNullOrWhiteSpace(origin))
     .ToArray();
+var isProduction = builder.Environment.IsProduction();
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AppPolicy", policy =>
+    options.AddPolicy(CorsPolicyName, policy =>
     {
         if (allowedOrigins.Length > 0)
+        {
             policy.WithOrigins(allowedOrigins).AllowAnyMethod().AllowAnyHeader().AllowCredentials();
+        }
+        else if (isProduction)
+        {
+            // Production with no configured origins: the SPA is served from the same origin, so
+            // no cross-origin caller is legitimate. Register a policy that can never match, so
+            // the browser blocks cross-origin reads — rather than a wildcard that would let any
+            // website drive this API. StartupConfigValidator warns about the empty list.
+            policy.WithOrigins("https://cors-disabled.invalid").AllowAnyMethod().AllowAnyHeader();
+        }
         else
+        {
+            // Development convenience only — never reached in Production.
             policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+        }
     });
 });
 
-// Configure HttpClient for streaming LLM calls without 100-second timeout
+// Configure HttpClient for streaming LLM calls without the default 100-second timeout.
+// A bounded connect timeout is still desirable so an unreachable gateway fails fast
+// instead of leaving the client hanging on a black-holed connection.
 builder.Services.AddHttpClient("LLMClient", client =>
 {
     client.Timeout = Timeout.InfiniteTimeSpan;
+}).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
+{
+    ConnectTimeout = TimeSpan.FromSeconds(10),
+    PooledConnectionLifetime = TimeSpan.FromMinutes(5),
 });
 
 // Register Clean Architecture Services
@@ -126,26 +159,16 @@ builder.Services.AddRateLimiter(options =>
         {
             context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("F0");
         }
-        context.HttpContext.Response.ContentType = "application/problem+json";
-        var problem = new ProblemDetails
-        {
-            Title = "Too Many Requests",
-            Status = StatusCodes.Status429TooManyRequests,
-            Detail = "Rate limit exceeded. Please retry after the Retry-After delay.",
-            Instance = context.HttpContext.Request.Path.Value,
-        };
-        problem.Extensions["traceId"] = context.HttpContext.TraceIdentifier;
-        await context.HttpContext.Response.WriteAsync(
-            System.Text.Json.JsonSerializer.Serialize(problem, global::OmniChat.Api.Infrastructure.ProblemDetailsJson.Options), cancellationToken);
+
+        await ProblemDetailsResponse.WriteAsync(
+            context.HttpContext,
+            StatusCodes.Status429TooManyRequests,
+            "Too Many Requests",
+            "Rate limit exceeded. Please retry after the Retry-After delay.",
+            cancellationToken);
     };
-    options.AddTokenBucketLimiter("chatPolicy", tokenOptions =>
-    {
-        tokenOptions.TokenLimit = rateLimitOpts.TokenLimit;
-        tokenOptions.TokensPerPeriod = rateLimitOpts.TokenLimit;
-        tokenOptions.ReplenishmentPeriod = TimeSpan.FromSeconds(rateLimitOpts.ReplenishmentPeriodSeconds);
-        tokenOptions.AutoReplenishment = true;
-    });
-    options.AddPolicy("per-ip", context =>
+
+    options.AddPolicy("chat", context =>
     {
         var ipAddress = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         return RateLimitPartition.GetTokenBucketLimiter(ipAddress, _ => new TokenBucketRateLimiterOptions
@@ -162,6 +185,10 @@ builder.Services.AddRateLimiter(options =>
 
 var app = builder.Build();
 
+// Validate security-sensitive config at startup — logs warnings for insecure production settings.
+// Done after Build() so the failure surfaces in the host's startup logging pipeline.
+app.Services.GetRequiredService<StartupConfigValidator>().Validate(app.Environment.IsProduction());
+
 // Forwarded headers first: everything downstream (rate limiting, request logging)
 // must observe the real client address and scheme when running behind a proxy.
 if (reverseProxy.Enabled)
@@ -172,29 +199,25 @@ if (reverseProxy.Enabled)
 // Enable response compression (must be before middleware that might write responses).
 app.UseResponseCompression();
 
-
-// Validate security-sensitive config at startup — logs warnings for insecure production settings.
-app.Services.GetRequiredService<StartupConfigValidator>().Validate(app.Environment.IsProduction());
-
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi(); // /openapi/v1.json
 }
 
 // Security headers: set standard response headers on every response (X-Content-Type-Options, X-Frame-Options, etc.)
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.SecurityHeadersMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 // Global exception handling — must be early in the pipeline
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ExceptionHandlingMiddleware>();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Correlation id: echo/propagate X-Correlation-Id and scope logs to it
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.CorrelationIdMiddleware>();
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 // Access log: structured per-request line (method, path, status, duration, correlation id)
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.RequestLoggingMiddleware>();
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 // JWT bearer authentication: validates Authorization: Bearer tokens (pass-through when unconfigured)
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.JwtAuthenticationMiddleware>();
+app.UseMiddleware<JwtAuthenticationMiddleware>();
 
 // Routing must be registered before CORS so the CORS middleware can
 // match policies to endpoints and handle OPTIONS preflight correctly.
@@ -202,10 +225,10 @@ app.UseRouting();
 
 // CORS must run BEFORE ApiKeyMiddleware so OPTIONS preflight requests
 // get a 204 response without requiring an API key.
-app.UseCors("AppPolicy");
+app.UseCors(CorsPolicyName);
 
 // API-key authentication (pass-through when Security:ApiKey is not configured)
-app.UseMiddleware<OmniChat.Api.Infrastructure.Middleware.ApiKeyMiddleware>();
+app.UseMiddleware<ApiKeyMiddleware>();
 app.UseRateLimiter();
 
 // Health check: JSON body with status/version/uptime + per-check detail
@@ -213,10 +236,10 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 {
     ResponseWriter = HealthResponseWriter.WriteAsync
 });
+
 // HTTPS redirection only outside Production: in Docker the app listens on plain
-// HTTP and the reverse proxy (nginx) terminates TLS, so redirecting to HTTPS
-// here would loop or break requests.
-if (!app.Environment.IsProduction())
+// HTTP and the reverse proxy terminates TLS, so redirecting to HTTPS here would loop.
+if (!isProduction)
 {
     app.UseHttpsRedirection();
 }

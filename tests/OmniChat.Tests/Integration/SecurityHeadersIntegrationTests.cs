@@ -23,6 +23,24 @@ public class SecurityHeadersIntegrationTests : IDisposable
         Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").First());
         Assert.Equal("DENY", response.Headers.GetValues("X-Frame-Options").First());
         Assert.Equal("strict-origin-when-cross-origin", response.Headers.GetValues("Referrer-Policy").First());
+        Assert.Equal("none", response.Headers.GetValues("X-Permitted-Cross-Domain-Policies").First());
+        Assert.Contains("max-age=31536000", response.Headers.GetValues("Strict-Transport-Security").First());
+        Assert.Contains("geolocation=()", response.Headers.GetValues("Permissions-Policy").First());
+    }
+
+    [Fact]
+    public async Task SecurityHeaders_ArePresentOnRejectedResponses()
+    {
+        // A 401 from the auth middleware must still carry the hardening headers — otherwise
+        // an unauthenticated error page is the one response that is not protected.
+        var client = _factory.WithWebHostBuilder(b => b.UseSetting("Security:ApiKey", "some-key"))
+                             .CreateClient();
+
+        var response = await client.GetAsync("/api/models");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("nosniff", response.Headers.GetValues("X-Content-Type-Options").First());
+        Assert.Contains("max-age=31536000", response.Headers.GetValues("Strict-Transport-Security").First());
     }
 
     [Fact]

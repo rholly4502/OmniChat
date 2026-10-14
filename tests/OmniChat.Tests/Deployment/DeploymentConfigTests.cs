@@ -291,27 +291,26 @@ public class DeploymentConfigTests
     }
 
     [Fact]
-    public void ExceptionHandlingMiddleware_UsesProblemJsonContentType()
+    public void ProblemDetailsResponse_IsTheSingleRfc7807Writer()
     {
-        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/ExceptionHandlingMiddleware.cs");
+        // All middleware error bodies funnel through this helper so the content type and
+        // the traceId extension can never drift between endpoints.
+        var src = Read("src/OmniChat.Api/Infrastructure/ProblemDetailsResponse.cs");
         Assert.Contains("application/problem+json", src);
         Assert.Contains("ProblemDetails", src);
+        Assert.Contains("traceId", src);
     }
 
-    [Fact]
-    public void ApiKeyMiddleware_UsesProblemJsonContentType()
+    [Theory]
+    [InlineData("src/OmniChat.Api/Infrastructure/Middleware/ExceptionHandlingMiddleware.cs")]
+    [InlineData("src/OmniChat.Api/Infrastructure/Middleware/ApiKeyMiddleware.cs")]
+    [InlineData("src/OmniChat.Api/Infrastructure/Middleware/JwtAuthenticationMiddleware.cs")]
+    public void Middleware_EmitsErrorsThroughTheSharedRfc7807Writer(string relativePath)
     {
-        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/ApiKeyMiddleware.cs");
-        Assert.Contains("application/problem+json", src);
-        Assert.Contains("ProblemDetails", src);
-    }
-
-    [Fact]
-    public void JwtAuthMiddleware_UsesProblemJsonContentType()
-    {
-        var src = Read("src/OmniChat.Api/Infrastructure/Middleware/JwtAuthenticationMiddleware.cs");
-        Assert.Contains("application/problem+json", src);
-        Assert.Contains("ProblemDetails", src);
+        // Guards against a middleware hand-rolling its own error body (which previously
+        // duplicated the content type and could silently diverge from RFC 7807).
+        var src = Read(relativePath);
+        Assert.Contains("ProblemDetailsResponse", src);
     }
 
     [Fact]
@@ -731,6 +730,25 @@ public class DeploymentConfigTests
     public void AppSettings_DeclaresRateLimitSection()
     {
         Assert.Contains(RateLimitOptions.SectionName, Read("src/OmniChat.Api/appsettings.json"));
+    }
+
+    [Fact]
+    public void RateLimitPolicyName_MatchesBetweenControllerAndRegistration()
+    {
+        // A mismatch here silently disables throttling: [EnableRateLimiting("x")] against a
+        // policy registered as "y" throws at request time, and an unregistered name would
+        // leave the endpoint unprotected. Assert both sides name the same policy.
+        var controller = Read("src/OmniChat.Api/Controllers/ChatController.cs");
+        var program = Read("src/OmniChat.Api/Program.cs");
+
+        var marker = "EnableRateLimiting(\"";
+        var start = controller.IndexOf(marker, StringComparison.Ordinal);
+        Assert.True(start >= 0, "ChatController must declare [EnableRateLimiting(...)]");
+        start += marker.Length;
+        var policyName = controller[start..controller.IndexOf('"', start)];
+
+        Assert.False(string.IsNullOrWhiteSpace(policyName), "Rate-limit policy name must not be empty");
+        Assert.Contains($"AddPolicy(\"{policyName}\"", program);
     }
 
     [Fact]

@@ -1,8 +1,8 @@
-using System.Collections.Concurrent;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
-using OmniChat.Application.Interfaces;
+using OmniChat.Api.Infrastructure.Options;
 using OmniChat.Domain.Models;
 using OmniChat.Infrastructure.Services;
 
@@ -15,19 +15,13 @@ namespace OmniChat.Tests.Services;
 public class ChatServiceTests
 {
     private readonly Mock<IHttpClientFactory> _httpClientFactoryMock;
-    private readonly IConfiguration _configuration;
+
+    private const string HermesEndpoint = "http://localhost:5000/v1/chat/completions";
+    private const string LlmEndpoint = "https://openrouter.ai/api/v1/chat/completions";
+    private const string LlmApiKey = "test-key";
 
     public ChatServiceTests()
     {
-        _configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string?>
-            {
-                ["Hermes:Endpoint"] = "http://localhost:5000/v1/chat/completions",
-                ["LLM:Endpoint"] = "https://openrouter.ai/api/v1/chat/completions",
-                ["LLM:ApiKey"] = "test-key"
-            })
-            .Build();
-
         _httpClientFactoryMock = new Mock<IHttpClientFactory>();
     }
 
@@ -35,7 +29,13 @@ public class ChatServiceTests
     /// Creates a ChatService with a custom HttpMessageHandler that returns
     /// a specified SSE response body.
     /// </summary>
-    private ChatService CreateService(Func<HttpRequestMessage, HttpResponseMessage> handlerFunc)
+    /// <summary>
+    /// Creates a ChatService wired to a fake transport. <paramref name="hermesApiKey"/>
+    /// defaults to null so the Hermes-Bridge tests exercise the "no Authorization header" path.
+    /// </summary>
+    private ChatService CreateService(
+        Func<HttpRequestMessage, HttpResponseMessage> handlerFunc,
+        string? hermesApiKey = null)
     {
         var handler = new TestableHttpMessageHandler(handlerFunc);
         var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
@@ -45,7 +45,8 @@ public class ChatServiceTests
 
         return new ChatService(
             _httpClientFactoryMock.Object,
-            _configuration,
+            Options.Create(new HermesOptions { Endpoint = HermesEndpoint, ApiKey = hermesApiKey }),
+            Options.Create(new LlmOptions { Endpoint = LlmEndpoint, ApiKey = LlmApiKey }),
             NullLogger<ChatService>.Instance);
     }
 
@@ -81,7 +82,7 @@ public class ChatServiceTests
     }
 
     [Fact]
-    public async Task StreamChatResponseAsync_WhenEndpointUnreachable_ProducesFallbackTokens()
+    public async Task StreamChatResponseAsync_WhenEndpointUnreachable_EmitsSanitizedError()
     {
         // Arrange: handler throws to simulate connection failure
         var service = CreateService(req => throw new HttpRequestException("Connection refused"));
@@ -100,11 +101,104 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        // Assert: fallback mode produces content
+        // Assert: an unreachable provider must surface a real error, not a fake success
+        // ("Fallback Mode" demo text previously masked outages as working responses).
         Assert.NotEmpty(tokens);
         var combined = string.Join("", tokens);
-        Assert.Contains("Fallback Mode", combined);
-        Assert.Contains("Hermes Bridge", combined);
+        Assert.Contains("unreachable", combined, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Fallback Mode", combined);
+
+        // The raw transport error must not leak to the client.
+        Assert.DoesNotContain("Connection refused", combined);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_WithHermesBridgeAndApiKey_SetsBearerAuthorizationHeader()
+    {
+        // Arrange: a configured Hermes API key must be forwarded as a Bearer token,
+        // otherwise the gateway rejects the call.
+        HttpRequestMessage? capturedRequest = null;
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(
+            req =>
+            {
+                capturedRequest = req;
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+                };
+            },
+            hermesApiKey: "hermes-secret");
+
+        var request = new ChatRequest
+        {
+            Model = "hermes",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true
+        };
+
+        // Act
+        await foreach (var _ in service.StreamChatResponseAsync(request)) { }
+
+        // Assert
+        Assert.NotNull(capturedRequest);
+        var authHeader = capturedRequest!.Headers.Authorization;
+        Assert.NotNull(authHeader);
+        Assert.Equal("Bearer", authHeader!.Scheme);
+        Assert.Equal("hermes-secret", authHeader.Parameter);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_UsesHermesEndpoint_InBridgeMode()
+    {
+        // Guards the strongly-typed options wiring: bridge mode must call Hermes:Endpoint.
+        HttpRequestMessage? capturedRequest = null;
+        var sseBody = "data: [DONE]\n\n";
+        var service = CreateService(req =>
+        {
+            capturedRequest = req;
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+            };
+        });
+
+        var request = new ChatRequest
+        {
+            Model = "hermes",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true
+        };
+
+        await foreach (var _ in service.StreamChatResponseAsync(request)) { }
+
+        Assert.Equal(HermesEndpoint, capturedRequest!.RequestUri!.ToString());
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_UsesLlmEndpoint_InDirectMode()
+    {
+        HttpRequestMessage? capturedRequest = null;
+        var sseBody = "data: [DONE]\n\n";
+        var service = CreateService(req =>
+        {
+            capturedRequest = req;
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+            };
+        });
+
+        var request = new ChatRequest
+        {
+            Model = "openrouter/model",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = false
+        };
+
+        await foreach (var _ in service.StreamChatResponseAsync(request)) { }
+
+        Assert.Equal(LlmEndpoint, capturedRequest!.RequestUri!.ToString());
     }
 
     [Fact]
@@ -230,7 +324,7 @@ public class ChatServiceTests
         Assert.True(capturedRequest!.Headers.Contains("Authorization"));
         var authHeader = capturedRequest.Headers.Authorization!;
         Assert.Equal("Bearer", authHeader.Scheme);
-        Assert.Equal("test-key", authHeader.Parameter);
+        Assert.Equal(LlmApiKey, authHeader.Parameter);
     }
 
     [Fact]

@@ -1,11 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using OmniChat.Api.Infrastructure.Auth;
 
 namespace OmniChat.Api.Infrastructure.Middleware;
 
 /// <summary>
-/// Validates <c>Authorization: Bearer &lt;jwt&gt;</c> tokens when JWT auth is enabled
+/// Validates <c>Authorization: Bearer *** tokens when JWT auth is enabled
 /// (<c>Security:Jwt:SigningKey</c> configured). Additive with <see cref="ApiKeyMiddleware"/>:
 /// a request may authenticate with either scheme. Disabled (pass-through) otherwise.
 /// </summary>
@@ -13,6 +11,7 @@ namespace OmniChat.Api.Infrastructure.Middleware;
 /// Resolution rule:
 /// <list type="number">
 /// <item>Exempt paths (<c>/health</c>, <c>/openapi</c>) always pass.</item>
+/// <item>CORS preflight (<c>OPTIONS</c>) always passes — a browser never sends credentials on it.</item>
 /// <item>A valid bearer token passes and marks the request authenticated.</item>
 /// <item>A present-but-invalid bearer token returns 401 — no silent fallback.</item>
 /// <item>No bearer token: defer to <see cref="ApiKeyMiddleware"/> when an API key is configured,
@@ -45,7 +44,16 @@ public sealed class JwtAuthenticationMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if (!_validator.IsEnabled || IsExempt(context.Request.Path))
+        if (!_validator.IsEnabled || AuthExemptPaths.IsExempt(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
+        // CORS preflight must reach the CORS middleware unauthenticated: the browser never
+        // attaches an Authorization header to it, so rejecting here would break every
+        // cross-origin call whenever JWT is enabled without an API key configured.
+        if (HttpMethods.IsOptions(context.Request.Method))
         {
             await _next(context);
             return;
@@ -86,21 +94,7 @@ public sealed class JwtAuthenticationMiddleware
     public static bool IsAuthenticated(HttpContext context) =>
         context.Items.ContainsKey(AuthenticatedItemKey);
 
-    private static bool IsExempt(PathString path) =>
-        path.StartsWithSegments("/health") || path.StartsWithSegments("/openapi");
-
-    private static async Task RejectAsync(HttpContext context)
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        context.Response.ContentType = "application/problem+json";
-        var problem = new ProblemDetails
-        {
-            Title = "Unauthorized",
-            Status = StatusCodes.Status401Unauthorized,
-            Detail = "Missing or invalid bearer token.",
-            Instance = context.Request.Path.Value,
-        };
-        problem.Extensions["traceId"] = context.TraceIdentifier;
-        await context.Response.WriteAsync(JsonSerializer.Serialize(problem, ProblemDetailsJson.Options));
-    }
+    private static Task RejectAsync(HttpContext context) =>
+        ProblemDetailsResponse.WriteUnauthorizedAsync(
+            context, "Missing or invalid bearer token.", context.RequestAborted);
 }

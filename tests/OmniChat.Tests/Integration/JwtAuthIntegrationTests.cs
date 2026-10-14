@@ -80,6 +80,21 @@ public class JwtAuthIntegrationTests : IDisposable
     }
 
     [Fact]
+    public async Task CorsPreflight_WithoutToken_IsNotRejected()
+    {
+        // Regression: when JWT is enabled and no API key is configured, the preflight OPTIONS
+        // request carries no Authorization header. Rejecting it with 401 makes the browser
+        // block the real request — the client then reports a generic connection failure.
+        var request = new HttpRequestMessage(HttpMethod.Options, "/api/chat/stream");
+        request.Headers.Add("Origin", "https://example.com");
+        request.Headers.Add("Access-Control-Request-Method", "POST");
+
+        var response = await Client().SendAsync(request);
+
+        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Health_WithoutToken_IsExempt()
     {
         var response = await Client().GetAsync("/health");

@@ -1,50 +1,72 @@
 using System.Runtime.CompilerServices;
-using System.Threading.Channels;
-using OmniChat.Application.Interfaces;
-using OmniChat.Domain.Models;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Channels;
+using Microsoft.Extensions.Options;
+using OmniChat.Api.Infrastructure.Options;
+using OmniChat.Application.Interfaces;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Infrastructure.Services;
 
-public class ChatService : IChatService
+/// <summary>
+/// Streams chat completions from either the Hermes agent gateway (Agent Mode) or a direct
+/// [OI]-compatible provider (Direct Mode), normalising both to a plain token stream.
+/// </summary>
+public sealed class ChatService : IChatService
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IConfiguration _configuration;
+    private readonly HermesOptions _hermes;
+    private readonly LlmOptions _llm;
     private readonly ILogger<ChatService> _logger;
 
-    public ChatService(IHttpClientFactory httpClientFactory, IConfiguration configuration, ILogger<ChatService> logger)
+    public ChatService(
+        IHttpClientFactory httpClientFactory,
+        IOptions<HermesOptions> hermes,
+        IOptions<LlmOptions> llm,
+        ILogger<ChatService> logger)
     {
         _httpClientFactory = httpClientFactory;
-        _configuration = configuration;
+        _hermes = hermes.Value;
+        _llm = llm.Value;
         _logger = logger;
     }
 
-    // yield return TIDAK boleh di dalam try-catch (CS1626/CS1631).
-    // Solusi: pattern Channel — producer task makan error di try-catch,
-    // iterator hanya membaca channel yang sudah bersih.
+    // `yield return` is not allowed inside a try/catch (CS1626/CS1631), so the producer runs
+    // on its own task and pushes into an unbounded channel. The iterator only ever reads from
+    // the channel, which lets the producer absorb upstream failures without aborting the
+    // enumeration mid-stream.
     public async IAsyncEnumerable<string> StreamChatResponseAsync(
         ChatRequest request,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var channel = Channel.CreateUnbounded<string>();
-        var producer = Task.Run(() => ProduceTokensAsync(channel.Writer, request, cancellationToken), cancellationToken);
+        var producer = Task.Run(
+            () => ProduceTokensAsync(channel.Writer, request, cancellationToken),
+            cancellationToken);
 
-        await foreach (var token in channel.Reader.ReadAllAsync(cancellationToken))
+        try
         {
-            yield return token;
+            await foreach (var token in channel.Reader.ReadAllAsync(cancellationToken))
+            {
+                yield return token;
+            }
         }
-
-        await producer; // propagate cancellation/exception akhir bila perlu
+        finally
+        {
+            // Observe the producer so an exception it raised is not swallowed as an
+            // unobserved task exception, and so the channel is always completed.
+            await producer;
+        }
     }
 
     private async Task ProduceTokensAsync(ChannelWriter<string> writer, ChatRequest request, CancellationToken ct)
     {
         try
         {
-            var endpoint = request.UseHermesBridge
-                ? _configuration["Hermes:Endpoint"] ?? "http://localhost:5000/v1/chat/completions"
-                : _configuration["LLM:Endpoint"] ?? "https://openrouter.ai/api/v1/chat/completions";
+            var (endpoint, apiKey) = request.UseHermesBridge
+                ? (_hermes.Endpoint, _hermes.ApiKey)
+                : (_llm.Endpoint, _llm.ApiKey);
 
             var client = _httpClientFactory.CreateClient("LLMClient");
 
@@ -55,28 +77,14 @@ public class ChatService : IChatService
                 stream = true
             };
 
-            var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
+            using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
                 Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json")
             };
 
-            if (request.UseHermesBridge)
+            if (!string.IsNullOrEmpty(apiKey))
             {
-                // Hermes Bridge: kirim Hermes API key sebagai Bearer token
-                var hermesKey = _configuration["Hermes:ApiKey"];
-                if (!string.IsNullOrEmpty(hermesKey))
-                {
-                    httpRequest.Headers.Add("Authorization", $"Bearer {hermesKey}");
-                }
-            }
-            else
-            {
-                // Direct mode: kirim LLM API key (OpenRouter) sebagai Bearer token
-                var apiKey = _configuration["LLM:ApiKey"];
-                if (!string.IsNullOrEmpty(apiKey))
-                {
-                    httpRequest.Headers.Add("Authorization", $"Bearer {apiKey}");
-                }
+                httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
             }
 
             using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -87,11 +95,10 @@ public class ChatService : IChatService
                 _logger.LogError("LLM API error: {StatusCode} - {Content}", response.StatusCode, errorContent);
                 // Sanitize: don't reveal the upstream provider's HTTP status to the client.
                 await writer.WriteAsync("[Error: The AI provider returned an error. Please try again.]", ct);
-                writer.TryComplete();
                 return;
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync(ct);
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
             string? line;
@@ -105,45 +112,60 @@ public class ChatService : IChatService
                 var data = line["data: ".Length..].Trim();
                 if (data == "[DONE]") break;
 
-                try
+                var text = TryExtractDeltaContent(data);
+                if (!string.IsNullOrEmpty(text))
                 {
-                    using var doc = JsonDocument.Parse(data);
-                    if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-                    {
-                        var firstChoice = choices[0];
-                        if (firstChoice.TryGetProperty("delta", out var delta) &&
-                            delta.TryGetProperty("content", out var contentProp))
-                        {
-                            var text = contentProp.GetString();
-                            if (!string.IsNullOrEmpty(text))
-                            {
-                                await writer.WriteAsync(text, ct);
-                            }
-                        }
-                    }
-                }
-                catch (JsonException)
-                {
-                    // Ignore malformed JSON chunks
+                    await writer.WriteAsync(text, ct);
                 }
             }
-
-            writer.TryComplete();
         }
         catch (OperationCanceledException)
         {
-            writer.TryComplete();
+            // Client disconnected or the host is shutting down — nothing to report.
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to connect to LLM/Hermes endpoint. Falling back to simulation mode.");
-            await writer.WriteAsync("Halo Rholly! [Fallback Mode] ", CancellationToken.None);
-            await Task.Delay(150, CancellationToken.None);
-            await writer.WriteAsync("Backend OmniChat .NET 10 berhasil memproses request Anda ", CancellationToken.None);
-            await Task.Delay(150, CancellationToken.None);
-            await writer.WriteAsync(request.UseHermesBridge ? "via Hermes Bridge." : "via Direct Provider.", CancellationToken.None);
+            _logger.LogError(ex, "Failed to reach the configured {Mode} endpoint at {Endpoint}.",
+                request.UseHermesBridge ? "Hermes" : "LLM",
+                request.UseHermesBridge ? _hermes.Endpoint : _llm.Endpoint);
+
+            // Surface a sanitized, actionable message. The previous implementation streamed a
+            // hard-coded "Fallback Mode" demo paragraph, which masked outages as success.
+            await writer.WriteAsync(
+                "[Error: The AI provider is unreachable. Check the backend's provider configuration.]",
+                CancellationToken.None);
+        }
+        finally
+        {
             writer.TryComplete();
         }
+    }
+
+    /// <summary>
+    /// Extracts <c>choices[0].delta.content</c> from one SSE payload.
+    /// Returns <c>null</c> for keep-alives, role-only deltas and malformed JSON.
+    /// </summary>
+    private static string? TryExtractDeltaContent(string data)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(data);
+            if (doc.RootElement.TryGetProperty("choices", out var choices) &&
+                choices.ValueKind == JsonValueKind.Array &&
+                choices.GetArrayLength() > 0 &&
+                choices[0].TryGetProperty("delta", out var delta) &&
+                delta.TryGetProperty("content", out var contentProp) &&
+                contentProp.ValueKind == JsonValueKind.String)
+            {
+                return contentProp.GetString();
+            }
+        }
+        catch (JsonException)
+        {
+            // Ignore malformed JSON chunks.
+        }
+
+        return null;
     }
 }

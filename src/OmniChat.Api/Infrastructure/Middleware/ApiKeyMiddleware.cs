@@ -1,7 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+using OmniChat.Api.Infrastructure.Auth;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 
 namespace OmniChat.Api.Infrastructure.Middleware;
 
@@ -11,7 +10,7 @@ namespace OmniChat.Api.Infrastructure.Middleware;
 /// When no key is configured the middleware is a pass-through, so local development and
 /// the test suite run without credentials.
 /// </summary>
-public class ApiKeyMiddleware
+public sealed class ApiKeyMiddleware
 {
     public const string HeaderName = "X-Api-Key";
 
@@ -35,14 +34,15 @@ public class ApiKeyMiddleware
             return;
         }
 
-        // CORS preflight (OPTIONS) must pass without an API key
-        if (context.Request.Method == HttpMethods.Options)
+        // CORS preflight (OPTIONS) must pass without an API key, otherwise the browser
+        // blocks the real request before it is ever sent.
+        if (HttpMethods.IsOptions(context.Request.Method))
         {
             await _next(context);
             return;
         }
 
-        if (string.IsNullOrEmpty(_configuredApiKey) || IsExempt(context.Request.Path))
+        if (string.IsNullOrEmpty(_configuredApiKey) || AuthExemptPaths.IsExempt(context.Request.Path))
         {
             await _next(context);
             return;
@@ -57,25 +57,13 @@ public class ApiKeyMiddleware
             _logger.LogWarning("Rejected {Method} {Path}: missing or invalid API key.",
                 context.Request.Method, context.Request.Path);
 
-            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            context.Response.ContentType = "application/problem+json";
-            var problem = new ProblemDetails
-            {
-                Title = "Unauthorized",
-                Status = StatusCodes.Status401Unauthorized,
-                Detail = "Missing or invalid API key.",
-                Instance = context.Request.Path.Value,
-            };
-            problem.Extensions["traceId"] = context.TraceIdentifier;
-            await context.Response.WriteAsync(JsonSerializer.Serialize(problem, ProblemDetailsJson.Options));
+            await ProblemDetailsResponse.WriteUnauthorizedAsync(
+                context, "Missing or invalid API key.", context.RequestAborted);
             return;
         }
 
         await _next(context);
     }
-
-    private static bool IsExempt(PathString path) =>
-        path.StartsWithSegments("/health") || path.StartsWithSegments("/openapi");
 
     private static bool FixedTimeEquals(string provided, string expected)
     {
