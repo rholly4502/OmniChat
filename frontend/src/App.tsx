@@ -1,33 +1,15 @@
 import { useRef, useState, useEffect, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-
-type Role = 'user' | 'assistant';
-
-interface Message {
-  role: Role;
-  content: string;
-}
-
-interface ModelOption {
-  id: string;
-  label: string;
-}
-
-const API_URL = '/api/chat/stream';
-const API_KEY_STORAGE = 'omnichat_api_key';
-
-const DEFAULT_AGENT_MODELS: ModelOption[] = [
-  { id: 'hermes', label: 'Hermes (Default)' },
-  { id: 'claude-sonnet', label: 'Claude Sonnet' },
-  { id: 'gpt-4o', label: 'GPT-4o' },
-];
-
-const DEFAULT_DIRECT_MODELS: ModelOption[] = [
-  { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 (Free)' },
-  { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B (Free)' },
-  { id: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (Free)' },
-];
+import type { Message, ModelCatalog } from './types';
+import {
+  API_URL,
+  MODELS_URL,
+  API_KEY_STORAGE,
+  DEFAULT_AGENT_MODELS,
+  DEFAULT_DIRECT_MODELS,
+  DEFAULT_MODEL,
+} from './constants';
 
 function BotIcon({ size = 16 }: { size?: number }) {
   return (
@@ -104,10 +86,10 @@ export default function App() {
   const [input, setInput] = useState('');
   const [useAgent, setUseAgent] = useState(true);
   const [streaming, setStreaming] = useState(false);
-  const [model, setModel] = useState('hermes');
+  const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [catalog, setCatalog] = useState<{ agent: ModelOption[]; direct: ModelOption[] }>({
+  const [catalog, setCatalog] = useState<ModelCatalog>({
     agent: DEFAULT_AGENT_MODELS,
     direct: DEFAULT_DIRECT_MODELS,
   });
@@ -128,11 +110,11 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/models', {
+    fetch(MODELS_URL, {
       headers: apiKey ? { 'X-Api-Key': apiKey } : undefined,
     })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((data: { agent?: ModelOption[]; direct?: ModelOption[] }) => {
+      .then((data: Partial<ModelCatalog>) => {
         if (cancelled) return;
         setCatalog({
           agent: data.agent?.length ? data.agent : DEFAULT_AGENT_MODELS,
