@@ -481,10 +481,10 @@ export default function App() {
                 `}
               >
                 {m.role === 'assistant' && !m.content ? (
-                  <span className="inline-flex gap-1 items-center py-1">
-                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse" />
-                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:200ms]" />
-                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:400ms]" />
+                  <span className="inline-flex gap-1 items-center py-1" role="status" aria-label="Menunggu respons">
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse" aria-hidden="true" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:200ms]" aria-hidden="true" />
+                    <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:400ms]" aria-hidden="true" />
                   </span>
                 ) : m.role === 'assistant' ? (
                   <div className="md-body">

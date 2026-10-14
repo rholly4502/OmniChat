@@ -275,6 +275,20 @@ describe('App', () => {
     });
   });
 
+  it('typing indicator has accessible label during streaming', async () => {
+    // Make fetch hang so streaming state persists
+    global.fetch = vi.fn().mockImplementation(() => new Promise(() => {}));
+    render(<App />);
+    const input = screen.getByPlaceholderText('Ketik pesan…');
+    fireEvent.change(input, { target: { value: 'Hello' } });
+    fireEvent.click(screen.getByText('Kirim'));
+    // The typing indicator should have role="status" and aria-label
+    await waitFor(() => {
+      const status = screen.getByRole('status');
+      expect(status).toHaveAttribute('aria-label', 'Menunggu respons');
+    });
+  });
+
   // ─── Clear Chat ──────────────────────────────────────────────
 
   it('shows empty state message when no messages', () => {
