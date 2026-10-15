@@ -269,12 +269,16 @@ public class DeploymentConfigTests
     public void Frontend_HandlesRetryAfterHeader()
     {
         // The 429 Retry-After handling moved from App.tsx into the React-free
-        // SSE client (src/api.ts) when streaming was extracted; App.tsx maps
-        // the status to localized text. Both halves must stay present.
+        // SSE client (src/api.ts) when streaming was extracted, and the
+        // localized mapping then moved into its own presenter module
+        // (src/errors.ts) when App.tsx was reduced to composition (step 9).
+        // All three halves must stay present.
         var api = Read("frontend/src/api.ts");
+        var errors = Read("frontend/src/errors.ts");
         var app = Read("frontend/src/App.tsx");
         Assert.Contains("Retry-After", api);
-        Assert.Contains("retryAfter", app);
+        Assert.Contains("retryAfter", errors);
+        Assert.Contains("describeApiError", app);
     }
 
     // ── Milestone 15: ProblemDetails standardization ──
