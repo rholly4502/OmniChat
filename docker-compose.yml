@@ -9,6 +9,12 @@ services:
     # (Docker Desktop provides it automatically; native Linux needs this mapping).
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    # Also join a shared bridge with the Hermes agent container so the Hermes API
+    # server can be reached by container name. This is preferred over publishing
+    # port 5000 on the host, which would expose the API server to the host network.
+    networks:
+      - default
+      - hermes_bridge
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:5184
@@ -77,3 +83,12 @@ services:
       resources:
         limits:
           memory: 256M
+
+networks:
+  # Shared bridge with the Hermes agent container. `external: true` means Compose
+  # neither creates nor removes it — the deploy workflow ensures it exists, and the
+  # Hermes container must be attached to it as well:
+  #   docker network connect omnichat_hermes <hermes-container>
+  hermes_bridge:
+    name: ${HERMES_DOCKER_NETWORK:-omnichat_hermes}
+    external: true

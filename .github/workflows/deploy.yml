@@ -53,6 +53,15 @@ jobs:
             echo "=== Building images ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend backend
 
+            # The backend joins a shared bridge with the Hermes agent container so it can
+            # reach the Hermes API server by container name. An `external` network that
+            # does not exist makes `up -d` fail outright and take the whole stack down,
+            # so create it if it is missing.
+            echo "=== Ensuring shared Hermes network ==="
+            HERMES_NET="${HERMES_DOCKER_NETWORK:-omnichat_hermes}"
+            docker network inspect "$HERMES_NET" > /dev/null 2>&1 || docker network create "$HERMES_NET"
+            echo "network: $HERMES_NET"
+
             echo "=== Starting services ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
