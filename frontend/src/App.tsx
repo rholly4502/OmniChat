@@ -1,9 +1,13 @@
-import { useRef, useState, useEffect, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react';
+import { useRef, useState, useEffect, type TouchEvent as ReactTouchEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { Message, ModelCatalog } from './types';
 import { streamChat, ApiError } from './api';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './components/Icons';
+import { CodeBlock } from './components/CodeBlock';
+
+// Re-exported for backwards compatibility (tests import it from './App').
+export { CodeBlock };
 import {
   MODELS_URL,
   API_KEY_STORAGE,
@@ -25,38 +29,6 @@ function describeApiError(err: ApiError): string {
   }
   if (err.status === 400) return 'Permintaan tidak valid (400). Periksa input.';
   return `Backend menolak permintaan (${err.status}).`;
-}
-
-export function CodeBlock({ children }: { children?: ReactNode }) {
-  const preRef = useRef<HTMLPreElement>(null);
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy() {
-    const text = preRef.current?.textContent ?? '';
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }).catch(() => {});
-  }
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="absolute top-1.5 right-1.5 md:top-2 md:right-2 z-10 text-xs md:text-[11px] font-medium text-slate-400 hover:text-cyan-300 bg-slate-800/70 rounded px-3 py-2 md:px-2.5 md:py-1.5 flex items-center gap-1 min-h-[44px] md:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 transition-colors"
-        aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
-      >
-        {copied ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
-        )}
-        {copied ? 'Copied' : 'Copy'}
-      </button>
-      <pre ref={preRef} className="code-block-pre">{children}</pre>
-    </div>
-  );
 }
 
 export default function App() {
