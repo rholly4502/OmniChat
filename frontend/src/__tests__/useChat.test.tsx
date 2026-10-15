@@ -1,0 +1,290 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useChat } from '../hooks/useChat';
+import { ApiError, type StreamChunk, type StreamChatOptions } from '../api';
+
+/**
+ * Unit tests for the extracted conversation hook (frontend decomposition
+ * step 6). These pin the behaviour the inline send()/stop() pair had in
+ * App.tsx, so the refactor cannot silently change error or abort handling.
+ *
+ * The SSE client is injected (`streamImpl`) rather than fetch-mocked: the
+ * real transport already has its own coverage in api.test.ts, and a fake
+ * generator lets each failure mode (error chunk, ApiError, abort, crash) be
+ * driven deterministically.
+ */
+
+/** Build a stream implementation that yields `chunks` then optionally throws. */
+function streamOf(chunks: StreamChunk[], thrown?: unknown) {
+  return (options: StreamChatOptions): AsyncGenerator<StreamChunk> =>
+    (async function* () {
+      for (const c of chunks) {
+        if (options.signal?.aborted) throw abortError();
+        yield c;
+      }
+      if (thrown) throw thrown;
+    })();
+}
+
+/** A generator that yields one chunk, then parks until its signal aborts. */
+function streamUntilAbort() {
+  return (options: StreamChatOptions): AsyncGenerator<StreamChunk> =>
+    (async function* () {
+      yield { content: 'partial' };
+      await new Promise<never>((_, reject) => {
+        if (options.signal?.aborted) return reject(abortError());
+        options.signal?.addEventListener('abort', () => reject(abortError()));
+      });
+    })();
+}
+
+function abortError() {
+  return Object.assign(new Error('The operation was aborted.'), { name: 'AbortError' });
+}
+
+const describeError = (err: ApiError) => `LOCALIZED(${err.status})`;
+
+function setup(overrides: Partial<Parameters<typeof useChat>[0]> = {}) {
+  return renderHook(() =>
+    useChat({
+      model: 'test-model',
+      useHermesBridge: true,
+      apiKey: 'test-key',
+      describeError,
+      ...overrides,
+    })
+  );
+}
+
+describe('useChat', () => {
+  let consoleError: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleError.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
+  it('starts empty and idle', () => {
+    const { result } = setup();
+
+    expect(result.current.messages).toEqual([]);
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('appends the user turn and an assistant placeholder immediately', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: 'hi' }]) });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('Hello');
+      await Promise.resolve();
+    });
+
+    expect(result.current.messages[0]).toEqual({ role: 'user', content: 'Hello' });
+    expect(result.current.messages[1].role).toBe('assistant');
+
+    await act(async () => {
+      await pending;
+    });
+  });
+
+  it('accumulates streamed content into the last message', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ content: 'Hel' }, { content: 'lo ' }, { content: 'world' }]),
+    });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].content).toBe('Hello world');
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('appends an error chunk after the text that already arrived', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ content: 'partial' }, { error: 'provider exploded' }]),
+    });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1].content).toBe('partial\n\n⚠️ provider exploded');
+  });
+
+  it('shows only the error when nothing was streamed before it', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ error: 'boom' }]) });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1].content).toBe('⚠️ boom');
+  });
+
+  it('maps an ApiError through describeError onto the placeholder', async () => {
+    const { result } = setup({ streamImpl: streamOf([], new ApiError(401, null)) });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].content).toBe('⚠️ LOCALIZED(401)');
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('surfaces a failed connection for a non-ApiError throw', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ content: 'x' }], new Error('network down')),
+    });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1].content).toBe(
+      '⚠️ Koneksi ke backend gagal: network down'
+    );
+    expect(consoleError).toHaveBeenCalled();
+  });
+
+  it('keeps a partial reply when the user aborts', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamUntilAbort()(options);
+      },
+    });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('Hi');
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(result.current.messages[1]?.content).toBe('partial'));
+
+    act(() => result.current.stop());
+    await act(async () => {
+      await pending;
+    });
+
+    expect(captured?.signal?.aborted).toBe(true);
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].content).toBe('partial');
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('drops the empty placeholder when aborted before any content', async () => {
+    const { result } = setup({ streamImpl: streamUntilAbortAbortOnly() });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('Hi');
+      await Promise.resolve();
+    });
+
+    act(() => result.current.stop());
+    await act(async () => {
+      await pending;
+    });
+
+    // Only the user turn survives — no empty assistant bubble left behind.
+    expect(result.current.messages).toEqual([{ role: 'user', content: 'Hi' }]);
+  });
+
+  it('ignores a send while one is already streaming', async () => {
+    const streamImpl = vi.fn(streamUntilAbort());
+    const { result } = setup({ streamImpl });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('first');
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await result.current.send('second');
+    });
+
+    expect(streamImpl).toHaveBeenCalledTimes(1);
+    expect(result.current.messages.some((m) => m.content === 'second')).toBe(false);
+
+    act(() => result.current.stop());
+    await act(async () => {
+      await pending;
+    });
+  });
+
+  it('ignores empty or whitespace-only input', async () => {
+    const streamImpl = vi.fn(streamOf([{ content: 'x' }]));
+    const { result } = setup({ streamImpl });
+
+    await act(async () => {
+      await result.current.send('   ');
+    });
+
+    expect(streamImpl).not.toHaveBeenCalled();
+    expect(result.current.messages).toEqual([]);
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('sends the model, bridge flag, history and API key to the client', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    await act(async () => {
+      await result.current.send('Hello');
+    });
+
+    expect(captured?.model).toBe('test-model');
+    expect(captured?.useHermesBridge).toBe(true);
+    expect(captured?.apiKey).toBe('test-key');
+    expect(captured?.messages).toEqual([{ role: 'user', content: 'Hello' }]);
+  });
+
+  it('clear() drops the conversation', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: 'ok' }]) });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+    expect(result.current.messages).toHaveLength(2);
+
+    act(() => result.current.clear());
+    expect(result.current.messages).toEqual([]);
+  });
+
+  it('stop() is a no-op when nothing is streaming', () => {
+    const { result } = setup();
+
+    expect(() => act(() => result.current.stop())).not.toThrow();
+    expect(result.current.streaming).toBe(false);
+  });
+});
+
+/** Aborts before yielding anything, so `send` leaves no partial reply. */
+function streamUntilAbortAbortOnly() {
+  return (options: StreamChatOptions): AsyncGenerator<StreamChunk> =>
+    (async function* () {
+      await new Promise<never>((_, reject) => {
+        if (options.signal?.aborted) return reject(abortError());
+        options.signal?.addEventListener('abort', () => reject(abortError()));
+      });
+      // Unreachable: the promise above never resolves. Present so the
+      // function has generator semantics.
+      yield { content: '' };
+    })();
+}

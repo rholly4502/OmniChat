@@ -1,11 +1,11 @@
 import { useRef, useState, useEffect, type TouchEvent as ReactTouchEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Message } from './types';
-import { streamChat, ApiError } from './api';
+import { ApiError } from './api';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './components/Icons';
 import { CodeBlock } from './components/CodeBlock';
 import { useModelCatalog } from './hooks/useModelCatalog';
+import { useChat } from './hooks/useChat';
 
 // Re-exported for backwards compatibility (tests import it from './App').
 export { CodeBlock };
@@ -27,14 +27,11 @@ function describeApiError(err: ApiError): string {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [useAgent, setUseAgent] = useState(true);
-  const [streaming, setStreaming] = useState(false);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -44,6 +41,19 @@ export default function App() {
 
   const catalog = useModelCatalog(apiKey);
   const models = useAgent ? catalog.agent : catalog.direct;
+
+  const {
+    messages,
+    streaming,
+    send: sendMessage,
+    stop: stopStreaming,
+    clear: clearMessages,
+  } = useChat({
+    model,
+    useHermesBridge: useAgent,
+    apiKey,
+    describeError: describeApiError,
+  });
 
   useEffect(() => {
     if (apiKey) localStorage.setItem(API_KEY_STORAGE, apiKey);
@@ -173,83 +183,12 @@ export default function App() {
     setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
   }
 
-  function stopStreaming() {
-    abortRef.current?.abort();
-  }
-
+  /** Validate the draft, clear it, then hand the text to the chat hook. */
   async function send() {
     if (!input.trim() || streaming) return;
-    const userMsg: Message = { role: 'user', content: input };
-    const history = [...messages, userMsg];
-    setMessages([...history, { role: 'assistant', content: '' }]);
+    const text = input;
     setInput('');
-    setStreaming(true);
-
-    const ctrl = new AbortController();
-    abortRef.current = ctrl;
-
-    try {
-      for await (const chunk of streamChat({
-        model,
-        useHermesBridge: useAgent,
-        messages: history.map((m) => ({ role: m.role, content: m.content })),
-        apiKey,
-        signal: ctrl.signal,
-      })) {
-        if (chunk.error) {
-          const detail = chunk.error;
-          setMessages((prev) => {
-            const copy = [...prev];
-            const last = copy[copy.length - 1];
-            copy[copy.length - 1] = {
-              role: 'assistant',
-              content: last.content
-                ? `${last.content}\n\n⚠️ ${detail}`
-                : `⚠️ ${detail}`,
-            };
-            return copy;
-          });
-        } else if (chunk.content) {
-          const piece = chunk.content;
-          setMessages((prev) => {
-            const copy = [...prev];
-            copy[copy.length - 1] = {
-              role: 'assistant',
-              content: copy[copy.length - 1].content + piece,
-            };
-            return copy;
-          });
-        }
-      }
-    } catch (e) {
-      if (e instanceof ApiError) {
-        const detail = describeApiError(e);
-        setMessages((prev) => [
-          ...prev.slice(0, -1),
-          { role: 'assistant', content: `⚠️ ${detail}` },
-        ]);
-        return;
-      }
-      if ((e as Error).name !== 'AbortError') {
-        const errMsg = e instanceof Error ? e.message : String(e);
-        console.error('[OmniChat] Fetch error:', e);
-        setMessages((prev) => [
-          ...prev.slice(0, -1),
-          { role: 'assistant', content: `⚠️ Koneksi ke backend gagal: ${errMsg}` },
-        ]);
-      } else {
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last && last.role === 'assistant' && !last.content) {
-            return [...prev.slice(0, -1)];
-          }
-          return prev;
-        });
-      }
-    } finally {
-      setStreaming(false);
-      abortRef.current = null;
-    }
+    await sendMessage(text);
   }
 
   return (
@@ -366,7 +305,7 @@ export default function App() {
         </div>
 
         <button
-          onClick={() => setMessages([])}
+          onClick={clearMessages}
           className="mt-auto text-sm text-slate-400 hover:text-red-400 active:text-red-300 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
