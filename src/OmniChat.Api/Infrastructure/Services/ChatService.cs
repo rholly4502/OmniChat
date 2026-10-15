@@ -11,24 +11,27 @@ namespace OmniChat.Infrastructure.Services;
 
 /// <summary>
 /// Streams chat completions from either the Hermes agent gateway (Agent Mode) or a direct
-/// [OI]-compatible provider (Direct Mode), normalising both to a plain token stream.
+/// OpenAI-compatible provider (Direct Mode), normalising both to a plain token stream.
 /// </summary>
 public sealed class ChatService : IChatService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly HermesOptions _hermes;
     private readonly LlmOptions _llm;
+    private readonly StreamingOptions _streaming;
     private readonly ILogger<ChatService> _logger;
 
     public ChatService(
         IHttpClientFactory httpClientFactory,
         IOptions<HermesOptions> hermes,
         IOptions<LlmOptions> llm,
+        IOptions<StreamingOptions> streaming,
         ILogger<ChatService> logger)
     {
         _httpClientFactory = httpClientFactory;
         _hermes = hermes.Value;
         _llm = llm.Value;
+        _streaming = streaming.Value;
         _logger = logger;
     }
 
@@ -62,12 +65,12 @@ public sealed class ChatService : IChatService
 
     private async Task ProduceTokensAsync(ChannelWriter<string> writer, ChatRequest request, CancellationToken ct)
     {
+        var endpoint = request.UseHermesBridge ? _hermes.Endpoint : _llm.Endpoint;
+        var mode = request.UseHermesBridge ? "Hermes" : "LLM";
+
         try
         {
-            var (endpoint, apiKey) = request.UseHermesBridge
-                ? (_hermes.Endpoint, _hermes.ApiKey)
-                : (_llm.Endpoint, _llm.ApiKey);
-
+            var apiKey = request.UseHermesBridge ? _hermes.ApiKey : _llm.ApiKey;
             var client = _httpClientFactory.CreateClient("LLMClient");
 
             var payload = new
@@ -101,10 +104,28 @@ public sealed class ChatService : IChatService
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
+            // The named HttpClient has no overall timeout (a valid generation can stream for
+            // minutes), so a quiet upstream would otherwise hang the request forever. This
+            // deadline is pushed out on every line read: it fires on "no first token ever" and
+            // on "stalled mid-answer", but a stream that keeps producing is never cut short.
+            var idleTimeout = _streaming.IdleTimeout;
+            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (idleTimeout is { } initialDeadline)
+            {
+                idleCts.CancelAfter(initialDeadline);
+            }
+
             string? line;
-            while ((line = await reader.ReadLineAsync(ct)) != null)
+            while ((line = await reader.ReadLineAsync(idleCts.Token)) != null)
             {
                 ct.ThrowIfCancellationRequested();
+
+                // Any byte from upstream — including a keep-alive or a role-only delta — proves
+                // it is still working, so restart the deadline.
+                if (idleTimeout is { } renewedDeadline)
+                {
+                    idleCts.CancelAfter(renewedDeadline);
+                }
 
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!line.StartsWith("data: ")) continue;
@@ -119,6 +140,18 @@ public sealed class ChatService : IChatService
                 }
             }
         }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            // Only the idle deadline fired — the caller is still connected. The upstream
+            // accepted the request and then went quiet, so report that rather than hang.
+            _logger.LogWarning(
+                "Upstream {Mode} endpoint at {Endpoint} sent no data for {TimeoutSeconds}s; aborting the stream.",
+                mode, endpoint, _streaming.IdleTimeoutSeconds);
+
+            await writer.WriteAsync(
+                "[Error: The AI provider stopped responding. Please try again.]",
+                CancellationToken.None);
+        }
         catch (OperationCanceledException)
         {
             // Client disconnected or the host is shutting down — nothing to report.
@@ -126,9 +159,7 @@ public sealed class ChatService : IChatService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to reach the configured {Mode} endpoint at {Endpoint}.",
-                request.UseHermesBridge ? "Hermes" : "LLM",
-                request.UseHermesBridge ? _hermes.Endpoint : _llm.Endpoint);
+            _logger.LogError(ex, "Failed to reach the configured {Mode} endpoint at {Endpoint}.", mode, endpoint);
 
             // Surface a sanitized, actionable message. The previous implementation streamed a
             // hard-coded "Fallback Mode" demo paragraph, which masked outages as success.

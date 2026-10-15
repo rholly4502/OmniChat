@@ -93,6 +93,7 @@ builder.Services.AddSingleton(new JwtTokenValidator(jwtOptions));
 // being read ad hoc from IConfiguration on every request.
 builder.Services.Configure<HermesOptions>(builder.Configuration.GetSection(HermesOptions.SectionName));
 builder.Services.Configure<LlmOptions>(builder.Configuration.GetSection(LlmOptions.SectionName));
+builder.Services.Configure<StreamingOptions>(builder.Configuration.GetSection(StreamingOptions.SectionName));
 
 // Configure CORS: honour Cors:AllowedOrigins from config. In Production an empty list is a
 // misconfiguration — the SPA is served from the same origin, so nothing legitimate needs a

@@ -35,7 +35,8 @@ public class ChatServiceTests
     /// </summary>
     private ChatService CreateService(
         Func<HttpRequestMessage, HttpResponseMessage> handlerFunc,
-        string? hermesApiKey = null)
+        string? hermesApiKey = null,
+        StreamingOptions? streaming = null)
     {
         var handler = new TestableHttpMessageHandler(handlerFunc);
         var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
@@ -47,6 +48,7 @@ public class ChatServiceTests
             _httpClientFactoryMock.Object,
             Options.Create(new HermesOptions { Endpoint = HermesEndpoint, ApiKey = hermesApiKey }),
             Options.Create(new LlmOptions { Endpoint = LlmEndpoint, ApiKey = LlmApiKey }),
+            Options.Create(streaming ?? new StreamingOptions()),
             NullLogger<ChatService>.Instance);
     }
 
