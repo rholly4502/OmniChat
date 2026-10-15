@@ -1,20 +1,15 @@
 import { useRef, useState, useEffect, type TouchEvent as ReactTouchEvent } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import type { Message, ModelCatalog } from './types';
+import type { Message } from './types';
 import { streamChat, ApiError } from './api';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './components/Icons';
 import { CodeBlock } from './components/CodeBlock';
+import { useModelCatalog } from './hooks/useModelCatalog';
 
 // Re-exported for backwards compatibility (tests import it from './App').
 export { CodeBlock };
-import {
-  MODELS_URL,
-  API_KEY_STORAGE,
-  DEFAULT_AGENT_MODELS,
-  DEFAULT_DIRECT_MODELS,
-  DEFAULT_MODEL,
-} from './constants';
+import { API_KEY_STORAGE, DEFAULT_MODEL } from './constants';
 
 /**
  * Localized, user-facing message for a failed chat request. Kept in App.tsx
@@ -39,10 +34,6 @@ export default function App() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [catalog, setCatalog] = useState<ModelCatalog>({
-    agent: DEFAULT_AGENT_MODELS,
-    direct: DEFAULT_DIRECT_MODELS,
-  });
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
@@ -51,28 +42,12 @@ export default function App() {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const touchDelta = useRef(0);
 
+  const catalog = useModelCatalog(apiKey);
   const models = useAgent ? catalog.agent : catalog.direct;
 
   useEffect(() => {
     if (apiKey) localStorage.setItem(API_KEY_STORAGE, apiKey);
     else localStorage.removeItem(API_KEY_STORAGE);
-  }, [apiKey]);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(MODELS_URL, {
-      headers: apiKey ? { 'X-Api-Key': apiKey } : undefined,
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((data: Partial<ModelCatalog>) => {
-        if (cancelled) return;
-        setCatalog({
-          agent: data.agent?.length ? data.agent : DEFAULT_AGENT_MODELS,
-          direct: data.direct?.length ? data.direct : DEFAULT_DIRECT_MODELS,
-        });
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
   }, [apiKey]);
 
   const prevMsgCount = useRef(0);
