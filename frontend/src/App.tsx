@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, type TouchEvent as ReactTouchEvent } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ApiError } from './api';
@@ -6,6 +6,7 @@ import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './components/Icons';
 import { CodeBlock } from './components/CodeBlock';
 import { useModelCatalog } from './hooks/useModelCatalog';
 import { useChat } from './hooks/useChat';
+import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 
 // Re-exported for backwards compatibility (tests import it from './App').
 export { CodeBlock };
@@ -31,13 +32,23 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem(API_KEY_STORAGE) ?? '');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const touchDelta = useRef(0);
+
+  const {
+    open: sidebarOpen,
+    openDrawer,
+    closeDrawer,
+    onTouchStart,
+    onTouchMove,
+    onTouchEnd,
+  } = useSidebarDrawer({
+    sidebarRef,
+    openFocusRef: closeButtonRef,
+    restoreFocusRef: menuButtonRef,
+  });
 
   const catalog = useModelCatalog(apiKey);
   const models = useAgent ? catalog.agent : catalog.direct;
@@ -71,112 +82,6 @@ export default function App() {
     });
   }, [messages]);
 
-  useEffect(() => {
-    if (!sidebarOpen) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setSidebarOpen(false);
-        return;
-      }
-      // Focus trap: keep Tab within the sidebar while open
-      if (e.key === 'Tab' && sidebarRef.current) {
-        const focusable = sidebarRef.current.querySelectorAll<HTMLElement>(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [sidebarOpen]);
-
-  // Body scroll lock + focus management for mobile sidebar drawer
-  useEffect(() => {
-    if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-      // Move focus into the sidebar (close button)
-      closeButtonRef.current?.focus();
-      const menuBtn = menuButtonRef.current;
-      return () => {
-        document.body.style.overflow = '';
-        menuBtn?.focus();
-      };
-    }
-  }, [sidebarOpen]);
-
-  function handleTouchStart(e: ReactTouchEvent) {
-    const touch = e.touches[0];
-    if (!touch) return;
-    // Track for opening: only from left edge when sidebar is closed
-    if (!sidebarOpen && touch.clientX <= 20) {
-      touchStart.current = { x: touch.clientX, y: touch.clientY };
-    } else if (sidebarOpen) {
-      // Track for closing: any touch when sidebar is open
-      touchStart.current = { x: touch.clientX, y: touch.clientY };
-    }
-  }
-
-  function handleTouchMove(e: ReactTouchEvent) {
-    if (!touchStart.current) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const dx = touch.clientX - touchStart.current.x;
-    const dy = touch.clientY - touchStart.current.y;
-
-    // Cancel if primarily vertical (user is scrolling, not swiping)
-    if (Math.abs(dy) > Math.abs(dx)) {
-      if (touchDelta.current !== 0) {
-        const sb = sidebarRef.current;
-        if (sb) { sb.style.transform = ''; sb.style.transition = ''; }
-        touchDelta.current = 0;
-      }
-      return;
-    }
-
-    touchDelta.current = dx;
-    const sb = sidebarRef.current;
-    if (!sb) return;
-    const width = sb.offsetWidth;
-    if (!sidebarOpen) {
-      // Opening: sidebar is at -width, moving towards 0
-      const translate = Math.max(-width, Math.min(dx - width, 0));
-      sb.style.transform = `translateX(${translate}px)`;
-      sb.style.transition = 'none';
-    } else {
-      // Closing: sidebar is at 0, moving towards -width
-      const translate = Math.max(-width, Math.min(dx, 0));
-      sb.style.transform = `translateX(${translate}px)`;
-      sb.style.transition = 'none';
-    }
-  }
-
-  function handleTouchEnd() {
-    if (!touchStart.current) return;
-    touchStart.current = null;
-    const sb = sidebarRef.current;
-    if (!sb) { touchDelta.current = 0; return; }
-    const width = sb.offsetWidth;
-    const threshold = width * 0.3;
-    // Clear inline styles so CSS transition + Tailwind classes take over
-    sb.style.transform = '';
-    sb.style.transition = '';
-    if (!sidebarOpen && touchDelta.current > threshold) {
-      setSidebarOpen(true);
-    } else if (sidebarOpen && touchDelta.current < -threshold) {
-      setSidebarOpen(false);
-    }
-    touchDelta.current = 0;
-  }
-
   function toggleMode() {
     const next = !useAgent;
     setUseAgent(next);
@@ -193,16 +98,16 @@ export default function App() {
 
   return (
     <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchEnd}
     >
       {/* Mobile overlay backdrop */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeDrawer}
           aria-hidden="true"
         />
       )}
@@ -232,7 +137,7 @@ export default function App() {
           {/* Close button (mobile only) */}
           <button
             ref={closeButtonRef}
-            onClick={() => setSidebarOpen(false)}
+            onClick={closeDrawer}
             className="md:hidden text-slate-400 hover:text-slate-200 active:bg-slate-800/50 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
             aria-label="Close sidebar"
           >
@@ -324,7 +229,7 @@ export default function App() {
         <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
           <button
             ref={menuButtonRef}
-            onClick={() => setSidebarOpen(true)}
+            onClick={openDrawer}
             aria-expanded={sidebarOpen}
             aria-controls="chat-sidebar"
             className="text-slate-400 hover:text-cyan-400 active:bg-slate-800/50 p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
