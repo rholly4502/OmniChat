@@ -702,6 +702,23 @@ public class DeploymentConfigTests
 
 
     [Fact]
+    public void Readme_HasScreenshotSection_ListingRequiredImages()
+    {
+        // Tahap 1 item 3b: the README documents which screenshots the project needs
+        // (the images themselves are supplied by the user, never generated). Guard the
+        // section plus every expected filename so a list entry cannot silently vanish
+        // while the section heading survives.
+        var readme = Read("README.md");
+        var section = ExtractSection(readme, "## Screenshots");
+
+        Assert.Contains("docs/screenshots/desktop-chat.png", section);
+        Assert.Contains("docs/screenshots/mobile-chat-375.png", section);
+        Assert.Contains("docs/screenshots/mobile-drawer-375.png", section);
+        Assert.Contains("docs/screenshots/mode-toggle.png", section);
+        Assert.Contains("docs/screenshots/error-state.png", section);
+    }
+
+    [Fact]
     public void CiWorkflow_RunsFrontendTests()
     {
         // M22: the CI workflow must run `npm run test` between lint and build

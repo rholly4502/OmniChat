@@ -370,6 +370,20 @@ flowchart LR
 - Rate limiting: token bucket, 10 req/min per IP (returns 429 on excess)
 - Authentication: dual scheme — `ApiKeyMiddleware` + `JwtAuthenticationMiddleware` (JWT validated by `JwtTokenValidator`, claim names kept verbatim via `MapInboundClaims=false`)
 
+## Screenshots
+
+Tangkapan layar berikut menjelaskan UI yang sebenarnya. Gambar **belum** disertakan di repo — daftar ini adalah daftar yang diminta; kirim berkasnya dan akan ditempatkan di `docs/screenshots/` dengan nama yang tertera.
+
+| Berkas yang diharapkan | Viewport | Yang harus terlihat |
+|---|---|---|
+| `docs/screenshots/desktop-chat.png` | 1280×800 | Percakapan aktif dengan jawaban markdown (blok kode + tombol Copy) dan sidebar terbuka |
+| `docs/screenshots/mobile-chat-375.png` | 375×667 (iPhone SE) | Composer + gelembung pesan, tanpa scroll horizontal |
+| `docs/screenshots/mobile-drawer-375.png` | 375×667 | Sidebar drawer terbuka (toggle mode, pemilih model, input API key, Clear chat) |
+| `docs/screenshots/mode-toggle.png` | 1280×800 | Perbedaan Direct Mode dan Agent Mode (badge mode di top bar) |
+| `docs/screenshots/error-state.png` | 375×667 | Pesan error `⚠️ Autentikasi diperlukan (401)` di transcript saat API key kosong |
+
+Cara mengambil ulang: jalankan stack secara lokal, atur viewport seperti kolom di atas, lalu tangkap layar. Untuk mode gelap sudah menjadi default (tema `bg-slate-950`), jadi tidak ada tangkapan layar tema terang.
+
 ## Milestones
 
 - **Milestone 1** ✅ — Core SSE streaming, Clean Architecture, Hermes Bridge + Direct LLM
