@@ -322,6 +322,41 @@ cd frontend && npm run build
 
 ## Architecture
 
+**Alur request (streaming):**
+
+```mermaid
+flowchart LR
+    subgraph Browser["Browser (React + Vite)"]
+        UI["App.tsx<br/>komposisi"]
+        HOOK["useChat<br/>SSE consumer"]
+        API["api.ts<br/>streamChat()"]
+        UI --> HOOK --> API
+    end
+
+    subgraph Edge["Caddy (rhol-ai.tech)"]
+        TLS["TLS + reverse proxy"]
+    end
+
+    subgraph Backend["Backend .NET 10 (:5184)"]
+        MW["Middleware<br/>CorrelationId -> SecurityHeaders<br/>-> Auth (API key / JWT)<br/>-> RateLimit -> Logging"]
+        CTRL["ChatController<br/>SSE writer"]
+        SVC["ChatService<br/>Channel&lt;T&gt; producer"]
+        MW --> CTRL --> SVC
+    end
+
+    subgraph Upstream["LLM upstream"]
+        BRIDGE["Hermes Bridge<br/>:5000/v1"]
+        DIRECT["Direct LLM API"]
+    end
+
+    API -- "POST /api/chat/stream<br/>text/event-stream" --> TLS
+    TLS --> MW
+    SVC -- "mode: agent" --> BRIDGE
+    SVC -- "mode: direct" --> DIRECT
+    BRIDGE -. "token per baris" .-> API
+    DIRECT -. "token per baris" .-> API
+```
+
 **Clean Architecture Lite:**
 - **Domain** — `ChatRequest`, `ChatMessage` (models + validation)
 - **Application** — `IChatService` (interface, no dependencies on infrastructure)
