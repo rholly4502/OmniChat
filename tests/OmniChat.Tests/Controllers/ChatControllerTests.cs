@@ -114,6 +114,93 @@ public class ChatControllerTests
     }
 
     [Fact]
+    public async Task StreamChat_ConvertsUpstreamStatusFrames_IntoStatusEvents()
+    {
+        // The service reports liveness on the same stream as assistant text. The controller
+        // is the layer that knows about SSE, so it is the one that must re-envelope a status
+        // frame as {"status":"…"} and — critically — never as {"content":"…"}: leaking the
+        // sentinel into content would print "[status: …]" in the chat transcript.
+        var phase = ProgressMessages.Working;
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { ProgressPhase.Encode(phase), "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Contains($"data: {{\"status\":\"{phase}\"}}", output);
+        Assert.DoesNotContain(ProgressPhase.Encode(phase), output);
+        Assert.Contains("data: {\"content\":\"Hello\"}", output);
+    }
+
+    [Fact]
+    public async Task StreamChat_EmitsTheStatusEvent_BeforeAnyContent()
+    {
+        // Ordering is the whole feature: a progress frame that arrives after the answer has
+        // already started cannot explain the wait.
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { ProgressPhase.Encode(ProgressMessages.Working), "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.True(
+            output.IndexOf("\"status\"", StringComparison.Ordinal) < output.IndexOf("\"content\"", StringComparison.Ordinal),
+            "The status event must be written before the first content event.");
+    }
+
+    [Fact]
+    public async Task StreamChat_DoesNotRepeatTheSameStatusEvent()
+    {
+        // The heartbeat can fire several times while the agent works. Re-sending an unchanged
+        // phase would make screen readers re-announce it and churn the wire for nothing, so
+        // consecutive duplicates are collapsed.
+        var frame = ProgressPhase.Encode(ProgressMessages.Working);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { frame, frame, "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Equal(1, output.Split("\"status\"").Length - 1);
+    }
+
+    [Fact]
+    public async Task StreamChat_StillPassesOrdinaryTextThrough_WhenItLooksLikeASentinel()
+    {
+        // Guard against over-eager detection: only a well-formed [status: …] frame is a
+        // progress report. An assistant that writes "[status]" or "[Error: …]"-style prose,
+        // or a bracketed word with no status prefix, must still reach the transcript.
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "[status]", "[other: x]", "[" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Contains("data: {\"content\":\"[status]\"}", output);
+        Assert.Contains("data: {\"content\":\"[other: x]\"}", output);
+        Assert.Contains("data: {\"content\":\"[\"}", output);
+        Assert.DoesNotContain("\"status\":", output);
+    }
+
+    private ChatRequest NewRequest() => new()
+    {
+        Model = "test",
+        Messages = [new ChatMessage("user", "hi")],
+        UseHermesBridge = false
+    };
+
+    private string ReadBody()
+    {
+        _controller.Response.Body.Position = 0;
+        using var reader = new StreamReader(_controller.Response.Body);
+        return reader.ReadToEnd();
+    }
+
+    [Fact]
     public async Task StreamChat_WithInvalidModel_Returns400ProblemDetails()
     {
         // Arrange: add model validation error

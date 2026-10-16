@@ -92,6 +92,9 @@ public sealed class ChatService : IChatService
 
             using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
 
+            // The connection is live but no content has been produced yet: this is the
+            // window where Agent mode spends most of its wall-clock time. Announce it so
+            // the client can show progress instead of a frozen placeholder.
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync(ct);
@@ -104,28 +107,61 @@ public sealed class ChatService : IChatService
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
+            // First heartbeat, before the deadline loop: the timeout below is per *read*,
+            // so an upstream that is thinking emits nothing at all for this whole window.
+            await WriteProgressAsync(writer, ct);
+
             // The named HttpClient has no overall timeout (a valid generation can stream for
             // minutes), so a quiet upstream would otherwise hang the request forever. This
             // deadline is pushed out on every line read: it fires on "no first token ever" and
             // on "stalled mid-answer", but a stream that keeps producing is never cut short.
             var idleTimeout = _streaming.IdleTimeout;
+            var progressInterval = _streaming.ProgressInterval;
+
             using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            if (idleTimeout is { } initialDeadline)
+
+            // The read deadline and the heartbeat deadline share one token source: whichever
+            // elapses first cancels the pending ReadLineAsync, and the flag says which. The
+            // heartbeat fires far sooner than the idle deadline by design.
+            var idleDeadlineElapsed = false;
+
+            void ArmDeadlines()
             {
-                idleCts.CancelAfter(initialDeadline);
+                if (idleTimeout is { } idle)
+                {
+                    idleCts.CancelAfter(idle);
+                }
             }
 
+            ArmDeadlines();
+
             string? line;
-            while ((line = await reader.ReadLineAsync(idleCts.Token)) != null)
+            while (true)
             {
+                try
+                {
+                    line = await reader.ReadLineAsync(idleCts.Token);
+                }
+                catch (OperationCanceledException)
+                    when (!ct.IsCancellationRequested && !idleDeadlineElapsed && progressInterval is not null)
+                {
+                    // Silence, but not yet a stall: report progress and keep waiting. The
+                    // re-arm below restarts the idle deadline, so a genuinely dead upstream
+                    // still aborts after the full idle timeout instead of looping forever.
+                    idleDeadlineElapsed = true;
+                    await WriteProgressAsync(writer, ct);
+                    ArmDeadlines();
+                    idleDeadlineElapsed = false;
+                    continue;
+                }
+
+                if (line == null) break;
+
                 ct.ThrowIfCancellationRequested();
 
                 // Any byte from upstream — including a keep-alive or a role-only delta — proves
                 // it is still working, so restart the deadline.
-                if (idleTimeout is { } renewedDeadline)
-                {
-                    idleCts.CancelAfter(renewedDeadline);
-                }
+                ArmDeadlines();
 
                 if (string.IsNullOrWhiteSpace(line)) continue;
                 if (!line.StartsWith("data: ")) continue;
@@ -171,6 +207,26 @@ public sealed class ChatService : IChatService
         {
             writer.TryComplete();
         }
+    }
+
+    /// <summary>
+    /// Writes one <c>{"status":"…"}</c> progress frame, unless the heartbeat is disabled.
+    /// </summary>
+    /// <remarks>
+    /// The frame is a plain JSON object with a single <c>status</c> key, mirroring how the
+    /// error channel writes <c>{"error":"…"}</c> — the client distinguishes the two by key,
+    /// so a status frame can never be mistaken for assistant text.
+    /// <para>
+    /// Written with <see cref="CancellationToken.None"/> on purpose: this frame exists to
+    /// reassure a client whose request is still alive, so it must not be dropped just
+    /// because the read-side token happens to be cancelled at this instant.
+    /// </para>
+    /// </remarks>
+    private async Task WriteProgressAsync(ChannelWriter<string> writer, CancellationToken ct)
+    {
+        if (_streaming.ProgressInterval is null) return;
+
+        await writer.WriteAsync(ProgressPhase.Encode(ProgressMessages.Working), ct);
     }
 
     /// <summary>

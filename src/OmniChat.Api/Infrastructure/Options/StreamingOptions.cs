@@ -25,6 +25,25 @@ public sealed class StreamingOptions
     /// </remarks>
     public int IdleTimeoutSeconds { get; set; } = DefaultIdleTimeoutSeconds;
 
+    /// <summary>Value used when <see cref="ProgressIntervalSeconds"/> is unset or non-positive.</summary>
+    public const int DefaultProgressIntervalSeconds = 10;
+
+    /// <summary>
+    /// Emit a progress frame on an idle upstream stream after this many seconds of silence.
+    /// </summary>
+    /// <remarks>
+    /// The first token of an Agent-mode reply only arrives once the whole agent loop has
+    /// finished, so without a heartbeat the client cannot tell a working agent from a dead
+    /// request. This is deliberately an order of magnitude shorter than
+    /// <see cref="IdleTimeoutSeconds"/>: the heartbeat reassures, the idle deadline aborts.
+    /// Zero or negative disables the heartbeat entirely.
+    /// </remarks>
+    public int ProgressIntervalSeconds { get; set; } = DefaultProgressIntervalSeconds;
+
+    /// <summary>The heartbeat interval, or <c>null</c> when disabled.</summary>
+    public TimeSpan? ProgressInterval =>
+        ProgressIntervalSeconds > 0 ? TimeSpan.FromSeconds(ProgressIntervalSeconds) : null;
+
     /// <summary>The deadline, or <c>null</c> when disabled.</summary>
     public TimeSpan? IdleTimeout =>
         IdleTimeoutSeconds > 0 ? TimeSpan.FromSeconds(IdleTimeoutSeconds) : null;

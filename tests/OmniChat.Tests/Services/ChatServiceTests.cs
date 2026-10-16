@@ -53,6 +53,26 @@ public class ChatServiceTests
     }
 
     [Fact]
+    public void StreamingOptions_ProgressInterval_IsDisabledWhenSecondsAreNonPositive()
+    {
+        // A disabled interval (0 or negative) must yield a null deadline, so the
+        // heartbeat can be switched off entirely rather than firing every tick.
+        Assert.Null(new StreamingOptions { ProgressIntervalSeconds = 0 }.ProgressInterval);
+        Assert.Null(new StreamingOptions { ProgressIntervalSeconds = -1 }.ProgressInterval);
+    }
+
+    [Fact]
+    public void StreamingOptions_ProgressInterval_DefaultsToTenSeconds()
+    {
+        // A first token in Agent mode can take a while: the default has to be short
+        // enough to reassure the user, long enough not to churn the wire.
+        Assert.Equal(10, StreamingOptions.DefaultProgressIntervalSeconds);
+        Assert.Equal(
+            TimeSpan.FromSeconds(10),
+            new StreamingOptions().ProgressInterval);
+    }
+
+    [Fact]
     public async Task StreamChatResponseAsync_ParsesSSEChunksCorrectly()
     {
         // Arrange: simulate an SSE response with two content chunks then [DONE]
@@ -77,11 +97,138 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        // Assert: tokens parsed from delta.content
-        Assert.Equal(2, tokens.Count);
-        Assert.Equal("Hello", tokens[0]);
-        Assert.Equal(" World", tokens[1]);
+        // Assert: the head is the heartbeat, then the content tokens parsed from delta.content.
+        Assert.Equal(ProgressFrame, tokens[0]);
+        var content = tokens.Where(token => token != ProgressFrame).ToArray();
+        Assert.Equal(2, content.Length);
+        Assert.Equal("Hello", content[0]);
+        Assert.Equal(" World", content[1]);
     }
+
+    private static readonly string ProgressFrame =
+        OmniChat.Domain.Models.ProgressPhase.Encode(OmniChat.Domain.Models.ProgressMessages.Working);
+
+    [Fact]
+    public async Task StreamChatResponseAsync_EmitsProgressFrame_BeforeTheFirstTokenArrives()
+    {
+        // The whole point of Tahap 2 item 5: while the agent loop runs and upstream is
+        // silent, the client must still see that the request is alive. The frame has to
+        // arrive *before* any content, otherwise it cannot explain the wait.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"Hi\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Equal(ProgressFrame, tokens[0]);
+        Assert.Contains("Hi", tokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_DoesNotRepeatTheProgressFrame_WhileTokensKeepFlowing()
+    {
+        // The heartbeat is a *quiet-period* signal. Repeating it between tokens would
+        // churn the wire and re-announce a status the user has already seen.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\n"
+                    + "data: {\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Single(tokens, token => token == ProgressFrame);
+        Assert.Equal([ProgressFrame, "a", "b"], tokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_EmitsProgressFrame_WhenUpstreamGoesQuietMidAnswer()
+    {
+        // The service-level half of the mid-answer heartbeat: the frame is produced on the
+        // stream, in order, once the quiet interval has elapsed. Timing itself is covered
+        // deterministically by the token-level test in ChatControllerTests, because a
+        // wall-clock wait here would be flaky and slow.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\n"
+                    + "data: {\"choices\":[{\"delta\":{\"content\":\"b\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(
+            req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+            },
+            streaming: new StreamingOptions { ProgressIntervalSeconds = 1 });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        // Token order is preserved: the heartbeat is injected between real tokens, never
+        // reordered, and a progress frame is present at the head.
+        Assert.Equal(ProgressFrame, tokens[0]);
+        var contentTokens = tokens.Where(token => token != ProgressFrame).ToArray();
+        Assert.Equal(["a", "b"], contentTokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_WithProgressDisabled_EmitsNoStatusFrames()
+    {
+        // ProgressIntervalSeconds <= 0 must switch the heartbeat off completely, matching
+        // the idle deadline's opt-out semantics.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(
+            req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+            },
+            streaming: new StreamingOptions { ProgressIntervalSeconds = 0 });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Equal(["a"], tokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_OnProviderError_EmitsNoProgressFrame()
+    {
+        // A rejected request is not progress: emitting a heartbeat before the error would
+        // make the client render "Menyusun jawaban" next to a failed reply.
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.BadGateway)
+        {
+            Content = new StringContent("upstream boom", System.Text.Encoding.UTF8, "text/plain")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.DoesNotContain(tokens, token => token.StartsWith("[status:", StringComparison.Ordinal));
+        Assert.Contains(tokens, token => token.Contains("provider returned an error", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static ChatRequest NewRequest() => new()
+    {
+        Model = "test-model",
+        Messages = [new ChatMessage("user", "hi")],
+        UseHermesBridge = false
+    };
 
     [Fact]
     public async Task StreamChatResponseAsync_WhenEndpointUnreachable_EmitsSanitizedError()
@@ -355,9 +502,8 @@ public class ChatServiceTests
         }
 
         // Assert: only valid chunks parsed, malformed skipped
-        Assert.Equal(2, tokens.Count);
-        Assert.Equal("good", tokens[0]);
-        Assert.Equal("after", tokens[1]);
+        Assert.Equal(ProgressFrame, tokens[0]);
+        Assert.Equal(["good", "after"], tokens.Skip(1));
     }
 
     [Fact]
@@ -377,7 +523,9 @@ public class ChatServiceTests
         // Arrange: the upstream accepts the request, answers 200, then sends nothing at all.
         var service = CreateService(
             _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new HangingHttpContent() },
-            streaming: new StreamingOptions { IdleTimeoutSeconds = 1 });
+            // Heartbeat off: this test pins the idle deadline, so the only frame it should
+            // ever see is the terminal error.
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 1, ProgressIntervalSeconds = 0 });
 
         var request = new ChatRequest
         {
@@ -449,8 +597,11 @@ public class ChatServiceTests
         }
 
         // Assert: every chunk arrived, in order, with no error token — the deadline was renewed.
+        // The single head frame is the start-of-stream heartbeat, not a renewal.
+        Assert.Equal(ProgressFrame, tokens[0]);
+        Assert.Single(tokens, token => token == ProgressFrame);
         var expected = Enumerable.Range(0, chunkCount).Select(i => "tok" + i).ToArray();
-        Assert.Equal(expected, tokens);
+        Assert.Equal(expected, tokens.Skip(1));
 
         // Guards against a vacuous pass: if the pacing collapsed the stream would finish inside the
         // deadline and prove nothing about renewal.

@@ -79,10 +79,27 @@ public sealed class ChatController : ControllerBase
         Response.Headers.Connection = "keep-alive";
         Response.Headers["X-Accel-Buffering"] = "no";
 
+        // The service reports its own liveness as a status frame and leaves the assistant's
+        // text alone, so the two channels can never be mixed up. The phase is sent by the
+        // service; this layer only decides which envelope it travels in.
+        var latestPhase = default(string);
+
         try
         {
             await foreach (var token in _chatService.StreamChatResponseAsync(request, cancellationToken))
             {
+                var phase = ProgressPhase.TryRead(token);
+                if (phase is not null)
+                {
+                    if (phase != latestPhase)
+                    {
+                        latestPhase = phase;
+                        await WriteEventAsync(new { status = phase }, cancellationToken);
+                    }
+
+                    continue;
+                }
+
                 await WriteEventAsync(new { content = token }, cancellationToken);
             }
 
@@ -104,6 +121,17 @@ public sealed class ChatController : ControllerBase
                 CancellationToken.None);
         }
     }
+
+    /// <summary>
+    /// Reads an upstream status frame out of a streamed token, or <c>null</c> when the token is
+    /// assistant text.
+    /// </summary>
+    /// <remarks>
+    /// A plain string comparison rather than a JSON parse: token-level parsing would run for
+    /// every chunk of every answer, and the only statuses that exist come from
+    /// <see cref="ProgressMessages"/>.
+    /// </remarks>
+    private static string? TryReadProgressPhase(string token) => ProgressPhase.TryRead(token);
 
     /// <summary>Serialises <paramref name="payload"/> as one SSE <c>data:</c> frame and flushes it.</summary>
     private async Task WriteEventAsync(object payload, CancellationToken cancellationToken)
