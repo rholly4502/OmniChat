@@ -360,6 +360,227 @@ public class ChatServiceTests
         Assert.Equal("after", tokens[1]);
     }
 
+    [Fact]
+    public void IdleTimeout_IsNullWhenDisabledOrNonPositive()
+    {
+        // The deadline is opt-out: zero or a negative value must disable it entirely rather
+        // than fire immediately and abort every stream.
+        Assert.Equal(TimeSpan.FromSeconds(StreamingOptions.DefaultIdleTimeoutSeconds), new StreamingOptions().IdleTimeout);
+        Assert.Equal(TimeSpan.FromSeconds(30), new StreamingOptions { IdleTimeoutSeconds = 30 }.IdleTimeout);
+        Assert.Null(new StreamingOptions { IdleTimeoutSeconds = 0 }.IdleTimeout);
+        Assert.Null(new StreamingOptions { IdleTimeoutSeconds = -5 }.IdleTimeout);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_SilentUpstream_ReportsProviderStoppedResponding()
+    {
+        // Arrange: the upstream accepts the request, answers 200, then sends nothing at all.
+        var service = CreateService(
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new HangingHttpContent() },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 1 });
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = false
+        };
+
+        // Safety net: without the idle deadline this iteration would hang forever, so the outer
+        // token ends it at 15 s. The test then fails with a cancellation instead of a timeout.
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+
+        // Act
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(request, guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        // Assert: one terminal token, and it is the idle-deadline message. A silent upstream must
+        // surface as an error rather than a hang or an empty reply.
+        Assert.Single(tokens);
+        Assert.Equal("[Error: The AI provider stopped responding. Please try again.]", tokens[0]);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_RenewsIdleDeadlineOnEveryLine()
+    {
+        // Ten chunks 250 ms apart: ~2.25 s of streaming against a 2 s deadline. Every gap is far
+        // under the deadline while the total is over it, so this only completes end-to-end if the
+        // deadline is pushed out on every line read — a single fixed 2 s budget would cut the
+        // stream off part way through.
+        //
+        // The ratio matters more than the absolute numbers: the per-gap slack must stay well above
+        // the host's timer jitter. A 400 ms gap against a 1 s deadline (2.5x slack) was measurably
+        // flaky on a 1-CPU container, where a nominal 400 ms Task.Delay was observed at 775-1244 ms.
+        // 250 ms against 2 s gives 8x slack, and the elapsed-time assertion below still pins the
+        // proof: the stream genuinely outlived the deadline.
+        const int chunkCount = 10;
+        const int gapMs = 250;
+        var deadline = TimeSpan.FromSeconds(2);
+
+        var segments = new List<(int DelayMs, byte[] Bytes)>();
+        for (var i = 0; i < chunkCount; i++)
+        {
+            var frame = "data: {\"choices\":[{\"delta\":{\"content\":\"tok" + i + "\"}}]}\n\n";
+            segments.Add((gapMs, System.Text.Encoding.UTF8.GetBytes(frame)));
+        }
+
+        var service = CreateService(
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new PacedHttpContent(segments) },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = (int)deadline.TotalSeconds });
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = false
+        };
+
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // Act
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(request, guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        // Assert: every chunk arrived, in order, with no error token — the deadline was renewed.
+        var expected = Enumerable.Range(0, chunkCount).Select(i => "tok" + i).ToArray();
+        Assert.Equal(expected, tokens);
+
+        // Guards against a vacuous pass: if the pacing collapsed the stream would finish inside the
+        // deadline and prove nothing about renewal.
+        Assert.True(sw.Elapsed >= deadline, $"stream finished in {sw.ElapsedMilliseconds} ms, inside the {deadline.TotalSeconds} s deadline — renewal was not exercised");
+    }
+
+    /// <summary>
+    /// A body whose stream never produces a byte: an upstream that accepted the request and then
+    /// black-holed it. The only way out of a read is cancellation by the stream's own deadline.
+    /// </summary>
+    private sealed class HangingHttpContent : HttpContent
+    {
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new HangingStream());
+
+        // Not reached: ReadAsStreamAsync prefers CreateContentReadStreamAsync. Throwing makes a
+        // silent fall back to buffering loud instead of yielding an empty, passing body.
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) =>
+            throw new NotSupportedException("HangingHttpContent is streamed, not serialized.");
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    private sealed class HangingStream : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
+            return 0;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// Emits one pre-timed byte segment per read, so a test can drive a stream that keeps
+    /// producing slowly instead of arriving in a single burst.
+    /// </summary>
+    private sealed class PacedHttpContent : HttpContent
+    {
+        private readonly IReadOnlyList<(int DelayMs, byte[] Bytes)> _segments;
+
+        public PacedHttpContent(IReadOnlyList<(int DelayMs, byte[] Bytes)> segments) => _segments = segments;
+
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new PacedStream(_segments));
+
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) =>
+            throw new NotSupportedException("PacedHttpContent is streamed, not serialized.");
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    private sealed class PacedStream : Stream
+    {
+        private readonly IReadOnlyList<(int DelayMs, byte[] Bytes)> _segments;
+        private int _index;
+        private int _offset;
+
+        public PacedStream(IReadOnlyList<(int DelayMs, byte[] Bytes)> segments) => _segments = segments;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_index >= _segments.Count) return 0;
+
+            var (delayMs, bytes) = _segments[_index];
+            if (_offset == 0)
+            {
+                await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
+            }
+
+            var count = Math.Min(buffer.Length, bytes.Length - _offset);
+            bytes.AsSpan(_offset, count).CopyTo(buffer.Span);
+            _offset += count;
+            if (_offset >= bytes.Length)
+            {
+                _index++;
+                _offset = 0;
+            }
+
+            return count;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     /// <summary>
     /// Custom HttpMessageHandler that delegates to a function for testing.
     /// </summary>

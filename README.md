@@ -316,6 +316,7 @@ cd frontend && npm run build
 | `Models__Direct` | `Models:Direct` | No (built-in defaults) | Direct-provider model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults |
 | `RateLimit__TokenLimit` | `RateLimit:TokenLimit` | No (default: `10`) | Max requests per period per client IP (token-bucket) |
 | `RateLimit__ReplenishmentPeriodSeconds` | `RateLimit:ReplenishmentPeriodSeconds` | No (default: `60`) | Token replenishment period in seconds |
+| `Streaming__IdleTimeoutSeconds` | `Streaming:IdleTimeoutSeconds` | No (default: `120`) | Abort the upstream call after this many seconds with no bytes received. Renewed on every line, so a healthy long generation is never cut short. `0`/negative disables |
 
 > **⚠️ Security:** `Security__ApiKey` and `Cors__AllowedOrigins` **must** be set in any non-local deployment. Empty values mean the API is open and accepts requests from any origin.
 

@@ -39,6 +39,9 @@ services:
       # Rate limiting — token bucket per IP. Defaults: 10 tokens / 60s.
       - RateLimit__TokenLimit=${RateLimit__TokenLimit:-10}
       - RateLimit__ReplenishmentPeriodSeconds=${RateLimit__ReplenishmentPeriodSeconds:-60}
+      # Streaming liveness deadline — abort an upstream that goes quiet. Default 120s;
+      # the deadline is renewed on every line received, so healthy long generations survive.
+      - Streaming__IdleTimeoutSeconds=${Streaming__IdleTimeoutSeconds:-120}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s

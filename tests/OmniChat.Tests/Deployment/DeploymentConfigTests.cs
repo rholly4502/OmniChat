@@ -1,6 +1,7 @@
 using System.IO;
 using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Api.Infrastructure.Networking;
+using OmniChat.Api.Infrastructure.Options;
 using OmniChat.Infrastructure.Services;
 
 namespace OmniChat.Tests.Deployment;
@@ -170,6 +171,33 @@ public class DeploymentConfigTests
     {
         var appsettings = Read("src/OmniChat.Api/appsettings.json");
         Assert.Contains("MaxRequestBodySizeBytes", appsettings);
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsStreamingIdleTimeout()
+    {
+        var expected = $"{EnvPrefix(StreamingOptions.SectionName)}__IdleTimeoutSeconds";
+        Assert.Contains(expected, Read(".env.example"));
+    }
+
+    [Fact]
+    public void DockerCompose_ForwardsStreamingIdleTimeout()
+    {
+        var expected = $"{EnvPrefix(StreamingOptions.SectionName)}__IdleTimeoutSeconds";
+        Assert.Contains(expected, Read("docker-compose.yml"));
+    }
+
+    [Fact]
+    public void Readme_DocumentsStreamingIdleTimeout()
+    {
+        var expected = $"{EnvPrefix(StreamingOptions.SectionName)}__IdleTimeoutSeconds";
+        Assert.Contains(expected, Read("README.md"));
+    }
+
+    [Fact]
+    public void AppSettings_HasStreamingIdleTimeout()
+    {
+        Assert.Contains("\"IdleTimeoutSeconds\"", Read("src/OmniChat.Api/appsettings.json"));
     }
 
     [Fact]
