@@ -719,6 +719,54 @@ public class DeploymentConfigTests
     }
 
     [Fact]
+    public void Readme_MilestonesList_ReflectsTheShippedMilestones()
+    {
+        // 3c (README refresh): the milestones list must describe the code that
+        // actually exists. M21–M28 shipped after the list had gone stale — it
+        // stopped at M24 and listed neither the UI-audit milestones nor the
+        // frontend decomposition, so a reader could not tell how large the UI
+        // work had grown. Assert the highest milestone number is reached rather
+        // than pinning each entry's prose.
+        var readme = Read("README.md");
+        var milestones = ExtractTopLevelSection(readme, "## Milestones");
+
+        Assert.Contains("Milestone 20", milestones);
+        Assert.Contains("Milestone 24", milestones);
+        Assert.Contains("Milestone 28", milestones);
+        // The frontend total moved from 23 to 185 across the decomposition; a
+        // regression to the old number means the feature list's test claim drifted.
+        Assert.Contains("185", milestones);
+    }
+
+    [Fact]
+    public void Readme_FeatureList_DescribesTheShippedTestCount()
+    {
+        // The feature bullet still claimed "23 tests ... covering rendering, mode
+        // toggle, model catalog fetch/fallback" after the suite grew to 185, and
+        // omitted every capability added since M20.
+        var readme = Read("README.md");
+        var features = ExtractTopLevelSection(readme, "## Fitur");
+
+        Assert.Contains("185 tests", features);
+        Assert.DoesNotContain("23 tests", features);
+        Assert.Contains("RateLimit__TokenLimit", features);
+        Assert.Contains("Streaming__IdleTimeoutSeconds", features);
+    }
+
+    [Fact]
+    public void Readme_DocumentsNoObsoleteMilestoneNumbers()
+    {
+        // "Milestone 21"/"Milestone 23" were missing while both had shipped, and the
+        // old README attributed WCAG-contrast work to "Milestone 23" — a number the
+        // README itself never lists. Guard the numbers that must be present.
+        var readme = Read("README.md");
+        var milestones = ExtractTopLevelSection(readme, "## Milestones");
+
+        Assert.Contains("Milestone 21", milestones);
+        Assert.Contains("Milestone 23", milestones);
+    }
+
+    [Fact]
     public void CiWorkflow_RunsFrontendTests()
     {
         // M22: the CI workflow must run `npm run test` between lint and build
@@ -889,13 +937,33 @@ public class DeploymentConfigTests
     /// Extracts a markdown section starting at <paramref name="heading"/> up to the
     /// next heading of the same or higher level (## or ###).
     /// </summary>
+    /// <summary>
+    /// Extracts a markdown section starting at <paramref name="heading"/> up to the
+    /// next heading of the same or higher level (<c>##</c> or <c>###</c>).
+    /// </summary>
     private static string ExtractSection(string markdown, string heading)
     {
         var start = markdown.IndexOf(heading, StringComparison.Ordinal);
         Assert.True(start >= 0, $"Section '{heading}' not found in markdown");
 
-        // Find the next ## or ### heading after this one (at the start of a line).
-        var searchFrom = start + heading.Length;
+        return SliceToNextHeading(markdown, start, heading.Length);
+    }
+
+    /// <summary>
+    /// Extracts the top-level <c>##</c> section whose heading starts the given line,
+    /// stopping at the next <c>##</c> heading.
+    /// </summary>
+    private static string ExtractTopLevelSection(string markdown, string headingLine)
+    {
+        var start = markdown.IndexOf(headingLine, StringComparison.Ordinal);
+        Assert.True(start >= 0, $"Section '{headingLine}' not found in markdown");
+
+        return SliceToNextHeading(markdown, start, headingLine.Length);
+    }
+
+    private static string SliceToNextHeading(string markdown, int start, int headingLength)
+    {
+        var searchFrom = start + headingLength;
         var nextHeading = markdown.IndexOf("\n## ", searchFrom, StringComparison.Ordinal);
         if (nextHeading < 0)
             nextHeading = markdown.Length;
