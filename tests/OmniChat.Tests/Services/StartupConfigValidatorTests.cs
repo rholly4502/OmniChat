@@ -76,6 +76,30 @@ public class StartupConfigValidatorTests
     }
 
     [Fact]
+    public void Validate_ProductionEmptyCors_WarningDescribesTheActualPolicy()
+    {
+        // The warning must describe what the code does. In Production an empty origin list
+        // registers a policy that rejects every cross-origin request (Program.cs), so the message
+        // has to say that rather than claim the API is open to any website — an operator reading
+        // the misleading version could "fix" it by setting a wildcard that opens the API up.
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
+            ["Security:Jwt:SigningKey"] = "test-key"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        var entry = Assert.Single(logger.Entries, e =>
+            e.Level == LogLevel.Warning && e.Message.Contains("Cors:AllowedOrigins"));
+        Assert.Contains("rejects every cross-origin request", entry.Message);
+        Assert.DoesNotContain("any website can call the API", entry.Message);
+    }
+
+    [Fact]
     public void Validate_ProductionEmptyJwtSigningKey_LogsWarning()
     {
         var config = BuildConfig(new Dictionary<string, string?>

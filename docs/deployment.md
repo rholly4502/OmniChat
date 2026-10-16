@@ -43,10 +43,14 @@ docker compose up -d --build
 
 > **⚠️ Security warning — do not expose this stack without an API key.**
 > If `Security__ApiKey` is empty the backend is **open**: the API-key middleware
-> lets every request through. Likewise an empty `Cors__AllowedOrigins` falls back
-> to `AllowAnyOrigin`, so any website can call the API. For any public or shared
-> deployment set **both** a long random `Security__ApiKey` and an explicit
-> `Cors__AllowedOrigins` list, and terminate TLS at a reverse proxy.
+> lets every request through. For any public or shared deployment set a long
+> random `Security__ApiKey` and terminate TLS at a reverse proxy.
+>
+> `Cors__AllowedOrigins` behaves differently per environment. In **Production** an
+> empty list is safe — the policy then rejects every cross-origin request, and the
+> SPA is served same-origin so it is unaffected. Set it only when a legitimate
+> cross-origin client needs access. In **Development** an empty list falls back to
+> `AllowAnyOrigin`, which is convenient locally and must never reach production.
 
 ## Container Image Notes
 

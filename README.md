@@ -306,7 +306,7 @@ cd frontend && npm run build
 | `Security__Jwt__Issuer` | `Security:Jwt:Issuer` | No (default: `OmniChat`) | JWT issuer claim |
 | `Security__Jwt__Audience` | `Security:Jwt:Audience` | No (default: `OmniChat`) | JWT audience claim |
 | `Kestrel__MaxRequestBodySizeBytes` | `Kestrel:MaxRequestBodySizeBytes` | No (default: 10 MB) | Max request body size in bytes (DoS prevention) |
-| `Cors__AllowedOrigins` | `Cors:AllowedOrigins` | **Yes (prod)** | Comma-separated allowed origins. **Empty = allow any origin** |
+| `Cors__AllowedOrigins` | `Cors:AllowedOrigins` | No (see note) | Comma-separated allowed origins. In Production an empty list registers a policy that rejects every cross-origin request — the same-origin SPA still works, but no cross-origin client can call the API |
 | `ReverseProxy__Enabled` | `ReverseProxy:Enabled` | No (default: `false`) | Process `X-Forwarded-For`/`X-Forwarded-Proto` from trusted proxies (set `true` only behind a reverse proxy) |
 | `ReverseProxy__KnownProxies` | `ReverseProxy:KnownProxies` | No (empty) | Comma-separated trusted proxy IPs |
 | `ReverseProxy__KnownNetworks` | `ReverseProxy:KnownNetworks` | No (empty) | Comma-separated trusted proxy CIDR networks (e.g. `172.18.0.0/16`) |
@@ -318,7 +318,7 @@ cd frontend && npm run build
 | `RateLimit__ReplenishmentPeriodSeconds` | `RateLimit:ReplenishmentPeriodSeconds` | No (default: `60`) | Token replenishment period in seconds |
 | `Streaming__IdleTimeoutSeconds` | `Streaming:IdleTimeoutSeconds` | No (default: `120`) | Abort the upstream call after this many seconds with no bytes received. Renewed on every line, so a healthy long generation is never cut short. `0`/negative disables |
 
-> **⚠️ Security:** `Security__ApiKey` and `Cors__AllowedOrigins` **must** be set in any non-local deployment. Empty values mean the API is open and accepts requests from any origin.
+> **⚠️ Security:** `Security__ApiKey` **must** be set in any non-local deployment — an empty value means the API is open with no authentication. `Cors__AllowedOrigins` is a different case: leaving it empty in Production is **safe** (the policy then rejects every cross-origin request, and the SPA is served same-origin so it is unaffected). Set it only if a legitimate cross-origin client needs access. It is required in Development, where an empty list falls back to `AllowAnyOrigin`.
 
 ## Architecture
 

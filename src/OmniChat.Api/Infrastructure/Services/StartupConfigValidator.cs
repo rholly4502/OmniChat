@@ -23,7 +23,8 @@ public class StartupConfigValidator
     /// Checks security-sensitive settings. In Production, logs warnings for:
     /// <list type="bullet">
     ///   <item>Empty <c>Security:ApiKey</c> — the API is open (no authentication).</item>
-    ///   <item>Empty <c>Cors:AllowedOrigins</c> — any website can call the API.</item>
+    ///   <item>Empty <c>Cors:AllowedOrigins</c> — the CORS policy rejects every cross-origin
+    ///   request (safe, but any legitimate cross-origin client is blocked too).</item>
     ///   <item>Empty <c>Security:Jwt:SigningKey</c> — JWT authentication is disabled.</item>
     ///   <item><c>ReverseProxy:Enabled</c> with no trusted proxies/networks — the real client
     ///   IP cannot be recovered, so per-IP rate limiting treats every client as one.</item>
@@ -55,7 +56,7 @@ public class StartupConfigValidator
         if (corsOrigins.Length == 0)
         {
             _logger.LogWarning(
-                "Cors:AllowedOrigins is empty — any website can call the API. Set explicit origins via the Cors__AllowedOrigins environment variable.");
+                "Cors:AllowedOrigins is empty — the CORS policy rejects every cross-origin request (the same-origin SPA is unaffected). Set explicit origins via the Cors__AllowedOrigins environment variable to allow a legitimate cross-origin client.");
         }
 
         if (string.IsNullOrWhiteSpace(_configuration["Security:Jwt:SigningKey"]))
