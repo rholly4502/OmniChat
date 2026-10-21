@@ -7,6 +7,13 @@ export interface StreamChunk {
   content?: string;
   /** Sanitized error message from the backend, when streaming failed mid-flight. */
   error?: string;
+  /**
+   * Progress phase from the backend, sent while the upstream is still thinking.
+   *
+   * Mutually exclusive with `content` and `error`: the backend labels each frame with exactly
+   * one key, so a phase can never be mistaken for assistant text.
+   */
+  status?: string;
 }
 
 /**
@@ -43,7 +50,9 @@ export function parseSseBuffer(buffer: string): { events: StreamChunk[]; rest: s
     if (data === '[DONE]') continue;
     try {
       const parsed = JSON.parse(data) as StreamChunk;
+      // Order matters only for shape: a frame carries exactly one of the three keys.
       if (parsed.error) events.push({ error: parsed.error });
+      else if (parsed.status) events.push({ status: parsed.status });
       else if (parsed.content) events.push({ content: parsed.content });
     } catch {
       // Ignore malformed frames: a single bad event must not kill the stream.

@@ -3,6 +3,11 @@ export type Role = 'user' | 'assistant';
 export interface Message {
   role: Role;
   content: string;
+  /**
+   * Progress phase reported by the backend while an assistant reply is still being
+   * produced. Absent on user turns, on finished replies and when the heartbeat is off.
+   */
+  status?: string;
 }
 
 export interface ModelOption {

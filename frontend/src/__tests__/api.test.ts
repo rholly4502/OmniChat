@@ -61,6 +61,27 @@ describe('parseSseBuffer', () => {
     const { events } = parseSseBuffer('data: {"content":"a"}\n\ndata: {"content":"b"}\n\n');
     expect(events.map((e) => e.content)).toEqual(['a', 'b']);
   });
+
+  it('surfaces a status frame on its own field', () => {
+    // The backend announces phases as {"status":"…"} while the agent works. It must arrive
+    // as a status chunk: parsed as content it would be printed into the transcript.
+    const { events } = parseSseBuffer('data: {"status":"Menyusun jawaban"}\n\n');
+    expect(events).toEqual([{ status: 'Menyusun jawaban' }]);
+  });
+
+  it('keeps the three frame kinds distinct', () => {
+    const { events } = parseSseBuffer(
+      'data: {"status":"Kerja"}\n\ndata: {"content":"hi"}\n\ndata: {"error":"boom"}\n\n'
+    );
+    expect(events).toEqual([{ status: 'Kerja' }, { content: 'hi' }, { error: 'boom' }]);
+  });
+
+  it('treats a status frame as a status, never as content', () => {
+    // Regression guard for the exact mix-up the feature must not have: a status must never
+    // land in `content`, or the phase text is appended to the assistant's answer.
+    const { events } = parseSseBuffer('data: {"status":"Kerja"}\n\n');
+    expect(events[0]).not.toHaveProperty('content');
+  });
 });
 
 describe('streamChat', () => {
@@ -133,6 +154,28 @@ describe('streamChat', () => {
     const fetchImpl = vi.fn(async () => streamResponse(['data: {"content":"tail"}']));
     const chunks = await collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch });
     expect(chunks).toEqual([{ content: 'tail' }]);
+  });
+
+  it('yields a status chunk before any content when the backend sends one', async () => {
+    // The ordering is the feature: a progress report that arrives after the answer has
+    // started cannot explain the wait it was meant to explain.
+    const fetchImpl = vi.fn(async () =>
+      streamResponse(['data: {"status":"Menyusun jawaban"}\n\ndata: {"content":"Hi"}\n\n'])
+    );
+    const chunks = await collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch });
+    expect(chunks).toEqual([{ status: 'Menyusun jawaban' }, { content: 'Hi' }]);
+  });
+
+  it('yields a repeated status frame so the caller can decide to ignore it', async () => {
+    // Deduplication is a presentation decision, so the transport passes every frame through
+    // and useChat collapses the repeats. Asserting the raw stream keeps that contract pinned.
+    const fetchImpl = vi.fn(async () =>
+      streamResponse([
+        'data: {"status":"Kerja"}\n\ndata: {"status":"Kerja"}\n\ndata: {"content":"Hi"}\n\n',
+      ])
+    );
+    const chunks = await collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch });
+    expect(chunks).toEqual([{ status: 'Kerja' }, { status: 'Kerja' }, { content: 'Hi' }]);
   });
 
   it('decodes a multi-byte character split across two network chunks', async () => {

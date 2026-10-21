@@ -2,6 +2,21 @@ import { useCallback, useRef, useState } from 'react';
 import type { Message } from '../types';
 import { streamChat, ApiError, type StreamChunk, type StreamChatOptions } from '../api';
 
+/**
+ * Drops a progress phase from a message.
+ *
+ * A phase means "this reply is still being written", so every terminal outcome has to
+ * remove it — otherwise an errored or finished reply keeps advertising work in progress.
+ * Returns the message untouched when it carried no phase, so React can bail out of the
+ * state update instead of re-rendering on an identical object.
+ */
+function clearPhase(message: Message): Message {
+  if (message.status === undefined) return message;
+  const copy = { ...message };
+  delete copy.status;
+  return copy;
+}
+
 /** Options accepted by {@link useChat}. */
 export interface UseChatOptions {
   /** Model id sent to the backend. */
@@ -43,6 +58,11 @@ export interface UseChatResult {
  *    so the typing indicator has a target to attach to
  *  - content chunks are appended to the last message; error chunks append
  *    `⚠️ <detail>` after whatever text already arrived
+ *  - a status chunk records the phase on the trailing assistant message so the
+ *    transcript can explain a long wait, and is never appended as text
+ *  - the phase is a claim about work *in flight*: the first content chunk and every
+ *    terminal outcome (error, abort, failure) clear it, so a finished reply can never
+ *    still be advertising that it is still being written
  *  - a thrown {@link ApiError} replaces the placeholder with the localized
  *    message from `describeError`
  *  - an abort keeps any partial reply, and drops the placeholder entirely if
@@ -84,25 +104,36 @@ export function useChat(options: UseChatOptions): UseChatResult {
           apiKey,
           signal: ctrl.signal,
         })) {
-          if (chunk.error) {
+          if (chunk.status) {
+            const phase = chunk.status;
+            setMessages((prev) => {
+              const copy = [...prev];
+              const last = copy[copy.length - 1];
+              if (!last || last.role !== 'assistant' || last.status === phase) return prev;
+              copy[copy.length - 1] = { ...last, status: phase };
+              return copy;
+            });
+          } else if (chunk.error) {
             const detail = chunk.error;
             setMessages((prev) => {
               const copy = [...prev];
               const last = copy[copy.length - 1];
-              copy[copy.length - 1] = {
+              copy[copy.length - 1] = clearPhase({
                 role: 'assistant',
                 content: last.content ? `${last.content}\n\n⚠️ ${detail}` : `⚠️ ${detail}`,
-              };
+              });
               return copy;
             });
           } else if (chunk.content) {
             const piece = chunk.content;
             setMessages((prev) => {
               const copy = [...prev];
-              copy[copy.length - 1] = {
+              const previous = copy[copy.length - 1];
+              copy[copy.length - 1] = clearPhase({
                 role: 'assistant',
-                content: copy[copy.length - 1].content + piece,
-              };
+                content: previous.content + piece,
+                status: previous.status,
+              });
               return copy;
             });
           }

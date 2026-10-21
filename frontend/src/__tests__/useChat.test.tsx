@@ -255,6 +255,117 @@ describe('useChat', () => {
     expect(captured?.messages).toEqual([{ role: 'user', content: 'Hello' }]);
   });
 
+  it('writes a progress phase onto the assistant placeholder while the reply is in flight', async () => {
+    // Tahap 2 item 5: while the agent works, the trailing message carries the phase so
+    // MessageList can render it instead of a bare, frozen typing indicator. It has to be
+    // observable *before* the answer arrives — that is the window it exists for.
+    let resolveStream: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (resolveStream = resolve));
+    const streamImpl = (): AsyncGenerator<StreamChunk> =>
+      (async function* () {
+        yield { status: 'Menyusun jawaban' };
+        await gate;
+        yield { content: 'Hi' };
+      })();
+
+    const { result } = setup({ streamImpl });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('Hi');
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(result.current.messages[1]?.status).toBe('Menyusun jawaban'));
+    expect(result.current.messages[1].content).toBe('');
+
+    resolveStream();
+    await act(async () => {
+      await pending;
+    });
+  });
+
+  it('lets a phase arrive before any content, without creating a bubble of its own', async () => {
+    // A status frame is not a turn: it must annotate the pending assistant reply rather
+    // than append a new message.
+    let resolveStream: () => void = () => {};
+    const gate = new Promise<void>((resolve) => (resolveStream = resolve));
+    const streamImpl = (options: StreamChatOptions): AsyncGenerator<StreamChunk> =>
+      (async function* () {
+        yield { status: 'Menyusun jawaban' };
+        await gate;
+        void options;
+      })();
+
+    const { result } = setup({ streamImpl });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('Hi');
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(result.current.messages[1]?.status).toBe('Menyusun jawaban'));
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].content).toBe('');
+
+    resolveStream();
+    await act(async () => {
+      await pending;
+    });
+  });
+
+  it('clears the phase once the reply has finished, so it cannot describe a dead turn', async () => {
+    // A phase asserts "still being written". Leaving it on a completed or failed reply
+    // would make the UI claim the agent is working on something that already ended.
+    const { result } = setup({
+      streamImpl: streamOf([{ status: 'Kerja' }, { content: 'done' }]),
+    });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1]).toEqual({ role: 'assistant', content: 'done' });
+  });
+
+  it('clears the phase when the reply fails', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ status: 'Kerja' }], new ApiError(401, null)),
+    });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1]).toEqual({
+      role: 'assistant',
+      content: '⚠️ LOCALIZED(401)',
+    });
+  });
+
+  it('does not treat a status frame as content to display', async () => {
+    // Regression guard for the one mix-up that would be visible to every user: the phase
+    // leaking into the answer text.
+    const { result } = setup({ streamImpl: streamOf([{ status: 'Kerja' }, { content: 'ok' }]) });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1].content).toBe('ok');
+  });
+
+  it('leaves status undefined when the backend sends no phase', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: 'ok' }]) });
+
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(result.current.messages[1].status).toBeUndefined();
+  });
+
   it('clear() drops the conversation', async () => {
     const { result } = setup({ streamImpl: streamOf([{ content: 'ok' }]) });
 
