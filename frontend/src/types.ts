@@ -1,4 +1,4 @@
-export type Role = 'user' | 'assistant';
+export type Role = 'user' | 'assistant' | 'system';
 
 export interface Message {
   role: Role;
@@ -22,8 +22,24 @@ export interface ModelCatalog {
   direct: ModelOption[];
 }
 
+export interface ChatSettings {
+  systemPrompt: string;
+  temperature: number;
+  maxTokens: number;
+}
+
 export interface ChatRequestBody {
   model: string;
   useHermesBridge: boolean;
   messages: Message[];
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+  updatedAt: number;
 }

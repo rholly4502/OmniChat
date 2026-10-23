@@ -1,18 +1,27 @@
+export interface TypingIndicatorProps {
+  /** Progress phase reported by the backend (e.g. "Menyusun jawaban"). */
+  status?: string;
+}
+
 /**
- * Three-dot "assistant is typing" indicator (frontend decomposition step 8).
+ * Three-dot "assistant is typing" indicator with optional progress status.
  *
- * The dots are decorative. The accessible announcement comes from the nested
- * `role="status"` live region: the messages container carries
- * `aria-busy="true"` while streaming, which suppresses content-change
- * announcements inside it, so the indicator owns its own live region and is
- * announced independently.
+ * The accessible announcement comes from the nested `role="status"` live region.
  */
-export function TypingIndicator() {
+export function TypingIndicator({ status }: TypingIndicatorProps = {}) {
+  const label = status || 'Menunggu respons';
   return (
-    <span className="inline-flex gap-1 items-center py-1" role="status" aria-label="Menunggu respons">
-      <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse" aria-hidden="true" />
-      <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:200ms]" aria-hidden="true" />
-      <span className="w-2 h-2 bg-slate-500 rounded-full animate-pulse [animation-delay:400ms]" aria-hidden="true" />
+    <span className="inline-flex items-center gap-2 py-1" role="status" aria-label={label}>
+      <span className="inline-flex gap-1 items-center">
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" aria-hidden="true" />
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:200ms]" aria-hidden="true" />
+        <span className="w-2 h-2 bg-slate-400 rounded-full animate-pulse [animation-delay:400ms]" aria-hidden="true" />
+      </span>
+      {status && (
+        <span className="text-xs text-cyan-300 font-medium select-none animate-pulse">
+          {status}…
+        </span>
+      )}
     </span>
   );
 }

@@ -38,4 +38,10 @@ public class ChatRequest
     public List<ChatMessage> Messages { get; set; } = [];
 
     public bool UseHermesBridge { get; set; } = true;
+
+    [Range(0.0, 2.0, ErrorMessage = "Temperature must be between 0.0 and 2.0.")]
+    public double? Temperature { get; set; }
+
+    [Range(1, 32000, ErrorMessage = "MaxTokens must be between 1 and 32000.")]
+    public int? MaxTokens { get; set; }
 }

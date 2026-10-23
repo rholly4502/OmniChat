@@ -29,4 +29,11 @@ describe('TypingIndicator', () => {
     expect(dots[1].className).toContain('[animation-delay:200ms]');
     expect(dots[2].className).toContain('[animation-delay:400ms]');
   });
+
+  it('renders server-provided status text and updates accessible label', () => {
+    render(<TypingIndicator status="Menyusun jawaban" />);
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-label', 'Menyusun jawaban');
+    expect(screen.getByText('Menyusun jawaban…')).toBeInTheDocument();
+  });
 });

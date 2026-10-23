@@ -1,6 +1,6 @@
 import type { RefObject } from 'react';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
-import type { ModelOption } from '../types';
+import type { ChatSession, ChatSettings, ModelOption } from '../types';
 
 /** Props accepted by {@link Sidebar}. */
 export interface SidebarProps {
@@ -28,16 +28,31 @@ export interface SidebarProps {
   onApiKeyChange: (value: string) => void;
   /** Drop the conversation. */
   onClear: () => void;
+  /** List of chat sessions for history. */
+  sessions?: ChatSession[];
+  /** Currently active session ID. */
+  activeSessionId?: string;
+  /** Create a new session. */
+  onNewSession?: () => void;
+  /** Select a session. */
+  onSelectSession?: (id: string) => void;
+  /** Delete a session. */
+  onDeleteSession?: (id: string) => void;
+  /** Export a session. */
+  onExportSession?: (session: ChatSession) => void;
+  /** Optional LLM sampling settings and system prompt. */
+  settings?: ChatSettings;
+  /** System prompt change handler. */
+  onSystemPromptChange?: (prompt: string) => void;
+  /** Temperature change handler. */
+  onTemperatureChange?: (temp: number) => void;
+  /** Max tokens change handler. */
+  onMaxTokensChange?: (tokens: number) => void;
 }
 
 /**
- * Settings drawer: branding, mode toggle, model selector, API key and Clear
- * chat (frontend decomposition step 8).
- *
- * `role="dialog"` / `aria-modal` are only set while the drawer is open, which
- * is what the focus-trap in `useSidebarDrawer` keys off. Markup and classes are
- * unchanged from the inline JSX it replaces, including the `id="chat-sidebar"`
- * that the hamburger's `aria-controls` points at.
+ * Settings drawer: branding, session history, mode toggle, model selector, API key,
+ * parameter controls, and Clear chat.
  */
 export function Sidebar({
   sidebarRef,
@@ -52,6 +67,16 @@ export function Sidebar({
   apiKey,
   onApiKeyChange,
   onClear,
+  sessions,
+  activeSessionId,
+  onNewSession,
+  onSelectSession,
+  onDeleteSession,
+  onExportSession,
+  settings,
+  onSystemPromptChange,
+  onTemperatureChange,
+  onMaxTokensChange,
 }: SidebarProps) {
   return (
     <aside
@@ -88,6 +113,79 @@ export function Sidebar({
           </svg>
         </button>
       </div>
+
+      {/* New Chat Button */}
+      {onNewSession && (
+        <button
+          type="button"
+          onClick={onNewSession}
+          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2 px-3 rounded-lg text-sm transition shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Chat Baru
+        </button>
+      )}
+
+      {/* Sessions History List */}
+      {sessions && sessions.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-xs text-slate-400 font-medium px-1 flex items-center justify-between">
+            <span>Riwayat Sesi</span>
+            <span className="text-[10px] text-slate-500">{sessions.length} sesi</span>
+          </div>
+          <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
+            {sessions.map((s) => {
+              const isActive = s.id === activeSessionId;
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => onSelectSession?.(s.id)}
+                  className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition min-h-[38px] ${
+                    isActive
+                      ? 'bg-slate-800/90 text-cyan-300 font-medium border border-cyan-500/30'
+                      : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
+                  }`}
+                >
+                  <span className="truncate flex-1 pr-1.5">{s.title}</span>
+                  <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100">
+                    {onExportSession && s.messages.length > 0 && (
+                      <button
+                        type="button"
+                        title="Ekspor Markdown"
+                        aria-label={`Ekspor ${s.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onExportSession(s);
+                        }}
+                        className="p-1 hover:text-cyan-400 rounded transition"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                      </button>
+                    )}
+                    {onDeleteSession && (
+                      <button
+                        type="button"
+                        title="Hapus sesi"
+                        aria-label={`Hapus ${s.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(s.id);
+                        }}
+                        className="p-1 hover:text-red-400 rounded transition"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Mode Toggle */}
       <div className="mt-2 space-y-2">
@@ -149,6 +247,66 @@ export function Sidebar({
           {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
         </p>
       </div>
+
+      {/* Advanced Parameters & System Prompt */}
+      {settings && (
+        <details className="space-y-2 bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
+          <summary className="text-xs font-semibold text-slate-300 cursor-pointer flex items-center justify-between select-none">
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+              Parameter & Persona
+            </span>
+            <span className="text-[10px] text-cyan-400 font-mono">T: {settings.temperature}</span>
+          </summary>
+          <div className="pt-2 space-y-2.5">
+            <div>
+              <label htmlFor="system-prompt-input" className="block text-[11px] text-slate-400 font-medium mb-1">
+                System Prompt (Instruksi Peran)
+              </label>
+              <textarea
+                id="system-prompt-input"
+                rows={2}
+                value={settings.systemPrompt}
+                onChange={(e) => onSystemPromptChange?.(e.target.value)}
+                placeholder="Contoh: Bertindak sebagai Software Architect..."
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs outline-none focus:border-cyan-500 focus-visible:ring-1 focus-visible:ring-cyan-400/60 resize-none"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                <span>Temperature</span>
+                <span className="font-mono text-cyan-400">{settings.temperature}</span>
+              </div>
+              <input
+                type="range"
+                min="0.0"
+                max="1.5"
+                step="0.1"
+                aria-label="Temperature"
+                value={settings.temperature}
+                onChange={(e) => onTemperatureChange?.(parseFloat(e.target.value))}
+                className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+              />
+            </div>
+            <div>
+              <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+                <span>Max Tokens</span>
+                <span className="font-mono text-cyan-400">{settings.maxTokens}</span>
+              </div>
+              <input
+                type="range"
+                min="256"
+                max="8192"
+                step="256"
+                aria-label="Max Tokens"
+                value={settings.maxTokens}
+                onChange={(e) => onMaxTokensChange?.(parseInt(e.target.value, 10))}
+                className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+              />
+            </div>
+          </div>
+        </details>
+      )}
 
       <button
         onClick={onClear}

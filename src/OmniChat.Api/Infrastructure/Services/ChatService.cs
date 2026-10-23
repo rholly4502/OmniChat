@@ -73,12 +73,22 @@ public sealed class ChatService : IChatService
             var apiKey = request.UseHermesBridge ? _hermes.ApiKey : _llm.ApiKey;
             var client = _httpClientFactory.CreateClient("LLMClient");
 
-            var payload = new
+            var payload = new Dictionary<string, object?>
             {
-                model = request.Model,
-                messages = request.Messages.Select(m => new { role = m.Role, content = m.Content }),
-                stream = true
+                ["model"] = request.Model,
+                ["messages"] = request.Messages.Select(m => new { role = m.Role, content = m.Content }),
+                ["stream"] = true
             };
+
+            if (request.Temperature.HasValue)
+            {
+                payload["temperature"] = request.Temperature.Value;
+            }
+
+            if (request.MaxTokens.HasValue)
+            {
+                payload["max_tokens"] = request.MaxTokens.Value;
+            }
 
             using var httpRequest = new HttpRequestMessage(HttpMethod.Post, endpoint)
             {
@@ -230,7 +240,8 @@ public sealed class ChatService : IChatService
     }
 
     /// <summary>
-    /// Extracts <c>choices[0].delta.content</c> from one SSE payload.
+    /// Extracts <c>choices[0].delta.content</c> or reasoning text (<c>reasoning_content</c> / <c>reasoning</c>)
+    /// from one SSE payload.
     /// Returns <c>null</c> for keep-alives, role-only deltas and malformed JSON.
     /// </summary>
     private static string? TryExtractDeltaContent(string data)
@@ -241,11 +252,22 @@ public sealed class ChatService : IChatService
             if (doc.RootElement.TryGetProperty("choices", out var choices) &&
                 choices.ValueKind == JsonValueKind.Array &&
                 choices.GetArrayLength() > 0 &&
-                choices[0].TryGetProperty("delta", out var delta) &&
-                delta.TryGetProperty("content", out var contentProp) &&
-                contentProp.ValueKind == JsonValueKind.String)
+                choices[0].TryGetProperty("delta", out var delta))
             {
-                return contentProp.GetString();
+                if (delta.TryGetProperty("content", out var contentProp) &&
+                    contentProp.ValueKind == JsonValueKind.String &&
+                    !string.IsNullOrEmpty(contentProp.GetString()))
+                {
+                    return contentProp.GetString();
+                }
+
+                if ((delta.TryGetProperty("reasoning_content", out var reasoningProp) ||
+                     delta.TryGetProperty("reasoning", out reasoningProp)) &&
+                    reasoningProp.ValueKind == JsonValueKind.String &&
+                    !string.IsNullOrEmpty(reasoningProp.GetString()))
+                {
+                    return reasoningProp.GetString();
+                }
             }
         }
         catch (JsonException)

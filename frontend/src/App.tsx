@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CodeBlock } from './components/CodeBlock';
 import { Sidebar } from './components/Sidebar';
 import { MessageList } from './components/MessageList';
@@ -10,6 +10,8 @@ import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
 import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
+import { useChatHistory } from './hooks/useChatHistory';
+import { useSettings } from './hooks/useSettings';
 import { describeApiError } from './errors';
 import { DEFAULT_MODEL } from './constants';
 
@@ -46,6 +48,24 @@ export default function App() {
     restoreFocusRef: menuButtonRef,
   });
 
+  const {
+    sessions,
+    activeSession,
+    activeSessionId,
+    updateActiveSessionMessages,
+    createSession,
+    selectSession,
+    deleteSession,
+    exportSessionMarkdown,
+  } = useChatHistory();
+
+  const {
+    settings,
+    updateSystemPrompt,
+    updateTemperature,
+    updateMaxTokens,
+  } = useSettings();
+
   const catalog = useModelCatalog(apiKey);
   const models = useAgent ? catalog.agent : catalog.direct;
 
@@ -55,12 +75,22 @@ export default function App() {
     send: sendMessage,
     stop: stopStreaming,
     clear: clearMessages,
+    loadMessages,
   } = useChat({
     model,
     useHermesBridge: useAgent,
     apiKey,
+    systemPrompt: settings.systemPrompt,
+    temperature: settings.temperature,
+    maxTokens: settings.maxTokens,
     describeError: describeApiError,
+    initialMessages: activeSession?.messages,
   });
+
+  // Sync message state to active session
+  useEffect(() => {
+    updateActiveSessionMessages(messages);
+  }, [messages, updateActiveSessionMessages]);
 
   useAutoScroll(messages, scrollRef);
 
@@ -68,6 +98,32 @@ export default function App() {
     const next = !useAgent;
     setUseAgent(next);
     setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
+  }
+
+  function handleSelectSession(id: string) {
+    if (streaming) return;
+    selectSession(id);
+    const target = sessions.find((s) => s.id === id);
+    if (target) {
+      loadMessages(target.messages);
+    }
+  }
+
+  function handleNewSession() {
+    if (streaming) return;
+    const fresh = createSession();
+    loadMessages(fresh.messages);
+  }
+
+  function handleDeleteSession(id: string) {
+    if (streaming) return;
+    deleteSession(id);
+    const remaining = sessions.filter((s) => s.id !== id);
+    if (remaining.length > 0) {
+      loadMessages(remaining[0].messages);
+    } else {
+      loadMessages([]);
+    }
   }
 
   /** Validate the draft, clear it, then hand the text to the chat hook. */
@@ -100,6 +156,16 @@ export default function App() {
         apiKey={apiKey}
         onApiKeyChange={setApiKey}
         onClear={clearMessages}
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onNewSession={handleNewSession}
+        onSelectSession={handleSelectSession}
+        onDeleteSession={handleDeleteSession}
+        onExportSession={exportSessionMarkdown}
+        settings={settings}
+        onSystemPromptChange={updateSystemPrompt}
+        onTemperatureChange={updateTemperature}
+        onMaxTokensChange={updateMaxTokens}
       />
 
       <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>

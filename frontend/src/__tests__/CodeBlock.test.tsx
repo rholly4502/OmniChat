@@ -57,4 +57,14 @@ describe("CodeBlock (extracted module)", () => {
     expect(btn.className).toContain("focus-visible:ring-2");
     expect(btn.className).toContain("min-h-[44px]");
   });
+
+  it("extracts and renders the language name from code className", () => {
+    render(
+      <CodeBlock>
+        <code className="language-typescript">const x: number = 42;</code>
+      </CodeBlock>
+    );
+
+    expect(screen.getByText("typescript")).toBeInTheDocument();
+  });
 });

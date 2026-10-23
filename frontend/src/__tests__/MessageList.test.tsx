@@ -126,4 +126,9 @@ describe('MessageList', () => {
     expect(bubble?.className).toContain('md:max-w-[75%]');
     expect(bubble?.className).toContain('rounded-bl-sm');
   });
+
+  it('renders a copy message button on assistant turns', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'Halo dari asisten' }] });
+    expect(screen.getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
+  });
 });

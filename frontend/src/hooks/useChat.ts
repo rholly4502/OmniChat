@@ -25,6 +25,12 @@ export interface UseChatOptions {
   useHermesBridge: boolean;
   /** API key forwarded as `X-Api-Key`; empty string when unset. */
   apiKey: string;
+  /** Optional custom system prompt / persona. */
+  systemPrompt?: string;
+  /** Sampling temperature (0.0 - 2.0). */
+  temperature?: number;
+  /** Maximum generation tokens. */
+  maxTokens?: number;
   /**
    * Maps a transport failure to a localized, user-facing string. Injected
    * rather than imported so `api.ts` stays free of presentation copy.
@@ -32,6 +38,8 @@ export interface UseChatOptions {
   describeError: (err: ApiError) => string;
   /** Injected for tests; defaults to the real SSE client. */
   streamImpl?: (options: StreamChatOptions) => AsyncGenerator<StreamChunk>;
+  /** Optional initial messages when restoring a session. */
+  initialMessages?: Message[];
 }
 
 /** Conversation state and the actions that mutate it. */
@@ -46,6 +54,8 @@ export interface UseChatResult {
   stop: () => void;
   /** Drop the whole conversation. */
   clear: () => void;
+  /** Replace current messages with a loaded session. */
+  loadMessages: (newMessages: Message[]) => void;
 }
 
 /**
@@ -71,13 +81,17 @@ export interface UseChatResult {
  *  - `streaming` is cleared and the controller released in `finally`
  */
 export function useChat(options: UseChatOptions): UseChatResult {
-  const { model, useHermesBridge, apiKey, describeError, streamImpl } = options;
+  const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages } = options;
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages ?? []);
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const clear = useCallback(() => setMessages([]), []);
+
+  const loadMessages = useCallback((newMessages: Message[]) => {
+    setMessages(newMessages);
+  }, []);
 
   const stop = useCallback(() => {
     abortRef.current?.abort();
@@ -96,12 +110,20 @@ export function useChat(options: UseChatOptions): UseChatResult {
       abortRef.current = ctrl;
       const stream = streamImpl ?? streamChat;
 
+      const outgoingMessages: Message[] = [];
+      if (systemPrompt && systemPrompt.trim()) {
+        outgoingMessages.push({ role: 'system', content: systemPrompt.trim() });
+      }
+      outgoingMessages.push(...history.map((m) => ({ role: m.role, content: m.content })));
+
       try {
         for await (const chunk of stream({
           model,
           useHermesBridge,
-          messages: history.map((m) => ({ role: m.role, content: m.content })),
+          messages: outgoingMessages,
           apiKey,
+          temperature,
+          maxTokens,
           signal: ctrl.signal,
         })) {
           if (chunk.status) {

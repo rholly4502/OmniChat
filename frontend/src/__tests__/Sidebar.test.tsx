@@ -155,4 +155,69 @@ describe('Sidebar', () => {
     expect(screen.getByLabelText('Close sidebar').className).toContain('min-h-[44px]');
     expect(screen.getByText(/Clear chat/).className).toContain('min-h-[44px]');
   });
+
+  it('renders New Chat button and session list when provided', () => {
+    const onNewSession = vi.fn();
+    const onSelectSession = vi.fn();
+    const onDeleteSession = vi.fn();
+    const mockSessions = [
+      { id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 },
+      { id: 's2', title: 'Session 2', messages: [], createdAt: 2, updatedAt: 2 },
+    ];
+
+    renderSidebar({
+      sessions: mockSessions,
+      activeSessionId: 's1',
+      onNewSession,
+      onSelectSession,
+      onDeleteSession,
+    });
+
+    const newChatBtn = screen.getByText('Chat Baru');
+    expect(newChatBtn).toBeInTheDocument();
+    fireEvent.click(newChatBtn);
+    expect(onNewSession).toHaveBeenCalledTimes(1);
+
+    expect(screen.getByText('Session 1')).toBeInTheDocument();
+    expect(screen.getByText('Session 2')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Session 2'));
+    expect(onSelectSession).toHaveBeenCalledWith('s2');
+
+    const deleteBtn = screen.getByLabelText('Hapus Session 1');
+    fireEvent.click(deleteBtn);
+    expect(onDeleteSession).toHaveBeenCalledWith('s1');
+  });
+
+  it('renders Parameter & Persona accordion when settings prop is passed', () => {
+    const onSystemPromptChange = vi.fn();
+    const onTemperatureChange = vi.fn();
+    const onMaxTokensChange = vi.fn();
+
+    renderSidebar({
+      settings: {
+        systemPrompt: 'Be concise',
+        temperature: 0.7,
+        maxTokens: 2048,
+      },
+      onSystemPromptChange,
+      onTemperatureChange,
+      onMaxTokensChange,
+    });
+
+    expect(screen.getByText(/Parameter & Persona/)).toBeInTheDocument();
+
+    const promptInput = screen.getByPlaceholderText(/Bertindak sebagai Software Architect/);
+    expect(promptInput).toHaveValue('Be concise');
+    fireEvent.change(promptInput, { target: { value: 'Be brief' } });
+    expect(onSystemPromptChange).toHaveBeenCalledWith('Be brief');
+
+    const tempSlider = screen.getByLabelText('Temperature');
+    fireEvent.change(tempSlider, { target: { value: '0.9' } });
+    expect(onTemperatureChange).toHaveBeenCalledWith(0.9);
+
+    const tokensSlider = screen.getByLabelText('Max Tokens');
+    fireEvent.change(tokensSlider, { target: { value: '4096' } });
+    expect(onMaxTokensChange).toHaveBeenCalledWith(4096);
+  });
 });

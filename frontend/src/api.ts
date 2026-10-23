@@ -68,6 +68,8 @@ export interface StreamChatOptions {
   useHermesBridge: boolean;
   messages: ChatRequestBody['messages'];
   apiKey?: string;
+  temperature?: number;
+  maxTokens?: number;
   signal?: AbortSignal;
   /** Inject a fetch implementation for tests; defaults to the global fetch. */
   fetchImpl?: typeof fetch;
@@ -81,13 +83,13 @@ export interface StreamChatOptions {
  * for a missing response body; rethrows the original error on abort.
  */
 export async function* streamChat(options: StreamChatOptions): AsyncGenerator<StreamChunk> {
-  const { model, useHermesBridge, messages, apiKey, signal, fetchImpl } = options;
+  const { model, useHermesBridge, messages, apiKey, temperature, maxTokens, signal, fetchImpl } = options;
   const doFetch = fetchImpl ?? fetch;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-Api-Key'] = apiKey;
 
-  const body: ChatRequestBody = { model, useHermesBridge, messages };
+  const body: ChatRequestBody = { model, useHermesBridge, messages, temperature, maxTokens };
 
   const res = await doFetch(API_URL, {
     method: 'POST',

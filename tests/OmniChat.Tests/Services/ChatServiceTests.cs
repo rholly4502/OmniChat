@@ -153,6 +153,26 @@ public class ChatServiceTests
     }
 
     [Fact]
+    public async Task StreamChatResponseAsync_ExtractsReasoningContent_ForThinkingModels()
+    {
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"thinking step\"}}]}\n\n"
+                    + "data: {\"choices\":[{\"delta\":{\"content\":\"final answer\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Contains("thinking step", tokens);
+        Assert.Contains("final answer", tokens);
+    }
+
+    [Fact]
     public async Task StreamChatResponseAsync_EmitsProgressFrame_WhenUpstreamGoesQuietMidAnswer()
     {
         // The service-level half of the mid-answer heartbeat: the frame is produced on the

@@ -51,6 +51,12 @@ describe('Composer', () => {
     expect(props.onSend).toHaveBeenCalledTimes(1);
   });
 
+  it('does not submit on Shift+Enter so users can type newlines', () => {
+    const props = renderComposer({ input: 'Halo' });
+    fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'Enter', shiftKey: true });
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
+
   it('ignores other keys so typing does not submit', () => {
     const props = renderComposer({ input: 'Halo' });
     fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'a' });
