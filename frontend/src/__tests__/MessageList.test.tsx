@@ -132,6 +132,21 @@ describe('MessageList', () => {
     expect(screen.getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
   });
 
+  it('inherits the footer typography instead of hard-coding sub-12px meta text', () => {
+    // The author label and the copy label used to carry `text-[11px]`, and the
+    // author label `text-slate-500` (3.75:1 on the assistant bubble -- below AA).
+    // Both now inherit, so the footer itself has to keep supplying the floor.
+    const { container } = renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    const author = [...container.querySelectorAll('span')].find((el) => el.textContent === 'OmniChat');
+    expect(author).toBeTruthy();
+    expect(author?.className ?? '').not.toContain('text-[11px]');
+    expect(author?.className ?? '').not.toContain('text-slate-500');
+
+    const footer = container.querySelector('div.border-t');
+    expect(footer?.className).toContain('text-xs');
+    expect(footer?.className).toContain('text-slate-400');
+  });
+
   it('gives the copy button a 44px touch target on mobile', () => {
     // With px-2 py-0.5 around a 12px icon this measured 56x19 on a phone.
     renderList({ messages: [{ role: 'assistant', content: 'Halo dari asisten' }] });

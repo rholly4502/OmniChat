@@ -29,7 +29,7 @@ export function CodeBlock({ children }: { children?: ReactNode }) {
   return (
     <div className="relative group my-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 shadow-sm">
       <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-xs text-slate-400 select-none">
-        <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-cyan-400">
+        <span className="font-mono text-xs font-semibold uppercase tracking-wider text-cyan-400">
           {language || 'code'}
         </span>
         <button

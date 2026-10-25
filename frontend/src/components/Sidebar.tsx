@@ -139,7 +139,7 @@ export function Sidebar({
         <div className="space-y-1">
           <div className="text-xs text-slate-400 font-medium px-1 flex items-center justify-between">
             <span>Riwayat Sesi</span>
-            <span className="text-xs text-slate-500">{sessions.length} sesi</span>
+            <span className="text-xs text-slate-400">{sessions.length} sesi</span>
           </div>
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
             {sessions.map((s) => {
