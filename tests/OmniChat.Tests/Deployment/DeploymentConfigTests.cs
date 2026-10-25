@@ -63,6 +63,35 @@ public class DeploymentConfigTests
         Assert.Contains(expected, Read("docs/deployment.md"));
     }
 
+    // The history read split is enforced from Security:AdminSubjects. An .env deployment can only
+    // pass a scalar, and the reader accepts both forms — but only if the name reaches the container.
+
+    [Fact]
+    public void DockerCompose_ForwardsChatAccessAdminSubjects()
+    {
+        var expected = EnvPrefix(ChatAccessPolicy.AdminSubjectsKey);
+
+        Assert.Contains($"{expected}=", Read("docker-compose.yml"));
+    }
+
+    [Fact]
+    public void EnvExample_DocumentsChatAccessAdminSubjects()
+    {
+        Assert.Contains($"{EnvPrefix(ChatAccessPolicy.AdminSubjectsKey)}=", Read(".env.example"));
+    }
+
+    [Fact]
+    public void DeploymentDoc_DocumentsChatAccessAdminSubjects()
+    {
+        Assert.Contains(EnvPrefix(ChatAccessPolicy.AdminSubjectsKey), Read("docs/deployment.md"));
+    }
+
+    [Fact]
+    public void Readme_DocumentsChatAccessAdminSubjects()
+    {
+        Assert.Contains(EnvPrefix(ChatAccessPolicy.AdminSubjectsKey), Read("README.md"));
+    }
+
     [Fact]
     public void DockerCompose_ForwardsLlmEndpoint()
     {
@@ -783,6 +812,25 @@ public class DeploymentConfigTests
 
         Assert.Contains("Milestone 21", milestones);
         Assert.Contains("Milestone 23", milestones);
+    }
+
+    [Fact]
+    public void Readme_DocumentsConversationHistoryEndpoints()
+    {
+        // The read side of persistence shipped after the write side, and the README is the
+        // only place a client learns that stored history is readable at all — the OpenAPI
+        // document is Development-only. It is also the only place the admin/guest split is
+        // explained: a guest gets 404 rather than 403, which looks like a bug without the
+        // sentence that says a guest's turns are stored but never listed back.
+        var readme = Read("README.md");
+
+        Assert.Contains("### Chat history (`/api/conversations`)", readme);
+        Assert.Contains("| `GET` | `/api/conversations` |", readme);
+        Assert.Contains("| `GET` | `/api/conversations/{id}` |", readme);
+        Assert.Contains("| `PATCH` | `/api/conversations/{id}` |", readme);
+        Assert.Contains("| `DELETE` | `/api/conversations/{id}` |", readme);
+        Assert.Contains("AdminSubjects", readme);
+        Assert.Contains("A guest's turns are still stored", readme);
     }
 
     [Fact]

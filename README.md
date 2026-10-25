@@ -49,6 +49,7 @@ Web UI dengan 2 mode:
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
 - ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **237 tests** across 20 files: components, hooks, SSE client, error mapping)
 - ✅ Chat history persistence (SQLite via EF Core, `Persistence__ConnectionString`) — every streamed turn is filed under a conversation id, including a partial reply when the stream was cut short
+- ✅ Chat history read API (`GET`/`PATCH`/`DELETE /api/conversations`) with an admin/guest split — guests' turns are stored for audit but never listed back
 - ✅ Configurable rate limiting (`RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`)
 - ✅ Upstream idle timeout (`Streaming__IdleTimeoutSeconds`) — a silent gateway is aborted instead of hanging the stream
 - ✅ Reverse-proxy forwarded headers (`X-Forwarded-For` / `X-Forwarded-Proto`) so rate limiting and logs see the real client behind Caddy
@@ -110,6 +111,10 @@ API request (`/api/models` and `/api/chat/stream`).
 |--------|------|-------------|------|
 | `POST` | `/api/chat/stream` | Stream chat completion (SSE) | ✅ |
 | `GET` | `/api/models` | Get model catalog | ✅ |
+| `GET` | `/api/conversations` | List stored conversations (summaries, no message bodies) | ✅ |
+| `GET` | `/api/conversations/{id}` | One conversation with its full transcript | ✅ |
+| `PATCH` | `/api/conversations/{id}` | Rename a conversation | ✅ |
+| `DELETE` | `/api/conversations/{id}` | Delete a conversation and its messages | ✅ |
 | `GET` | `/health` | Health check (status, version, uptime) | ❌ |
 | `GET` | `/openapi/v1.json` | OpenAPI document (Development only) | ❌ |
 
@@ -185,6 +190,48 @@ Unset or malformed values fall back to the built-in list.
     { "id": "meta-llama/llama-3.3-70b-instruct:free", "label": "Llama 3.3 70B (Free)" }
   ]
 }
+```
+
+### Chat history (`/api/conversations`)
+
+Every streamed turn is written to SQLite (`Persistence__ConnectionString`) and filed under an
+owner tag. Reading it back is a **separate** permission, decided by `Security:AdminSubjects`:
+
+- **API-key callers are always admin.** The shared key is the operator credential, so its holders
+  can list, open, rename and delete history.
+- **A JWT holder is admin only when its `sub` claim is listed in `Security:AdminSubjects`**
+  (comma-separated, case-insensitive). Everyone else is a guest.
+- **A guest's turns are still stored** — the audit trail stays complete — but
+  `GET /api/conversations` answers `[]` and every id-scoped call answers `404`. A guest has no rows
+  to distinguish, and `404` keeps an id from being confirmed as existing.
+
+Ownership is scoped inside the repository, so an id owned by somebody else reads as `404` rather
+than as another user's conversation. `admin` here means "may read history at all", not "may read
+everyone's history".
+
+**`GET /api/conversations`** returns summaries, newest first, without message bodies:
+
+```json
+[
+  {
+    "id": "01a1743b-0138-740a-a818-483592c0c36d",
+    "title": "Outbox pattern di PostgreSQL",
+    "mode": "agent",
+    "model": "default",
+    "createdAt": "2026-10-25T18:02:48.0067034+00:00",
+    "updatedAt": "2026-10-25T18:02:48.1074210+00:00"
+  }
+]
+```
+
+`limit` (default 50) is clamped to 1–200. **`GET /api/conversations/{id}`** adds a `messages`
+array (`{ "id", "role", "content", "createdAt" }`, oldest first). **`PATCH`** takes
+`{ "title": "..." }` (required, max 200 chars) and returns `204`. **`DELETE`** returns `204`.
+Unknown, foreign and guest-addressed ids all return `404` in `application/problem+json`.
+
+```bash
+curl -H "X-Api-Key: <key>" https://rhol-ai.tech/api/conversations
+curl -H "Authorization: Bearer <jwt>" https://rhol-ai.tech/api/conversations/<id>
 ```
 
 ### GET /health
@@ -323,6 +370,7 @@ cd frontend && npm run build
 | `Security__Jwt__SigningKey` | `Security:Jwt:SigningKey` | No | HMAC-SHA256 key for JWT validation. Empty = JWT auth disabled |
 | `Security__Jwt__Issuer` | `Security:Jwt:Issuer` | No (default: `OmniChat`) | JWT issuer claim |
 | `Security__Jwt__Audience` | `Security:Jwt:Audience` | No (default: `OmniChat`) | JWT audience claim |
+| `Security__AdminSubjects` | `Security:AdminSubjects` | No (empty) | JWT subjects allowed to read stored history (comma-separated). Empty = no JWT holder gets history; API-key callers are always admin |
 | `Kestrel__MaxRequestBodySizeBytes` | `Kestrel:MaxRequestBodySizeBytes` | No (default: 10 MB) | Max request body size in bytes (DoS prevention) |
 | `Cors__AllowedOrigins` | `Cors:AllowedOrigins` | No (see note) | Comma-separated allowed origins. In Production an empty list registers a policy that rejects every cross-origin request — the same-origin SPA still works, but no cross-origin client can call the API |
 | `ReverseProxy__Enabled` | `ReverseProxy:Enabled` | No (default: `false`) | Process `X-Forwarded-For`/`X-Forwarded-Proto` from trusted proxies (set `true` only behind a reverse proxy) |
@@ -436,4 +484,4 @@ Cara mengambil ulang: jalankan stack secara lokal, atur viewport seperti kolom d
 - **Milestone 28** ✅ — Streaming idle timeout (`Streaming__IdleTimeoutSeconds`, default 120): the upstream call is aborted after that many seconds with no bytes, and the deadline is renewed on every line so a healthy long generation is never cut short.
 - **Milestone 29** ✅ — Deploy pipeline truthfulness: the workflow now runs `set -euo pipefail`, resets the VPS checkout to `origin/main`, saves local modifications to a patch before resetting, and asserts the deployed SHA equals the pushed SHA and that `/health` returns API JSON — a green pipeline can no longer ship stale code silently.
 
-**Current totals:** 320 backend tests + **237** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.
+**Current totals:** 354 backend tests + **237** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.

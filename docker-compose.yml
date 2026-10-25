@@ -29,6 +29,7 @@ services:
       - Security__Jwt__SigningKey=${Security__Jwt__SigningKey:-}
       - Security__Jwt__Issuer=${Security__Jwt__Issuer:-OmniChat}
       - Security__Jwt__Audience=${Security__Jwt__Audience:-OmniChat}
+      - Security__AdminSubjects=${Security__AdminSubjects:-}
       - LLM__Endpoint=${LLM__Endpoint:-https://openrouter.ai/api/v1/chat/completions}
       - Kestrel__MaxRequestBodySizeBytes=${Kestrel__MaxRequestBodySizeBytes:-10485760}
       - ReverseProxy__Enabled=${ReverseProxy__Enabled:-false}

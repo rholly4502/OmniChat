@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Configuration;
+using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Api.Infrastructure.Networking;
 using Microsoft.Extensions.Logging;
 
@@ -28,6 +29,8 @@ public class StartupConfigValidator
     ///   <item>Empty <c>Security:Jwt:SigningKey</c> — JWT authentication is disabled.</item>
     ///   <item><c>ReverseProxy:Enabled</c> with no trusted proxies/networks — the real client
     ///   IP cannot be recovered, so per-IP rate limiting treats every client as one.</item>
+    ///   <item>JWT enabled but <c>Security:AdminSubjects</c> empty — every token holder is a
+    ///   guest, so nobody can read stored history even though it is being written.</item>
     /// </list>
     /// Non-production environments are skipped (these settings are expected to be
     /// empty during local development).
@@ -63,6 +66,16 @@ public class StartupConfigValidator
         {
             _logger.LogWarning(
                 "Security:Jwt:SigningKey is empty — JWT authentication is disabled. Set a signing key via the Security__Jwt__SigningKey environment variable to enable Bearer token auth.");
+        }
+
+        // A JWT-only deployment with no admin subjects still files every turn, but no caller can
+        // list history back. That is the safe default, not a bug — it is worth saying out loud
+        // because the symptom (an always-empty history panel) looks like broken persistence.
+        if (!string.IsNullOrWhiteSpace(_configuration["Security:Jwt:SigningKey"])
+            && ChatAccessPolicy.ReadAdminSubjects(_configuration).Length == 0)
+        {
+            _logger.LogWarning(
+                "Security:Jwt:SigningKey is set but Security:AdminSubjects is empty — every JWT holder is a guest, so nobody can read stored history. List the operator subjects via the Security__AdminSubjects environment variable to grant history access.");
         }
 
         var proxy = _configuration.GetSection(ReverseProxyOptions.SectionName).Get<ReverseProxyOptions>();

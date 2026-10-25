@@ -121,12 +121,15 @@ public class StartupConfigValidatorTests
     [Fact]
     public void Validate_ProductionAllSecure_NoWarnings()
     {
+        // A signing key with no admin subjects is itself a warning (see below), so a genuinely
+        // warning-free production config has to name at least one operator.
         var config = BuildConfig(new Dictionary<string, string?>
         {
             ["Security:ApiKey"] = "strong-key",
             ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
-            ["Security:Jwt:SigningKey"] = "signing-key"
+            ["Security:Jwt:SigningKey"] = "signing-key",
+            ["Security:AdminSubjects:0"] = "operator"
         });
         var logger = CreateLogger();
         var validator = new StartupConfigValidator(config, logger);
@@ -241,6 +244,7 @@ public class StartupConfigValidatorTests
             ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key",
+            ["Security:AdminSubjects:0"] = "operator",
             ["ReverseProxy:Enabled"] = "true",
             ["ReverseProxy:KnownNetworks:0"] = "172.18.0.0/16"
         });
@@ -261,6 +265,7 @@ public class StartupConfigValidatorTests
             ["Hermes:ApiKey"] = "hermes-key",
             ["Cors:AllowedOrigins:0"] = "https://example.com",
             ["Security:Jwt:SigningKey"] = "signing-key",
+            ["Security:AdminSubjects:0"] = "operator",
             ["ReverseProxy:Enabled"] = "false"
         });
         var logger = CreateLogger();
@@ -269,6 +274,46 @@ public class StartupConfigValidatorTests
         validator.Validate(isProduction: true);
 
         Assert.Empty(logger.Entries);
+    }
+
+    [Fact]
+    public void Validate_JwtEnabledWithoutAdminSubjects_LogsWarning()
+    {
+        // History is still written for every caller, but nobody can list it back. The symptom
+        // (an always-empty history panel) looks like broken persistence, so say why.
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = "signing-key"
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.Contains(logger.Entries, e =>
+            e.Level == LogLevel.Warning && e.Message.Contains("Security:AdminSubjects is empty"));
+    }
+
+    [Fact]
+    public void Validate_JwtDisabledWithoutAdminSubjects_DoesNotWarn()
+    {
+        // With JWT off, every caller is an API-key operator, so an empty admin list is irrelevant.
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Security:ApiKey"] = "strong-key",
+            ["Hermes:ApiKey"] = "hermes-key",
+            ["Cors:AllowedOrigins:0"] = "https://example.com",
+            ["Security:Jwt:SigningKey"] = ""
+        });
+        var logger = CreateLogger();
+        var validator = new StartupConfigValidator(config, logger);
+
+        validator.Validate(isProduction: true);
+
+        Assert.DoesNotContain(logger.Entries, e => e.Message.Contains("Security:AdminSubjects"));
     }
 
     [Fact]

@@ -10,3 +10,12 @@ frontend/dist/
 # Env & secrets — API key tidak boleh masuk repo
 appsettings.Development.json
 .env
+
+# Crash dumps
+core
+core.*
+
+# Local scratch databases (E2E runs, never commit a test DB)
+workspace/*.db
+workspace/*.db-shm
+workspace/*.db-wal

@@ -28,6 +28,7 @@ docker compose up -d --build
 | `Security__Jwt__SigningKey` | (empty) | HMAC-SHA256 secret for `Authorization: Bearer <token>` validation |
 | `Security__Jwt__Issuer` | `OmniChat` | JWT issuer claim (`Security:Jwt:Issuer`) |
 | `Security__Jwt__Audience` | `OmniChat` | JWT audience claim (`Security:Jwt:Audience`) |
+| `Security__AdminSubjects` | (empty) | JWT subjects allowed to read stored history, comma-separated (`Security:AdminSubjects`). Empty grants no JWT holder history; API-key callers are always admin |
 | `Kestrel__MaxRequestBodySizeBytes` | `10485760` (10 MB) | Maximum request body size in bytes (DoS prevention) |
 | `ReverseProxy__Enabled` | `false` | Process forwarded headers from trusted proxies (`true` only behind a reverse proxy) |
 | `ReverseProxy__KnownProxies` | (empty) | Comma-separated trusted proxy IPs |

@@ -90,6 +90,10 @@ var jwtOptions = new JwtOptions();
 builder.Configuration.GetSection(JwtOptions.SectionName).Bind(jwtOptions);
 builder.Services.AddSingleton(new JwtTokenValidator(jwtOptions));
 
+// History read access: API-key callers are the operator; a JWT holder needs its subject listed in
+// Security:AdminSubjects. Resolved once because the list only changes on redeploy.
+builder.Services.AddSingleton<IChatAccessPolicy, ChatAccessPolicy>();
+
 // Strongly-typed upstream provider settings — validated once at startup instead of
 // being read ad hoc from IConfiguration on every request.
 builder.Services.Configure<HermesOptions>(builder.Configuration.GetSection(HermesOptions.SectionName));
