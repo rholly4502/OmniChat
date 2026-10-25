@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using OmniChat.Api.Infrastructure;
+using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
 
@@ -19,12 +20,18 @@ public sealed class ChatController : ControllerBase
 {
     private readonly IChatService _chatService;
     private readonly IModelCatalogService _modelCatalogService;
+    private readonly IChatTurnRecorder _turnRecorder;
     private readonly ILogger<ChatController> _logger;
 
-    public ChatController(IChatService chatService, IModelCatalogService modelCatalogService, ILogger<ChatController> logger)
+    public ChatController(
+        IChatService chatService,
+        IModelCatalogService modelCatalogService,
+        IChatTurnRecorder turnRecorder,
+        ILogger<ChatController> logger)
     {
         _chatService = chatService;
         _modelCatalogService = modelCatalogService;
+        _turnRecorder = turnRecorder;
         _logger = logger;
     }
 
@@ -79,10 +86,29 @@ public sealed class ChatController : ControllerBase
         Response.Headers.Connection = "keep-alive";
         Response.Headers["X-Accel-Buffering"] = "no";
 
+        // History is best-effort by contract: the recorder swallows storage failures, so a
+        // locked or missing database cannot cost the user an answer that would have streamed.
+        var userId = ChatIdentity.ResolveUserId(HttpContext);
+        var conversationId = await _turnRecorder.StartTurnAsync(
+            new ChatTurn(
+                request.ConversationId,
+                userId,
+                request.UseHermesBridge ? "agent" : "direct",
+                request.Model,
+                LastUserPrompt(request)),
+            cancellationToken);
+
+        if (conversationId is Guid started)
+        {
+            // First frame, before any token: the client needs the id to continue this thread.
+            await WriteEventAsync(new { conversationId = started }, cancellationToken);
+        }
+
         // The service reports its own liveness as a status frame and leaves the assistant's
         // text alone, so the two channels can never be mixed up. The phase is sent by the
         // service; this layer only decides which envelope it travels in.
         var latestPhase = default(string);
+        var reply = new StringBuilder();
 
         try
         {
@@ -100,6 +126,7 @@ public sealed class ChatController : ControllerBase
                     continue;
                 }
 
+                reply.Append(token);
                 await WriteEventAsync(new { content = token }, cancellationToken);
             }
 
@@ -120,7 +147,23 @@ public sealed class ChatController : ControllerBase
                 new { error = "An internal error occurred during streaming." },
                 CancellationToken.None);
         }
+        finally
+        {
+            // Runs on success, on failure and on client disconnect, so an interrupted answer is
+            // still filed: a turn with a question and no reply would read as lost data in the log.
+            if (conversationId is Guid recorded)
+            {
+                await _turnRecorder.CompleteTurnAsync(recorded, userId, reply.ToString(), CancellationToken.None);
+            }
+        }
     }
+
+    /// <summary>
+    /// The prompt to file as the user's half of the turn: the last <c>user</c> message, which is
+    /// the one this request is asking about even when the client replays the whole thread.
+    /// </summary>
+    private static string LastUserPrompt(ChatRequest request) =>
+        request.Messages.LastOrDefault(message => message.Role == "user")?.Content ?? string.Empty;
 
     /// <summary>
     /// Reads an upstream status frame out of a streamed token, or <c>null</c> when the token is

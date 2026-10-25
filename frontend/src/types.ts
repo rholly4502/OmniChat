@@ -34,6 +34,8 @@ export interface ChatRequestBody {
   messages: Message[];
   temperature?: number;
   maxTokens?: number;
+  /** Backend conversation to append to; omitted for a new thread. */
+  conversationId?: string | null;
 }
 
 export interface ChatSession {

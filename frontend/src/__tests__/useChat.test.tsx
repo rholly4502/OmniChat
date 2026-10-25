@@ -470,6 +470,72 @@ describe('useChat', () => {
     expect(seen[0].temperature).toBe(1.4);
     expect(seen[0].messages[0]).toEqual({ role: 'system', content: 'Be terse.' });
   });
+
+  it('continues the thread the server named on the previous turn', async () => {
+    // Without this the server would open a conversation per message and the history
+    // would be a wall of one-turn threads.
+    const seen: (string | null | undefined)[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options.conversationId);
+        return streamOf(seen.length === 1
+          ? [{ conversationId: 'conv-1' }, { content: 'ok' }]
+          : [{ content: 'again' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('first'); });
+    await act(async () => { await result.current.send('second'); });
+
+    expect(seen).toEqual([null, 'conv-1']);
+  });
+
+  it('treats a conversation id frame as metadata, not as a message', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ conversationId: 'conv-7' }, { content: 'ok' }]),
+    });
+
+    await act(async () => { await result.current.send('hi'); });
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[1].content).toBe('ok');
+  });
+
+  it('starts a new thread after clear()', async () => {
+    const seen: (string | null | undefined)[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options.conversationId);
+        return streamOf(seen.length === 1
+          ? [{ conversationId: 'conv-1' }, { content: 'ok' }]
+          : [{ content: 'fresh' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('first'); });
+    act(() => { result.current.clear(); });
+    await act(async () => { await result.current.send('second'); });
+
+    expect(seen).toEqual([null, null]);
+  });
+
+  it('starts a new thread after loadMessages(), so a switched session cannot append to the old one', async () => {
+    const seen: (string | null | undefined)[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options.conversationId);
+        return streamOf(seen.length === 1
+          ? [{ conversationId: 'conv-1' }, { content: 'ok' }]
+          : [{ content: 'loaded reply' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('first'); });
+    act(() => { result.current.loadMessages([{ role: 'user', content: 'old' }]); });
+    await act(async () => { await result.current.send('next'); });
+
+    expect(seen).toEqual([null, null]);
+  });
 });
 
 /** Aborts before yielding anything, so `send` leaves no partial reply. */

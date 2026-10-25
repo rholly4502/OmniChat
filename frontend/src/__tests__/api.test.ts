@@ -62,6 +62,13 @@ describe('parseSseBuffer', () => {
     expect(events.map((e) => e.content)).toEqual(['a', 'b']);
   });
 
+  it('surfaces a conversation id frame on its own field', () => {
+    // The server names the thread it filed the turn under. It must never be mistaken
+    // for assistant text, or the id would be printed into the transcript.
+    const { events } = parseSseBuffer('data: {"conversationId":"0192f0aa-0000-7000-8000-000000000000"}\n\n');
+    expect(events).toEqual([{ conversationId: '0192f0aa-0000-7000-8000-000000000000' }]);
+  });
+
   it('surfaces a status frame on its own field', () => {
     // The backend announces phases as {"status":"…"} while the agent works. It must arrive
     // as a status chunk: parsed as content it would be printed into the transcript.
@@ -113,6 +120,20 @@ describe('streamChat', () => {
       useHermesBridge: true,
       messages: [{ role: 'user', content: 'hi' }],
     });
+  });
+
+  it('sends the conversation id only when continuing a thread', async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(['data: [DONE]\n\n']));
+    await collect({ ...base, conversationId: 'conv-1', fetchImpl: fetchImpl as unknown as typeof fetch });
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(init.body as string).conversationId).toBe('conv-1');
+  });
+
+  it('omits the conversation id rather than sending null for a new thread', async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(['data: [DONE]\n\n']));
+    await collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch });
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect('conversationId' in JSON.parse(init.body as string)).toBe(false);
   });
 
   it('throws ApiError carrying the status and Retry-After on 429', async () => {

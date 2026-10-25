@@ -18,8 +18,11 @@ public static class PersistenceServiceCollectionExtensions
 
         if (!options.Enabled)
         {
-            // Explicitly absent rather than a null-object repository: a caller that needs
-            // history then fails loudly at startup instead of silently losing writes.
+            // The repository stays explicitly absent rather than a null object: a read endpoint
+            // that needs history then fails loudly at startup instead of silently returning
+            // nothing. The turn recorder is the exception — it sits on the streaming path, where
+            // a missing database must not cost the user an answer.
+            services.AddScoped<IChatTurnRecorder, NoOpChatTurnRecorder>();
             return services;
         }
 
@@ -28,6 +31,7 @@ public static class PersistenceServiceCollectionExtensions
 
         services.AddDbContext<ChatDbContext>(builder => builder.UseSqlite(connectionString));
         services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
+        services.AddScoped<IChatTurnRecorder, ChatTurnRecorder>();
         // Creates the schema on boot. Logged, not fatal: chat streaming works without history.
         services.AddHostedService<PersistenceInitializer>();
         return services;

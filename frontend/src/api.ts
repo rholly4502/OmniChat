@@ -14,6 +14,11 @@ export interface StreamChunk {
    * one key, so a phase can never be mistaken for assistant text.
    */
   status?: string;
+  /**
+   * Backend id of the conversation this turn was filed under. Sent once, as the
+   * first frame, and only when the server actually recorded the turn.
+   */
+  conversationId?: string;
 }
 
 /**
@@ -53,6 +58,7 @@ export function parseSseBuffer(buffer: string): { events: StreamChunk[]; rest: s
       // Order matters only for shape: a frame carries exactly one of the three keys.
       if (parsed.error) events.push({ error: parsed.error });
       else if (parsed.status) events.push({ status: parsed.status });
+      else if (parsed.conversationId) events.push({ conversationId: parsed.conversationId });
       else if (parsed.content) events.push({ content: parsed.content });
     } catch {
       // Ignore malformed frames: a single bad event must not kill the stream.
@@ -70,6 +76,8 @@ export interface StreamChatOptions {
   apiKey?: string;
   temperature?: number;
   maxTokens?: number;
+  /** Existing conversation to continue; omit to start a new one. */
+  conversationId?: string | null;
   signal?: AbortSignal;
   /** Inject a fetch implementation for tests; defaults to the global fetch. */
   fetchImpl?: typeof fetch;
@@ -83,13 +91,15 @@ export interface StreamChatOptions {
  * for a missing response body; rethrows the original error on abort.
  */
 export async function* streamChat(options: StreamChatOptions): AsyncGenerator<StreamChunk> {
-  const { model, useHermesBridge, messages, apiKey, temperature, maxTokens, signal, fetchImpl } = options;
+  const { model, useHermesBridge, messages, apiKey, temperature, maxTokens, conversationId, signal, fetchImpl } = options;
   const doFetch = fetchImpl ?? fetch;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (apiKey) headers['X-Api-Key'] = apiKey;
 
+  // Omitted rather than sent as null when absent: the server treats a missing id as "new thread".
   const body: ChatRequestBody = { model, useHermesBridge, messages, temperature, maxTokens };
+  if (conversationId) body.conversationId = conversationId;
 
   const res = await doFetch(API_URL, {
     method: 'POST',

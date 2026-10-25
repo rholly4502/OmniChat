@@ -18,16 +18,19 @@ namespace OmniChat.Tests.Controllers;
 public class ChatControllerTests
 {
     private readonly Mock<IChatService> _chatServiceMock;
+    private readonly Mock<IChatTurnRecorder> _turnRecorderMock;
     private readonly ChatController _controller;
 
     public ChatControllerTests()
     {
         _chatServiceMock = new Mock<IChatService>();
+        _turnRecorderMock = new Mock<IChatTurnRecorder>();
         var catalogService = new ModelCatalogService(
             new ConfigurationBuilder().Build());
         _controller = new ChatController(
             _chatServiceMock.Object,
             catalogService,
+            _turnRecorderMock.Object,
             NullLogger<ChatController>.Instance);
 
         // Set up a real HttpContext for SSE streaming
@@ -184,6 +187,153 @@ public class ChatControllerTests
         Assert.Contains("data: {\"content\":\"[other: x]\"}", output);
         Assert.Contains("data: {\"content\":\"[\"}", output);
         Assert.DoesNotContain("\"status\":", output);
+    }
+
+    [Fact]
+    public async Task StreamChat_RecordsTheUserTurn_BeforeTheFirstToken()
+    {
+        // The question is filed before the upstream is called, so an aborted generation still
+        // leaves a record of what was asked.
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.StartTurnAsync(
+                It.Is<ChatTurn>(t =>
+                    t.ConversationId == null &&
+                    t.UserId == "admin" &&
+                    t.Mode == "direct" &&
+                    t.Model == "test" &&
+                    t.UserContent == "hi"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_RecordsTheLastUserMessage_WhenTheClientReplaysTheThread()
+    {
+        // The client sends the whole conversation on every turn; the new question is the last
+        // user message, not the first one.
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(AsyncEnumerable.Empty<string>());
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            UseHermesBridge = true,
+            Messages =
+            [
+                new ChatMessage("user", "pertanyaan lama"),
+                new ChatMessage("assistant", "jawaban lama"),
+                new ChatMessage("user", "pertanyaan baru"),
+            ],
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.StartTurnAsync(It.Is<ChatTurn>(t => t.UserContent == "pertanyaan baru" && t.Mode == "agent"), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_EmitsTheConversationId_BeforeAnyContent()
+    {
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Contains($"data: {{\"conversationId\":\"{conversationId}\"}}", output);
+        Assert.True(
+            output.IndexOf("conversationId", StringComparison.Ordinal) < output.IndexOf("\"content\"", StringComparison.Ordinal),
+            "The conversation id must reach the client before the first token.");
+    }
+
+    [Fact]
+    public async Task StreamChat_EmitsNoConversationIdFrame_WhenTheTurnWasNotRecorded()
+    {
+        // Recording is best-effort: when it is disabled or failed, the stream is unchanged.
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        Assert.DoesNotContain("conversationId", ReadBody());
+    }
+
+    [Fact]
+    public async Task StreamChat_CompletesTheTurn_WithTheConcatenatedReply()
+    {
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello", " ", "World" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello World", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_DoesNotFileStatusFrames_AsPartOfTheReply()
+    {
+        // The heartbeat is transport, not answer. Saving it would put "[status: …]" in history.
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { ProgressPhase.Encode(ProgressMessages.Working), "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_CompletesTheTurn_EvenWhenTheUpstreamFails()
+    {
+        // A half answer is still evidence; a turn with a question and no reply reads as data loss.
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(ThrowingStream());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(conversationId, "admin", "partial", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    private static async IAsyncEnumerable<string> ThrowingStream()
+    {
+        yield return "partial";
+        await Task.Yield();
+        throw new InvalidOperationException("upstream exploded");
     }
 
     private ChatRequest NewRequest() => new()

@@ -733,24 +733,43 @@ public class DeploymentConfigTests
         Assert.Contains("Milestone 20", milestones);
         Assert.Contains("Milestone 24", milestones);
         Assert.Contains("Milestone 28", milestones);
-        // The frontend total moved from 23 to 185 across the decomposition; a
-        // regression to the old number means the feature list's test claim drifted.
-        Assert.Contains("185", milestones);
+        // The frontend total moved from 23 to 185 across the decomposition and to 237
+        // with the history/persistence work; a regression to an older number means the
+        // feature list's test claim drifted.
+        Assert.Contains("237", milestones);
     }
 
     [Fact]
     public void Readme_FeatureList_DescribesTheShippedTestCount()
     {
         // The feature bullet still claimed "23 tests ... covering rendering, mode
-        // toggle, model catalog fetch/fallback" after the suite grew to 185, and
+        // toggle, model catalog fetch/fallback" after the suite grew past 200, and
         // omitted every capability added since M20.
         var readme = Read("README.md");
         var features = ExtractTopLevelSection(readme, "## Fitur");
 
-        Assert.Contains("185 tests", features);
+        Assert.Contains("237 tests", features);
         Assert.DoesNotContain("23 tests", features);
         Assert.Contains("RateLimit__TokenLimit", features);
         Assert.Contains("Streaming__IdleTimeoutSeconds", features);
+    }
+
+    [Fact]
+    public void Readme_DocumentsPersistedHistoryAndItsFrames()
+    {
+        // Persistence reached docker-compose and appsettings without either variable
+        // appearing in the docs, so an operator could not tell where history was stored
+        // or how to turn it off. The SSE contract also gained a frame that every client
+        // has to recognise, and a frame the README never mentions is a breaking change
+        // nobody notices until the transcript prints an id.
+        var readme = Read("README.md");
+        var env = ExtractTopLevelSection(readme, "## Environment Variables");
+
+        Assert.Contains("Persistence__Enabled", env);
+        Assert.Contains("Persistence__ConnectionString", env);
+        Assert.Contains("conversationId", readme);
+
+        Assert.Contains("Persistence__ConnectionString", Read(".env.example"));
     }
 
     [Fact]

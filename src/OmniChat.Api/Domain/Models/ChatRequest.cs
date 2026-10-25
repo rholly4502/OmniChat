@@ -39,6 +39,12 @@ public class ChatRequest
 
     public bool UseHermesBridge { get; set; } = true;
 
+    /// <summary>
+    /// Conversation to append this turn to. Omit (or send <c>null</c>) to start a new one; the
+    /// server reports the id it used in a <c>{"conversationId":"..."}</c> SSE frame.
+    /// </summary>
+    public Guid? ConversationId { get; set; }
+
     [Range(0.0, 2.0, ErrorMessage = "Temperature must be between 0.0 and 2.0.")]
     public double? Temperature { get; set; }
 

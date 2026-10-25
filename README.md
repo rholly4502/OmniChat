@@ -47,7 +47,8 @@ Web UI dengan 2 mode:
 - ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
 - ✅ Non-root container execution (backend: `app` UID 101, frontend: `node` UID 1000) + `no-new-privileges` + `cap_drop: ALL`
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
-- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **185 tests** across 17 files: components, hooks, SSE client, error mapping)
+- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **237 tests** across 20 files: components, hooks, SSE client, error mapping)
+- ✅ Chat history persistence (SQLite via EF Core, `Persistence__ConnectionString`) — every streamed turn is filed under a conversation id, including a partial reply when the stream was cut short
 - ✅ Configurable rate limiting (`RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`)
 - ✅ Upstream idle timeout (`Streaming__IdleTimeoutSeconds`) — a silent gateway is aborted instead of hanging the stream
 - ✅ Reverse-proxy forwarded headers (`X-Forwarded-For` / `X-Forwarded-Proto`) so rate limiting and logs see the real client behind Caddy
@@ -121,6 +122,7 @@ Streams a chat completion as Server-Sent Events.
 {
   "model": "hermes",
   "useHermesBridge": true,
+  "conversationId": "0192f0aa-0000-7000-8000-000000000000",
   "messages": [
     { "role": "user", "content": "Hello, how are you?" }
   ]
@@ -130,6 +132,10 @@ Streams a chat completion as Server-Sent Events.
 **Response:** `text/event-stream`
 
 ```
+data: {"conversationId":"0192f0aa-0000-7000-8000-000000000000"}
+
+data: {"status":"Menghubungi model…"}
+
 data: {"content":"Hello"}
 
 data: {"content":"! I'm "}
@@ -138,6 +144,13 @@ data: {"content":"doing well."}
 
 data: [DONE]
 ```
+
+Each frame carries exactly one key:
+
+- `conversationId` — sent once, first, and only when the turn was persisted. Echo it back on the next request to continue the same thread; omit it to start a new one.
+- `status` — progress phase while the upstream is still thinking (repeats are collapsed). Never assistant text.
+- `content` — a piece of the assistant reply.
+- `error` — a sanitized failure, after which the stream ends. Any text already sent remains in the transcript.
 
 **Error event (mid-stream):**
 ```
@@ -148,6 +161,7 @@ data: {"error":"An internal error occurred during streaming."}
 - `model` — required, max 100 characters
 - `messages` — required, 1–50 items
 - `messages[].role` — must be `user`, `assistant`, or `system`
+- `conversationId` — optional GUID; unknown or someone else's id is treated as "not recorded", never as an error
 - `messages[].content` — required, max 8000 characters
 
 Invalid input returns `400 Bad Request` as an RFC 7807 `ValidationProblemDetails`
@@ -320,6 +334,8 @@ cd frontend && npm run build
 | `Models__Direct` | `Models:Direct` | No (built-in defaults) | Direct-provider model list as a JSON array of `{"Id","Label"}` objects. Empty = built-in defaults |
 | `RateLimit__TokenLimit` | `RateLimit:TokenLimit` | No (default: `10`) | Max requests per period per client IP (token-bucket) |
 | `RateLimit__ReplenishmentPeriodSeconds` | `RateLimit:ReplenishmentPeriodSeconds` | No (default: `60`) | Token replenishment period in seconds |
+| `Persistence__Enabled` | `Persistence:Enabled` | No (default: `true`) | Store chat turns in the conversation database. `false` disables writing; streaming is unaffected |
+| `Persistence__ConnectionString` | `Persistence:ConnectionString` | No (default: `Data Source=/data/omnichat.db`) | SQLite connection string. The directory is created on boot; in Docker it must be the mounted volume |
 | `Streaming__IdleTimeoutSeconds` | `Streaming:IdleTimeoutSeconds` | No (default: `120`) | Abort the upstream call after this many seconds with no bytes received. Renewed on every line, so a healthy long generation is never cut short. `0`/negative disables |
 
 > **⚠️ Security:** `Security__ApiKey` **must** be set in any non-local deployment — an empty value means the API is open with no authentication. `Cors__AllowedOrigins` is a different case: leaving it empty in Production is **safe** (the policy then rejects every cross-origin request, and the SPA is served same-origin so it is unaffected). Set it only if a legitimate cross-origin client needs access. It is required in Development, where an empty list falls back to `AllowAnyOrigin`.
@@ -420,4 +436,4 @@ Cara mengambil ulang: jalankan stack secara lokal, atur viewport seperti kolom d
 - **Milestone 28** ✅ — Streaming idle timeout (`Streaming__IdleTimeoutSeconds`, default 120): the upstream call is aborted after that many seconds with no bytes, and the deadline is renewed on every line so a healthy long generation is never cut short.
 - **Milestone 29** ✅ — Deploy pipeline truthfulness: the workflow now runs `set -euo pipefail`, resets the VPS checkout to `origin/main`, saves local modifications to a patch before resetting, and asserts the deployed SHA equals the pushed SHA and that `/health` returns API JSON — a green pipeline can no longer ship stale code silently.
 
-**Current totals:** 275 backend tests + **185** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.
+**Current totals:** 320 backend tests + **237** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.

@@ -86,10 +86,22 @@ export function useChat(options: UseChatOptions): UseChatResult {
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? []);
   const [streaming, setStreaming] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  /**
+   * Backend id of the thread this conversation is being filed under. A ref, not
+   * state: it is only ever read at send time, and re-rendering the transcript
+   * because the server named a thread would be waste. Reset whenever the visible
+   * conversation is replaced, so a cleared or switched session never appends to
+   * the previous thread's history.
+   */
+  const conversationIdRef = useRef<string | null>(null);
 
-  const clear = useCallback(() => setMessages([]), []);
+  const clear = useCallback(() => {
+    conversationIdRef.current = null;
+    setMessages([]);
+  }, []);
 
   const loadMessages = useCallback((newMessages: Message[]) => {
+    conversationIdRef.current = null;
     setMessages(newMessages);
   }, []);
 
@@ -124,9 +136,13 @@ export function useChat(options: UseChatOptions): UseChatResult {
           apiKey,
           temperature,
           maxTokens,
+          conversationId: conversationIdRef.current,
           signal: ctrl.signal,
         })) {
-          if (chunk.status) {
+          if (chunk.conversationId) {
+            // Not a message: it names the thread the turn was filed under.
+            conversationIdRef.current = chunk.conversationId;
+          } else if (chunk.status) {
             const phase = chunk.status;
             setMessages((prev) => {
               const copy = [...prev];
