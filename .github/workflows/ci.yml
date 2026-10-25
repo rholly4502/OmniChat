@@ -12,13 +12,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-dotnet@v5
+      # setup-dotnet resolves `10.0.x` through an aka.ms link into
+      # dotnetorigin.blob.core.windows.net. That storage account periodically
+      # starts answering 409 PublicAccessNotPermitted for every version, which
+      # fails this job before a single line compiles -- a red CI that says
+      # nothing about the code. Keep the action as the fast path (it also warms
+      # the NuGet cache) but let it fail softly, so the pinned mirror below can
+      # take over.
+      - id: setup-dotnet
+        uses: actions/setup-dotnet@v5
+        continue-on-error: true
         with:
           dotnet-version: 10.0.x
           cache: true
           cache-dependency-path: |
             **/packages.lock.json
             **/*.csproj
+
+      - name: Install .NET SDK from the pinned mirror
+        if: steps.setup-dotnet.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          echo "::warning::setup-dotnet failed; falling back to builds.dotnet.microsoft.com"
+          curl -sSL --retry 3 --retry-delay 5 \
+            https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.106/dotnet-sdk-10.0.106-linux-x64.tar.gz \
+            -o /tmp/dotnet-sdk.tar.gz
+          sudo mkdir -p /usr/share/dotnet
+          sudo tar xzf /tmp/dotnet-sdk.tar.gz -C /usr/share/dotnet
+          sudo ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet
+          dotnet --version
       - name: Restore & Build
         run: dotnet build OmniChat.slnx -c Release
 
