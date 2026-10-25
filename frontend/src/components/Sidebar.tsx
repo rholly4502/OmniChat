@@ -292,7 +292,7 @@ export function Sidebar({
                 aria-label="Temperature"
                 value={settings.temperature}
                 onChange={(e) => onTemperatureChange?.(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-cyan-500 cursor-pointer"
               />
             </div>
             <div>
@@ -308,7 +308,7 @@ export function Sidebar({
                 aria-label="Max Tokens"
                 value={settings.maxTokens}
                 onChange={(e) => onMaxTokensChange?.(parseInt(e.target.value, 10))}
-                className="w-full accent-cyan-500 h-1.5 bg-slate-800 rounded-lg cursor-pointer"
+                className="w-full accent-cyan-500 cursor-pointer"
               />
             </div>
           </div>

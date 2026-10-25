@@ -122,3 +122,40 @@ pre.code-block-pre {
   border-top: 1px solid #1e293b;
   margin: 0.75em 0;
 }
+
+/* Range sliders: a 6px painted track inside a 44px hit area.
+   The element box *is* the tap target, so a bare `h-1.5` made the whole
+   control 6px tall -- unusable with a finger. `appearance: none` lets the
+   track and thumb keep their thin look while the box grows. */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 44px;
+  background: transparent;
+}
+input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #1e293b;
+}
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 9999px;
+  background: #06b6d4;
+}
+input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 9999px;
+  background: #1e293b;
+}
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 9999px;
+  background: #06b6d4;
+}

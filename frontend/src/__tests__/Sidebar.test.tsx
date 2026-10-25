@@ -3,6 +3,8 @@ import { createRef } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Sidebar } from '../components/Sidebar';
 import type { ModelOption } from '../types';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const MODELS: ModelOption[] = [
   { id: 'hermes', label: 'Hermes (Default)' },
@@ -255,5 +257,29 @@ describe('Sidebar', () => {
     const tokensSlider = screen.getByLabelText('Max Tokens');
     fireEvent.change(tokensSlider, { target: { value: '4096' } });
     expect(onMaxTokensChange).toHaveBeenCalledWith(4096);
+  });
+
+  it('does not size the range sliders with h-1.5, which made the tap target 6px', () => {
+    renderSidebar({
+      settings: { systemPrompt: '', temperature: 0.7, maxTokens: 2048 },
+    });
+
+    for (const name of ['Temperature', 'Max Tokens']) {
+      const slider = screen.getByLabelText(name);
+      expect(slider.className).not.toContain('h-1.5');
+      expect(slider.className).toContain('w-full');
+    }
+  });
+
+  it('pins a 44px slider hit area in index.css', () => {
+    // jsdom performs no layout, so the box cannot be measured here. The rule
+    // that creates the target lives in the stylesheet, so assert on it directly
+    // -- otherwise a future `height: 6px` would silently shrink it again.
+    // Read from disk: vitest stubs CSS imports (both `import` and `?raw`),
+    // so the stylesheet text is only reachable through the filesystem.
+    const css = readFileSync(resolve(process.cwd(), 'src/index.css'), 'utf8');
+    expect(css).toMatch(/input\[type='range'\]\s*\{[^}]*height:\s*44px/);
+    expect(css).toContain('::-webkit-slider-runnable-track');
+    expect(css).toContain('::-moz-range-thumb');
   });
 });

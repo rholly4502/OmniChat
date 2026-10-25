@@ -131,4 +131,12 @@ describe('MessageList', () => {
     renderList({ messages: [{ role: 'assistant', content: 'Halo dari asisten' }] });
     expect(screen.getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
   });
+
+  it('gives the copy button a 44px touch target on mobile', () => {
+    // With px-2 py-0.5 around a 12px icon this measured 56x19 on a phone.
+    renderList({ messages: [{ role: 'assistant', content: 'Halo dari asisten' }] });
+    const btn = screen.getByRole('button', { name: 'Salin pesan' });
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('min-w-[44px]');
+  });
 });
