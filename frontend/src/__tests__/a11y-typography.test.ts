@@ -50,6 +50,50 @@ function bareSubTwelvePx(line: string): string[] {
   return hits;
 }
 
+/**
+ * Extracts the opening tag of every `<input>`, `<textarea>` and `<select>` in a
+ * source file. A plain regex cannot do this: attribute values contain `=>`, and
+ * `>` inside a JSX expression is not the end of the tag. So scan forward,
+ * skipping quoted strings and counting `{}` depth, and stop at the first `>` at
+ * depth 0.
+ */
+function editableControls(text: string): { tag: string; attrs: string; line: number }[] {
+  const out: { tag: string; attrs: string; line: number }[] = [];
+  const re = /<(input|textarea|select)\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let i = re.lastIndex;
+    let braceDepth = 0;
+    let quote: string | null = null;
+    for (; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        quote = ch;
+        continue;
+      }
+      if (ch === '{') braceDepth++;
+      else if (ch === '}') braceDepth--;
+      else if (ch === '>' && braceDepth === 0) break;
+    }
+    out.push({
+      tag: m[1],
+      attrs: text.slice(m.index, i + 1),
+      line: text.slice(0, m.index).split('\n').length,
+    });
+  }
+  return out;
+}
+
+/** Types a user types into. Range/checkbox/style-only inputs have no focus zoom. */
+const NON_TEXT_INPUT_TYPES = new Set(['checkbox', 'radio', 'range', 'file', 'color', 'submit', 'button', 'reset']);
+
+/** iOS Safari zooms the page when a focused control renders below 16px. */
+const MOBILE_TEXT_FLOOR = 'text-base';
+
 describe('typography and contrast floors', () => {
   const files = sourceFiles(SRC);
 
@@ -79,6 +123,26 @@ describe('typography and contrast floors', () => {
           offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${hits.join(', ')}`);
         }
       });
+    }
+    expect(offenders).toEqual([]);
+  });
+  it('renders every editable control at 16px on mobile, so iOS never zooms on focus', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { tag, attrs, line } of editableControls(readFileSync(file, 'utf8'))) {
+        const type = /\btype="([^"]*)"/.exec(attrs)?.[1];
+        if (tag === 'input' && type && NON_TEXT_INPUT_TYPES.has(type)) continue;
+
+        const className = /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(attrs);
+        const classes = (className?.[1] ?? className?.[2] ?? '').split(/\s+/);
+
+        if (!classes.includes(MOBILE_TEXT_FLOOR)) {
+          offenders.push(
+            `${file.replace(SRC, 'src')}:${line} <${tag}${type ? ` type="${type}"` : ''}> ` +
+              `missing ${MOBILE_TEXT_FLOOR}`,
+          );
+        }
+      }
     }
     expect(offenders).toEqual([]);
   });

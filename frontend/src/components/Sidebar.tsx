@@ -321,7 +321,7 @@ export function Sidebar({
                 value={settings.systemPrompt}
                 onChange={(e) => onSystemPromptChange?.(e.target.value)}
                 placeholder="Contoh: Bertindak sebagai Software Architect..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs outline-none focus:border-cyan-500 focus-visible:ring-1 focus-visible:ring-cyan-400/60 resize-none"
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-1 focus-visible:ring-cyan-400/60 resize-none"
               />
             </div>
             <div>
