@@ -188,7 +188,74 @@ describe('Sidebar', () => {
 
     const deleteBtn = screen.getByLabelText('Hapus Session 1');
     fireEvent.click(deleteBtn);
+    // The bin only arms the row; deletion needs an explicit second tap.
+    expect(onDeleteSession).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByLabelText('Konfirmasi hapus Session 1'));
     expect(onDeleteSession).toHaveBeenCalledWith('s1');
+  });
+
+  it('asks before deleting a session, because the bin sits next to the label', () => {
+    const onDeleteSession = vi.fn();
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onDeleteSession,
+    });
+
+    fireEvent.click(screen.getByLabelText('Hapus Session 1'));
+
+    expect(onDeleteSession).not.toHaveBeenCalled();
+    expect(screen.getByText('Hapus sesi ini?')).toBeInTheDocument();
+    const cancel = screen.getByLabelText('Batal hapus Session 1');
+    expect(cancel).toHaveFocus(); // the safe choice owns the initial focus
+    expect(cancel.className).toContain('min-h-[44px]');
+    expect(cancel.className).toContain('min-w-[52px]');
+    expect(screen.getByLabelText('Konfirmasi hapus Session 1').className).toContain('min-h-[44px]');
+  });
+
+  it('leaves the session alone when the confirmation is cancelled', () => {
+    const onDeleteSession = vi.fn();
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onDeleteSession,
+    });
+
+    fireEvent.click(screen.getByLabelText('Hapus Session 1'));
+    fireEvent.click(screen.getByLabelText('Batal hapus Session 1'));
+
+    expect(onDeleteSession).not.toHaveBeenCalled();
+    expect(screen.queryByText('Hapus sesi ini?')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Hapus Session 1')).toBeInTheDocument();
+  });
+
+  it('disarms the confirmation on Escape', () => {
+    const onDeleteSession = vi.fn();
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onDeleteSession,
+    });
+
+    fireEvent.click(screen.getByLabelText('Hapus Session 1'));
+    fireEvent.keyDown(screen.getByLabelText('Batal hapus Session 1'), { key: 'Escape' });
+
+    expect(onDeleteSession).not.toHaveBeenCalled();
+    expect(screen.queryByText('Hapus sesi ini?')).not.toBeInTheDocument();
+  });
+
+  it('keeps every sidebar label at or above the 12px legibility floor', () => {
+    const { container } = renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onDeleteSession: vi.fn(),
+    });
+    // 10px/11px utility classes are below the floor this project settled on for
+    // body-adjacent text (the Clear-chat fix in d7f115d established 12px).
+    const sub12 = [...container.querySelectorAll('[class*="text-["]')]
+      .map((el) => el.className)
+      .filter((cls) => /text-\[(9|10|11)px\]/.test(String(cls)));
+    expect(sub12).toEqual([]);
   });
 
   it('session rows are 44px touch targets and keyboard-selectable', () => {

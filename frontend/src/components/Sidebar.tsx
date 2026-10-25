@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
 import type { ChatSession, ChatSettings, ModelOption } from '../types';
 
@@ -78,6 +78,11 @@ export function Sidebar({
   onTemperatureChange,
   onMaxTokensChange,
 }: SidebarProps) {
+  // Two-step delete: tapping the bin only arms the row; the session is removed
+  // when the user confirms. A 44px bin sits next to the session label, so a
+  // single mistap used to destroy a whole conversation with no undo.
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
   return (
     <aside
       ref={sidebarRef}
@@ -134,7 +139,7 @@ export function Sidebar({
         <div className="space-y-1">
           <div className="text-xs text-slate-400 font-medium px-1 flex items-center justify-between">
             <span>Riwayat Sesi</span>
-            <span className="text-[10px] text-slate-500">{sessions.length} sesi</span>
+            <span className="text-xs text-slate-500">{sessions.length} sesi</span>
           </div>
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
             {sessions.map((s) => {
@@ -142,12 +147,50 @@ export function Sidebar({
               return (
                 <div
                   key={s.id}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && pendingDeleteId === s.id) {
+                      e.stopPropagation();
+                      setPendingDeleteId(null);
+                    }
+                  }}
                   className={`group flex items-center justify-between gap-0.5 pl-1 pr-0.5 rounded-lg text-xs transition min-h-[44px] ${
                     isActive
                       ? 'bg-slate-800/90 text-cyan-300 font-medium border border-cyan-500/30'
                       : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
                   }`}
                 >
+                  {pendingDeleteId === s.id ? (
+                    <div className="flex flex-1 min-w-0 items-center justify-between gap-1 pl-2">
+                      <span className="truncate text-xs text-slate-200">Hapus sesi ini?</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          type="button"
+                          autoFocus
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDeleteId(null);
+                          }}
+                          aria-label={`Batal hapus ${s.title}`}
+                          className="min-h-[44px] min-w-[52px] rounded-lg border border-slate-700 px-2 text-xs text-slate-300 transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                        >
+                          Batal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDeleteId(null);
+                            onDeleteSession?.(s.id);
+                          }}
+                          aria-label={`Konfirmasi hapus ${s.title}`}
+                          className="min-h-[44px] min-w-[52px] rounded-lg bg-red-500/15 px-2 text-xs font-medium text-red-300 transition hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                  <>
                   <button
                     type="button"
                     onClick={() => onSelectSession?.(s.id)}
@@ -179,7 +222,7 @@ export function Sidebar({
                         aria-label={`Hapus ${s.title}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          onDeleteSession(s.id);
+                          setPendingDeleteId(s.id);
                         }}
                         className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-red-400 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
                       >
@@ -187,6 +230,8 @@ export function Sidebar({
                       </button>
                     )}
                   </div>
+                  </>
+                  )}
                 </div>
               );
             })}
@@ -263,11 +308,11 @@ export function Sidebar({
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
               Parameter & Persona
             </span>
-            <span className="text-[10px] text-cyan-400 font-mono">T: {settings.temperature}</span>
+            <span className="text-xs text-cyan-400 font-mono">T: {settings.temperature}</span>
           </summary>
           <div className="pt-2 space-y-2.5">
             <div>
-              <label htmlFor="system-prompt-input" className="block text-[11px] text-slate-400 font-medium mb-1">
+              <label htmlFor="system-prompt-input" className="block text-xs text-slate-400 font-medium mb-1">
                 System Prompt (Instruksi Peran)
               </label>
               <textarea
@@ -280,7 +325,7 @@ export function Sidebar({
               />
             </div>
             <div>
-              <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+              <div className="flex justify-between text-xs text-slate-400 mb-1">
                 <span>Temperature</span>
                 <span className="font-mono text-cyan-400">{settings.temperature}</span>
               </div>
@@ -296,7 +341,7 @@ export function Sidebar({
               />
             </div>
             <div>
-              <div className="flex justify-between text-[11px] text-slate-400 mb-1">
+              <div className="flex justify-between text-xs text-slate-400 mb-1">
                 <span>Max Tokens</span>
                 <span className="font-mono text-cyan-400">{settings.maxTokens}</span>
               </div>
