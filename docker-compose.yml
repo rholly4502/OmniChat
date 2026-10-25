@@ -24,6 +24,8 @@ services:
       - LLM__ApiKey=${LLM_API_KEY:-}
       - Security__ApiKey=${Security__ApiKey:-}
       - Cors__AllowedOrigins=${Cors__AllowedOrigins:-}
+      - Persistence__Enabled=${Persistence__Enabled:-true}
+      - Persistence__ConnectionString=${Persistence__ConnectionString:-Data Source=/data/omnichat.db}
       - Security__Jwt__SigningKey=${Security__Jwt__SigningKey:-}
       - Security__Jwt__Issuer=${Security__Jwt__Issuer:-OmniChat}
       - Security__Jwt__Audience=${Security__Jwt__Audience:-OmniChat}
@@ -42,6 +44,9 @@ services:
       # Streaming liveness deadline — abort an upstream that goes quiet. Default 120s;
       # the deadline is renewed on every line received, so healthy long generations survive.
       - Streaming__IdleTimeoutSeconds=${Streaming__IdleTimeoutSeconds:-120}
+    volumes:
+      # SQLite lives on a named volume so history survives rebuilds and redeploys.
+      - omnichat_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s
@@ -86,6 +91,10 @@ services:
       resources:
         limits:
           memory: 256M
+
+volumes:
+  # Chat history (SQLite). Deleting this volume deletes all conversations.
+  omnichat_data:
 
 networks:
   # Shared bridge with the Hermes agent container. `external: true` means Compose

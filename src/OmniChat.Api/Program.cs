@@ -12,6 +12,7 @@ using OmniChat.Api.Infrastructure.Networking;
 using OmniChat.Api.Infrastructure.OpenApi;
 using OmniChat.Api.Infrastructure.Options;
 using OmniChat.Application.Interfaces;
+using OmniChat.Infrastructure.Data;
 using OmniChat.Infrastructure.Services;
 
 // Name of the CORS policy applied to every request (must match app.UseCors below).
@@ -142,6 +143,11 @@ builder.Services.AddHttpClient("LLMClient", client =>
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
+
+// Chat-history persistence (SQLite via EF Core). Registration only: nothing opens a
+// connection until a repository method runs, so an unwritable volume or a disabled
+// Persistence section cannot stop the API from starting.
+builder.Services.AddChatPersistence(builder.Configuration);
 
 // Startup configuration validator — warns on insecure production settings
 builder.Services.AddSingleton<StartupConfigValidator>();

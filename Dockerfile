@@ -27,6 +27,12 @@ RUN apt-get update \
 # aspnet base image since .NET 8). The app listens on port 5184 (>1024) so
 # non-root can bind. curl is installed system-wide and accessible to all users.
 COPY --from=build --chown=app:app /app/publish .
+
+# Chat history lives on a named volume mounted at /data. Docker seeds a fresh volume
+# from the image path, ownership included, so the directory must already belong to
+# `app` — otherwise SQLite cannot create the database file and history silently fails.
+RUN mkdir -p /data && chown app:app /data
+
 USER app
 
 EXPOSE 5184
