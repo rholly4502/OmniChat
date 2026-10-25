@@ -78,11 +78,21 @@ describe('useChatHistory', () => {
     window.URL.revokeObjectURL = revokeObjectURL;
 
     const clickSpy = vi.fn();
-    const createElementSpy = vi.spyOn(document, 'createElement').mockReturnValue({
-      set href(val: string) {},
-      set download(val: string) {},
-      click: clickSpy,
-    } as unknown as HTMLAnchorElement);
+    // Intercept only the temporary <a> the export creates. Mocking every tag makes
+    // renderHook fail, because React needs a real div to mount into.
+    const realCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi
+      .spyOn(document, 'createElement')
+      .mockImplementation(((tagName: string, options?: ElementCreationOptions) => {
+        if (tagName === 'a') {
+          return {
+            set href(_val: string) {},
+            set download(_val: string) {},
+            click: clickSpy,
+          } as unknown as HTMLAnchorElement;
+        }
+        return realCreateElement(tagName, options);
+      }) as typeof document.createElement);
 
     const { result } = renderHook(() => useChatHistory());
     const session = result.current.sessions[0];

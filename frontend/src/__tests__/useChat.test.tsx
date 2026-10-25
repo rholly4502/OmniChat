@@ -384,6 +384,92 @@ describe('useChat', () => {
     expect(() => act(() => result.current.stop())).not.toThrow();
     expect(result.current.streaming).toBe(false);
   });
+
+  // ─── loadMessages (session restore) ──────────────────────────
+  //
+  // These cover the contract App.tsx relies on to switch sessions. The hook
+  // declared loadMessages in UseChatResult but did not return it, so every
+  // session handler called undefined; the type error only surfaced in `tsc -b`,
+  // and vitest (esbuild, no typecheck) stayed green. One assertion below would
+  // have caught it.
+
+  it('returns loadMessages', () => {
+    const { result } = setup();
+    expect(typeof result.current.loadMessages).toBe('function');
+  });
+
+  it('loadMessages() replaces the transcript with the loaded session', () => {
+    const { result } = setup();
+
+    act(() =>
+      result.current.loadMessages([
+        { role: 'user', content: 'earlier' },
+        { role: 'assistant', content: 'reply' },
+      ])
+    );
+
+    expect(result.current.messages.map((m) => m.content)).toEqual(['earlier', 'reply']);
+  });
+
+  it('loadMessages([]) empties the transcript', () => {
+    const { result } = setup({
+      initialMessages: [{ role: 'user', content: 'stale' }],
+    });
+
+    act(() => result.current.loadMessages([]));
+
+    expect(result.current.messages).toEqual([]);
+  });
+
+  it('send() after loadMessages() sends the loaded history plus the new turn', async () => {
+    const seen: StreamChatOptions[] = [];
+    const { result } = setup({
+      streamImpl: (options: StreamChatOptions) => {
+        seen.push(options);
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    act(() => result.current.loadMessages([{ role: 'user', content: 'earlier' }]));
+    await act(async () => {
+      await result.current.send('now');
+    });
+
+    expect(seen[0].messages.map((m) => m.content)).toEqual(['earlier', 'now']);
+  });
+
+  it('send() forwards the current settings after they change', async () => {
+    // `send` reads systemPrompt/temperature/maxTokens from its closure, so they
+    // must be in its dependency list -- otherwise changing a setting without
+    // touching `messages` leaves the memoized callback sending stale values.
+    const seen: StreamChatOptions[] = [];
+    const streamImpl = (options: StreamChatOptions) => {
+      seen.push(options);
+      return streamOf([{ content: 'ok' }])(options);
+    };
+
+    const { result, rerender } = renderHook(
+      ({ temperature, systemPrompt }: { temperature: number; systemPrompt: string }) =>
+        useChat({
+          model: 'test-model',
+          useHermesBridge: true,
+          apiKey: '',
+          temperature,
+          systemPrompt,
+          describeError,
+          streamImpl,
+        }),
+      { initialProps: { temperature: 0.2, systemPrompt: '' } }
+    );
+
+    rerender({ temperature: 1.4, systemPrompt: 'Be terse.' });
+    await act(async () => {
+      await result.current.send('Hi');
+    });
+
+    expect(seen[0].temperature).toBe(1.4);
+    expect(seen[0].messages[0]).toEqual({ role: 'system', content: 'Be terse.' });
+  });
 });
 
 /** Aborts before yielding anything, so `send` leaves no partial reply. */

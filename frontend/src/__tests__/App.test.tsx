@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import App from '../App';
 import { CodeBlock } from '../App';
 
@@ -258,9 +258,12 @@ describe('App', () => {
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Test message' } });
     fireEvent.click(screen.getByText('Kirim'));
-    // The user message should appear in the chat
+    // Scope to the transcript: the sidebar also lists sessions, and a session's
+    // title is derived from its first user message, so the raw text now legitimately
+    // appears in two places.
     await waitFor(() => {
-      expect(screen.getByText('Test message')).toBeInTheDocument();
+      const transcript = within(screen.getByLabelText('Chat messages'));
+      expect(transcript.getByText('Test message')).toBeInTheDocument();
     });
   });
 
@@ -303,9 +306,11 @@ describe('App', () => {
     fireEvent.change(input, { target: { value: 'Hello' } });
     fireEvent.click(screen.getByText('Kirim'));
 
-    // Wait for the message to appear
+    // Wait for the message to appear (transcript only -- the sidebar session
+    // list repeats the title, which is derived from this first message)
     await waitFor(() => {
-      expect(screen.getByText('Hello')).toBeInTheDocument();
+      const transcript = within(screen.getByLabelText('Chat messages'));
+      expect(transcript.getByText('Hello')).toBeInTheDocument();
     });
 
     // Click clear chat

@@ -190,8 +190,9 @@ export function useChat(options: UseChatOptions): UseChatResult {
         abortRef.current = null;
       }
     },
-    [messages, streaming, model, useHermesBridge, apiKey, describeError, streamImpl]
+    [messages, streaming, model, useHermesBridge, apiKey, systemPrompt,
+     temperature, maxTokens, describeError, streamImpl]
   );
 
-  return { messages, streaming, send, stop, clear };
+  return { messages, streaming, send, stop, clear, loadMessages };
 }
