@@ -142,15 +142,22 @@ export function Sidebar({
               return (
                 <div
                   key={s.id}
-                  onClick={() => onSelectSession?.(s.id)}
-                  className={`group flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs cursor-pointer transition min-h-[38px] ${
+                  className={`group flex items-center justify-between gap-0.5 pl-1 pr-0.5 rounded-lg text-xs transition min-h-[44px] ${
                     isActive
                       ? 'bg-slate-800/90 text-cyan-300 font-medium border border-cyan-500/30'
                       : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
                   }`}
                 >
-                  <span className="truncate flex-1 pr-1.5">{s.title}</span>
-                  <div className="flex items-center gap-0.5 opacity-70 group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => onSelectSession?.(s.id)}
+                    aria-current={isActive ? 'true' : undefined}
+                    title={s.title}
+                    className="flex items-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                  >
+                    <span className="truncate flex-1 pr-1.5">{s.title}</span>
+                  </button>
+                  <div className="flex items-center gap-0.5 opacity-100 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                     {onExportSession && s.messages.length > 0 && (
                       <button
                         type="button"
@@ -160,9 +167,9 @@ export function Sidebar({
                           e.stopPropagation();
                           onExportSession(s);
                         }}
-                        className="p-1 hover:text-cyan-400 rounded transition"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-cyan-400 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                       </button>
                     )}
                     {onDeleteSession && (
@@ -174,9 +181,9 @@ export function Sidebar({
                           e.stopPropagation();
                           onDeleteSession(s.id);
                         }}
-                        className="p-1 hover:text-red-400 rounded transition"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-red-400 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                       </button>
                     )}
                   </div>

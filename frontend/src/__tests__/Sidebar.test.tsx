@@ -189,6 +189,42 @@ describe('Sidebar', () => {
     expect(onDeleteSession).toHaveBeenCalledWith('s1');
   });
 
+  it('session rows are 44px touch targets and keyboard-selectable', () => {
+    const onSelectSession = vi.fn();
+    const mockSessions = [
+      { id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 },
+    ];
+
+    renderSidebar({
+      sessions: mockSessions,
+      activeSessionId: 's1',
+      onSelectSession,
+      onDeleteSession: vi.fn(),
+    });
+
+    // The row is selectable via a real button, so keyboard and screen-reader users
+    // can switch sessions; a bare clickable div was unreachable for both.
+    const selectBtn = screen.getByText('Session 1').closest('button');
+    expect(selectBtn).not.toBeNull();
+    expect(selectBtn!.className).toContain('min-h-[44px]');
+    expect(screen.getByLabelText('Hapus Session 1').className).toContain('min-w-[44px]');
+    expect(screen.getByLabelText('Hapus Session 1').className).toContain('min-h-[44px]');
+  });
+
+  it('marks the active session with aria-current', () => {
+    renderSidebar({
+      sessions: [
+        { id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 },
+        { id: 's2', title: 'Session 2', messages: [], createdAt: 2, updatedAt: 2 },
+      ],
+      activeSessionId: 's2',
+      onSelectSession: vi.fn(),
+    });
+
+    expect(screen.getByText('Session 2').closest('button')).toHaveAttribute('aria-current', 'true');
+    expect(screen.getByText('Session 1').closest('button')).not.toHaveAttribute('aria-current');
+  });
+
   it('renders Parameter & Persona accordion when settings prop is passed', () => {
     const onSystemPromptChange = vi.fn();
     const onTemperatureChange = vi.fn();
