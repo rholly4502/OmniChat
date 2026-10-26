@@ -153,7 +153,7 @@ export function Sidebar({
                       setPendingDeleteId(null);
                     }
                   }}
-                  className={`group flex items-center justify-between gap-0.5 pl-1 pr-0.5 rounded-lg text-xs transition min-h-[44px] ${
+                  className={`group flex items-center justify-between gap-0.5 pl-1 pr-0.5 rounded-lg text-sm transition min-h-[44px] ${
                     isActive
                       ? 'bg-slate-800/90 text-cyan-300 font-medium border border-cyan-500/30'
                       : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
@@ -161,7 +161,7 @@ export function Sidebar({
                 >
                   {pendingDeleteId === s.id ? (
                     <div className="flex flex-1 min-w-0 items-center justify-between gap-1 pl-2">
-                      <span className="truncate text-xs text-slate-200">Hapus sesi ini?</span>
+                      <span className="truncate text-sm text-slate-200">Hapus sesi ini?</span>
                       <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
@@ -171,7 +171,7 @@ export function Sidebar({
                             setPendingDeleteId(null);
                           }}
                           aria-label={`Batal hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] rounded-lg border border-slate-700 px-2 text-xs text-slate-300 transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                          className="min-h-[44px] min-w-[52px] rounded-lg border border-slate-700 px-2 text-sm text-slate-300 transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
                         >
                           Batal
                         </button>
@@ -183,7 +183,7 @@ export function Sidebar({
                             onDeleteSession?.(s.id);
                           }}
                           aria-label={`Konfirmasi hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] rounded-lg bg-red-500/15 px-2 text-xs font-medium text-red-300 transition hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                          className="min-h-[44px] min-w-[52px] rounded-lg bg-red-500/15 px-2 text-sm font-medium text-red-300 transition hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
                         >
                           Hapus
                         </button>

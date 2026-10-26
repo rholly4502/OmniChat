@@ -229,6 +229,39 @@ describe('Sidebar', () => {
     expect(screen.getByLabelText('Hapus Session 1')).toBeInTheDocument();
   });
 
+  it('sizes the destructive confirmation at 14px, not 12px', () => {
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onDeleteSession: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByLabelText('Hapus Session 1'));
+
+    // Same ruling as the Clear-chat fix in d7f115d: a destructive, no-undo action
+    // is not the place for the smallest text on screen. The confirm row was added
+    // later and inherited the row's text-xs, so the fix had never reached it.
+    const confirm = screen.getByLabelText('Konfirmasi hapus Session 1');
+    const cancel = screen.getByLabelText('Batal hapus Session 1');
+    expect(confirm.className).toContain('text-sm');
+    expect(confirm.className).not.toContain('text-xs');
+    expect(cancel.className).toContain('text-sm');
+    expect(cancel.className).not.toContain('text-xs');
+  });
+
+  it('renders the session title at 14px, matching the rest of the sidebar', () => {
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+    });
+
+    // The title is what a user scans to choose a conversation, so it carries the
+    // same weight as the mode descriptions rather than the 12px label floor.
+    const row = screen.getByText('Session 1').closest('button');
+    expect(row!.parentElement!.className).toContain('text-sm');
+    expect(row!.parentElement!.className).not.toContain('text-xs');
+  });
+
   it('disarms the confirmation on Escape', () => {
     const onDeleteSession = vi.fn();
     renderSidebar({
