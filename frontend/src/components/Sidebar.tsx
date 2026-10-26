@@ -26,6 +26,8 @@ export interface SidebarProps {
   apiKey: string;
   /** API key change handler. */
   onApiKeyChange: (value: string) => void;
+  /** Clears the stored credential and returns to the login screen. */
+  onLogout: () => void;
   /** Drop the conversation. */
   onClear: () => void;
   /** List of chat sessions for history. */
@@ -66,6 +68,7 @@ export function Sidebar({
   onModelChange,
   apiKey,
   onApiKeyChange,
+  onLogout,
   onClear,
   sessions,
   activeSessionId,
@@ -298,9 +301,18 @@ export function Sidebar({
         <p className="text-xs text-slate-400">
           {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
         </p>
+        {apiKey && (
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-2 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-slate-100 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          >
+            Keluar
+          </button>
+        )}
       </div>
 
-      {/* Advanced Parameters & System Prompt */}
+      {/* Advanced Parameters & } ; System Prompt */}
       {settings && (
         <details className="space-y-2 bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
           <summary className="text-sm font-semibold text-slate-300 cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 rounded-lg px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60">

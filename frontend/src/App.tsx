@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { CodeBlock } from './components/CodeBlock';
+import LoginScreen from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
 import { MessageList } from './components/MessageList';
 import { Composer } from './components/Composer';
 import { MobileTopBar } from './components/MobileTopBar';
 import { SidebarOverlay } from './components/SidebarOverlay';
 import { useApiKey } from './hooks/useApiKey';
+import { useAuthGate } from './hooks/useAuthGate';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
 import { useChat } from './hooks/useChat';
@@ -30,6 +32,7 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useApiKey();
+  const { locked, busy, error, attemptLogin, logout } = useAuthGate(apiKey, setApiKey);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -140,6 +143,12 @@ export default function App() {
     await sendMessage(text);
   }
 
+  // A valid credential is the front door of the workspace: without one there is
+  // nothing meaningful to render, so lock the whole surface behind the login form.
+  if (locked) {
+    return <LoginScreen onSubmit={attemptLogin} busy={busy} error={error} />;
+  }
+
   return (
     <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden"
       onTouchStart={onTouchStart}
@@ -161,6 +170,7 @@ export default function App() {
         onModelChange={setModel}
         apiKey={apiKey}
         onApiKeyChange={setApiKey}
+        onLogout={logout}
         onClear={clearMessages}
         sessions={sessions}
         activeSessionId={activeSessionId}

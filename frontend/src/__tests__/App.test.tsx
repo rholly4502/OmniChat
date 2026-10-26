@@ -38,6 +38,7 @@ function setupFetchMock(opts?: {
       }
       return Promise.resolve({
         ok: true,
+        status: 200,
         json: () => Promise.resolve(opts?.modelsData ?? MOCK_CATALOG),
       });
     }
@@ -56,6 +57,9 @@ function setupFetchMock(opts?: {
 describe('App', () => {
   beforeEach(() => {
     localStorage.clear();
+    // A stored key keeps the app unlocked so the dashboard tests exercise the
+    // workspace rather than the login gate (the gate is tested on its own).
+    localStorage.setItem('omnichat_api_key', 'test-key');
     setupFetchMock();
   });
 
@@ -216,9 +220,11 @@ describe('App', () => {
     expect(screen.getByTestId('lock-icon')).toBeInTheDocument();
   });
 
-  it('shows unlocked indicator when API key is empty', () => {
+  it('locks to the login screen when no API key is stored', () => {
+    localStorage.removeItem('omnichat_api_key');
     render(<App />);
-    expect(screen.getByTestId('unlock-icon')).toBeInTheDocument();
+    expect(screen.getByText('OmniChat')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Masuk' })).toBeInTheDocument();
   });
 
   // ─── Send Button & Input ─────────────────────────────────────
