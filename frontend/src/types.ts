@@ -45,3 +45,28 @@ export interface ChatSession {
   createdAt: number;
   updatedAt: number;
 }
+
+/** One row of the server-side history list, without message bodies. */
+export interface ConversationSummary {
+  id: string;
+  title: string;
+  mode: string;
+  model: string;
+  /** ISO-8601 timestamp from the API. */
+  createdAt: string;
+  /** ISO-8601 timestamp from the API. */
+  updatedAt: string;
+}
+
+/** One replayed turn inside a {@link ConversationDetail}. */
+export interface ConversationMessage {
+  id: string;
+  role: Role;
+  content: string;
+  createdAt: string;
+}
+
+/** A stored conversation together with its transcript. */
+export interface ConversationDetail extends ConversationSummary {
+  messages: ConversationMessage[];
+}

@@ -57,6 +57,25 @@ function setup(overrides: Partial<Parameters<typeof useChat>[0]> = {}) {
 }
 
 describe('useChat', () => {
+  it('reports the conversation id the backend assigned to the turn', async () => {
+    const onConversationId = vi.fn();
+    const { result } = setup({
+      streamImpl: streamOf([
+        { conversationId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+        { content: 'halo' },
+      ]),
+      onConversationId,
+    });
+
+    await act(async () => {
+      await result.current.send('hai');
+    });
+
+    // The frame is metadata, not a message: it must not appear in the transcript.
+    expect(onConversationId).toHaveBeenCalledWith('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    expect(result.current.messages.map((m) => m.content)).toEqual(['hai', 'halo']);
+  });
+
   let consoleError: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

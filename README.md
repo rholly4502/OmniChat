@@ -47,7 +47,7 @@ Web UI dengan 2 mode:
 - ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
 - ✅ Non-root container execution (backend: `app` UID 101, frontend: `node` UID 1000) + `no-new-privileges` + `cap_drop: ALL`
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
-- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **237 tests** across 20 files: components, hooks, SSE client, error mapping)
+- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **256 tests** across 21 files: components, hooks, SSE client, history client, error mapping)
 - ✅ Chat history persistence (SQLite via EF Core, `Persistence__ConnectionString`) — every streamed turn is filed under a conversation id, including a partial reply when the stream was cut short
 - ✅ Chat history read API (`GET`/`PATCH`/`DELETE /api/conversations`) with an admin/guest split — guests' turns are stored for audit but never listed back
 - ✅ Configurable rate limiting (`RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`)
@@ -483,5 +483,6 @@ Cara mengambil ulang: jalankan stack secara lokal, atur viewport seperti kolom d
 - **Milestone 27** ✅ — Frontend decomposition: the 619-line `App.tsx` monolith became `types.ts` + `constants.ts` + `errors.ts`, a React-free SSE client (`api.ts`), 8 components, and 5 hooks — `App.tsx` is now **132 lines** of composition only. 185 frontend tests.
 - **Milestone 28** ✅ — Streaming idle timeout (`Streaming__IdleTimeoutSeconds`, default 120): the upstream call is aborted after that many seconds with no bytes, and the deadline is renewed on every line so a healthy long generation is never cut short.
 - **Milestone 29** ✅ — Deploy pipeline truthfulness: the workflow now runs `set -euo pipefail`, resets the VPS checkout to `origin/main`, saves local modifications to a patch before resetting, and asserts the deployed SHA equals the pushed SHA and that `/health` returns API JSON — a green pipeline can no longer ship stale code silently.
+- **Milestone 30** ✅ — Server-backed conversation history in the UI: the sidebar no longer reads localStorage. `historyApi.ts` wraps the read endpoints (`GET /api/conversations`, `GET/PATCH/DELETE /api/conversations/{id}`), and `useServerHistory` keeps stored conversations, their titles and their transcripts while a brand-new chat stays a local draft until the backend's first `conversationId` frame promotes it. A guest, whose list comes back empty, therefore sees a fresh session instead of someone else's history.
 
-**Current totals:** 354 backend tests + **237** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.
+**Current totals:** 356 backend tests + **256** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.

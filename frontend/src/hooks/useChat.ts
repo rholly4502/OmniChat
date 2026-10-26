@@ -40,6 +40,12 @@ export interface UseChatOptions {
   streamImpl?: (options: StreamChatOptions) => AsyncGenerator<StreamChunk>;
   /** Optional initial messages when restoring a session. */
   initialMessages?: Message[];
+  /**
+   * Called when the backend names the thread this turn was filed under. Lets the
+   * history hook promote a local draft to a stored conversation without making
+   * the transcript re-render just because the server picked an id.
+   */
+  onConversationId?: (id: string) => void;
 }
 
 /** Conversation state and the actions that mutate it. */
@@ -54,8 +60,14 @@ export interface UseChatResult {
   stop: () => void;
   /** Drop the whole conversation. */
   clear: () => void;
-  /** Replace current messages with a loaded session. */
-  loadMessages: (newMessages: Message[]) => void;
+  /**
+   * Replace current messages with a loaded session.
+   *
+   * Pass the conversation id when the session came from the server, so the next
+   * turn continues that thread instead of starting a second one; omit it for a
+   * draft or a cleared transcript.
+   */
+  loadMessages: (newMessages: Message[], conversationId?: string | null) => void;
 }
 
 /**
@@ -81,7 +93,7 @@ export interface UseChatResult {
  *  - `streaming` is cleared and the controller released in `finally`
  */
 export function useChat(options: UseChatOptions): UseChatResult {
-  const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages } = options;
+  const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages, onConversationId } = options;
 
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? []);
   const [streaming, setStreaming] = useState(false);
@@ -100,8 +112,8 @@ export function useChat(options: UseChatOptions): UseChatResult {
     setMessages([]);
   }, []);
 
-  const loadMessages = useCallback((newMessages: Message[]) => {
-    conversationIdRef.current = null;
+  const loadMessages = useCallback((newMessages: Message[], conversationId: string | null = null) => {
+    conversationIdRef.current = conversationId;
     setMessages(newMessages);
   }, []);
 
@@ -142,6 +154,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
           if (chunk.conversationId) {
             // Not a message: it names the thread the turn was filed under.
             conversationIdRef.current = chunk.conversationId;
+            onConversationId?.(chunk.conversationId);
           } else if (chunk.status) {
             const phase = chunk.status;
             setMessages((prev) => {
@@ -207,7 +220,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       }
     },
     [messages, streaming, model, useHermesBridge, apiKey, systemPrompt,
-     temperature, maxTokens, describeError, streamImpl]
+     temperature, maxTokens, describeError, streamImpl, onConversationId]
   );
 
   return { messages, streaming, send, stop, clear, loadMessages };

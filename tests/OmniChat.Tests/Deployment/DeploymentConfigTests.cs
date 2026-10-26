@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.RegularExpressions;
 using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Api.Infrastructure.Networking;
 using OmniChat.Api.Infrastructure.Options;
@@ -336,6 +337,31 @@ public class DeploymentConfigTests
         Assert.Contains("Retry-After", api);
         Assert.Contains("retryAfter", errors);
         Assert.Contains("describeApiError", app);
+    }
+
+    [Fact]
+    public void Frontend_ReadsHistoryFromTheServerInsteadOfLocalStorage()
+    {
+        // The sidebar used to keep its own session list in localStorage, which
+        // meant a returning browser could not see what the backend had stored and
+        // a guest saw whatever that browser had typed before. Four halves now
+        // have to stay wired: the read client, the hook that owns the list, the
+        // composition root's choice of that hook, and the id frame that promotes
+        // a draft into a stored conversation.
+        var api = Read("frontend/src/historyApi.ts");
+        var hook = Read("frontend/src/hooks/useServerHistory.ts");
+        var app = Read("frontend/src/App.tsx");
+        var chat = Read("frontend/src/hooks/useChat.ts");
+
+        Assert.Contains("/api/conversations", api);
+        Assert.Contains("listConversations", hook);
+        Assert.Contains("useServerHistory", app);
+        Assert.Contains("onConversationId", app);
+        Assert.Contains("onConversationId?.", chat);
+        // Prose may name localStorage (the doc comment contrasts the two designs);
+        // the assertion is about calls, which is what would actually persist state.
+        Assert.DoesNotContain("localStorage.getItem", hook);
+        Assert.DoesNotContain("localStorage.setItem", hook);
     }
 
     // ── Milestone 15: ProblemDetails standardization ──
@@ -762,10 +788,11 @@ public class DeploymentConfigTests
         Assert.Contains("Milestone 20", milestones);
         Assert.Contains("Milestone 24", milestones);
         Assert.Contains("Milestone 28", milestones);
-        // The frontend total moved from 23 to 185 across the decomposition and to 237
-        // with the history/persistence work; a regression to an older number means the
-        // feature list's test claim drifted.
-        Assert.Contains("237", milestones);
+        // The frontend total moved from 23 to 185 across the decomposition, to 237
+        // with the history/persistence work, and to 256 once the sidebar read that
+        // history from the server; a regression to an older number means the feature
+        // list's test claim drifted.
+        Assert.Contains("256", milestones);
     }
 
     [Fact]
@@ -777,10 +804,38 @@ public class DeploymentConfigTests
         var readme = Read("README.md");
         var features = ExtractTopLevelSection(readme, "## Fitur");
 
-        Assert.Contains("237 tests", features);
+        Assert.Contains("256 tests", features);
         Assert.DoesNotContain("23 tests", features);
         Assert.Contains("RateLimit__TokenLimit", features);
         Assert.Contains("Streaming__IdleTimeoutSeconds", features);
+    }
+
+    [Fact]
+    public void Readme_TestTotals_AgreeWithTheFeatureList()
+    {
+        // The README states the frontend total twice — in the feature bullet and in the
+        // closing "Current totals" line — and the two had no reason to agree. This pins
+        // them together so a feature-list edit cannot leave the closing line behind.
+        //
+        // The backend total appears in that closing line only and is not cross-checked:
+        // no static guard can know the real suite size. It was 354 while the suite ran 355,
+        // so whichever commit adds a backend test must bump this line by hand.
+        var readme = Read("README.md");
+        var features = ExtractTopLevelSection(readme, "## Fitur");
+        var totalsLine = readme
+            .Split('\n')
+            .FirstOrDefault(line => line.StartsWith("**Current totals:**", StringComparison.Ordinal));
+
+        Assert.NotNull(totalsLine);
+
+        var featureTotal = Regex.Match(features, @"\*\*(\d+) tests\*\*");
+        var totalsFrontend = Regex.Match(totalsLine!, @"\*\*(\d+)\*\* frontend tests");
+        var totalsBackend = Regex.Match(totalsLine!, @"(\d+) backend tests");
+
+        Assert.True(featureTotal.Success, "the feature list no longer states a test total");
+        Assert.True(totalsFrontend.Success, "the closing line no longer states a frontend total");
+        Assert.True(totalsBackend.Success, "the closing line no longer states a backend total");
+        Assert.Equal(featureTotal.Groups[1].Value, totalsFrontend.Groups[1].Value);
     }
 
     [Fact]

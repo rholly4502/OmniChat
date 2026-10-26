@@ -10,7 +10,7 @@ import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
 import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
-import { useChatHistory } from './hooks/useChatHistory';
+import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
 import { useSettings } from './hooks/useSettings';
 import { describeApiError } from './errors';
 import { DEFAULT_MODEL } from './constants';
@@ -34,6 +34,8 @@ export default function App() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  /** Discards a transcript that arrives after the user has switched again. */
+  const loadTokenRef = useRef(0);
 
   const {
     open: sidebarOpen,
@@ -56,8 +58,9 @@ export default function App() {
     createSession,
     selectSession,
     deleteSession,
+    adoptConversation,
     exportSessionMarkdown,
-  } = useChatHistory();
+  } = useServerHistory({ apiKey });
 
   const {
     settings,
@@ -85,6 +88,9 @@ export default function App() {
     maxTokens: settings.maxTokens,
     describeError: describeApiError,
     initialMessages: activeSession?.messages,
+    // The server answers with the thread id as the first frame of the first turn;
+    // that is what turns this browser's draft into a stored conversation.
+    onConversationId: adoptConversation,
   });
 
   // Sync message state to active session
@@ -100,30 +106,30 @@ export default function App() {
     setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
   }
 
-  function handleSelectSession(id: string) {
+  async function handleSelectSession(id: string) {
     if (streaming) return;
-    selectSession(id);
-    const target = sessions.find((s) => s.id === id);
-    if (target) {
-      loadMessages(target.messages);
-    }
+    const token = ++loadTokenRef.current;
+    const loaded = await selectSession(id);
+    // null means the transcript could not be read; the current view stays put.
+    // A second click while this fetch was in flight owns the screen instead.
+    if (!loaded || token !== loadTokenRef.current) return;
+    // Continuing a stored conversation must append to *that* thread on the server,
+    // not silently create a second one under the same title.
+    loadMessages(loaded, isServerConversation(id) ? id : null);
   }
 
   function handleNewSession() {
     if (streaming) return;
+    loadTokenRef.current++;
     const fresh = createSession();
     loadMessages(fresh.messages);
   }
 
-  function handleDeleteSession(id: string) {
+  async function handleDeleteSession(id: string) {
     if (streaming) return;
-    deleteSession(id);
-    const remaining = sessions.filter((s) => s.id !== id);
-    if (remaining.length > 0) {
-      loadMessages(remaining[0].messages);
-    } else {
-      loadMessages([]);
-    }
+    loadTokenRef.current++;
+    const next = await deleteSession(id);
+    if (next) loadMessages(next);
   }
 
   /** Validate the draft, clear it, then hand the text to the chat hook. */
