@@ -68,7 +68,7 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
-            className="mt-1 inline-flex min-h-[44px] items-center text-xs text-slate-400 transition hover:text-slate-300"
+            className="mt-1 inline-flex min-h-[44px] items-center text-sm text-slate-400 transition hover:text-slate-300"
           >
             {reveal ? 'Tutup' : 'Tampilkan'} kunci
           </button>

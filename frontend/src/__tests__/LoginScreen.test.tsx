@@ -52,4 +52,12 @@ describe('LoginScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tampilkan kunci' }));
     expect(input).toHaveAttribute('type', 'text');
   });
+
+  it('keeps the reveal toggle at the 14px control floor', () => {
+    renderLogin();
+    const toggle = screen.getByRole('button', { name: 'Tampilkan kunci' });
+    expect(toggle.className).toContain('text-sm');
+    expect(toggle.className).not.toContain('text-xs');
+  });
 });
+
