@@ -327,6 +327,22 @@ describe('Sidebar', () => {
     expect(screen.getByText('Session 1').closest('button')).not.toHaveAttribute('aria-current');
   });
 
+  it('gives the Parameter & Persona disclosure a real 44px tap target at 14px', () => {
+    renderSidebar({
+      settings: { systemPrompt: '', temperature: 0.7, maxTokens: 2048 },
+    });
+
+    // The <summary> is the only control that expands the advanced panel. It was
+    // left at the 12px label floor with no minimum height while every sibling
+    // control got its 44px box, so it was both the smallest and the hardest
+    // thing to hit in the sidebar.
+    const summary = screen.getByText(/Parameter & Persona/).closest('summary');
+    expect(summary).not.toBeNull();
+    expect(summary!.className).toContain('min-h-[44px]');
+    expect(summary!.className).toContain('text-sm');
+    expect(summary!.className).not.toContain('text-xs');
+  });
+
   it('renders Parameter & Persona accordion when settings prop is passed', () => {
     const onSystemPromptChange = vi.fn();
     const onTemperatureChange = vi.fn();
