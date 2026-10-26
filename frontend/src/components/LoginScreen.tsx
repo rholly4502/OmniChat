@@ -68,7 +68,7 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
-            className="mt-2 text-xs text-slate-400 transition hover:text-slate-300"
+            className="mt-1 inline-flex min-h-[44px] items-center text-xs text-slate-400 transition hover:text-slate-300"
           >
             {reveal ? 'Tutup' : 'Tampilkan'} kunci
           </button>
@@ -85,7 +85,7 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
           <button
             type="submit"
             disabled={busy || !key.trim()}
-            className="mt-5 w-full rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-5 w-full min-h-[44px] rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             {busy ? 'Memverifikasi…' : 'Masuk'}
           </button>
