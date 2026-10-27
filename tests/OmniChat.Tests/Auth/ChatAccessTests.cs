@@ -27,11 +27,26 @@ public class ChatAccessTests
         return new ConfigurationBuilder().AddInMemoryCollection(values).Build();
     }
 
+    private static HttpContext WithApiKeyAuth()
+    {
+        var context = new DefaultHttpContext();
+        context.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
+        return context;
+    }
+
     [Fact]
     public void ResolveAccess_GrantsAdmin_ToApiKeyCallers()
     {
-        // No validated JWT means the shared operator key let the request through.
-        Assert.Equal(ChatAccess.Admin, ChatIdentity.ResolveAccess(new DefaultHttpContext(), []));
+        // An API-key-authenticated request carries the operator credential.
+        Assert.Equal(ChatAccess.Admin, ChatIdentity.ResolveAccess(WithApiKeyAuth(), []));
+    }
+
+    [Fact]
+    public void ResolveAccess_ResolvesAnonymousCallers_AsGuest()
+    {
+        // The guest-mode security boundary: an unauthenticated caller (no JWT, no API key)
+        // must be treated as a guest, never as the operator.
+        Assert.Equal(ChatAccess.Guest, ChatIdentity.ResolveAccess(new DefaultHttpContext(), []));
     }
 
     [Fact]
@@ -130,7 +145,8 @@ public class ChatAccessTests
 
         Assert.Equal(ChatAccess.Admin, policy.Resolve(WithSubject(new Claim("sub", "alice"))));
         Assert.Equal(ChatAccess.Guest, policy.Resolve(WithSubject(new Claim("sub", "mallory"))));
-        Assert.Equal(ChatAccess.Admin, policy.Resolve(new DefaultHttpContext()));
+        Assert.Equal(ChatAccess.Admin, policy.Resolve(WithApiKeyAuth()));
+        Assert.Equal(ChatAccess.Guest, policy.Resolve(new DefaultHttpContext()));
     }
 
     [Fact]

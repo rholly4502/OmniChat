@@ -56,23 +56,30 @@ public static class ChatIdentity
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        if (context.Items[JwtAuthenticationMiddleware.AuthenticatedItemKey] is not ClaimsPrincipal)
+        if (context.Items[JwtAuthenticationMiddleware.AuthenticatedItemKey] is ClaimsPrincipal)
         {
-            // No validated JWT: the request came through the shared API key (or auth is off in
-            // development), which is the operator's own credential.
+            var subject = SubjectOf(context);
+            if (string.IsNullOrWhiteSpace(subject))
+            {
+                // A token with no subject cannot be matched against the admin list. Guest is the
+                // safe answer, and it is consistent with ResolveUserId filing such turns under
+                // AdminUserId: the row is stored, but this caller is not allowed to read it back.
+                return ChatAccess.Guest;
+            }
+
+            return ContainsSubject(adminSubjects, subject) ? ChatAccess.Admin : ChatAccess.Guest;
+        }
+
+        // No validated JWT. If the request came through the shared API key (or API-key auth is
+        // disabled, i.e. dev mode), the caller holds the operator's own credential → admin.
+        if (context.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] is true)
+        {
             return ChatAccess.Admin;
         }
 
-        var subject = SubjectOf(context);
-        if (string.IsNullOrWhiteSpace(subject))
-        {
-            // A token with no subject cannot be matched against the admin list. Guest is the safe
-            // answer, and it is consistent with ResolveUserId filing such turns under AdminUserId:
-            // the row is stored, but this caller is not allowed to read it back.
-            return ChatAccess.Guest;
-        }
-
-        return ContainsSubject(adminSubjects, subject) ? ChatAccess.Admin : ChatAccess.Guest;
+        // A genuinely anonymous caller on a guest-accessible route resolves as a guest: it must
+        // never be mistaken for the operator, and is forced off the Hermes agent gateway.
+        return ChatAccess.Guest;
     }
 
     /// <summary>Subject claim of a validated JWT, or <c>null</c> for API-key and unauthenticated callers.</summary>

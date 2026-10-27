@@ -21,17 +21,20 @@ public sealed class ChatController : ControllerBase
     private readonly IChatService _chatService;
     private readonly IModelCatalogService _modelCatalogService;
     private readonly IChatTurnRecorder _turnRecorder;
+    private readonly IChatAccessPolicy _accessPolicy;
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
         IChatService chatService,
         IModelCatalogService modelCatalogService,
         IChatTurnRecorder turnRecorder,
+        IChatAccessPolicy accessPolicy,
         ILogger<ChatController> logger)
     {
         _chatService = chatService;
         _modelCatalogService = modelCatalogService;
         _turnRecorder = turnRecorder;
+        _accessPolicy = accessPolicy;
         _logger = logger;
     }
 
@@ -85,6 +88,14 @@ public sealed class ChatController : ControllerBase
         Response.Headers.CacheControl = "no-cache";
         Response.Headers.Connection = "keep-alive";
         Response.Headers["X-Accel-Buffering"] = "no";
+
+        // Security boundary: an anonymous guest must never reach the Hermes agent gateway, which
+        // proxies the operator's credentials and tools (GitHub, terminal, memory). Force guests
+        // onto the direct LLM provider, which carries no agent tools.
+        if (_accessPolicy.Resolve(HttpContext) == ChatAccess.Guest)
+        {
+            request.UseHermesBridge = false;
+        }
 
         // History is best-effort by contract: the recorder swallows storage failures, so a
         // locked or missing database cannot cost the user an answer that would have streamed.

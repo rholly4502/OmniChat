@@ -26,9 +26,19 @@ public class ApiKeyIntegrationTests : IClassFixture<WebApplicationFactory<Progra
         new("""{"model":"m","messages":[{"role":"user","content":"hi"}]}""", Encoding.UTF8, "application/json");
 
     [Fact]
-    public async Task Chat_WithoutApiKey_Returns401()
+    public async Task Chat_WithoutApiKey_IsAllowedAsGuest()
     {
-        var response = await SecuredClient().PostAsync("/api/chat/stream", ChatBody());
+        // /api/chat/stream is the guest entry point: a missing key must not block it (the
+        // stream itself is forced to direct LLM by ChatController).
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/chat/stream") { Content = ChatBody() };
+        var response = await SecuredClient().SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Conversations_WithoutApiKey_Returns401()
+    {
+        var response = await SecuredClient().GetAsync("/api/conversations");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 

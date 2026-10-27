@@ -42,7 +42,7 @@ public class ApiKeyMiddlewareTests
         var nextCalled = false;
         var mw = new ApiKeyMiddleware(_ => { nextCalled = true; return Task.CompletedTask; },
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream");
+        var ctx = Context("/api/conversations");
 
         await mw.InvokeAsync(ctx);
 
@@ -55,7 +55,7 @@ public class ApiKeyMiddlewareTests
     {
         var mw = new ApiKeyMiddleware(_ => Task.CompletedTask,
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream", "wrong");
+        var ctx = Context("/api/conversations", "wrong");
 
         await mw.InvokeAsync(ctx);
 
@@ -91,7 +91,7 @@ public class ApiKeyMiddlewareTests
     {
         var mw = new ApiKeyMiddleware(_ => Task.CompletedTask,
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream");
+        var ctx = Context("/api/conversations");
 
         await mw.InvokeAsync(ctx);
 
@@ -105,5 +105,19 @@ public class ApiKeyMiddlewareTests
         Assert.Contains("\"detail\"", body);
         Assert.Contains("api key", body, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("\"traceId\"", body);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_KeyConfigured_GuestPathAllowsAnonymous()
+    {
+        // /api/chat/stream is the one route reachable without a key: it is the guest entry point.
+        var nextCalled = false;
+        var mw = new ApiKeyMiddleware(_ => { nextCalled = true; return Task.CompletedTask; },
+            NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
+
+        await mw.InvokeAsync(Context("/api/chat/stream"));
+
+        Assert.True(nextCalled);
+        Assert.Equal(200, Context("/api/chat/stream").Response.StatusCode);
     }
 }

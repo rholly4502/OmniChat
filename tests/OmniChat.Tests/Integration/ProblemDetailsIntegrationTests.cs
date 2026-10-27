@@ -59,11 +59,7 @@ public class ProblemDetailsIntegrationTests
             .WithWebHostBuilder(b => b.UseSetting("Security:ApiKey", "secret"))
             .CreateClient();
 
-        var body = new StringContent(
-            """{"model":"m","messages":[{"role":"user","content":"hi"}]}""",
-            Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync("/api/chat/stream", body);
+        var response = await client.GetAsync("/api/conversations");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         Assert.NotNull(response.Content.Headers.ContentType);
@@ -79,11 +75,7 @@ public class ProblemDetailsIntegrationTests
             .WithWebHostBuilder(b => b.UseSetting("Security:ApiKey", "secret"))
             .CreateClient();
 
-        var body = new StringContent(
-            """{"model":"m","messages":[{"role":"user","content":"hi"}]}""",
-            Encoding.UTF8, "application/json");
-
-        var response = await client.PostAsync("/api/chat/stream", body);
+        var response = await client.GetAsync("/api/conversations");
         var responseBody = await response.Content.ReadAsStringAsync();
 
         Assert.Contains("\"title\"", responseBody);
