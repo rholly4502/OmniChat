@@ -14,6 +14,7 @@ import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
 import { useSettings } from './hooks/useSettings';
+import { ExpensesView } from './components/ExpensesView';
 import { describeApiError } from './errors';
 import { DEFAULT_MODEL } from './constants';
 
@@ -31,6 +32,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
+  const [activeView, setActiveView] = useState<'chat' | 'expenses'>('chat');
   const [apiKey, setApiKey] = useApiKey();
   const { locked, busy, error, attemptLogin, enterGuest, logout, isGuest } = useAuthGate(apiKey, setApiKey);
   // A guest has no credential and must never reach the Hermes agent gateway: force direct mode.
@@ -211,6 +213,8 @@ export default function App() {
         onSystemPromptChange={updateSystemPrompt}
         onTemperatureChange={updateTemperature}
         onMaxTokensChange={updateMaxTokens}
+        activeView={activeView}
+        onSelectView={setActiveView}
       />
 
       <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
@@ -221,22 +225,28 @@ export default function App() {
           menuButtonRef={menuButtonRef}
         />
 
-        <MessageList
-          messages={messages}
-          streaming={streaming}
-          models={models}
-          model={model}
-          useAgent={useAgent}
-          scrollRef={scrollRef}
-        />
+        {activeView === 'expenses' ? (
+          <ExpensesView apiKey={apiKey} />
+        ) : (
+          <>
+            <MessageList
+              messages={messages}
+              streaming={streaming}
+              models={models}
+              model={model}
+              useAgent={useAgent}
+              scrollRef={scrollRef}
+            />
 
-        <Composer
-          input={input}
-          onInputChange={setInput}
-          streaming={streaming}
-          onSend={send}
-          onStop={stopStreaming}
-        />
+            <Composer
+              input={input}
+              onInputChange={setInput}
+              streaming={streaming}
+              onSend={send}
+              onStop={stopStreaming}
+            />
+          </>
+        )}
       </main>
     </div>
   );

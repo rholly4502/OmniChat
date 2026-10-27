@@ -50,6 +50,10 @@ export interface SidebarProps {
   onTemperatureChange?: (temp: number) => void;
   /** Max tokens change handler. */
   onMaxTokensChange?: (tokens: number) => void;
+  /** Active top-level view ('chat' or 'expenses'). */
+  activeView?: 'chat' | 'expenses';
+  /** Switch the active top-level view. */
+  onSelectView?: (view: 'chat' | 'expenses') => void;
 }
 
 /**
@@ -80,6 +84,8 @@ export function Sidebar({
   onSystemPromptChange,
   onTemperatureChange,
   onMaxTokensChange,
+  activeView = 'chat',
+  onSelectView = () => {},
 }: SidebarProps) {
   // Two-step delete: tapping the bin only arms the row; the session is removed
   // when the user confirms. A 44px bin sits next to the session label, so a
@@ -119,6 +125,36 @@ export function Sidebar({
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
+        </button>
+      </div>
+
+      {/* Top-level view switcher: Chat vs Pengeluaran */}
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-900 border border-slate-800 p-1" role="tablist" aria-label="Pilih tampilan">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'chat'}
+          onClick={() => onSelectView('chat')}
+          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+            activeView === 'chat'
+              ? 'bg-slate-800 text-slate-100 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Chat
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'expenses'}
+          onClick={() => onSelectView('expenses')}
+          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+            activeView === 'expenses'
+              ? 'bg-slate-800 text-slate-100 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          Pengeluaran
         </button>
       </div>
 
