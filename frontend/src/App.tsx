@@ -32,7 +32,9 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useApiKey();
-  const { locked, busy, error, attemptLogin, logout } = useAuthGate(apiKey, setApiKey);
+  const { locked, busy, error, attemptLogin, enterGuest, logout, isGuest } = useAuthGate(apiKey, setApiKey);
+  // A guest has no credential and must never reach the Hermes agent gateway: force direct mode.
+  const effectiveUseAgent = isGuest ? false : useAgent;
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -73,7 +75,7 @@ export default function App() {
   } = useSettings();
 
   const catalog = useModelCatalog(apiKey);
-  const models = useAgent ? catalog.agent : catalog.direct;
+  const models = effectiveUseAgent ? catalog.agent : catalog.direct;
 
   const {
     messages,
@@ -84,7 +86,7 @@ export default function App() {
     loadMessages,
   } = useChat({
     model,
-    useHermesBridge: useAgent,
+    useHermesBridge: effectiveUseAgent,
     apiKey,
     systemPrompt: settings.systemPrompt,
     temperature: settings.temperature,
@@ -146,7 +148,34 @@ export default function App() {
   // A valid credential is the front door of the workspace: without one there is
   // nothing meaningful to render, so lock the whole surface behind the login form.
   if (locked) {
-    return <LoginScreen onSubmit={attemptLogin} busy={busy} error={error} />;
+    return <LoginScreen onSubmit={attemptLogin} busy={busy} error={error} onEnterGuest={enterGuest} />;
+  }
+
+  // Guest workspace: no sidebar, no history, no agent gateway — just the transcript and composer,
+  // with a slim top bar exposing logout.
+  if (isGuest) {
+    return (
+      <div className="flex h-dvh bg-slate-950 text-slate-100 overflow-hidden">
+        <main className="flex-1 flex flex-col min-w-0">
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} />
+          <MessageList
+            messages={messages}
+            streaming={streaming}
+            models={catalog.direct}
+            model={model}
+            useAgent={false}
+            scrollRef={scrollRef}
+          />
+          <Composer
+            input={input}
+            onInputChange={setInput}
+            streaming={streaming}
+            onSend={send}
+            onStop={stopStreaming}
+          />
+        </main>
+      </div>
+    );
   }
 
   return (

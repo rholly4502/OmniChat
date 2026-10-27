@@ -5,6 +5,7 @@ import LoginScreen from '../components/LoginScreen';
 function renderLogin(overrides: Partial<Parameters<typeof LoginScreen>[0]> = {}) {
   const props = {
     onSubmit: vi.fn(async () => true),
+    onEnterGuest: vi.fn(),
     busy: false,
     error: null,
     ...overrides,
@@ -68,6 +69,23 @@ describe('LoginScreen', () => {
     expect(reveal.className).toContain('focus-visible:ring-2');
     expect(submit.className).toContain('focus-visible:ring-2');
     expect(input.className).toContain('focus-visible:ring-2');
+  });
+
+  it('renders the guest button and calls onEnterGuest when clicked', () => {
+    const { props } = renderLogin();
+    const guest = screen.getByRole('button', { name: 'Lanjut sebagai tamu' });
+    expect(guest).toBeInTheDocument();
+    expect(guest).toHaveAttribute('type', 'button');
+    fireEvent.click(guest);
+    expect(props.onEnterGuest).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the guest button at the 44px touch floor with a focus ring', () => {
+    renderLogin();
+    const guest = screen.getByRole('button', { name: 'Lanjut sebagai tamu' });
+    expect(guest.className).toContain('min-h-[44px]');
+    expect(guest.className).toContain('focus-visible:ring-2');
+    expect(guest.className).toContain('text-sm');
   });
 });
 

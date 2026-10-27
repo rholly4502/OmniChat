@@ -6,8 +6,12 @@ export interface AuthGate {
   locked: boolean;
   busy: boolean;
   error: string | null;
+  /** True when the user entered as an anonymous guest (no API key). */
+  isGuest: boolean;
   /** Verifies `key`, stores it on success, and unlocks the workspace. */
   attemptLogin: (key: string) => Promise<boolean>;
+  /** Enters the workspace as an anonymous guest without storing a key. */
+  enterGuest: () => void;
   /** Clears the stored credential and returns to the login screen. */
   logout: () => void;
 }
@@ -26,6 +30,7 @@ export function useAuthGate(apiKey: string, setApiKey: (value: string) => void):
   const [locked, setLocked] = useState(() => !apiKey);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -56,6 +61,7 @@ export function useAuthGate(apiKey: string, setApiKey: (value: string) => void):
     const result = await validateApiKey(key);
     if (result.ok) {
       setApiKey(key);
+      setIsGuest(false);
       setLocked(false);
       setBusy(false);
       return true;
@@ -66,11 +72,18 @@ export function useAuthGate(apiKey: string, setApiKey: (value: string) => void):
     return false;
   }
 
+  function enterGuest() {
+    setIsGuest(true);
+    setLocked(false);
+    setError(null);
+  }
+
   function logout() {
     setApiKey('');
+    setIsGuest(false);
     setLocked(true);
     setError(null);
   }
 
-  return { locked, busy, error, attemptLogin, logout };
+  return { locked, busy, error, isGuest, attemptLogin, enterGuest, logout };
 }

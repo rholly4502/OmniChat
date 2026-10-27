@@ -527,4 +527,28 @@ describe('App', () => {
     expect(sidebar?.className).toContain('translate-x-0');
   });
 
+  // ─── Guest mode ───────────────────────────────────────────
+
+  it('guest entry shows a sidebarless workspace with a logout button', async () => {
+    localStorage.removeItem('omnichat_api_key');
+    setupFetchMock();
+    render(<App />);
+
+    // Login screen → guest entry
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut sebagai tamu' }));
+
+    // Guest workspace: logout present, hamburger/sidebar absent
+    expect(screen.getByRole('button', { name: 'Keluar' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Open menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+  });
+
+  it('guest workspace never offers the agent mode toggle', () => {
+    localStorage.removeItem('omnichat_api_key');
+    setupFetchMock();
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut sebagai tamu' }));
+    expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
+  });
+
 });

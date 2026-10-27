@@ -5,6 +5,8 @@ interface LoginScreenProps {
   onSubmit: (key: string) => Promise<boolean>;
   busy: boolean;
   error: string | null;
+  /** Enters the workspace as an anonymous guest (no API key, direct LLM only). */
+  onEnterGuest: () => void;
 }
 
 /**
@@ -13,7 +15,7 @@ interface LoginScreenProps {
  * loud colours — the only chromatic note is a faint teal used purely to signal
  * focus.
  */
-export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps) {
+export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: LoginScreenProps) {
   const [key, setKey] = useState('');
   const [reveal, setReveal] = useState(false);
 
@@ -88,6 +90,14 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
             className="mt-5 w-full min-h-[44px] rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60"
           >
             {busy ? 'Memverifikasi…' : 'Masuk'}
+          </button>
+
+          <button
+            type="button"
+            onClick={onEnterGuest}
+            className="mt-3 w-full min-h-[44px] rounded-xl border border-white/10 bg-transparent px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60"
+          >
+            Lanjut sebagai tamu
           </button>
         </form>
 

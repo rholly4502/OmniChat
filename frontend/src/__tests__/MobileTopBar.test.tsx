@@ -59,4 +59,28 @@ describe('MobileTopBar', () => {
     const { container } = renderBar();
     expect((container.firstElementChild as HTMLElement).className).toContain('md:hidden');
   });
+
+  it('guest variant shows a logout button and no hamburger', () => {
+    const onLogout = vi.fn();
+    renderBar({ isGuest: true, onLogout });
+    expect(screen.getByRole('button', { name: 'Keluar' })).toBeInTheDocument();
+    expect(screen.queryByLabelText('Open menu')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Keluar' }));
+    expect(onLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it('guest variant advertises direct mode and never the agent badge', () => {
+    renderBar({ isGuest: true, useAgent: true });
+    expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
+    expect(screen.queryByText('Agent')).not.toBeInTheDocument();
+  });
+
+  it('guest variant keeps the logout control at the 44px touch floor', () => {
+    renderBar({ isGuest: true });
+    const logout = screen.getByRole('button', { name: 'Keluar' });
+    expect(logout.className).toContain('min-h-[44px]');
+    expect(logout.className).toContain('min-w-[44px]');
+    expect(logout.className).toContain('focus-visible:ring-2');
+    expect(logout.className).toContain('text-sm');
+  });
 });

@@ -3,14 +3,18 @@ import { BotIcon, BoltIcon } from './Icons';
 
 /** Props accepted by {@link MobileTopBar}. */
 export interface MobileTopBarProps {
-  /** true while the drawer is open (drives `aria-expanded`). */
-  sidebarOpen: boolean;
-  /** Open the sidebar drawer. */
-  onOpenSidebar: () => void;
+  /** true while the drawer is open (drives `aria-expanded`). Only used in the admin workspace. */
+  sidebarOpen?: boolean;
+  /** Open the sidebar drawer. Only used in the admin workspace. */
+  onOpenSidebar?: () => void;
   /** Agent (Hermes bridge) vs Direct (LLM) mode. */
   useAgent: boolean;
-  /** Focus target the drawer hook restores when the drawer closes. */
-  menuButtonRef: RefObject<HTMLButtonElement | null>;
+  /** Focus target the drawer hook restores when the drawer closes. Only used in the admin workspace. */
+  menuButtonRef?: RefObject<HTMLButtonElement | null>;
+  /** Anonymous guest mode: no sidebar, forced direct, exposes logout. */
+  isGuest?: boolean;
+  /** Return to the login screen from a guest session. */
+  onLogout?: () => void;
 }
 
 /**
@@ -20,7 +24,25 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout }: MobileTopBarProps) {
+  if (isGuest) {
+    return (
+      <div className="flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
+        <span className="text-sm font-semibold text-cyan-400">OmniChat</span>
+        <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-slate-300">
+          <BoltIcon size={14} /> Guest · Direct
+        </span>
+        <button
+          onClick={onLogout}
+          aria-label="Keluar"
+          className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-sm text-slate-400 transition hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+        >
+          Keluar
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-slate-800 bg-slate-950" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
       <button

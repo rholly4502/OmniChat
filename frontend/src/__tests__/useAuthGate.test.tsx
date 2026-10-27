@@ -76,4 +76,40 @@ describe('useAuthGate', () => {
     expect(setApiKey).toHaveBeenCalledWith('');
     expect(result.current.locked).toBe(true);
   });
+
+  it('enterGuest unlocks the workspace without storing a key', () => {
+    const setApiKey = vi.fn();
+    const { result } = renderHook(() => useAuthGate('', setApiKey));
+
+    act(() => result.current.enterGuest());
+
+    expect(result.current.isGuest).toBe(true);
+    expect(result.current.locked).toBe(false);
+    expect(setApiKey).not.toHaveBeenCalled();
+  });
+
+  it('guest logout returns to the login screen and clears the guest flag', () => {
+    const setApiKey = vi.fn();
+    const { result } = renderHook(() => useAuthGate('', setApiKey));
+
+    act(() => result.current.enterGuest());
+    act(() => result.current.logout());
+
+    expect(result.current.isGuest).toBe(false);
+    expect(result.current.locked).toBe(true);
+  });
+
+  it('successful attemptLogin clears the guest flag', async () => {
+    mockedValidate.mockResolvedValue({ ok: true });
+    const setApiKey = vi.fn();
+    const { result } = renderHook(() => useAuthGate('', setApiKey));
+    act(() => result.current.enterGuest());
+
+    await act(async () => {
+      await result.current.attemptLogin('sk-new');
+    });
+
+    expect(result.current.isGuest).toBe(false);
+    expect(result.current.locked).toBe(false);
+  });
 });
