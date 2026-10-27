@@ -59,5 +59,15 @@ describe('LoginScreen', () => {
     expect(toggle.className).toContain('text-sm');
     expect(toggle.className).not.toContain('text-xs');
   });
+
+  it('shows a visible focus ring on every interactive control', () => {
+    renderLogin();
+    const reveal = screen.getByRole('button', { name: 'Tampilkan kunci' });
+    const submit = screen.getByRole('button', { name: 'Masuk' });
+    const input = screen.getByLabelText('API key');
+    expect(reveal.className).toContain('focus-visible:ring-2');
+    expect(submit.className).toContain('focus-visible:ring-2');
+    expect(input.className).toContain('focus-visible:ring-2');
+  });
 });
 

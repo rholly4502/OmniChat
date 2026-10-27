@@ -62,13 +62,13 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder="Masukkan API key Anda"
-            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-base md:text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-teal-400/40 focus:ring-2 focus:ring-teal-400/10"
+            className="mt-2 w-full rounded-xl border border-white/10 bg-black/30 px-3.5 py-2.5 text-base md:text-sm text-slate-100 outline-none transition placeholder:text-slate-400 focus:border-teal-400/40 focus-visible:ring-2 focus-visible:ring-teal-400/60"
           />
 
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
-            className="mt-1 inline-flex min-h-[44px] items-center text-sm text-slate-400 transition hover:text-slate-300"
+            className="mt-1 inline-flex min-h-[44px] items-center text-sm text-slate-400 transition hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60"
           >
             {reveal ? 'Tutup' : 'Tampilkan'} kunci
           </button>
@@ -85,7 +85,7 @@ export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps)
           <button
             type="submit"
             disabled={busy || !key.trim()}
-            className="mt-5 w-full min-h-[44px] rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-5 w-full min-h-[44px] rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-medium text-slate-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60"
           >
             {busy ? 'Memverifikasi…' : 'Masuk'}
           </button>
