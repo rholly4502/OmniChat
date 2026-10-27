@@ -15,6 +15,12 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
 
     public DbSet<Message> Messages => Set<Message>();
 
+    /// <summary>Import ledger rows for the Pengeluaran tab (read-only today).</summary>
+    public DbSet<Expense> Expenses => Set<Expense>();
+
+    /// <summary>Monthly budget/saving targets for the Pengeluaran tab.</summary>
+    public DbSet<ExpenseTarget> ExpenseTargets => Set<ExpenseTarget>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // SQLite has no native DateTimeOffset type and rejects it in ORDER BY, which is
@@ -51,5 +57,27 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
             .WithMany(c => c.Messages)
             .HasForeignKey(m => m.ConversationId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Pengeluaran: ordered list for a month (newest first) plus a dedup index on the
+        // ledger's SourceId so re-running the importer skips rows it already inserted.
+        var expense = modelBuilder.Entity<Expense>();
+        expense.ToTable("Expenses");
+        expense.HasKey(e => e.Id);
+        expense.Property(e => e.Tanggal);
+        expense.Property(e => e.Waktu).IsRequired().HasMaxLength(8);
+        expense.Property(e => e.Kategori).IsRequired().HasMaxLength(32);
+        expense.Property(e => e.Keterangan).IsRequired().HasMaxLength(500);
+        expense.Property(e => e.Nominal);
+        expense.HasIndex(e => e.SourceId);
+        expense.HasIndex(e => new { e.Tanggal, e.Id });
+
+        var expenseTarget = modelBuilder.Entity<ExpenseTarget>();
+        expenseTarget.ToTable("ExpenseTargets");
+        expenseTarget.HasKey(et => et.Id);
+        expenseTarget.Property(et => et.Month).IsRequired().HasMaxLength(7);
+        expenseTarget.Property(et => et.TargetNabung);
+        expenseTarget.Property(et => et.Anggaran);
+        expenseTarget.Property(et => et.Catatan).HasMaxLength(500);
+        expenseTarget.HasIndex(et => et.Month).IsUnique();
     }
 }

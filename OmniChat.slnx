@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/OmniChat.Api/OmniChat.Api.csproj" />
+    <Project Path="src/OmniChat.Seeder/OmniChat.Seeder.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OmniChat.Tests/OmniChat.Tests.csproj" />

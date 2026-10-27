@@ -32,6 +32,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddDbContext<ChatDbContext>(builder => builder.UseSqlite(connectionString));
         services.AddScoped<IChatHistoryRepository, ChatHistoryRepository>();
         services.AddScoped<IChatTurnRecorder, ChatTurnRecorder>();
+        services.AddScoped<IExpenseRepository, ExpenseRepository>();
         // Creates the schema on boot. Logged, not fatal: chat streaming works without history.
         services.AddHostedService<PersistenceInitializer>();
         return services;
