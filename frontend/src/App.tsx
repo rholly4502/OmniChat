@@ -32,7 +32,7 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [apiKey, setApiKey] = useApiKey();
-  const { locked, busy, error, isGuest, attemptLogin, enterGuest, logout } = useAuthGate(apiKey, setApiKey);
+  const { locked, busy, error, attemptLogin, logout } = useAuthGate(apiKey, setApiKey);
   const scrollRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -146,7 +146,7 @@ export default function App() {
   // A valid credential is the front door of the workspace: without one there is
   // nothing meaningful to render, so lock the whole surface behind the login form.
   if (locked) {
-    return <LoginScreen onSubmit={attemptLogin} busy={busy} error={error} onGuest={enterGuest} />;
+    return <LoginScreen onSubmit={attemptLogin} busy={busy} error={error} />;
   }
 
   return (
@@ -156,9 +156,8 @@ export default function App() {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
-      {!isGuest && sidebarOpen && <SidebarOverlay onClose={closeDrawer} />}
+      {sidebarOpen && <SidebarOverlay onClose={closeDrawer} />}
 
-      {!isGuest && (
       <Sidebar
         sidebarRef={sidebarRef}
         open={sidebarOpen}
@@ -184,7 +183,6 @@ export default function App() {
         onTemperatureChange={updateTemperature}
         onMaxTokensChange={updateMaxTokens}
       />
-      )}
 
       <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
         <MobileTopBar
@@ -192,7 +190,6 @@ export default function App() {
           onOpenSidebar={openDrawer}
           useAgent={useAgent}
           menuButtonRef={menuButtonRef}
-          isGuest={isGuest}
         />
 
         <MessageList

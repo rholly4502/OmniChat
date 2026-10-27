@@ -5,8 +5,6 @@ interface LoginScreenProps {
   onSubmit: (key: string) => Promise<boolean>;
   busy: boolean;
   error: string | null;
-  /** Enter the workspace as an anonymous guest (no key). */
-  onGuest?: () => void;
 }
 
 /**
@@ -15,7 +13,7 @@ interface LoginScreenProps {
  * loud colours — the only chromatic note is a faint teal used purely to signal
  * focus.
  */
-export default function LoginScreen({ onSubmit, busy, error, onGuest }: LoginScreenProps) {
+export default function LoginScreen({ onSubmit, busy, error }: LoginScreenProps) {
   const [key, setKey] = useState('');
   const [reveal, setReveal] = useState(false);
 
@@ -93,15 +91,6 @@ export default function LoginScreen({ onSubmit, busy, error, onGuest }: LoginScr
           </button>
         </form>
 
-        {onGuest && (
-          <button
-            type="button"
-            onClick={onGuest}
-            className="mt-3 w-full min-h-[44px] rounded-xl border border-white/10 px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-500 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/60"
-          >
-            Lanjut sebagai tamu
-          </button>
-        )}
 
         <p className="mt-6 text-center text-xs leading-relaxed text-slate-400">
           Kunci hanya disimpan di peramban Anda

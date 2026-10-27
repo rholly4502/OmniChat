@@ -103,7 +103,7 @@ public class JwtAuthenticationMiddlewareTests
     {
         var called = false;
         var mw = Middleware(() => called = true, enabled: true);
-        var ctx = Context("/api/conversations");
+        var ctx = Context("/api/chat/stream");
 
         await mw.InvokeAsync(ctx);
 

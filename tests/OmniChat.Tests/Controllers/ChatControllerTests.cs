@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using OmniChat.Api.Controllers;
-using OmniChat.Api.Infrastructure.Middleware;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
 using OmniChat.Infrastructure.Services;
@@ -35,15 +34,12 @@ public class ChatControllerTests
             NullLogger<ChatController>.Instance);
 
         // Set up a real HttpContext for SSE streaming
-        var httpContext = new DefaultHttpContext
-        {
-            Response = { Body = new MemoryStream() }
-        };
-        httpContext.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
-
         _controller.ControllerContext = new ControllerContext
         {
-            HttpContext = httpContext
+            HttpContext = new DefaultHttpContext
+            {
+                Response = { Body = new MemoryStream() }
+            }
         };
     }
 

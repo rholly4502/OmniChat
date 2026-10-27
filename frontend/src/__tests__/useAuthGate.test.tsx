@@ -76,26 +76,4 @@ describe('useAuthGate', () => {
     expect(setApiKey).toHaveBeenCalledWith('');
     expect(result.current.locked).toBe(true);
   });
-
-  it('enterGuest unlocks without storing a key', () => {
-    const setApiKey = vi.fn();
-    const { result } = renderHook(() => useAuthGate('', setApiKey));
-
-    act(() => result.current.enterGuest());
-
-    expect(result.current.locked).toBe(false);
-    expect(result.current.isGuest).toBe(true);
-    expect(setApiKey).not.toHaveBeenCalled();
-  });
-
-  it('logout from guest returns to the login screen', () => {
-    const setApiKey = vi.fn();
-    const { result } = renderHook(() => useAuthGate('', setApiKey));
-
-    act(() => result.current.enterGuest());
-    act(() => result.current.logout());
-
-    expect(result.current.locked).toBe(true);
-    expect(result.current.isGuest).toBe(false);
-  });
 });

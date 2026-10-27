@@ -26,19 +26,9 @@ public class ApiKeyIntegrationTests : IClassFixture<WebApplicationFactory<Progra
         new("""{"model":"m","messages":[{"role":"user","content":"hi"}]}""", Encoding.UTF8, "application/json");
 
     [Fact]
-    public async Task Chat_WithoutApiKey_GuestIsAllowed()
+    public async Task Chat_WithoutApiKey_Returns401()
     {
-        // The chat stream is guest-accessible: an anonymous caller passes the middleware
-        // and is resolved as a guest, so it reaches the controller instead of 401.
         var response = await SecuredClient().PostAsync("/api/chat/stream", ChatBody());
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-    }
-
-    [Fact]
-    public async Task Conversations_WithoutApiKey_Returns401()
-    {
-        // History is not guest-accessible: a guest must not read stored conversations.
-        var response = await SecuredClient().GetAsync("/api/conversations");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
