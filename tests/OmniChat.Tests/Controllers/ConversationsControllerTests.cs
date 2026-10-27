@@ -4,6 +4,7 @@ using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Api.Infrastructure.Auth;
+using OmniChat.Api.Infrastructure.Middleware;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
@@ -24,11 +25,16 @@ public class ConversationsControllerTests
     {
         _accessPolicy.Setup(policy => policy.Resolve(It.IsAny<HttpContext>())).Returns(access);
 
+        // Mark the context as API-key authenticated so ChatIdentity.ResolveUserId returns
+        // AdminUserId (the shared operator tag) for admin callers.
+        var context = new DefaultHttpContext { Request = { Path = "/api/conversations" } };
+        context.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
+
         return new ConversationsController(_repository.Object, _accessPolicy.Object)
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext { Request = { Path = "/api/conversations" } },
+                HttpContext = context,
             },
         };
     }

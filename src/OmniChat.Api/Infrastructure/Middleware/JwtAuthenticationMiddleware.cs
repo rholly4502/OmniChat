@@ -85,6 +85,14 @@ public sealed class JwtAuthenticationMiddleware
             return;
         }
 
+        // No bearer token and no API key configured: a guest-accessible route is allowed
+        // through anonymously; everything else is rejected.
+        if (GuestExemptPaths.IsGuestAllowed(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
         _logger.LogWarning("Rejected {Method} {Path}: missing bearer token.",
             context.Request.Method, context.Request.Path);
         await RejectAsync(context);

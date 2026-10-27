@@ -32,25 +32,36 @@ public class ChatIdentityTests
     {
         // An API key is shared, so it carries no identity. Those callers are the operator and
         // own the "admin" history rather than a per-token one.
-        Assert.Equal(ChatIdentity.AdminUserId, ChatIdentity.ResolveUserId(new DefaultHttpContext()));
+        var context = new DefaultHttpContext();
+        context.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
+
+        Assert.Equal(ChatIdentity.AdminUserId, ChatIdentity.ResolveUserId(context));
     }
 
     [Fact]
-    public void ResolveUserId_FallsBackToAdmin_WhenThePrincipalHasNoSubject()
+    public void ResolveUserId_FallsBackToGuest_ForAnonymousCallers()
     {
+        // An anonymous caller with no credentials is a guest, filed under the shared guest tag.
+        Assert.Equal(ChatIdentity.GuestUserId, ChatIdentity.ResolveUserId(new DefaultHttpContext()));
+    }
+
+    [Fact]
+    public void ResolveUserId_FallsBackToGuest_WhenThePrincipalHasNoSubject()
+    {
+        // A JWT with no subject is not identifiable, so it files under the guest tag.
         var context = WithPrincipal(new Claim("scope", "chat"));
 
-        Assert.Equal(ChatIdentity.AdminUserId, ChatIdentity.ResolveUserId(context));
+        Assert.Equal(ChatIdentity.GuestUserId, ChatIdentity.ResolveUserId(context));
     }
 
     [Fact]
-    public void ResolveUserId_FallsBackToAdmin_WhenTheSubjectIsBlank()
+    public void ResolveUserId_FallsBackToGuest_WhenTheSubjectIsBlank()
     {
         // A blank owner would make every repository call throw, turning each turn into a
-        // warning instead of a recorded message.
+        // warning instead of a recorded message. A guest tag still keeps the row writable.
         var context = WithPrincipal(new Claim("sub", "   "));
 
-        Assert.Equal(ChatIdentity.AdminUserId, ChatIdentity.ResolveUserId(context));
+        Assert.Equal(ChatIdentity.GuestUserId, ChatIdentity.ResolveUserId(context));
     }
 
     [Fact]

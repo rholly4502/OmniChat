@@ -10,9 +10,18 @@ namespace OmniChat.Api.Infrastructure.Middleware;
 /// When no key is configured the middleware is a pass-through, so local development and
 /// the test suite run without credentials.
 /// </summary>
+/// <remarks>
+/// Guest-accessible routes (<see cref="GuestExemptPaths"/>) are allowed through without a
+/// key; they resolve to <see cref="ChatAccess.Guest"/> downstream. Every other route still
+/// requires a valid key. A valid key marks the request as API-key-authenticated so
+/// <see cref="ChatIdentity"/> can tell an operator from an anonymous guest.
+/// </remarks>
 public sealed class ApiKeyMiddleware
 {
     public const string HeaderName = "X-Api-Key";
+
+    /// <summary>HttpContext item set when the request was authenticated by a valid API key.</summary>
+    public const string ApiKeyAuthenticatedItemKey = "OmniChat.ApiKeyAuthenticated";
 
     private readonly RequestDelegate _next;
     private readonly ILogger<ApiKeyMiddleware> _logger;
@@ -52,17 +61,26 @@ public sealed class ApiKeyMiddleware
             ? header.ToString()
             : null;
 
-        if (provided is null || !FixedTimeEquals(provided, _configuredApiKey))
+        if (provided is not null && FixedTimeEquals(provided, _configuredApiKey))
         {
-            _logger.LogWarning("Rejected {Method} {Path}: missing or invalid API key.",
-                context.Request.Method, context.Request.Path);
-
-            await ProblemDetailsResponse.WriteUnauthorizedAsync(
-                context, "Missing or invalid API key.", context.RequestAborted);
+            context.Items[ApiKeyAuthenticatedItemKey] = true;
+            await _next(context);
             return;
         }
 
-        await _next(context);
+        // No valid key. A guest-accessible route is allowed through anonymously; anything
+        // else is protected and gets a 401.
+        if (GuestExemptPaths.IsGuestAllowed(context.Request.Path))
+        {
+            await _next(context);
+            return;
+        }
+
+        _logger.LogWarning("Rejected {Method} {Path}: missing or invalid API key.",
+            context.Request.Method, context.Request.Path);
+
+        await ProblemDetailsResponse.WriteUnauthorizedAsync(
+            context, "Missing or invalid API key.", context.RequestAborted);
     }
 
     private static bool FixedTimeEquals(string provided, string expected)

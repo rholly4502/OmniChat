@@ -49,10 +49,12 @@ public class JwtAuthIntegrationTests : IDisposable
         new("""{"model":"m","messages":[{"role":"user","content":"hi"}]}""", Encoding.UTF8, "application/json");
 
     [Fact]
-    public async Task Chat_WithoutToken_Returns401()
+    public async Task Chat_WithoutToken_GuestIsAllowed()
     {
+        // The chat stream is guest-accessible: with JWT enabled but no token and no API key,
+        // an anonymous caller still reaches the controller as a guest.
         var response = await Client().PostAsync("/api/chat/stream", ChatBody());
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

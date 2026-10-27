@@ -30,8 +30,18 @@ public class ChatAccessTests
     [Fact]
     public void ResolveAccess_GrantsAdmin_ToApiKeyCallers()
     {
-        // No validated JWT means the shared operator key let the request through.
-        Assert.Equal(ChatAccess.Admin, ChatIdentity.ResolveAccess(new DefaultHttpContext(), []));
+        // The shared operator key is marked by ApiKeyMiddleware before controllers run.
+        var context = new DefaultHttpContext();
+        context.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
+
+        Assert.Equal(ChatAccess.Admin, ChatIdentity.ResolveAccess(context, []));
+    }
+
+    [Fact]
+    public void ResolveAccess_GrantsGuest_ToAnonymousCallers()
+    {
+        // No JWT and no API key: an anonymous guest may chat but never read history.
+        Assert.Equal(ChatAccess.Guest, ChatIdentity.ResolveAccess(new DefaultHttpContext(), []));
     }
 
     [Fact]
@@ -130,7 +140,10 @@ public class ChatAccessTests
 
         Assert.Equal(ChatAccess.Admin, policy.Resolve(WithSubject(new Claim("sub", "alice"))));
         Assert.Equal(ChatAccess.Guest, policy.Resolve(WithSubject(new Claim("sub", "mallory"))));
-        Assert.Equal(ChatAccess.Admin, policy.Resolve(new DefaultHttpContext()));
+        var apiKeyContext = new DefaultHttpContext();
+        apiKeyContext.Items[ApiKeyMiddleware.ApiKeyAuthenticatedItemKey] = true;
+        Assert.Equal(ChatAccess.Admin, policy.Resolve(apiKeyContext));
+        Assert.Equal(ChatAccess.Guest, policy.Resolve(new DefaultHttpContext()));
     }
 
     [Fact]

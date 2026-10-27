@@ -53,6 +53,18 @@ describe('LoginScreen', () => {
     expect(input).toHaveAttribute('type', 'text');
   });
 
+  it('calls onGuest when the guest button is pressed', () => {
+    const onGuest = vi.fn();
+    renderLogin({ onGuest });
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut sebagai tamu' }));
+    expect(onGuest).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render the guest button when onGuest is absent', () => {
+    renderLogin({ onGuest: undefined });
+    expect(screen.queryByRole('button', { name: 'Lanjut sebagai tamu' })).not.toBeInTheDocument();
+  });
+
   it('keeps the reveal toggle at the 14px control floor', () => {
     renderLogin();
     const toggle = screen.getByRole('button', { name: 'Tampilkan kunci' });

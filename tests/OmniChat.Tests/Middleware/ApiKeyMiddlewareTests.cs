@@ -42,7 +42,7 @@ public class ApiKeyMiddlewareTests
         var nextCalled = false;
         var mw = new ApiKeyMiddleware(_ => { nextCalled = true; return Task.CompletedTask; },
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream");
+        var ctx = Context("/api/conversations");
 
         await mw.InvokeAsync(ctx);
 
@@ -55,7 +55,7 @@ public class ApiKeyMiddlewareTests
     {
         var mw = new ApiKeyMiddleware(_ => Task.CompletedTask,
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream", "wrong");
+        var ctx = Context("/api/conversations", "wrong");
 
         await mw.InvokeAsync(ctx);
 
@@ -91,7 +91,7 @@ public class ApiKeyMiddlewareTests
     {
         var mw = new ApiKeyMiddleware(_ => Task.CompletedTask,
             NullLogger<ApiKeyMiddleware>.Instance, Config("secret-key"));
-        var ctx = Context("/api/chat/stream");
+        var ctx = Context("/api/conversations");
 
         await mw.InvokeAsync(ctx);
 
