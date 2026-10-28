@@ -1,9 +1,10 @@
 # One-shot, operator-triggered seed for the Pengeluaran (expenses) tab.
 # Manual only (workflow_dispatch) - never runs on push. It:
 #   1. builds the OmniChat.Seeder on CI,
-#   2. ships the binary + ledger (passed via encrypted secrets) to the VPS,
+#   2. ships the binary + ledger to the VPS,
 #   3. runs the seeder against the SQLite volume shared with the backend,
 #   4. verifies the deployed API serves the seeded rows (via the VPS .env key).
+# The ledger files below mirror /root/Tools-Private/Pengeluaran (source of truth).
 # Idempotent: re-running skips rows whose SourceId already exists and upserts targets.
 name: Seed Expenses
 
@@ -37,17 +38,35 @@ jobs:
       - name: Publish seeder
         run: dotnet publish src/OmniChat.Seeder -c Release -o seeder-out
 
-      - name: Stage ledger from secrets
-        env:
-          LEDGER_CSV: ${{ secrets.SEED_LEDGER_CSV_2026_10 }}
-          TARGET_JSON: ${{ secrets.SEED_TARGET_JSON }}
+      - name: Stage ledger
         run: |
           set -euo pipefail
           mkdir -p ledger
-          printf '%s\n' "$LEDGER_CSV" > ledger/2026-10.csv
-          printf '%s\n' "$TARGET_JSON" > ledger/target.json
-          echo "--- ledger listing ---"; ls -la ledger
-          echo "--- csv row count (expect 4 incl header) ---"; wc -l < ledger/2026-10.csv
+          cat > ledger/2026-10.csv <<'CSVEOF'
+          tanggal,waktu,kategori,keterangan,nominal,id
+          2026-10-28,08:43,Lain,Gaji (pemasukan) 7jt,7000000,47467a
+          2026-10-28,08:59,Transport,Top up OVO,100000,dfb156
+          2026-10-28,12:32,Makan,Nasi goreng,15000,a03b08
+          CSVEOF
+          cat > ledger/target.json <<'JSONEOF'
+          {
+            "2026-10": {
+              "target_nabung": 467000,
+              "anggaran": 520000,
+              "catatan": "Bulan parsial — mulai 28 Okt (4 hari). Dihitung dari target bulanan 3.500.000 / 3.900.000 secara prorata 4/30."
+            },
+            "2026-11": {
+              "target_nabung": 3500000,
+              "anggaran": 3900000,
+              "catatan": "Bulan penuh. Gaji 7.400.000 - anggaran 3.900.000 = target nabung 3.500.000."
+            }
+          }
+          JSONEOF
+          echo "--- csv lines (expect 4) ---"; wc -l < ledger/2026-10.csv
+          echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
+          python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
+          test "$(wc -l < ledger/2026-10.csv)" -eq 4
+          test "$(wc -c < ledger/target.json)" -gt 100
 
       - name: Upload seeder + ledger to VPS
         uses: appleboy/scp-action@v0.1.7
