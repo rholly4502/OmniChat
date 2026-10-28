@@ -1,0 +1,108 @@
+# One-shot, operator-triggered seed for the Pengeluaran (expenses) tab.
+# Manual only (workflow_dispatch) - never runs on push. It:
+#   1. builds the OmniChat.Seeder on CI,
+#   2. ships the binary + ledger (passed via encrypted secrets) to the VPS,
+#   3. runs the seeder against the SQLite volume shared with the backend,
+#   4. verifies the deployed API serves the seeded rows (via the VPS .env key).
+# Idempotent: re-running skips rows whose SourceId already exists and upserts targets.
+name: Seed Expenses
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - id: setup-dotnet
+        uses: actions/setup-dotnet@v5
+        continue-on-error: true
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install .NET SDK from pinned mirror
+        if: steps.setup-dotnet.outcome == 'failure'
+        run: |
+          set -euo pipefail
+          curl -sSL --retry 3 --retry-delay 5 \
+            https://builds.dotnet.microsoft.com/dotnet/Sdk/10.0.106/dotnet-sdk-10.0.106-linux-x64.tar.gz \
+            -o /tmp/dotnet-sdk.tar.gz
+          sudo mkdir -p /usr/share/dotnet
+          sudo tar xzf /tmp/dotnet-sdk.tar.gz -C /usr/share/dotnet
+          sudo ln -sf /usr/share/dotnet/dotnet /usr/local/bin/dotnet
+          dotnet --version
+
+      - name: Publish seeder
+        run: dotnet publish src/OmniChat.Seeder -c Release -o seeder-out
+
+      - name: Stage ledger from secrets
+        env:
+          LEDGER_CSV: ${{ secrets.SEED_LEDGER_CSV_2026_10 }}
+          TARGET_JSON: ${{ secrets.SEED_TARGET_JSON }}
+        run: |
+          set -euo pipefail
+          mkdir -p ledger
+          printf '%s\n' "$LEDGER_CSV" > ledger/2026-10.csv
+          printf '%s\n' "$TARGET_JSON" > ledger/target.json
+          echo "--- ledger listing ---"; ls -la ledger
+          echo "--- csv row count (expect 4 incl header) ---"; wc -l < ledger/2026-10.csv
+
+      - name: Upload seeder + ledger to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "seeder-out,ledger"
+          target: /opt/OmniChat/seed-staging
+
+      - name: Run seeder against live DB volume + verify API
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script: |
+            set -euo pipefail
+
+            BACKEND="$(docker ps -qf 'label=com.docker.compose.service=backend' | head -n1)"
+            if [ -z "$BACKEND" ]; then BACKEND="$(docker ps -qf 'name=backend' | head -n1)"; fi
+            [ -n "$BACKEND" ] || { echo "ERROR: backend container not found"; exit 1; }
+
+            VOL="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/data"}}{{.Name}}{{end}}{{end}}' "$BACKEND")"
+            [ -n "$VOL" ] || { echo "ERROR: no /data named-volume mount on backend"; docker inspect "$BACKEND" | tail -40; exit 1; }
+
+            IMG="$(docker inspect --format '{{.Config.Image}}' "$BACKEND")"
+            chmod -R a+rX /opt/OmniChat/seed-staging
+
+            echo "Backend image: $IMG"
+            echo "SQLite volume: $VOL"
+
+            docker run --rm \
+              -v "$VOL":/data \
+              -v /opt/OmniChat/seed-staging/seeder-out:/seeder:ro \
+              -v /opt/OmniChat/seed-staging/ledger:/ledger:ro \
+              --entrypoint dotnet \
+              "$IMG" /seeder/OmniChat.Seeder.dll \
+                --db "Data Source=/data/omnichat.db" --path /ledger
+
+            # Authoritative end-to-end check: the deployed backend should now serve
+            # the seeded rows for 2026-10. Pull the real key from the VPS .env.
+            echo "=== API verification (from VPS host) ==="
+            KEY="$(grep -E '^Security__ApiKey=' /opt/OmniChat/.env | cut -d= -f2- || true)"
+            if [ -z "$KEY" ]; then
+              echo "WARNING: could not read Security__ApiKey from /opt/OmniChat/.env; skipping authed check"
+            else
+              echo "-- /api/expenses without key (expect 401) --"
+              curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
+              echo "-- /api/expenses?month=2026-10 (expect 200 + 3 items) --"
+              curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
+              echo
+              echo "-- /api/expenses/summary?month=2026-10 (expect 200 + totals) --"
+              curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses/summary?month=2026-10"
+              echo
+            fi
