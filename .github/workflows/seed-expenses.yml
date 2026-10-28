@@ -66,10 +66,10 @@ jobs:
             }
           }
           JSONEOF
-          echo "--- csv lines (expect 4) ---"; wc -l < ledger/2026-10.csv
+          echo "--- csv lines (expect 8) ---"; wc -l < ledger/2026-10.csv
           echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
           python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
-          test "$(wc -l < ledger/2026-10.csv)" -eq 4
+          test "$(wc -l < ledger/2026-10.csv)" -eq 8
           test "$(wc -c < ledger/target.json)" -gt 100
 
       - name: Upload seeder + ledger to VPS
@@ -122,7 +122,7 @@ jobs:
             else
               echo "-- /api/expenses without key (expect 401) --"
               curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
-              echo "-- /api/expenses?month=2026-10 (expect 200 + 3 items) --"
+              echo "-- /api/expenses?month=2026-10 (expect 200 + 7 items) --"
               curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
               echo
               echo "-- /api/expenses/summary?month=2026-10 (expect 200 + totals) --"
