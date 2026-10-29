@@ -204,3 +204,34 @@ body {
 
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
+
+/* ============================================================================
+   PIXEL2 SCROLLBARS (chill-vibe)
+   Chunky square thumbs with hard offset shadows match the pixel-art buttons:
+   no rounded corners, no soft gradients. Applied globally so every scroll
+   region (sidebar sessions, transcript, code blocks) stays consistent.
+   WebKit + Firefox both get the same hard-edge treatment.
+   ========================================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-chill-elevated) var(--color-chill-border);
+}
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--color-chill-border);
+  border: 2px solid var(--color-chill-bg);
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-chill-elevated);
+  border: 2px solid var(--color-chill-bg);
+  box-shadow: 2px 2px 0 0 rgb(0 0 0 / 0.35);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-chill-accent);
+}
+*::-webkit-scrollbar-corner {
+  background: var(--color-chill-bg);
+}
