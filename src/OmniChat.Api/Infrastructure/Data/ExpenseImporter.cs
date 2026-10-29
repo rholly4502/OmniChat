@@ -26,6 +26,9 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
     /// <summary>Csv file name carrying the monthly budget/saving target.</summary>
     public const string TargetFileName = "target.json";
 
+    /// <summary>Csv file holding income (pemasukan), excluded from expense import.</summary>
+    public const string IncomeFileName = "pemasukan.csv";
+
     public async Task<ExpenseImportResult> ImportDirectoryAsync(
         string directoryPath, CancellationToken cancellationToken)
     {
@@ -39,6 +42,12 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
 
         foreach (var csvPath in Directory.EnumerateFiles(directoryPath, "*.csv").OrderBy(p => p))
         {
+            // Pemasukan (income) is a separate ledger and must never be counted as an expense.
+            if (string.Equals(Path.GetFileName(csvPath), IncomeFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
             expenses.AddRange(ReadCsv(csvPath, skipped));
         }
 

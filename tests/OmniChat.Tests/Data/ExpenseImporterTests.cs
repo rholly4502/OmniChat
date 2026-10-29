@@ -27,6 +27,37 @@ public sealed class ExpenseImporterTests : IDisposable
         _importer = new ExpenseImporter(_repository);
     }
 
+    [Fact]
+    public async Task Import_excludes_income_file()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "2026-10.csv"),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n"
+            + "2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n");
+        // Pemasukan harus DILEWATI — tidak boleh jadi expense
+        File.WriteAllText(Path.Combine(dir, "pemasukan.csv"),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n"
+            + "2026-10-28,08:43,Lain,Gaji,7000000,zzz999\n");
+        File.WriteAllText(Path.Combine(dir, "target.json"), "{}");
+
+        try
+        {
+            var result = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            Assert.Equal(1, result.ExpensesInserted); // hanya expense, bukan gaji
+            Assert.Empty(result.SkippedLines);
+
+            var totals = await _repository.GetTotalsAsync("2026-10", CancellationToken.None);
+            Assert.Equal(20_000, totals.Total); // tidak termasuk 7jt
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+
     public void Dispose()
     {
         _db.Dispose();
