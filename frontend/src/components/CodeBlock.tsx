@@ -27,15 +27,15 @@ export function CodeBlock({ children }: { children?: ReactNode }) {
   }
 
   return (
-    <div className="relative group my-3 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/90 shadow-sm">
-      <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-xs text-slate-400 select-none">
-        <span className="font-mono text-xs font-semibold uppercase tracking-wider text-cyan-400">
+    <div className="relative group my-3 overflow-hidden border-2 border-chill-border bg-chill-surface pixel-shadow-sm">
+      <div className="flex items-center justify-between px-3.5 py-2 bg-chill-elevated border-b-2 border-chill-border text-xs text-chill-muted select-none">
+        <span className="font-mono text-xs font-semibold uppercase tracking-wider text-chill-accent">
           {language || 'code'}
         </span>
         <button
           type="button"
           onClick={handleCopy}
-          className="text-xs md:text-[11px] font-medium text-slate-400 hover:text-cyan-300 bg-slate-800/80 hover:bg-slate-800 rounded px-2.5 py-1.5 flex items-center gap-1.5 min-h-[44px] md:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 transition-colors"
+          className="text-xs md:text-[11px] font-medium text-chill-muted hover:text-chill-accent bg-chill-elevated hover:bg-chill-border border-2 border-chill-border rounded-none px-2.5 py-1.5 flex items-center gap-1.5 min-h-[44px] md:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition-colors pixel-shadow-sm"
           aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
         >
           {copied ? (
@@ -51,7 +51,7 @@ export function CodeBlock({ children }: { children?: ReactNode }) {
           )}
         </button>
       </div>
-      <pre ref={preRef} className="code-block-pre px-4 py-3 text-sm font-mono overflow-x-auto text-slate-100 leading-relaxed">{children}</pre>
+      <pre ref={preRef} className="code-block-pre px-4 py-3 text-sm font-mono overflow-x-auto text-chill-text leading-relaxed">{children}</pre>
     </div>
   );
 }
