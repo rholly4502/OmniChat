@@ -1,5 +1,6 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Data;
 
 namespace OmniChat.Tests.Data;
@@ -57,6 +58,49 @@ public sealed class ExpenseImporterTests : IDisposable
         }
     }
 
+
+    [Fact]
+    public async Task Import_self_heals_stale_income_expense()
+    {
+        // Simulasikan data lama: baris expense gaji 7jt sudah ada di DB (dari seed sebelum split)
+        var stale = new Expense
+        {
+            Tanggal = new DateOnly(2026, 10, 28),
+            Waktu = "08:43",
+            Kategori = "Lain",
+            Keterangan = "Gaji (pemasukan) 7jt",
+            Nominal = 7_000_000,
+            SourceId = "47467a",
+        };
+        _db.Expenses.Add(stale);
+        await _db.SaveChangesAsync();
+
+        var dir = Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "2026-10.csv"),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n"
+            + "2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n");
+        // Income ledger memuat SourceId yang sama => harus menghapus expense stale tersebut
+        File.WriteAllText(Path.Combine(dir, "pemasukan.csv"),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n"
+            + "2026-10-28,08:43,Lain,Gaji,7000000,47467a\n");
+        File.WriteAllText(Path.Combine(dir, "target.json"), "{}");
+
+        try
+        {
+            await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            var totals = await _repository.GetTotalsAsync("2026-10", CancellationToken.None);
+            Assert.Equal(20_000, totals.Total); // 7jt hilang, hanya warteg 20rb
+
+            var list = await _repository.ListAsync("2026-10", 1, 50, CancellationToken.None);
+            Assert.DoesNotContain(list, e => e.SourceId == "47467a");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 
     public void Dispose()
     {

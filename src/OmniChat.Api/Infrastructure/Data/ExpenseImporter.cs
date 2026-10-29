@@ -51,6 +51,16 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
             expenses.AddRange(ReadCsv(csvPath, skipped));
         }
 
+        // Self-healing: any expense row whose SourceId appears in the income ledger was
+        // mis-imported before the split and must be removed so income never counts toward
+        // spending. This keeps re-seeding safe even if a stale income row already exists.
+        var incomePath = Path.Combine(directoryPath, IncomeFileName);
+        if (File.Exists(incomePath))
+        {
+            var incomeSourceIds = ReadCsv(incomePath, skipped).Select(e => e.SourceId).Where(id => id is not null);
+            await repository.DeleteBySourceIdsAsync(incomeSourceIds!, cancellationToken);
+        }
+
         var inserted = await repository.InsertMissingExpensesAsync(expenses, cancellationToken);
 
         var targetsUpserted = 0;

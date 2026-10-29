@@ -44,13 +44,16 @@ jobs:
           mkdir -p ledger
           cat > ledger/2026-10.csv <<'CSVEOF'
           tanggal,waktu,kategori,keterangan,nominal,id
-          2026-10-28,08:43,Lain,Gaji (pemasukan) 7jt,7000000,47467a
           2026-10-28,08:59,Transport,Top up OVO,100000,dfb156
           2026-10-28,12:32,Makan,Nasi goreng,15000,a03b08
           2026-10-28,20:30,Belanja,"Belanja toko (9 item: telur, tissue, sabun, dll)",109000,f3f2bd
           2026-10-28,20:30,Makan,Bakso,20000,f1fa00
           2026-10-28,20:30,Makan,Mie ayam,13000,43213b
           2026-10-28,20:36,Hiburan,Netflix,60000,7786c6
+          CSVEOF
+          cat > ledger/pemasukan.csv <<'CSVEOF'
+          tanggal,waktu,kategori,keterangan,nominal,id
+          2026-10-28,08:43,Lain,Gaji,7000000,47467a
           CSVEOF
           cat > ledger/target.json <<'JSONEOF'
           {
@@ -69,7 +72,7 @@ jobs:
           echo "--- csv lines (expect 8) ---"; wc -l < ledger/2026-10.csv
           echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
           python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
-          test "$(wc -l < ledger/2026-10.csv)" -eq 8
+          test "$(wc -l < ledger/2026-10.csv)" -eq 7
           test "$(wc -c < ledger/target.json)" -gt 100
 
       - name: Upload seeder + ledger to VPS
@@ -113,8 +116,7 @@ jobs:
               "$IMG" /seeder/OmniChat.Seeder.dll \
                 --db "Data Source=/data/omnichat.db" --path /ledger
 
-            # Authoritative end-to-end check: the deployed backend should now serve
-            # the seeded rows for 2026-10. Pull the real key from the VPS .env.
+            echo "=== API verification (from VPS host) ==="
             echo "=== API verification (from VPS host) ==="
             KEY="$(grep -E '^Security__ApiKey=' /opt/OmniChat/.env | cut -d= -f2- || true)"
             if [ -z "$KEY" ]; then

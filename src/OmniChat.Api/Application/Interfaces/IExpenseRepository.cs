@@ -28,4 +28,11 @@ public interface IExpenseRepository
 
     /// <summary>Creates or updates the target row for a month (upsert by Month).</summary>
     Task UpsertTargetAsync(ExpenseTarget target, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Deletes expense rows whose SourceId is in <paramref name="sourceIds"/>. Used for
+    /// self-healing: income (pemasukan) source ids that were previously mis-imported as
+    /// expenses are removed so income never counts toward spending.
+    /// </summary>
+    Task<int> DeleteBySourceIdsAsync(IEnumerable<string> sourceIds, CancellationToken cancellationToken);
 }

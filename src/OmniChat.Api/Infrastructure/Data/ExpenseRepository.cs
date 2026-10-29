@@ -105,6 +105,31 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         return await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<int> DeleteBySourceIdsAsync(
+        IEnumerable<string> sourceIds, CancellationToken cancellationToken)
+    {
+        var ids = sourceIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Select(id => id.Trim())
+            .Distinct()
+            .ToList();
+        if (ids.Count == 0)
+        {
+            return 0;
+        }
+
+        var rows = await db.Expenses
+            .Where(e => e.SourceId != null && ids.Contains(e.SourceId))
+            .ToListAsync(cancellationToken);
+        if (rows.Count == 0)
+        {
+            return 0;
+        }
+
+        db.Expenses.RemoveRange(rows);
+        return await db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task UpsertTargetAsync(ExpenseTarget target, CancellationToken cancellationToken)
     {
         var existing = await db.ExpenseTargets
