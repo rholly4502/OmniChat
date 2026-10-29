@@ -184,6 +184,10 @@ input[type='range']::-moz-range-thumb {
   --color-chill-on-accent: #2b2016;    /* on accent */
   --color-chill-red: #c97e6e;          /* warm terracotta — destructive */
   --color-chill-on-red: #2b2016;       /* on red */
+  --color-chill-accent-hover: #ecc292; /* accent hover (lighter sand) */
+  --color-chill-accent-active: #d2a470; /* accent pressed (darker sand) */
+  --color-chill-red-hover: #d98b7a;    /* red hover (lighter terracotta) */
+  --color-chill-red-active: #b56a5c;   /* red pressed (darker terracotta) */
 }
 
 body {

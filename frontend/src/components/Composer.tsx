@@ -59,7 +59,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
           <button
             type="button"
             onClick={onStop}
-            className="bg-chill-red text-chill-on-red hover:bg-[#d98b7a] active:bg-[#b56a5c] rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+            className="bg-chill-red text-chill-on-red hover:bg-chill-red-hover active:bg-chill-red-active rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -71,7 +71,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
             type="button"
             onClick={onSend}
             disabled={!input.trim()}
-            className="bg-chill-accent text-chill-on-accent hover:bg-[#ecc292] active:bg-[#d2a470] disabled:opacity-40 rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70"
+            className="bg-chill-accent text-chill-on-accent hover:bg-chill-accent-hover active:bg-chill-accent-active disabled:opacity-40 rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70"
           >
             Kirim
           </button>
