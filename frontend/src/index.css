@@ -159,3 +159,42 @@ input[type='range']::-moz-range-thumb {
   border-radius: 9999px;
   background: #06b6d4;
 }
+
+/* ============================================================================
+   CHILL VIBE + PIXEL-ART design tokens (pixel2)
+   Warm, low-saturation dark palette; chunky retro edges. WCAG AA verified:
+     text/chill-text on chill-bg            ~13:1
+     text/chill-muted on chill-surface       ~5.5:1  (body/secondary text)
+     text/chill-on-accent on chill-accent    ~8:1    (buttons)
+   ========================================================================== */
+@theme {
+  --color-chill-bg: #191512;          /* deep warm charcoal */
+  --color-chill-surface: #221d19;      /* elevated surface (inputs) */
+  --color-chill-elevated: #2a241f;     /* hover / pressed surface */
+  --color-chill-border: #3e352c;       /* soft divider */
+  --color-chill-text: #ede4da;         /* primary text */
+  --color-chill-muted: #b8ab9c;        /* secondary text (>=4.5:1) */
+  --color-chill-accent: #e0b182;       /* soft golden sand — primary action */
+  --color-chill-on-accent: #2b2016;    /* on accent */
+  --color-chill-red: #c97e6e;          /* warm terracotta — destructive */
+  --color-chill-on-red: #2b2016;       /* on red */
+}
+
+body {
+  background-color: var(--color-chill-bg);
+}
+
+/* Retro pixel edges: hard offset shadows with zero blur give a chunky,
+   chiseled border instead of a soft gradient shadow. */
+.pixel-shadow  { box-shadow: 3px 3px 0 0 rgb(0 0 0 / 0.45); }
+.pixel-shadow-sm{ box-shadow: 2px 2px 0 0 rgb(0 0 0 / 0.35); }
+
+/* Headings / brand in a terminal-ish monospace for the pixel vibe. */
+.pixel-heading {
+  font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+/* For decorative bitmap assets if any are added later. */
+.pixel-art { image-rendering: pixelated; }

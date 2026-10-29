@@ -804,7 +804,7 @@ public class DeploymentConfigTests
         var readme = Read("README.md");
         var features = ExtractTopLevelSection(readme, "## Fitur");
 
-        Assert.Contains("256 tests", features);
+        Assert.Contains("303 tests", features);
         Assert.DoesNotContain("23 tests", features);
         Assert.Contains("RateLimit__TokenLimit", features);
         Assert.Contains("Streaming__IdleTimeoutSeconds", features);

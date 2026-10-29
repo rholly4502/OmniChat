@@ -40,7 +40,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
   };
 
   return (
-    <div className="p-3 md:p-4 border-t border-slate-800" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
+    <div className="p-3 md:p-4 border-t-2 border-chill-border" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}
@@ -53,13 +53,13 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
           onKeyDown={handleKeyDown}
           placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
           disabled={streaming}
-          className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3.5 md:px-4 py-2.5 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 disabled:opacity-50 min-h-[44px] max-h-[180px] resize-none leading-relaxed transition-[border-color,box-shadow]"
+          className="flex-1 bg-chill-surface border-2 border-chill-border rounded-none px-3.5 md:px-4 py-2.5 text-base md:text-sm outline-none placeholder:text-chill-muted focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/50 disabled:opacity-50 min-h-[44px] max-h-[180px] resize-none leading-relaxed transition-[border-color,box-shadow] pixel-shadow-sm"
         />
         {streaming ? (
           <button
             type="button"
             onClick={onStop}
-            className="bg-red-600 hover:bg-red-500 active:bg-red-700 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+            className="bg-chill-red text-chill-on-red hover:bg-[#d98b7a] active:bg-[#b56a5c] rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <rect x="6" y="6" width="12" height="12" rx="2" />
@@ -71,7 +71,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
             type="button"
             onClick={onSend}
             disabled={!input.trim()}
-            className="bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 disabled:opacity-40 rounded-xl px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+            className="bg-chill-accent text-chill-on-accent hover:bg-[#ecc292] active:bg-[#d2a470] disabled:opacity-40 rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70"
           >
             Kirim
           </button>

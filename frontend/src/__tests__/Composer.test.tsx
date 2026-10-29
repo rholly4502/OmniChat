@@ -93,6 +93,25 @@ describe('Composer', () => {
     expect(screen.getByLabelText('Ketik pesan').className).toContain('text-base md:text-sm');
   });
 
+  it('applies the chill-vibe pixel-art treatment to the primary controls', () => {
+    renderComposer({ input: 'Halo' });
+    // Warm sand accent + hard offset pixel shadow + sharp corners on Send.
+    const send = screen.getByText('Kirim');
+    expect(send.className).toContain('bg-chill-accent');
+    expect(send.className).toContain('text-chill-on-accent');
+    expect(send.className).toContain('pixel-shadow');
+    expect(send.className).toContain('rounded-none');
+    // The draft surface is warm, sharply bordered, and keeps its 16px mobile floor.
+    const input = screen.getByLabelText('Ketik pesan');
+    expect(input.className).toContain('bg-chill-surface');
+    expect(input.className).toContain('border-chill-border');
+    expect(input.className).toContain('rounded-none');
+    expect(input.className).toContain('text-base md:text-sm');
+    // Destructive stop keeps the warm palette too.
+    renderComposer({ input: 'Halo', streaming: true });
+    expect(screen.getByText('Stop').className).toContain('bg-chill-red');
+  });
+
   it('keeps every touch target at least 44px tall', () => {
     renderComposer({ input: 'Halo' });
     expect(screen.getByLabelText('Ketik pesan').className).toContain('min-h-[44px]');
