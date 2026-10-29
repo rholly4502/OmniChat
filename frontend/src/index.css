@@ -57,14 +57,14 @@ body {
 .md-body code {
   font-family: ui-monospace, monospace;
   font-size: 0.875em;
-  background: #0f172a;
-  color: #22d3ee;
+  background: var(--color-chill-bg);
+  color: var(--color-chill-accent);
   padding: 0.15em 0.35em;
   border-radius: 0.25em;
 }
 .md-body pre {
-  background: #020617;
-  border: 1px solid #1e293b;
+  background: var(--color-chill-bg);
+  border: 1px solid var(--color-chill-border);
   border-radius: 0.5em;
   padding: 0.75em 1em;
   overflow: auto;
@@ -89,18 +89,18 @@ pre.code-block-pre {
 
 .md-body pre code {
   background: none;
-  color: #e2e8f0;
+  color: var(--color-chill-text);
   padding: 0;
 }
 .md-body a {
-  color: #22d3ee;
+  color: var(--color-chill-accent);
   text-decoration: underline;
 }
 .md-body blockquote {
-  border-left: 3px solid #1e293b;
+  border-left: 3px solid var(--color-chill-border);
   padding-left: 1em;
   margin: 0.5em 0;
-  color: #94a3b8;
+  color: var(--color-chill-muted);
 }
 .md-body img {
   max-width: 100%;
@@ -113,7 +113,7 @@ pre.code-block-pre {
   width: 100%;
 }
 .md-body th, .md-body td {
-  border: 1px solid #1e293b;
+  border: 1px solid var(--color-chill-border);
   padding: 0.4em 0.6em;
   text-align: left;
 }

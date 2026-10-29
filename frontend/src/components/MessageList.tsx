@@ -41,7 +41,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     <div ref={scrollRef} aria-busy={streaming} aria-live="polite" aria-label="Chat messages"
       className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
       {messages.length === 0 && (
-        <div className="h-full flex items-center justify-center text-slate-400 text-sm text-center px-4">
+        <div className="h-full flex items-center justify-center text-chill-muted text-sm text-center px-4">
           Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
           {models.find((m) => m.id === model)?.label}
         </div>
@@ -56,8 +56,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
               max-w-[85%] md:max-w-[75%] rounded-2xl px-3.5 md:px-4 py-2.5 md:py-3
               text-sm leading-relaxed break-words
               ${m.role === 'user'
-                ? 'bg-cyan-600 text-white rounded-br-sm'
-                : 'bg-slate-900 border border-slate-800 rounded-bl-sm'
+                ? 'bg-chill-accent text-chill-on-accent rounded-br-sm border-2 border-chill-border'
+                : 'bg-chill-surface border-2 border-chill-border rounded-none rounded-bl-sm'
               }
             `}
           >
@@ -75,18 +75,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                     }}
                   >{m.content}</ReactMarkdown>
                 </div>
-                <div className="mt-2 pt-1.5 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400 select-none">
+                <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-between text-xs text-chill-muted select-none">
                   <span>OmniChat</span>
                   <button
                     type="button"
                     onClick={() => handleCopy(m.content, i)}
-                    className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/60"
+                    className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded text-slate-400 hover:text-chill-accent hover:bg-chill-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
                     aria-label={copiedIndex === i ? 'Pesan tersalin' : 'Salin pesan'}
                   >
                     {copiedIndex === i ? (
                       <>
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-cyan-400" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
-                        <span className="text-cyan-400 font-medium">Tersalin</span>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                        <span className="text-chill-accent font-medium">Tersalin</span>
                       </>
                     ) : (
                       <>

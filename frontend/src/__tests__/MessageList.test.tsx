@@ -144,7 +144,7 @@ describe('MessageList', () => {
 
     const footer = container.querySelector('div.border-t');
     expect(footer?.className).toContain('text-xs');
-    expect(footer?.className).toContain('text-slate-400');
+    expect(footer?.className).toContain('text-chill-muted');
   });
 
   it('gives the copy button a 44px touch target on mobile', () => {
