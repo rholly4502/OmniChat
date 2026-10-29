@@ -398,4 +398,42 @@ describe('Sidebar', () => {
     expect(css).toContain('::-webkit-slider-runnable-track');
     expect(css).toContain('::-moz-range-thumb');
   });
+
+  it('applies the chill-vibe pixel-art treatment', () => {
+    renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+      onNewSession: vi.fn(),
+      settings: { systemPrompt: '', temperature: 0.7, maxTokens: 2048 },
+    });
+
+    const aside = document.querySelector('aside')!;
+    expect(aside.className).toContain('bg-chill-bg');
+    expect(aside.className).toContain('border-chill-border');
+
+    // Brand uses the sand-gold accent and monospace pixel heading.
+    const h1 = screen.getByRole('heading', { name: 'OmniChat' });
+    expect(h1.className).toContain('text-chill-accent');
+    expect(h1.className).toContain('pixel-heading');
+
+    // Primary action flips to the warm accent with a hard pixel shadow.
+    const newBtn = screen.getByText('Chat Baru');
+    expect(newBtn.className).toContain('bg-chill-accent');
+    expect(newBtn.className).toContain('text-chill-on-accent');
+    expect(newBtn.className).toContain('pixel-shadow');
+    expect(newBtn.className).toContain('rounded-none');
+
+    // Editable controls sit on the chill surface with chunky borders.
+    const select = screen.getByRole('combobox');
+    expect(select.className).toContain('bg-chill-surface');
+    expect(select.className).toContain('border-chill-border');
+    const apiInput = screen.getByPlaceholderText('(kosong = tanpa auth)');
+    expect(apiInput.className).toContain('bg-chill-surface');
+    expect(apiInput.className).toContain('border-chill-border');
+
+    // Destructive actions use the warm terracotta.
+    const clear = screen.getByText(/Clear chat/);
+    expect(clear.className).toContain('text-chill-muted');
+    expect(clear.className).toContain('hover:text-chill-red');
+  });
 });

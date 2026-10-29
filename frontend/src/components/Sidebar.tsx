@@ -102,8 +102,8 @@ export function Sidebar({
       style={{ paddingTop: 'max(env(safe-area-inset-top), 1rem)', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
       className={`
         fixed md:static inset-y-0 left-0 z-50
-        w-[85vw] max-w-[18rem] border-r border-slate-800 px-4 flex flex-col gap-4 overflow-y-auto overscroll-y-contain
-        bg-slate-950
+        w-[85vw] max-w-[18rem] border-r border-chill-border px-4 flex flex-col gap-4 overflow-y-auto overscroll-y-contain
+        bg-chill-bg
         transform transition-transform duration-300 ease-in-out will-change-transform
         ${open ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
@@ -111,14 +111,14 @@ export function Sidebar({
     >
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-cyan-400">OmniChat</h1>
-          <p className="text-xs text-slate-400">Hybrid AI Dashboard · .NET 10</p>
+          <h1 className="text-xl font-bold text-chill-accent pixel-heading">OmniChat</h1>
+          <p className="text-xs text-chill-muted">Hybrid AI Dashboard · .NET 10</p>
         </div>
         {/* Close button (mobile only) */}
         <button
           ref={closeButtonRef}
           onClick={onClose}
-          className="md:hidden text-slate-400 hover:text-slate-200 active:bg-slate-800/50 p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           aria-label="Close sidebar"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -129,16 +129,16 @@ export function Sidebar({
       </div>
 
       {/* Top-level view switcher: Chat vs Pengeluaran */}
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-slate-900 border border-slate-800 p-1" role="tablist" aria-label="Pilih tampilan">
+      <div className="grid grid-cols-2 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan">
         <button
           type="button"
           role="tab"
           aria-selected={activeView === 'chat'}
           onClick={() => onSelectView('chat')}
-          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'chat'
-              ? 'bg-slate-800 text-slate-100 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-chill-elevated text-chill-text shadow-sm'
+              : 'text-chill-muted hover:text-chill-accent'
           }`}
         >
           Chat
@@ -148,10 +148,10 @@ export function Sidebar({
           role="tab"
           aria-selected={activeView === 'expenses'}
           onClick={() => onSelectView('expenses')}
-          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 ${
+          className={`rounded-lg px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'expenses'
-              ? 'bg-slate-800 text-slate-100 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200'
+              ? 'bg-chill-elevated text-chill-text shadow-sm'
+              : 'text-chill-muted hover:text-chill-accent'
           }`}
         >
           Pengeluaran
@@ -163,7 +163,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onNewSession}
-          className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 text-white font-medium py-2 px-3 rounded-lg text-sm transition shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+          className="w-full flex items-center justify-center gap-2 bg-chill-accent hover:bg-chill-accent/90 text-chill-on-accent font-medium py-2 px-3 rounded-none text-sm transition pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19" />
@@ -176,9 +176,9 @@ export function Sidebar({
       {/* Sessions History List */}
       {sessions && sessions.length > 0 && (
         <div className="space-y-1">
-          <div className="text-xs text-slate-400 font-medium px-1 flex items-center justify-between">
+          <div className="text-xs text-chill-muted font-medium px-1 flex items-center justify-between">
             <span>Riwayat Sesi</span>
-            <span className="text-xs text-slate-400">{sessions.length} sesi</span>
+            <span className="text-xs text-chill-muted">{sessions.length} sesi</span>
           </div>
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
             {sessions.map((s) => {
@@ -194,13 +194,13 @@ export function Sidebar({
                   }}
                   className={`group flex items-center justify-between gap-0.5 pl-1 pr-0.5 rounded-lg text-sm transition min-h-[44px] ${
                     isActive
-                      ? 'bg-slate-800/90 text-cyan-300 font-medium border border-cyan-500/30'
-                      : 'text-slate-300 hover:bg-slate-900 hover:text-white border border-transparent'
+                      ? 'bg-chill-elevated text-chill-accent font-medium border border-chill-accent/40'
+                      : 'text-chill-text hover:bg-chill-surface hover:text-chill-accent border border-transparent'
                   }`}
                 >
                   {pendingDeleteId === s.id ? (
                     <div className="flex flex-1 min-w-0 items-center justify-between gap-1 pl-2">
-                      <span className="truncate text-sm text-slate-200">Hapus sesi ini?</span>
+                      <span className="truncate text-sm text-chill-text">Hapus sesi ini?</span>
                       <div className="flex shrink-0 items-center gap-1">
                         <button
                           type="button"
@@ -210,7 +210,7 @@ export function Sidebar({
                             setPendingDeleteId(null);
                           }}
                           aria-label={`Batal hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] rounded-lg border border-slate-700 px-2 text-sm text-slate-300 transition hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                          className="min-h-[44px] min-w-[52px] border border-chill-border px-2 text-sm text-chill-text transition hover:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                         >
                           Batal
                         </button>
@@ -222,7 +222,7 @@ export function Sidebar({
                             onDeleteSession?.(s.id);
                           }}
                           aria-label={`Konfirmasi hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] rounded-lg bg-red-500/15 px-2 text-sm font-medium text-red-300 transition hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                          className="min-h-[44px] min-w-[52px] bg-chill-red/20 px-2 text-sm font-medium text-chill-red transition hover:bg-chill-red/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
                         >
                           Hapus
                         </button>
@@ -235,7 +235,7 @@ export function Sidebar({
                     onClick={() => onSelectSession?.(s.id)}
                     aria-current={isActive ? 'true' : undefined}
                     title={s.title}
-                    className="flex items-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                    className="flex items-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   >
                     <span className="truncate flex-1 pr-1.5">{s.title}</span>
                   </button>
@@ -249,7 +249,7 @@ export function Sidebar({
                           e.stopPropagation();
                           onExportSession(s);
                         }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-cyan-400 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                       </button>
@@ -263,7 +263,7 @@ export function Sidebar({
                           e.stopPropagation();
                           setPendingDeleteId(s.id);
                         }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-red-400 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/60"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-red rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                       </button>
@@ -280,19 +280,19 @@ export function Sidebar({
 
       {/* Mode Toggle */}
       <div className="mt-2 space-y-2">
-        <label className="flex items-center gap-3 cursor-pointer bg-slate-900 rounded-lg p-3 border border-slate-800 hover:border-cyan-600 active:border-cyan-500 transition">
+        <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent transition pixel-shadow-sm">
           <input
             type="checkbox"
             checked={useAgent}
             onChange={onToggleMode}
-            className="h-4 w-4 accent-cyan-500"
+            className="h-4 w-4 accent-chill-accent"
           />
           <div>
             <div className="text-sm font-semibold flex items-center gap-1.5">
               {useAgent ? <BotIcon /> : <BoltIcon />}
               {useAgent ? 'Agent Mode' : 'Direct Mode'}
             </div>
-            <div className="text-xs text-slate-400">
+            <div className="text-xs text-chill-muted">
               {useAgent ? 'Hermes Gateway (tools + memory)' : 'Langsung ke LLM (cepat)'}
             </div>
           </div>
@@ -301,11 +301,11 @@ export function Sidebar({
 
       {/* Model Selector */}
       <div className="space-y-1">
-        <label htmlFor="model-select" className="text-xs text-slate-400 font-medium">Model</label>
+        <label htmlFor="model-select" className="text-xs text-chill-muted font-medium">Model</label>
         <select
           value={model}
           onChange={(e) => onModelChange(e.target.value)}
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+          className="w-full bg-chill-surface border border-chill-border px-3 py-3 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
           id="model-select"
         >
           {models.map((m) => (
@@ -316,9 +316,9 @@ export function Sidebar({
 
       {/* API Key */}
       <div className="space-y-1">
-        <label htmlFor="api-key-input" className="text-xs text-slate-400 font-medium flex items-center gap-1">
+        <label htmlFor="api-key-input" className="text-xs text-chill-muted font-medium flex items-center gap-1">
           API Key
-          <span data-testid={apiKey ? 'lock-icon' : 'unlock-icon'} className="inline-flex text-slate-400">
+          <span data-testid={apiKey ? 'lock-icon' : 'unlock-icon'} className="inline-flex text-chill-muted">
             {apiKey ? <LockIcon /> : <UnlockIcon />}
           </span>
         </label>
@@ -331,17 +331,17 @@ export function Sidebar({
           autoCorrect="off"
           spellCheck={false}
           placeholder="(kosong = tanpa auth)"
-          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-3 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-2 focus-visible:ring-cyan-400/60 min-h-[44px]"
+          className="w-full bg-chill-surface border border-chill-border px-3 py-3 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
           id="api-key-input"
         />
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-chill-muted">
           {apiKey ? 'Authenticated — header X-Api-Key aktif.' : 'Tanpa auth — backend tanpa API key.'}
         </p>
         {apiKey && (
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:text-slate-100 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60"
+            className="mt-2 w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             Keluar
           </button>
@@ -350,17 +350,17 @@ export function Sidebar({
 
       {/* Advanced Parameters & } ; System Prompt */}
       {settings && (
-        <details className="space-y-2 bg-slate-900/60 border border-slate-800 rounded-lg p-2.5">
-          <summary className="text-sm font-semibold text-slate-300 cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 rounded-lg px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60">
+        <details className="space-y-2 bg-chill-surface/70 border border-chill-border rounded-lg p-2.5">
+          <summary className="text-sm font-semibold text-chill-text cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
               Parameter & Persona
             </span>
-            <span className="text-xs text-cyan-400 font-mono">T: {settings.temperature}</span>
+            <span className="text-xs text-chill-accent font-mono">T: {settings.temperature}</span>
           </summary>
           <div className="pt-2 space-y-2.5">
             <div>
-              <label htmlFor="system-prompt-input" className="block text-xs text-slate-400 font-medium mb-1">
+              <label htmlFor="system-prompt-input" className="block text-xs text-chill-muted font-medium mb-1">
                 System Prompt (Instruksi Peran)
               </label>
               <textarea
@@ -369,13 +369,13 @@ export function Sidebar({
                 value={settings.systemPrompt}
                 onChange={(e) => onSystemPromptChange?.(e.target.value)}
                 placeholder="Contoh: Bertindak sebagai Software Architect..."
-                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-base md:text-sm outline-none focus:border-cyan-500 focus-visible:ring-1 focus-visible:ring-cyan-400/60 resize-none"
+                className="w-full bg-chill-surface border border-chill-border p-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-1 focus-visible:ring-chill-accent/60 resize-none"
               />
             </div>
             <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <div className="flex justify-between text-xs text-chill-muted mb-1">
                 <span>Temperature</span>
-                <span className="font-mono text-cyan-400">{settings.temperature}</span>
+                <span className="font-mono text-chill-accent">{settings.temperature}</span>
               </div>
               <input
                 type="range"
@@ -385,13 +385,13 @@ export function Sidebar({
                 aria-label="Temperature"
                 value={settings.temperature}
                 onChange={(e) => onTemperatureChange?.(parseFloat(e.target.value))}
-                className="w-full accent-cyan-500 cursor-pointer"
+                className="w-full accent-chill-accent cursor-pointer"
               />
             </div>
             <div>
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
+              <div className="flex justify-between text-xs text-chill-muted mb-1">
                 <span>Max Tokens</span>
-                <span className="font-mono text-cyan-400">{settings.maxTokens}</span>
+                <span className="font-mono text-chill-accent">{settings.maxTokens}</span>
               </div>
               <input
                 type="range"
@@ -401,7 +401,7 @@ export function Sidebar({
                 aria-label="Max Tokens"
                 value={settings.maxTokens}
                 onChange={(e) => onMaxTokensChange?.(parseInt(e.target.value, 10))}
-                className="w-full accent-cyan-500 cursor-pointer"
+                className="w-full accent-chill-accent cursor-pointer"
               />
             </div>
           </div>
@@ -410,7 +410,7 @@ export function Sidebar({
 
       <button
         onClick={onClear}
-        className="mt-auto text-sm text-slate-400 hover:text-red-400 active:text-red-300 transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/60 rounded-lg"
+        className="mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
           <polyline points="3 6 5 6 21 6" />
