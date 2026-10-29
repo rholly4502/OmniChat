@@ -83,4 +83,17 @@ describe('MobileTopBar', () => {
     expect(logout.className).toContain('focus-visible:ring-2');
     expect(logout.className).toContain('text-sm');
   });
+
+  it('applies the chill pixel-art treatment (warm palette, chunky edges, pixel brand)', () => {
+    const { container } = renderBar();
+    const bar = container.firstElementChild as HTMLElement;
+    expect(bar.className).toContain('bg-chill-bg');
+    expect(bar.className).toContain('border-chill-border');
+    const brand = screen.getByText('OmniChat');
+    expect(brand.className).toContain('pixel-heading');
+    expect(brand.className).toContain('text-chill-accent');
+    const burger = screen.getByLabelText('Open menu');
+    expect(burger.className).toContain('rounded-none');
+    expect(burger.className).toContain('focus-visible:ring-chill-accent/60');
+  });
 });

@@ -47,7 +47,7 @@ Web UI dengan 2 mode:
 - ✅ `CHANGELOG.md` — formal changelog documenting all milestones for portfolio readability
 - ✅ Non-root container execution (backend: `app` UID 101, frontend: `node` UID 1000) + `no-new-privileges` + `cap_drop: ALL`
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
-- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **303 tests** across 27 files: components, hooks, SSE client, history client, error mapping)
+- ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **304 tests** across 27 files: components, hooks, SSE client, history client, error mapping)
 - ✅ Chat history persistence (SQLite via EF Core, `Persistence__ConnectionString`) — every streamed turn is filed under a conversation id, including a partial reply when the stream was cut short
 - ✅ Chat history read API (`GET`/`PATCH`/`DELETE /api/conversations`) with an admin/guest split — guests' turns are stored for audit but never listed back
 - ✅ Configurable rate limiting (`RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`)
@@ -485,4 +485,4 @@ Cara mengambil ulang: jalankan stack secara lokal, atur viewport seperti kolom d
 - **Milestone 29** ✅ — Deploy pipeline truthfulness: the workflow now runs `set -euo pipefail`, resets the VPS checkout to `origin/main`, saves local modifications to a patch before resetting, and asserts the deployed SHA equals the pushed SHA and that `/health` returns API JSON — a green pipeline can no longer ship stale code silently.
 - **Milestone 30** ✅ — Server-backed conversation history in the UI: the sidebar no longer reads localStorage. `historyApi.ts` wraps the read endpoints (`GET /api/conversations`, `GET/PATCH/DELETE /api/conversations/{id}`), and `useServerHistory` keeps stored conversations, their titles and their transcripts while a brand-new chat stays a local draft until the backend's first `conversationId` frame promotes it. A guest, whose list comes back empty, therefore sees a fresh session instead of someone else's history.
 
-**Current totals:** 356 backend tests + **303** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.
+**Current totals:** 356 backend tests + **304** frontend tests, 0 warnings, `npm run lint` and `npm run build` clean.
