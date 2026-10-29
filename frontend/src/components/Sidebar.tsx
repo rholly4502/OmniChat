@@ -302,16 +302,32 @@ export function Sidebar({
       {/* Model Selector */}
       <div className="space-y-1">
         <label htmlFor="model-select" className="text-xs text-chill-muted font-medium">Model</label>
-        <select
-          value={model}
-          onChange={(e) => onModelChange(e.target.value)}
-          className="w-full bg-chill-surface border border-chill-border px-3 py-3 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
-          id="model-select"
-        >
-          {models.map((m) => (
-            <option key={m.id} value={m.id}>{m.label}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <select
+            value={model}
+            onChange={(e) => onModelChange(e.target.value)}
+            className="w-full appearance-none bg-chill-surface border border-chill-border px-3 py-3 pr-9 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] cursor-pointer hover:border-chill-accent/60 transition-colors pixel-shadow-sm"
+            id="model-select"
+          >
+            {models.map((m) => (
+              <option key={m.id} value={m.id}>{m.label}</option>
+            ))}
+          </select>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-chill-muted"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
       </div>
 
       {/* API Key */}
