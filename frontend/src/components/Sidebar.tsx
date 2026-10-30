@@ -285,7 +285,7 @@ export function Sidebar({
             type="checkbox"
             checked={useAgent}
             onChange={onToggleMode}
-            className="h-4 w-4 accent-chill-accent"
+            className="h-4 w-4 pixel-checkbox"
           />
           <div>
             <div className="text-sm font-semibold flex items-center gap-1.5">
