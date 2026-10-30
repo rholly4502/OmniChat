@@ -209,6 +209,21 @@ body {
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 
+/* Faint retro pixel-grid backdrop (login gate, etc.): a tiny checkerboard
+   replaces any soft blur so every surface shares one hard-edged register.
+   Colour comes from currentColor (driven by a text-* utility); depth is
+   dialled with an opacity utility on the element itself. */
+.pixel-grid {
+  background-image: repeating-conic-gradient(
+    from 0deg,
+    currentColor 0deg 90deg,
+    transparent 90deg 180deg
+  );
+  background-size: 8px 8px;
+  image-rendering: pixelated;
+}
+
+
 /* ============================================================================
    PIXEL2 SCROLLBARS (chill-vibe)
    Chunky square thumbs with hard offset shadows match the pixel-art buttons:

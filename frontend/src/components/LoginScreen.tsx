@@ -27,14 +27,15 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
 
   return (
     <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-chill-bg px-4 text-chill-text">
-      {/* Ambient glow — deliberately faint, never a bright colour wash. */}
+      {/* Pixel backdrop — faint hard-edged grid replaces soft blur so every
+          surface shares one pixel register. Pure decoration, aria-hidden. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-40 left-1/2 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-chill-accent/[0.06] blur-[120px]"
+        className="pointer-events-none absolute -top-32 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 text-chill-accent opacity-[0.06] pixel-grid"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 -bottom-24 h-96 w-96 rounded-full bg-white/[0.04] blur-[110px]"
+        className="pointer-events-none absolute -right-24 -bottom-24 h-80 w-80 text-white opacity-[0.04] pixel-grid"
       />
 
       <div className="relative w-full max-w-sm">

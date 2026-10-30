@@ -87,5 +87,16 @@ describe('LoginScreen', () => {
     expect(guest.className).toContain('focus-visible:ring-2');
     expect(guest.className).toContain('text-sm');
   });
+
+  it('renders the pixel backdrop as hidden, inert decoration (no blur)', () => {
+    const { container } = renderLogin();
+    const grids = Array.from(container.querySelectorAll('.pixel-grid')) as HTMLElement[];
+    expect(grids).toHaveLength(2);
+    for (const g of grids) {
+      expect(g).toHaveAttribute('aria-hidden', 'true');
+      expect(g.className).toContain('pointer-events-none');
+    }
+    expect(container.querySelector('[class*="blur-"]')).toBeNull();
+  });
 });
 
