@@ -80,7 +80,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                   <button
                     type="button"
                     onClick={() => handleCopy(m.content, i)}
-                    className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded text-chill-muted hover:text-chill-accent hover:bg-chill-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
+                    className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded-none text-chill-muted hover:text-chill-accent hover:bg-chill-elevated transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
                     aria-label={copiedIndex === i ? 'Pesan tersalin' : 'Salin pesan'}
                   >
                     {copiedIndex === i ? (

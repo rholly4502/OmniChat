@@ -35,7 +35,7 @@ export function CodeBlock({ children }: { children?: ReactNode }) {
         <button
           type="button"
           onClick={handleCopy}
-          className="text-xs md:text-[11px] font-medium text-chill-muted hover:text-chill-accent bg-chill-elevated hover:bg-chill-border border-2 border-chill-border rounded-none px-2.5 py-1.5 flex items-center gap-1.5 min-h-[44px] md:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition-colors pixel-shadow-sm"
+          className="text-xs font-medium text-chill-muted hover:text-chill-accent bg-chill-elevated hover:bg-chill-border border-2 border-chill-border rounded-none px-2.5 py-1.5 flex items-center gap-1.5 min-h-[44px] md:min-h-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition-colors pixel-shadow-sm"
           aria-label={copied ? 'Code copied to clipboard' : 'Copy code to clipboard'}
         >
           {copied ? (
