@@ -1,5 +1,5 @@
-# One-shot, operator-triggered seed for the Pengeluaran (expenses) tab.
-# Manual only (workflow_dispatch) - never runs on push. It:
+# Recurrent seed for the Pengeluaran (expenses) tab (P1-1 auto-refresh).
+# Runs hourly on a schedule AND on manual dispatch (workflow_dispatch). It:
 #   1. builds the OmniChat.Seeder on CI,
 #   2. ships the binary + ledger to the VPS,
 #   3. runs the seeder against the SQLite volume shared with the backend,
@@ -10,6 +10,11 @@ name: Seed Expenses
 
 on:
   workflow_dispatch:
+  schedule:
+    # Auto-refresh (P1-1): keep the web DB in sync with the latest ledger.
+    # Idempotent + self-healing: re-running skips existing SourceIds and
+    # purges mis-imported income rows, so an hourly run is always safe.
+    - cron: '0 * * * *'
 
 jobs:
   seed:

@@ -898,6 +898,18 @@ public class DeploymentConfigTests
     }
 
     [Fact]
+    public void SeedExpensesWorkflow_HasRecurrentSchedule()
+    {
+        // P1-1 auto-refresh: the seed workflow must run on a schedule (not
+        // manual-only) so the web DB stays in sync with the latest ledger
+        // without an operator dispatching it.
+        var seed = Read(".github/workflows/seed-expenses.yml");
+        Assert.Contains("schedule:", seed);
+        Assert.Contains("cron:", seed);
+        Assert.Contains("workflow_dispatch:", seed); // manual trigger must remain
+    }
+
+    [Fact]
     public void FrontendPackageJson_HasTestScript()
     {
         // The frontend package.json must have a "test" script so `npm run test`
