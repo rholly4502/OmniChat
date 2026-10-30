@@ -163,7 +163,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onNewSession}
-          className="w-full flex items-center justify-center gap-2 bg-chill-accent hover:bg-chill-accent/90 text-chill-on-accent font-medium py-2 px-3 rounded-none text-sm transition pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+          className="w-full flex items-center justify-center gap-2 bg-chill-accent hover:bg-chill-accent-hover active:bg-chill-accent-active text-chill-on-accent font-medium py-2 px-3 rounded-none text-sm transition pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19" />
