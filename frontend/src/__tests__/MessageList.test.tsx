@@ -52,6 +52,15 @@ describe('MessageList', () => {
     expect(scrollRef.current).toBe(screen.getByLabelText('Chat messages'));
   });
 
+  it('renders a decorative pixel-art ornament in the empty state', () => {
+    const { container } = renderList();
+    // No messages => the only svg on screen is the aria-hidden ornament.
+    const svg = container.querySelector('svg[aria-hidden="true"]');
+    expect(svg).not.toBeNull();
+    // Hard-edged pixel register: uses rects, never circles (no <circle>).
+    expect(svg?.querySelector('circle')).toBeNull();
+  });
+
   it('names the active mode and model in the empty state', () => {
     renderList({ model: 'other' });
     expect(screen.getByText(/Mulai chat/)).toBeInTheDocument();
