@@ -26,7 +26,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
   }
 
   return (
-    <div className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-chill-bg px-4 text-chill-text">
+    <div className="relative flex min-h-[100svh] min-h-dvh items-center justify-center overflow-hidden bg-chill-bg px-4 text-chill-text">
       {/* Pixel backdrop — faint hard-edged grid replaces soft blur so every
           surface shares one pixel register. Pure decoration, aria-hidden. */}
       <div

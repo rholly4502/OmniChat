@@ -11,6 +11,11 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+html, body, #root {
+  min-height: 100%;
+}
+
+
 
 
 /* Respect prefers-reduced-motion: disable animations and smooth scroll */
