@@ -43,6 +43,18 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             .CountAsync(e => e.Tanggal >= from && e.Tanggal < toExclusive, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Expense>> ListAllForMonthAsync(
+        string month, CancellationToken cancellationToken)
+    {
+        var (from, toExclusive) = MonthRange(month);
+        return await db.Expenses
+            .AsNoTracking()
+            .Where(e => e.Tanggal >= from && e.Tanggal < toExclusive)
+            .OrderBy(e => e.Tanggal)
+            .ThenBy(e => e.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(long Total, IReadOnlyDictionary<string, long> PerKategori)> GetTotalsAsync(
         string month, CancellationToken cancellationToken)
     {

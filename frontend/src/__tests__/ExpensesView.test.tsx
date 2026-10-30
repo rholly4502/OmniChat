@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ExpensesView } from '../components/ExpensesView';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -65,6 +65,35 @@ describe('ExpensesView', () => {
 
     await waitFor(() => expect(screen.getByText('Belum ada transaksi.')).toBeInTheDocument());
     expect(screen.getByText('Belum ada pengeluaran tercatat di bulan ini.')).toBeInTheDocument();
+  });
+
+  it('downloads the CSV report for the selected month', async () => {
+    const createUrl = vi.fn(() => 'blob:fake');
+    const revokeUrl = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL: createUrl, revokeObjectURL: revokeUrl });
+    const bodyAppend = vi.spyOn(document.body, 'appendChild');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('/export')) {
+          return Promise.resolve({ ok: true, blob: async () => new Blob(['a,b'], { type: 'text/csv' }) });
+        }
+        return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+      }),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(createUrl).toHaveBeenCalled());
+    expect(screen.queryByText('Gagal ekspor')).not.toBeInTheDocument();
+    const anchor = bodyAppend.mock.calls
+      .map((c) => c[0])
+      .find((el: Element) => el.tagName === 'A') as HTMLAnchorElement;
+    expect(anchor).toBeDefined();
+    expect(anchor.download).toBe('expenses-2026-10.csv');
   });
 
   it('surfaces an API error with a retry button', async () => {

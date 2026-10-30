@@ -176,4 +176,71 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
         }
         finally { File.Delete(db); }
     }
+
+    [Fact]
+    public async Task Export_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.GetAsync("/api/expenses/export?month=2026-10");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Export_withApiKey_returnsCsvReport()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Belanja",
+                            Keterangan = "Belanja, grosir", Nominal = 300_000, SourceId = "a1b2e5" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "Warteg", Nominal = 20_000, SourceId = "a1b2c3" },
+                    ], CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/export?month=2026-10");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("utf-8", response.Content.Headers.ContentType?.ToString() ?? "");
+            Assert.Contains("attachment", response.Content.Headers.ContentDisposition?.DispositionType ?? "");
+            Assert.Contains("expenses-2026-10.csv", response.Content.Headers.ContentDisposition?.FileName ?? "");
+
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.StartsWith("tanggal,waktu,kategori,keterangan,nominal", body.TrimStart('﻿'));
+            // Chronological order: 28th row before 29th row.
+            Assert.Contains("2026-10-28,12:30,Makan,"Warteg",20000", body);
+            // Commas inside a field are quoted per RFC 4180.
+            Assert.Contains("2026-10-29,09:10,Belanja,"Belanja, grosir",300000", body);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Export_invalidMonth_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.GetAsync("/api/expenses/export?month=not-a-month");
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
 }

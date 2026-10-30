@@ -14,6 +14,9 @@ public interface IExpenseRepository
     /// <summary>Transaction count for <paramref name="month"/> (for paging).</summary>
     Task<int> CountAsync(string month, CancellationToken cancellationToken);
 
+    /// <summary>All transactions for <paramref name="month"/> (YYYY-MM), chronological order.</summary>
+    Task<IReadOnlyList<Expense>> ListAllForMonthAsync(string month, CancellationToken cancellationToken);
+
     /// <summary>Total spend and per-category totals for <paramref name="month"/>.</summary>
     Task<(long Total, IReadOnlyDictionary<string, long> PerKategori)> GetTotalsAsync(string month, CancellationToken cancellationToken);
 

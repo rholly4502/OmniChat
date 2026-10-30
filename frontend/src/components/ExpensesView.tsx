@@ -1,4 +1,6 @@
-import { formatRupiah } from '../expensesApi';
+import { useState } from 'react';
+import { formatRupiah, exportExpensesCsv } from '../expensesApi';
+import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import type { ExpenseItem } from '../expensesApi';
 
@@ -82,6 +84,33 @@ function HeaderDivider() {
 export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const { month, setMonth, summary, items, total, loading, error, reload } = useExpenses(apiKey);
 
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  async function handleExport() {
+    if (!apiKey) {
+      setExportError('API key diperlukan untuk ekspor CSV.');
+      return;
+    }
+    setExporting(true);
+    setExportError(null);
+    try {
+      const blob = await exportExpensesCsv(month, { apiKey });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `expenses-${month}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setExportError(err instanceof ApiError ? `Gagal ekspor (${err.status}).` : 'Gagal ekspor.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   const hasData = (summary !== null && summary.total > 0) || items.length > 0;
   const showSummary = summary !== null;
 
@@ -100,9 +129,22 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text"
           />
         </label>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exporting}
+          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
+        </button>
       </header>
 
       <div className="flex-1 px-4 py-4 space-y-5">
+        {exportError && (
+          <div role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red">
+            {exportError}
+          </div>
+        )}
         {error && (
           <div
             role="alert"

@@ -85,7 +85,17 @@ export async function getExpenseSummary(
   return (await res.json()) as ExpenseSummary;
 }
 
+/** Download the monthly expense report as CSV bytes (RFC 4180, UTF-8 with BOM). */
+export async function exportExpensesCsv(
+  month: string,
+  options: ExpensesRequestOptions = {},
+): Promise<Blob> {
+  const res = await request(`${EXPENSES_URL}/export?month=${encodeURIComponent(month)}`, options);
+  return await res.blob();
+}
+
 /** Format an integer rupiah amount for display, e.g. "Rp 20.000". */
+
 export function formatRupiah(value: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
