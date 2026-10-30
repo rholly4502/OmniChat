@@ -19,10 +19,10 @@ describe('TypingIndicator', () => {
     const { container } = render(<TypingIndicator />);
     const dots = container.querySelectorAll('span[aria-hidden="true"]');
     expect(dots).toHaveLength(3);
-    dots.forEach((dot) => expect(dot.className).toContain('animate-pulse'));
+    dots.forEach((dot) => expect(dot.className).toContain('pixel-blink'));
   });
 
-  it('staggers the dots so the pulse reads as a motion, not a blink', () => {
+  it('staggers the dots for a rippling stepped pixel blink', () => {
     const { container } = render(<TypingIndicator />);
     const dots = [...container.querySelectorAll('span[aria-hidden="true"]')];
     expect(dots[0].className).not.toContain('animation-delay');

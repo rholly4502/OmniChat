@@ -213,6 +213,21 @@ body {
   text-transform: uppercase;
 }
 
+
+/* Stepped pixel blink for loaders/status chips: a hard on/off snap instead
+   of Tailwind's smooth `animate-pulse` tween - the tonal analogue of the
+   press-slide buttons elsewhere. The discreet switch comes from adjacent
+   keyframes sharing values at their boundaries, so no interpolation happens
+   regardless of timing function. Reduced-motion falls back to the global
+   media block (duration ~0, 1 iteration, fill-mode none -> the element
+   settles back to its natural opaque state). */
+@keyframes pixel-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+.pixel-blink {
+  animation: pixel-blink 1s linear infinite;
+}
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 

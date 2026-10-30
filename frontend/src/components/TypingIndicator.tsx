@@ -13,12 +13,12 @@ export function TypingIndicator({ status }: TypingIndicatorProps = {}) {
   return (
     <span className="inline-flex items-center gap-2 py-1" role="status" aria-label={label}>
       <span className="inline-flex gap-1 items-center">
-        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none animate-pulse" aria-hidden="true" />
-        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none animate-pulse [animation-delay:200ms]" aria-hidden="true" />
-        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none animate-pulse [animation-delay:400ms]" aria-hidden="true" />
+        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none pixel-blink" aria-hidden="true" />
+        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none pixel-blink [animation-delay:200ms]" aria-hidden="true" />
+        <span className="w-2.5 h-2.5 bg-chill-muted rounded-none pixel-blink [animation-delay:400ms]" aria-hidden="true" />
       </span>
       {status && (
-        <span className="text-xs text-chill-accent font-medium select-none animate-pulse">
+        <span className="text-xs text-chill-accent font-medium select-none pixel-blink">
           {status}…
         </span>
       )}
