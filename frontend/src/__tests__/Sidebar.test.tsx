@@ -436,4 +436,26 @@ describe('Sidebar', () => {
     expect(clear.className).toContain('text-chill-muted');
     expect(clear.className).toContain('hover:text-chill-red');
   });
+
+  it('replaces the native disclosure triangle with a pixel chevron that flips on open', () => {
+    renderSidebar({
+      settings: { systemPrompt: '', temperature: 0.7, maxTokens: 2048 },
+    });
+
+    const details = screen.getByText(/Parameter & Persona/).closest('details')!;
+    const summary = screen.getByText(/Parameter & Persona/).closest('summary')!;
+
+    // The browser-default disclosure marker is suppressed; the state is carried
+    // by the pixel chevron instead of the native triangle.
+    expect(summary.className).toContain('list-none');
+
+    // The group/group-open wiring lets the chevron rotate on open without JS.
+    expect(details.className).toContain('group');
+
+    const chevron = Array.from(summary.querySelectorAll('svg[aria-hidden="true"]')).find(
+      (s) => s.querySelector('polyline')
+    );
+    expect(chevron).not.toBeNull();
+    expect(chevron!.getAttribute('class') ?? '').toContain('group-open:rotate-180');
+  });
 });
