@@ -108,7 +108,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
           <button
             type="submit"
             disabled={busy || !key.trim()}
-            className="mt-5 w-full min-h-[44px] rounded-none bg-chill-accent px-4 py-2.5 text-sm font-medium text-chill-on-accent transition hover:bg-chill-accent-hover disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="mt-5 w-full min-h-[44px] rounded-none bg-chill-accent px-4 py-2.5 text-sm font-medium text-chill-on-accent pixel-shadow transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[3px] active:shadow-none disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             {busy ? 'Memverifikasi…' : 'Masuk'}
           </button>
