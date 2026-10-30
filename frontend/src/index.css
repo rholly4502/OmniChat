@@ -188,6 +188,8 @@ input[type='range']::-moz-range-thumb {
   --color-chill-accent-active: #d2a470; /* accent pressed (darker sand) */
   --color-chill-red-hover: #d98b7a;    /* red hover (lighter terracotta) */
   --color-chill-red-active: #b56a5c;   /* red pressed (darker terracotta) */
+  --color-chill-sage: #9db380;        /* Stardew-ish sage green · decorative accent */
+  --color-chill-deepsea: #5f8d9c;   /* Dave-the-Diver deep sea blue · decorative accent */
 }
 
 body {

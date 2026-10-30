@@ -59,6 +59,34 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             <rect x="8" y="17" width="12" height="3" fill="currentColor" opacity="0.7" />
             <rect x="22" y="16" width="4" height="4" fill="currentColor" className="text-chill-accent" />
           </svg>
+          {/* Subtle easter egg — nods to Stardew Valley & Dave the Diver:
+              a pixel sprout (sage) and a pixel fish (deep sea). Hover reveals a
+              quiet caption. Pure decoration — aria-hidden, rect-only, never
+              interactive, so it cannot affect usability or the a11y tree. */}
+          <div className="group relative flex flex-col items-center" aria-hidden="true">
+            <div className="flex items-center gap-3 text-chill-sage">
+              <svg width="30" height="22" viewBox="0 0 30 22" fill="none" aria-hidden="true" className="shrink-0">
+                <rect x="14" y="7" width="2" height="9" fill="currentColor" />
+                <rect x="8" y="5" width="6" height="2" fill="currentColor" />
+                <rect x="16" y="5" width="6" height="2" fill="currentColor" />
+                <rect x="6" y="3" width="4" height="2" fill="currentColor" opacity="0.55" />
+                <rect x="20" y="3" width="4" height="2" fill="currentColor" opacity="0.55" />
+                <rect x="3" y="16" width="24" height="2" fill="currentColor" opacity="0.3" />
+                <rect x="5" y="18" width="20" height="2" fill="currentColor" opacity="0.18" />
+              </svg>
+              <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true" className="text-chill-deepsea shrink-0">
+                <rect x="1" y="5" width="4" height="2" fill="currentColor" />
+                <rect x="1" y="8" width="4" height="2" fill="currentColor" opacity="0.65" />
+                <rect x="5" y="3" width="7" height="6" fill="currentColor" />
+                <rect x="12" y="3" width="5" height="6" fill="currentColor" opacity="0.85" />
+                <rect x="17" y="4" width="5" height="4" fill="currentColor" />
+                <rect x="5" y="6" width="7" height="3" fill="currentColor" opacity="0.45" />
+              </svg>
+            </div>
+            <span className="mt-1.5 text-xs text-chill-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 select-none">
+              A calm pixel farm vibe
+            </span>
+          </div>
           <div className="text-chill-muted text-sm text-center">
             Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
             {models.find((m) => m.id === model)?.label}
