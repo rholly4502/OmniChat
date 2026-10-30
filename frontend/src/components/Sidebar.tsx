@@ -137,7 +137,7 @@ export function Sidebar({
           onClick={() => onSelectView('chat')}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'chat'
-              ? 'bg-chill-elevated text-chill-text shadow-sm'
+              ? 'bg-chill-elevated text-chill-text pixel-shadow-sm'
               : 'text-chill-muted hover:text-chill-accent'
           }`}
         >
@@ -150,7 +150,7 @@ export function Sidebar({
           onClick={() => onSelectView('expenses')}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'expenses'
-              ? 'bg-chill-elevated text-chill-text shadow-sm'
+              ? 'bg-chill-elevated text-chill-text pixel-shadow-sm'
               : 'text-chill-muted hover:text-chill-accent'
           }`}
         >
