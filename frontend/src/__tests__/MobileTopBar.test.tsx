@@ -72,6 +72,7 @@ describe('MobileTopBar', () => {
   it('guest variant advertises direct mode and never the agent badge', () => {
     renderBar({ isGuest: true, useAgent: true });
     expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
+    expect(screen.getByText(/Guest · Direct/).className).toContain('rounded-none');
     expect(screen.queryByText('Agent')).not.toBeInTheDocument();
   });
 

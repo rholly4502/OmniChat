@@ -29,7 +29,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 border-b border-chill-border bg-chill-bg" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
         <span className="text-sm font-semibold text-chill-accent pixel-heading">OmniChat</span>
-        <span className="inline-flex items-center gap-1 rounded-sm border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
+        <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
           <BoltIcon size={14} /> Guest · Direct
         </span>
         <button
