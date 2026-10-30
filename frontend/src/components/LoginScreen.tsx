@@ -27,15 +27,12 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
 
   return (
     <div className="relative flex min-h-[100svh] min-h-dvh items-center justify-center overflow-hidden bg-chill-bg px-4 text-chill-text">
-      {/* Pixel backdrop — faint hard-edged grid replaces soft blur so every
-          surface shares one pixel register. Pure decoration, aria-hidden. */}
+      {/* Pixel backdrop — one faint, full-canvas hard-edged checkerboard so the
+          warm charcoal reads as a single consistent pixel register. Pure
+          decoration, aria-hidden. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 left-1/2 h-[30rem] w-[30rem] -translate-x-1/2 text-chill-accent opacity-[0.06] pixel-grid"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -right-24 -bottom-24 h-80 w-80 text-white opacity-[0.04] pixel-grid"
+        className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.05] pixel-grid"
       />
 
       <div className="relative w-full max-w-sm">
