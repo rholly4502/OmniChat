@@ -55,6 +55,15 @@ jobs:
           2026-10-28,20:30,Makan,Bakso,20000,f1fa00
           2026-10-28,20:30,Makan,Mie ayam,13000,43213b
           2026-10-28,20:36,Hiburan,Netflix,60000,7786c6
+          2026-10-29,17:46,Transport,Top up OVO,100000,ac8413
+          2026-10-29,20:03,Makan,Makan malam 13k,13000,1ecad8
+          2026-10-29,20:03,Makan,Makan malam 15k,15000,f4e2c5
+          2026-10-29,21:54,Belanja,Galon,21000,fdc44d
+          2026-10-29,21:54,Listrik,Listrik,150000,3e8020
+          2026-10-30,12:53,Makan,Makan siang,30000,f0f291
+          2026-10-30,23:01,Makan,Sate,33000,d8f7ad
+          2026-10-30,23:01,Makan,Ayam Bawang Putih,39000,1de41b
+          2026-10-30,23:01,Makan,Es Jeruk,10000,4840d2
           CSVEOF
           cat > ledger/pemasukan.csv <<'CSVEOF'
           tanggal,waktu,kategori,keterangan,nominal,id
@@ -74,10 +83,10 @@ jobs:
             }
           }
           JSONEOF
-          echo "--- csv lines (expect 8) ---"; wc -l < ledger/2026-10.csv
+          echo "--- csv lines (expect 16) ---"; wc -l < ledger/2026-10.csv
           echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
           python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
-          test "$(wc -l < ledger/2026-10.csv)" -eq 7
+          test "$(wc -l < ledger/2026-10.csv)" -eq 16
           test "$(wc -c < ledger/target.json)" -gt 100
 
       - name: Upload seeder + ledger to VPS
@@ -129,15 +138,15 @@ jobs:
             else
               echo "-- /api/expenses without key (expect 401) --"
               curl -s -o /dev/null -w "%{http_code}\n" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
-              echo "-- /api/expenses?month=2026-10 (expect 200 + 7 items) --"
+              echo "-- /api/expenses?month=2026-10 (expect 200 + items) --"
               curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses?month=2026-10&pageSize=10"
               echo
               echo "-- /api/expenses/summary?month=2026-10 --"
               SUMMARY="$(curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses/summary?month=2026-10")"
               echo "$SUMMARY" | head -c 400; echo
               TOTAL="$(printf '%s' "$SUMMARY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',0))")"
-              echo "Summary total = $TOTAL (expect 317000 - 7jt gaji TIDAK ikut)"
-              if [ "$TOTAL" -ne 317000 ]; then
+              echo "Summary total = $TOTAL (expect 728000 - 7jt gaji TIDAK ikut)"
+              if [ "$TOTAL" -ne 728000 ]; then
                 echo "ERROR: summary total mismatch -- income may be counted as expense"
                 exit 1
               fi
