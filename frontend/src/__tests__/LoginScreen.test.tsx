@@ -98,5 +98,19 @@ describe('LoginScreen', () => {
     }
     expect(container.querySelector('[class*="blur-"]')).toBeNull();
   });
+
+  it('renders a subtle hidden Stardew/Diver easter egg in the brand ornament', () => {
+    renderLogin();
+    const caption = screen.getByText('a calm ocean farm');
+    const ornament = caption.parentElement!;
+    expect(ornament.tagName).toBe('DIV');
+    expect(ornament).toHaveAttribute('aria-hidden', 'true');
+    expect(ornament.className).toContain('group-hover:opacity-100');
+    expect(ornament.className).toContain('opacity-0');
+    const svgs = ornament.querySelectorAll('svg');
+    expect(svgs.length).toBe(2);
+    svgs.forEach((s) => expect(s).toHaveAttribute('aria-hidden', 'true'));
+    expect(ornament.querySelector('[role],button,a,input,select,textarea')).toBeNull();
+  });
 });
 
