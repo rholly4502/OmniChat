@@ -133,7 +133,7 @@ describe('MessageList', () => {
     const { container } = renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
     const bubble = container.querySelector('div.max-w-\\[85\\%\\]');
     expect(bubble?.className).toContain('md:max-w-[75%]');
-    expect(bubble?.className).toContain('rounded-bl-sm');
+    expect(bubble?.className).toContain('rounded-none');
   });
 
   it('renders a copy message button on assistant turns', () => {
