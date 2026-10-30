@@ -161,6 +161,31 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(
+        string endMonth, int months, CancellationToken cancellationToken)
+    {
+        var count = Math.Clamp(months, 1, 24);
+        var (_, toExclusive) = MonthRange(endMonth);
+        var start = toExclusive.AddMonths(-count);
+
+        var rows = await db.Expenses
+            .AsNoTracking()
+            .Where(e => e.Tanggal >= start && e.Tanggal < toExclusive)
+            .GroupBy(e => new { e.Tanggal.Year, e.Tanggal.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(e => e.Nominal) })
+            .ToListAsync(cancellationToken);
+
+        var totals = rows.ToDictionary(r => (r.Year, r.Month), r => r.Total);
+        var result = new List<(string, long)>(count);
+        for (var i = 0; i < count; i++)
+        {
+            var m = start.AddMonths(i);
+            result.Add((m.ToString("yyyy-MM"), totals.GetValueOrDefault((m.Year, m.Month))));
+        }
+
+        return result;
+    }
+
     /// <summary>Turns a YYYY-MM key into an inclusive start and exclusive end DateOnly.</summary>
     private static (DateOnly From, DateOnly ToExclusive) MonthRange(string month)
     {

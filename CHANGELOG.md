@@ -5,6 +5,15 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P2 — Pengeluaran trend endpoint (backend slice)
+
+#### Added
+- `GET /api/expenses/trend?months=6` returns chronological monthly spend totals
+  over the last N months (1–24, default 6), zero-filled for empty months — the
+  backend aggregation the pixel trend chart will consume.
+- `IExpenseRepository.GetMonthlyTrendAsync` + `ExpenseRepository` implementation
+  (grouped by month, ordered oldest → newest, missing months zero-filled).
+
 ### Milestone 24 — nginx frontend proxy fix + non-root hardening
 
 #### Fixed

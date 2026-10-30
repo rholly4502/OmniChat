@@ -38,4 +38,12 @@ public interface IExpenseRepository
     /// expenses are removed so income never counts toward spending.
     /// </summary>
     Task<int> DeleteBySourceIdsAsync(IEnumerable<string> sourceIds, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Monthly spend totals over the last <paramref name="months"/> months ending at
+    /// <paramref name="endMonth"/> (YYYY-MM, inclusive). Chronological order, missing
+    /// months zero-filled. Used by the trend chart.
+    /// </summary>
+    Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(
+        string endMonth, int months, CancellationToken cancellationToken);
 }

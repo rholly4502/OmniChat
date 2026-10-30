@@ -175,6 +175,44 @@ public sealed class ExpensesController(IExpenseRepository repository) : Controll
         return File(bytes, "text/csv; charset=utf-8", $"expenses-{month}.csv");
     }
 
+    /// <summary>Monthly spend totals over the last N months (for the trend chart).</summary>
+    /// <param name="months">Number of trailing months to return (1–24, default 6).</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Chronological trend points (zero-filled).</response>
+    /// <response code="400">Invalid months count.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("trend")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Trend(
+        [FromQuery] int months = 6, CancellationToken cancellationToken = default)
+    {
+        if (months is < 1 or > 24)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'months' must be between 1 and 24.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        var endMonth = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM");
+        var points = await repository.GetMonthlyTrendAsync(endMonth, months, cancellationToken);
+
+        return Ok(new
+        {
+            months,
+            points = points.Select(p => new { p.Month, p.Total }).ToList(),
+        });
+    }
+
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
         private static string Csv(string value)
     {

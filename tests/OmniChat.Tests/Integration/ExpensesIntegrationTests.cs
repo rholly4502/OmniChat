@@ -243,4 +243,76 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
         }
         finally { File.Delete(db); }
     }
+
+    [Fact]
+    public async Task Trend_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.GetAsync("/api/expenses/trend?months=3");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Trend_withApiKey_returnsChronologicalPoints()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+
+            var now = DateTime.UtcNow;
+            var cur = new DateOnly(now.Year, now.Month, 1);
+            var prev2 = cur.AddMonths(-2);
+            var prev1 = cur.AddMonths(-1);
+
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = cur.AddDays(2), Waktu = "12:00", Kategori = "Makan",
+                            Keterangan = "cur", Nominal = 30_000, SourceId = "trend-cur" },
+                        new Expense { Tanggal = prev2.AddDays(4), Waktu = "09:00", Kategori = "Transport",
+                            Keterangan = "prev2", Nominal = 20_000, SourceId = "trend-prev2" },
+                    ], CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/trend?months=3");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            var points = root.GetProperty("points");
+            Assert.Equal(3, points.GetArrayLength());
+            Assert.Equal(prev2.ToString("yyyy-MM"), points[0].GetProperty("month").GetString());
+            Assert.Equal(20_000, points[0].GetProperty("total").GetInt64());
+            Assert.Equal(prev1.ToString("yyyy-MM"), points[1].GetProperty("month").GetString());
+            Assert.Equal(0, points[1].GetProperty("total").GetInt64());
+            Assert.Equal(cur.ToString("yyyy-MM"), points[2].GetProperty("month").GetString());
+            Assert.Equal(30_000, points[2].GetProperty("total").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Trend_invalidMonths_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.GetAsync("/api/expenses/trend?months=0");
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
 }

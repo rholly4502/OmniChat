@@ -160,4 +160,44 @@ public sealed class ExpenseRepositoryTests : IDisposable
         Assert.Equal(1, inserted);
         Assert.Equal(3, _db.Expenses.Count());
     }
+
+    [Fact]
+    public async Task GetMonthlyTrend_returnsChronologicalZeroFilledPoints()
+    {
+        await _repository.InsertMissingExpensesAsync(
+            [
+                NewExpense(2, "Makan", 10_000, "a"),
+                NewExpense(3, "Makan", 20_000, "b"),
+                new Expense
+                {
+                    Tanggal = new DateOnly(2026, 8, 15),
+                    Waktu = "09:00",
+                    Kategori = "Transport",
+                    Keterangan = "aug",
+                    Nominal = 20_000,
+                    SourceId = "c",
+                },
+            ], CancellationToken.None);
+
+        var trend = await _repository.GetMonthlyTrendAsync("2026-10", 3, CancellationToken.None);
+
+        Assert.Equal(3, trend.Count);
+        Assert.Equal(("2026-08", 20_000L), trend[0]);
+        Assert.Equal(("2026-09", 0L), trend[1]);
+        Assert.Equal(("2026-10", 30_000L), trend[2]);
+    }
+
+    [Fact]
+    public async Task GetMonthlyTrend_invalidEndMonth_throws()
+    {
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
+            _repository.GetMonthlyTrendAsync("not-a-month", 3, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetMonthlyTrend_emptyLedger_returnsAllZeros()
+    {
+        var trend = await _repository.GetMonthlyTrendAsync("2026-10", 3, CancellationToken.None);
+        Assert.All(trend, p => Assert.Equal(0L, p.Total));
+    }
 }
