@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../api';
-import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, EXPENSES_URL } from '../expensesApi';
+import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, getExpenseTrend, EXPENSES_URL } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -77,5 +77,31 @@ describe('exportExpensesCsv', () => {
   it('throws ApiError on a 401', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(exportExpensesCsv('2026-10', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('getExpenseTrend', () => {
+  it('calls the trend endpoint, sends the key and parses points', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({
+        months: 6,
+        points: [
+          { month: '2026-05', total: 100000 },
+          { month: '2026-06', total: 0 },
+        ],
+      }),
+    );
+    const trend = await getExpenseTrend({ apiKey: 'secret', fetchImpl });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toContain(`${EXPENSES_URL}/trend?months=6`);
+    expect((fetchImpl.mock.calls[0][1] as RequestInit).headers).toMatchObject({ 'X-Api-Key': 'secret' });
+    expect(trend.points).toHaveLength(2);
+    expect(trend.points[0]).toEqual({ month: '2026-05', total: 100000 });
+  });
+
+  it('throws ApiError on 401', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(getExpenseTrend({ fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });

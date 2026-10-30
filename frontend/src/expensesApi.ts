@@ -94,6 +94,31 @@ export async function exportExpensesCsv(
   return await res.blob();
 }
 
+/** One monthly trend point from `GET /api/expenses/trend`. */
+export interface ExpenseTrendPoint {
+  /** YYYY-MM (WIB). */
+  month: string;
+  /** Total spend for that month (zero-filled for empty months). */
+  total: number;
+}
+
+/** Envelope from `GET /api/expenses/trend`. */
+export interface ExpenseTrend {
+  /** Number of trailing months requested. */
+  months: number;
+  /** Chronological points (oldest first). */
+  points: ExpenseTrendPoint[];
+}
+
+/** Fetch the monthly spend trend over the last N trailing months (1-24). */
+export async function getExpenseTrend(
+  options: ExpensesRequestOptions = {},
+  months = 6,
+): Promise<ExpenseTrend> {
+  const res = await request(`${EXPENSES_URL}/trend?months=${months}`, options);
+  return (await res.json()) as ExpenseTrend;
+}
+
 /** Format an integer rupiah amount for display, e.g. "Rp 20.000". */
 
 export function formatRupiah(value: number): string {

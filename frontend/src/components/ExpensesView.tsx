@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { formatRupiah, exportExpensesCsv } from '../expensesApi';
 import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
+import { useExpenseTrend } from '../hooks/useExpenseTrend';
+import { ExpenseTrendChart } from './ExpenseTrendChart';
 import type { ExpenseItem } from '../expensesApi';
 
 /** Props accepted by {@link ExpensesView}. */
@@ -83,6 +85,7 @@ function HeaderDivider() {
 /** The Pengeluaran page: month picker, summary cards, per-category totals, transactions. */
 export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const { month, setMonth, summary, items, total, loading, error, reload } = useExpenses(apiKey);
+  const trend = useExpenseTrend(apiKey);
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -201,6 +204,27 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             {summary!.catatan ? (
               <p className="text-xs text-chill-muted">{summary!.catatan}</p>
             ) : null}
+
+            <section aria-label="Tren pengeluaran bulanan" className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
+                <button
+                  type="button"
+                  onClick={trend.reload}
+                  disabled={trend.loading}
+                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+                >
+                  {trend.loading ? 'Memuat…' : 'Segarkan'}
+                </button>
+              </div>
+              {trend.error ? (
+                <p role="alert" className="text-sm text-chill-red">{trend.error}</p>
+              ) : trend.loading && trend.points.length === 0 ? (
+                <p className="text-sm text-chill-muted" role="status">Memuat tren…</p>
+              ) : (
+                <ExpenseTrendChart points={trend.points} />
+              )}
+            </section>
 
             <HeaderDivider />
 
