@@ -1,0 +1,12 @@
+{
+  "2026-10": {
+    "target_nabung": 467000,
+    "anggaran": 520000,
+    "catatan": "Bulan parsial — mulai 28 Okt (4 hari). Dihitung dari target bulanan 3.500.000 / 3.900.000 secara prorata 4/30."
+  },
+  "2026-11": {
+    "target_nabung": 3500000,
+    "anggaran": 3900000,
+    "catatan": "Bulan penuh. Gaji 7.400.000 - anggaran 3.900.000 = target nabung 3.500.000."
+  }
+}

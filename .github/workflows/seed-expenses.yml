@@ -47,42 +47,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ledger
-          cat > ledger/2026-10.csv <<'CSVEOF'
-          tanggal,waktu,kategori,keterangan,nominal,id
-          2026-10-28,08:59,Transport,Top up OVO,100000,dfb156
-          2026-10-28,12:32,Makan,Nasi goreng,15000,a03b08
-          2026-10-28,20:30,Belanja,"Belanja toko (9 item: telur, tissue, sabun, dll)",109000,f3f2bd
-          2026-10-28,20:30,Makan,Bakso,20000,f1fa00
-          2026-10-28,20:30,Makan,Mie ayam,13000,43213b
-          2026-10-28,20:36,Hiburan,Netflix,60000,7786c6
-          2026-10-29,17:46,Transport,Top up OVO,100000,ac8413
-          2026-10-29,20:03,Makan,Makan malam 13k,13000,1ecad8
-          2026-10-29,20:03,Makan,Makan malam 15k,15000,f4e2c5
-          2026-10-29,21:54,Belanja,Galon,21000,fdc44d
-          2026-10-29,21:54,Listrik,Listrik,150000,3e8020
-          2026-10-30,12:53,Makan,Makan siang,30000,f0f291
-          2026-10-30,23:01,Makan,Sate,33000,d8f7ad
-          2026-10-30,23:01,Makan,Ayam Bawang Putih,39000,1de41b
-          2026-10-30,23:01,Makan,Es Jeruk,10000,4840d2
-          CSVEOF
-          cat > ledger/pemasukan.csv <<'CSVEOF'
-          tanggal,waktu,kategori,keterangan,nominal,id
-          2026-10-28,08:43,Lain,Gaji,7000000,47467a
-          CSVEOF
-          cat > ledger/target.json <<'JSONEOF'
-          {
-            "2026-10": {
-              "target_nabung": 467000,
-              "anggaran": 520000,
-              "catatan": "Bulan parsial — mulai 28 Okt (4 hari). Dihitung dari target bulanan 3.500.000 / 3.900.000 secara prorata 4/30."
-            },
-            "2026-11": {
-              "target_nabung": 3500000,
-              "anggaran": 3900000,
-              "catatan": "Bulan penuh. Gaji 7.400.000 - anggaran 3.900.000 = target nabung 3.500.000."
-            }
-          }
-          JSONEOF
+          cp .github/seed-staging/ledger/2026-10.csv ledger/2026-10.csv
+          cp .github/seed-staging/ledger/pemasukan.csv ledger/pemasukan.csv
+          cp .github/seed-staging/ledger/target.json ledger/target.json
           echo "--- csv lines (expect 16) ---"; wc -l < ledger/2026-10.csv
           echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
           python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
