@@ -223,9 +223,9 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
             var body = await response.Content.ReadAsStringAsync();
             Assert.StartsWith("tanggal,waktu,kategori,keterangan,nominal", body.TrimStart('﻿'));
             // Chronological order: 28th row before 29th row.
-            Assert.Contains("2026-10-28,12:30,Makan,"Warteg",20000", body);
+            Assert.Contains("2026-10-28,12:30,Makan,Warteg,20000", body);
             // Commas inside a field are quoted per RFC 4180.
-            Assert.Contains("2026-10-29,09:10,Belanja,"Belanja, grosir",300000", body);
+            Assert.Contains("2026-10-29,09:10,Belanja,\"Belanja, grosir\",300000", body);
         }
         finally { File.Delete(db); }
     }
