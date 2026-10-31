@@ -164,7 +164,8 @@ export default function App() {
   // with a slim top bar exposing logout.
   if (isGuest) {
     return (
-      <div className="flex h-dvh bg-chill-bg text-chill-text overflow-hidden">
+      <div className="relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
           <MobileTopBar isGuest onLogout={logout} useAgent={false} />
           <MessageList
@@ -188,12 +189,13 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-dvh bg-chill-bg text-chill-text overflow-hidden"
+    <div className="relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
       {sidebarOpen && <SidebarOverlay onClose={closeDrawer} />}
 
       <Sidebar
