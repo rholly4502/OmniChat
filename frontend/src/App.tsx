@@ -65,6 +65,7 @@ export default function App() {
     createSession,
     selectSession,
     deleteSession,
+    renameSession,
     adoptConversation,
     exportSessionMarkdown,
   } = useServerHistory({ apiKey });
@@ -139,6 +140,12 @@ export default function App() {
     if (next) loadMessages(next);
   }
 
+  /** Rename a stored conversation; updates the sidebar row on success. */
+  async function handleRenameSession(id: string, title: string): Promise<boolean> {
+    if (streaming) return false;
+    return renameSession(id, title);
+  }
+
   /** Validate the draft, clear it, then hand the text to the chat hook. */
   async function send() {
     if (!input.trim() || streaming) return;
@@ -208,6 +215,7 @@ export default function App() {
         onNewSession={handleNewSession}
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
         onExportSession={exportSessionMarkdown}
         settings={settings}
         onSystemPromptChange={updateSystemPrompt}

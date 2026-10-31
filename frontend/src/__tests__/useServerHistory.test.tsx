@@ -210,6 +210,54 @@ describe('useServerHistory', () => {
     expect(result.current.sessions.map((s) => s.id)).toContain(A);
   });
 
+
+  it('renames a stored conversation and updates the sidebar row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const renameImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, renameImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.renameSession(A, 'Judul baru');
+    });
+
+    expect(renameImpl).toHaveBeenCalledWith(A, 'Judul baru', expect.objectContaining({ apiKey: 'k' }));
+    expect(ok).toBe(true);
+    expect(result.current.sessions[0]?.title).toBe('Judul baru');
+  });
+
+  it('leaves the row untouched when the server refuses the rename', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const renameImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, renameImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.renameSession(A, 'Judul baru');
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.sessions[0]?.title).toBe('Deploy');
+  });
+
+  it('refuses to rename a local draft, which has no server row', async () => {
+    const renameImpl = vi.fn();
+    const { result } = renderHook(() => useServerHistory(deps({ renameImpl })));
+    await act(async () => {});
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.renameSession('draft_1', 'Judul baru');
+    });
+
+    expect(renameImpl).not.toHaveBeenCalled();
+    expect(ok).toBe(false);
+  });
+
   it('mirrors the live transcript onto the active row for export', async () => {
     const { result } = renderHook(() => useServerHistory(deps()));
     await act(async () => {});

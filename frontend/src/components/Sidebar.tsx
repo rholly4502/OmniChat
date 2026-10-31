@@ -1,4 +1,5 @@
 import { useState, type RefObject } from 'react';
+import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
 import type { ChatSession, ChatSettings, ModelOption } from '../types';
 
@@ -40,6 +41,8 @@ export interface SidebarProps {
   onSelectSession?: (id: string) => void;
   /** Delete a session. */
   onDeleteSession?: (id: string) => void;
+  /** Rename a session; resolves when the server accepts the new title. */
+  onRenameSession?: (id: string, title: string) => Promise<boolean>;
   /** Export a session. */
   onExportSession?: (session: ChatSession) => void;
   /** Optional LLM sampling settings and system prompt. */
@@ -79,6 +82,7 @@ export function Sidebar({
   onNewSession,
   onSelectSession,
   onDeleteSession,
+  onRenameSession,
   onExportSession,
   settings,
   onSystemPromptChange,
@@ -91,6 +95,8 @@ export function Sidebar({
   // when the user confirms. A 44px bin sits next to the session label, so a
   // single mistap used to destroy a whole conversation with no undo.
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
 
   return (
     <aside
@@ -230,6 +236,40 @@ export function Sidebar({
                     </div>
                   ) : (
                   <>
+                  {renamingId === s.id ? (
+                    <form
+                      className="flex flex-1 min-w-0 items-center gap-1"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const trimmed = renameDraft.trim();
+                        if (!trimmed) return;
+                        onRenameSession?.(s.id, trimmed).then((ok) => {
+                          if (ok) setRenamingId(null);
+                        });
+                      }}
+                    >
+                      <input
+                        autoFocus
+                        value={renameDraft}
+                        onChange={(e) => setRenameDraft(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            e.stopPropagation();
+                            setRenamingId(null);
+                          }
+                        }}
+                        aria-label={`Judul baru untuk ${s.title}`}
+                        className="min-w-0 flex-1 bg-chill-surface border border-chill-border px-2 py-1 text-base md:text-sm outline-none focus:border-chill-accent min-h-[44px]"
+                      />
+                      <button
+                        type="submit"
+                        aria-label={`Simpan nama ${s.title}`}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                      </button>
+                    </form>
+                  ) : (
                   <button
                     type="button"
                     onClick={() => onSelectSession?.(s.id)}
@@ -239,6 +279,7 @@ export function Sidebar({
                   >
                     <span className="truncate flex-1 pr-1.5">{s.title}</span>
                   </button>
+                  )}
                   <div className="flex items-center gap-0.5 opacity-100 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                     {onExportSession && s.messages.length > 0 && (
                       <button
@@ -252,6 +293,21 @@ export function Sidebar({
                         className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                      </button>
+                    )}
+                    {onRenameSession && isServerConversation(s.id) && (
+                      <button
+                        type="button"
+                        title="Ganti nama sesi"
+                        aria-label={`Ganti nama ${s.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenameDraft(s.title);
+                          setRenamingId(s.id);
+                        }}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                       </button>
                     )}
                     {onDeleteSession && (

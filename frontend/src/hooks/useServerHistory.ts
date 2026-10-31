@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, Message } from '../types';
-import { deleteConversation, getConversation, listConversations } from '../historyApi';
+import { deleteConversation, getConversation, listConversations, renameConversation } from '../historyApi';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
@@ -26,6 +26,7 @@ export interface ServerHistoryOptions {
   listImpl?: typeof listConversations;
   getImpl?: typeof getConversation;
   deleteImpl?: typeof deleteConversation;
+  renameImpl?: typeof renameConversation;
 }
 
 /** Session list plus the actions the sidebar and App drive. */
@@ -40,6 +41,8 @@ export interface ServerHistoryResult {
   selectSession: (id: string) => Promise<Message[] | null>;
   /** Delete `id` and resolve the transcript the caller should now show. */
   deleteSession: (id: string) => Promise<Message[] | null>;
+  /** Rename `id`; resolves true when the server accepted the new title. */
+  renameSession: (id: string, title: string) => Promise<boolean>;
   /** Adopt the id the server assigned to the active draft, then refresh the list. */
   adoptConversation: (id: string) => void;
   /** Mirror the in-flight transcript onto the active row, so export sees it. */
@@ -62,7 +65,7 @@ export interface ServerHistoryResult {
  * has to remain usable in either case.
  */
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, listImpl, getImpl, deleteImpl } = options;
+  const { apiKey, listImpl, getImpl, deleteImpl, renameImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -73,10 +76,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl };
-  }, [listImpl, getImpl, deleteImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl };
+  }, [listImpl, getImpl, deleteImpl, renameImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -203,6 +206,24 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     [sessions, apiKey, loadTranscript],
   );
 
+
+  const renameSession = useCallback(
+    async (id: string, title: string): Promise<boolean> => {
+      if (!isServerConversation(id)) return false;
+      const rename = impls.current.rename ?? renameConversation;
+      try {
+        await rename(id, title, { apiKey: apiKey || undefined });
+      } catch {
+        // The server still holds the old title; the row is left untouched.
+        return false;
+      }
+      setSessions((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, title } : s)),
+      );
+      return true;
+    },
+    [apiKey],
+  );
   const adoptConversation = useCallback((id: string) => {
     const draftId = activeRef.current;
     if (!draftId || isServerConversation(draftId)) return;
@@ -251,6 +272,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     createSession,
     selectSession,
     deleteSession,
+    renameSession,
     adoptConversation,
     updateActiveSessionMessages,
     exportSessionMarkdown,

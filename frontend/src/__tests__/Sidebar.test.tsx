@@ -458,4 +458,70 @@ describe('Sidebar', () => {
     expect(chevron).not.toBeNull();
     expect(chevron!.getAttribute('class') ?? '').toContain('group-open:rotate-180');
   });
+
+  it('shows a rename button on server conversations and renames through it', async () => {
+    const onRenameSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onRenameSession,
+    });
+
+    // Pencil only appears for a server-backed conversation, not a local draft.
+    fireEvent.click(screen.getByLabelText(`Ganti nama Deploy`));
+    expect(onRenameSession).not.toHaveBeenCalled();
+
+    const input = screen.getByLabelText('Judul baru untuk Deploy') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
+    fireEvent.change(input, { target: { value: 'Obrolan baru' } });
+    fireEvent.submit(input.closest('form')!);
+
+    expect(onRenameSession).toHaveBeenCalledWith(A, 'Obrolan baru');
+  });
+
+  it('keeps the rename editor open when the server rejects the new title', async () => {
+    const onRenameSession = vi.fn().mockResolvedValue(false);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onRenameSession,
+    });
+
+    fireEvent.click(screen.getByLabelText('Ganti nama Deploy'));
+    const input = screen.getByLabelText('Judul baru untuk Deploy');
+    fireEvent.change(input, { target: { value: 'Obrolan baru' } });
+    fireEvent.submit(input.closest('form')!);
+
+    await vi.waitFor(() => expect(onRenameSession).toHaveBeenCalledTimes(1));
+    expect(screen.getByLabelText('Judul baru untuk Deploy')).toBeInTheDocument();
+  });
+
+  it('dismisses the rename editor on Escape and keeps the old title', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onRenameSession: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByLabelText('Ganti nama Deploy'));
+    const input = screen.getByLabelText('Judul baru untuk Deploy');
+    fireEvent.keyDown(input, { key: 'Escape' });
+
+    expect(screen.queryByLabelText('Judul baru untuk Deploy')).not.toBeInTheDocument();
+    expect(screen.getByText('Deploy')).toBeInTheDocument();
+  });
+
+  it('hides the rename button for a local draft', () => {
+    renderSidebar({
+      sessions: [{ id: 'draft_1', title: 'Obrolan Baru', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 'draft_1',
+      onRenameSession: vi.fn(),
+    });
+
+    expect(screen.queryByLabelText('Ganti nama Obrolan Baru')).not.toBeInTheDocument();
+  });
+
 });
