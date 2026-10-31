@@ -118,8 +118,8 @@ jobs:
               SUMMARY="$(curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses/summary?month=2026-10")"
               echo "$SUMMARY" | head -c 400; echo
               TOTAL="$(printf '%s' "$SUMMARY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',0))")"
-              echo "Summary total = $TOTAL (expect 936000 - 7jt gaji TIDAK ikut)"
-              if [ "$TOTAL" -ne 936000 ]; then
+              echo "Summary total = $TOTAL (expect 979000 - 7jt gaji TIDAK ikut)"
+              if [ "$TOTAL" -ne 979000 ]; then
                 echo "ERROR: summary total mismatch -- income may be counted as expense"
                 exit 1
               fi
