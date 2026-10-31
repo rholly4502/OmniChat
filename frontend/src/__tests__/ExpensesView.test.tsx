@@ -84,6 +84,8 @@ describe('ExpensesView', () => {
     );
     render(<ExpensesView apiKey="secret" />);
     await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('Bulan pengeluaran'), { target: { value: '2026-10' } });
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
@@ -112,6 +114,8 @@ describe('ExpensesView', () => {
       }),
     );
     render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    fireEvent.change(screen.getByLabelText('Bulan pengeluaran'), { target: { value: '2026-10' } });
     await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
