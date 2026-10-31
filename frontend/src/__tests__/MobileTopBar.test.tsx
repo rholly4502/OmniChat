@@ -47,8 +47,8 @@ describe('MobileTopBar', () => {
     const agent = renderBar({ useAgent: true });
     expect(screen.getByText('Agent')).toBeInTheDocument();
     expect(screen.getByText('OmniChat')).toBeInTheDocument();
-    // hamburger svg + mode badge icon
-    expect(agent.container.querySelectorAll('svg')).toHaveLength(2);
+    // hamburger svg + mode badge icon + decorative easter-egg fish
+    expect(agent.container.querySelectorAll('svg')).toHaveLength(3);
     agent.unmount();
 
     renderBar({ useAgent: false });
@@ -96,5 +96,18 @@ describe('MobileTopBar', () => {
     const burger = screen.getByLabelText('Open menu');
     expect(burger.className).toContain('rounded-none');
     expect(burger.className).toContain('focus-visible:ring-chill-accent/60');
+  });
+  it('hides a decorative deep-sea pixel fish beside the brand until hover (easter egg)', () => {
+    const { container } = renderBar();
+    const fish = Array.from(container.querySelectorAll('svg')).find(
+      (s) => s.getAttribute('aria-hidden') === 'true' && s.className.baseVal?.includes('chill-deepsea'),
+    );
+    expect(fish).toBeDefined();
+    expect(fish!.getAttribute('aria-hidden')).toBe('true');
+    expect(fish!.getAttribute('class')).toContain('opacity-0');
+    expect(fish!.getAttribute('class')).toContain('group-hover:opacity-100');
+    expect(fish!.getAttribute('class')).toContain('group-focus-within:opacity-100');
+    expect(fish!.hasAttribute('role')).toBe(false);
+    expect(fish!.hasAttribute('tabindex')).toBe(false);
   });
 });
