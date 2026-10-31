@@ -94,6 +94,15 @@ export async function exportExpensesCsv(
   return await res.blob();
 }
 
+/** Download the monthly expense report as PDF bytes (single-page A4). */
+export async function exportExpensesPdf(
+  month: string,
+  options: ExpensesRequestOptions = {},
+): Promise<Blob> {
+  const res = await request(`${EXPENSES_URL}/export/pdf?month=${encodeURIComponent(month)}`, options);
+  return await res.blob();
+}
+
 /** One monthly trend point from `GET /api/expenses/trend`. */
 export interface ExpenseTrendPoint {
   /** YYYY-MM (WIB). */

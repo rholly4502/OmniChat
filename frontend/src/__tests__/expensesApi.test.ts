@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../api';
-import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, getExpenseTrend, EXPENSES_URL } from '../expensesApi';
+import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, EXPENSES_URL } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -77,6 +77,25 @@ describe('exportExpensesCsv', () => {
   it('throws ApiError on a 401', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(exportExpensesCsv('2026-10', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+
+describe('exportExpensesPdf', () => {
+  it('requests the pdf export endpoint with the key and yields the blob', async () => {
+    const blob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, blob: async () => blob });
+    const result = await exportExpensesPdf('2026-10', { apiKey: 'secret', fetchImpl });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toContain(`${EXPENSES_URL}/export/pdf?month=2026-10`);
+    expect((fetchImpl.mock.calls[0][1] as RequestInit).headers).toMatchObject({ 'X-Api-Key': 'secret' });
+    expect(result.type).toBe('application/pdf');
+  });
+
+  it('throws ApiError on a 401', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(exportExpensesPdf('2026-10', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });
 

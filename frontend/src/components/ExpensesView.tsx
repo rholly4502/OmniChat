@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatRupiah, exportExpensesCsv } from '../expensesApi';
+import { formatRupiah, exportExpensesCsv, exportExpensesPdf } from '../expensesApi';
 import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
@@ -90,19 +90,22 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
 
-  async function handleExport() {
+  async function handleExport(format: 'csv' | 'pdf') {
     if (!apiKey) {
-      setExportError('API key diperlukan untuk ekspor CSV.');
+      setExportError(`API key diperlukan untuk ekspor ${format.toUpperCase()}.`);
       return;
     }
     setExporting(true);
     setExportError(null);
     try {
-      const blob = await exportExpensesCsv(month, { apiKey });
+      const blob =
+        format === 'pdf'
+          ? await exportExpensesPdf(month, { apiKey })
+          : await exportExpensesCsv(month, { apiKey });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `expenses-${month}.csv`;
+      link.download = `expenses-${month}.${format}`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -134,11 +137,19 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         </label>
         <button
           type="button"
-          onClick={handleExport}
+          onClick={() => handleExport('csv')}
           disabled={exporting}
           className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleExport('pdf')}
+          disabled={exporting}
+          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
       </header>
 

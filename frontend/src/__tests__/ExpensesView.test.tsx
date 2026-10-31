@@ -96,6 +96,35 @@ describe('ExpensesView', () => {
     expect(anchor.download).toBe('expenses-2026-10.csv');
   });
 
+  it('downloads the PDF report for the selected month', async () => {
+    const createUrl = vi.fn(() => 'blob:fake');
+    const revokeUrl = vi.fn();
+    vi.stubGlobal('URL', { createObjectURL: createUrl, revokeObjectURL: revokeUrl });
+    const bodyAppend = vi.spyOn(document.body, 'appendChild');
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('/export/pdf')) {
+          return Promise.resolve({ ok: true, blob: async () => new Blob(['%PDF-1.4'], { type: 'application/pdf' }) });
+        }
+        return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+      }),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(createUrl).toHaveBeenCalled());
+    expect(screen.queryByText('Gagal ekspor')).not.toBeInTheDocument();
+    const pdfAnchor = bodyAppend.mock.calls
+      .map((c) => c[0])
+      .find((el: Element) => el.tagName === 'A' && (el as HTMLAnchorElement).download === 'expenses-2026-10.pdf') as HTMLAnchorElement | undefined;
+    expect(pdfAnchor).toBeDefined();
+    expect(pdfAnchor!.download).toBe('expenses-2026-10.pdf');
+  });
+
   it('surfaces an API error with a retry button', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 401 })));
     render(<ExpensesView apiKey="secret" />);

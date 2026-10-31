@@ -3,6 +3,7 @@ using System.Text;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Data;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Entities;
 
 namespace OmniChat.Api.Controllers;
@@ -173,6 +174,29 @@ public sealed class ExpensesController(IExpenseRepository repository) : Controll
             .ToArray();
 
         return File(bytes, "text/csv; charset=utf-8", $"expenses-{month}.csv");
+    }
+
+    /// <summary>Monthly report as PDF (single-page A4) for archival/print use.</summary>
+    /// <param name="month">Month key <c>YYYY-MM</c>.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">PDF file download.</response>
+    /// <response code="400">Invalid month key.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("export/pdf")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ExportPdf(
+        [FromQuery] string month, CancellationToken cancellationToken = default)
+    {
+        if (!TryMonth(month, out _))
+        {
+            return InvalidMonth(month);
+        }
+
+        var rows = await repository.ListAllForMonthAsync(month, cancellationToken);
+        var bytes = ExpensePdfReport.Build(month, rows);
+        return File(bytes, "application/pdf", $"expenses-{month}.pdf");
     }
 
     /// <summary>Monthly spend totals over the last N months (for the trend chart).</summary>

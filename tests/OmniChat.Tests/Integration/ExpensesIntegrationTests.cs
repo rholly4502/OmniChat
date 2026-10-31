@@ -245,6 +245,74 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
     }
 
     [Fact]
+    public async Task ExportPdf_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.GetAsync("/api/expenses/export/pdf?month=2026-10");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task ExportPdf_withApiKey_returnsPdfReport()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Belanja",
+                            Keterangan = "Belanja, grosir", Nominal = 300_000, SourceId = "a1b2e5" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "Warteg", Nominal = 20_000, SourceId = "a1b2c3" },
+                    ], CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/export/pdf?month=2026-10");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("application/pdf", response.Content.Headers.ContentType?.MediaType);
+            Assert.Contains("attachment", response.Content.Headers.ContentDisposition?.DispositionType ?? "");
+            Assert.Contains("expenses-2026-10.pdf", response.Content.Headers.ContentDisposition?.FileName ?? "");
+
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            // PDF magic header + EOF marker.
+            Assert.StartsWith("%PDF-1.4", System.Text.Encoding.ASCII.GetString(bytes[..9]));
+            Assert.Contains("%%EOF", System.Text.Encoding.ASCII.GetString(bytes));
+            // Referenced text (escaped for PDF literal) appears in the content stream.
+            var text = System.Text.Encoding.ASCII.GetString(bytes);
+            Assert.Contains("2026-10-28", text);
+            Assert.Contains("Warteg", text);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task ExportPdf_invalidMonth_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.GetAsync("/api/expenses/export/pdf?month=not-a-month");
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
     public async Task Trend_requiresApiKey()
     {
         var db = TempDb();

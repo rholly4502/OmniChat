@@ -804,8 +804,11 @@ public class DeploymentConfigTests
         var readme = Read("README.md");
         var features = ExtractTopLevelSection(readme, "## Fitur");
 
-        Assert.Contains("305 tests", features);
-        Assert.DoesNotContain("23 tests", features);
+        Assert.Contains("**323 tests**", features);
+        // The old claim ("23 tests") is a substring of the current count, so target
+        // the historical phrasing instead of a bare number. A regression to the stale
+        // "23 tests" claim would not carry the "**" emphasis and is caught here.
+        Assert.DoesNotContain("**23 tests**", features);
         Assert.Contains("RateLimit__TokenLimit", features);
         Assert.Contains("Streaming__IdleTimeoutSeconds", features);
     }
@@ -907,6 +910,25 @@ public class DeploymentConfigTests
         Assert.Contains("schedule:", seed);
         Assert.Contains("cron:", seed);
         Assert.Contains("workflow_dispatch:", seed); // manual trigger must remain
+    }
+
+    [Fact]
+    public void ExpensesPdfExport_ExistsBackEndAndFrontend()
+    {
+        // P1-2 report export: the PDF generator, the controller route and the
+        // frontend button must all exist so the feature cannot silently regress
+        // to CSV-only.
+        var controller = Read("src/OmniChat.Api/Controllers/ExpensesController.cs");
+        Assert.Contains("[HttpGet(\"export/pdf\")]", controller);
+        Assert.Contains("ExpensePdfReport.Build", controller);
+
+        var report = Read("src/OmniChat.Api/Infrastructure/Services/ExpensePdfReport.cs");
+        Assert.Contains("%PDF-1.4", report);
+        Assert.Contains("%%EOF", report);
+
+        var view = Read("frontend/src/components/ExpensesView.tsx");
+        Assert.Contains("Ekspor PDF", view);
+        Assert.Contains("exportExpensesPdf", view);
     }
 
     [Fact]
