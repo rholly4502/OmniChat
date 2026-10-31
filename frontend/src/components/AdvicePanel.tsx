@@ -78,7 +78,10 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           )}
 
           {loading && !advice && !error && (
-            <p role="status" className="text-sm text-chill-muted">Menganalisa pengeluaran…</p>
+            <p role="status" className="text-sm text-chill-muted inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink" aria-hidden="true" />
+              Menganalisa pengeluaran…
+            </p>
           )}
 
           {advice && !error && (
@@ -89,14 +92,20 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 </p>
               ) : advice.status === 'over_budget' ? (
                 <div className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2.5">
-                  <p className="text-sm font-medium text-chill-red">
-                    ⚠️ Over budget: {formatRupiah(advice.dayTotal)} &gt; anggaran harian {formatRupiah(advice.dailyBudget)} (lebih {formatRupiah(advice.overBy)})
+                  <p className="text-sm font-medium text-chill-red flex items-start gap-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
+                      <path d="M12 4l9 16H3L12 4ZM12 10v4M12 17h.01" />
+                    </svg>
+                    <span>Over budget: {formatRupiah(advice.dayTotal)} &gt; anggaran harian {formatRupiah(advice.dailyBudget)} (lebih {formatRupiah(advice.overBy)})</span>
                   </p>
                 </div>
               ) : (
                 <div className="rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2.5">
-                  <p className="text-sm font-medium text-chill-accent">
-                    ✓ Oke: {formatRupiah(advice.dayTotal)} ≤ anggaran harian {formatRupiah(advice.dailyBudget)}
+                  <p className="text-sm font-medium text-chill-accent flex items-start gap-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
+                      <path d="M4 12l5 5L20 6" />
+                    </svg>
+                    <span>Oke: {formatRupiah(advice.dayTotal)} ≤ anggaran harian {formatRupiah(advice.dailyBudget)}</span>
                   </p>
                 </div>
               )}

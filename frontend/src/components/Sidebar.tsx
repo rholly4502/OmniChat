@@ -326,7 +326,7 @@ export function Sidebar({
                         className="shrink-0 text-xs leading-none text-chill-muted"
                         aria-label={`${formatTokens(s.totalTokens)} token`}
                       >
-                        <span aria-hidden="true">⚡</span> {formatTokens(s.totalTokens)}
+                        <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {formatTokens(s.totalTokens)}
                       </span>
                     )}
                   </button>

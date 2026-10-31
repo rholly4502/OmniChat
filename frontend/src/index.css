@@ -215,6 +215,18 @@ body {
 .pixel-shadow  { box-shadow: 3px 3px 0 0 rgb(0 0 0 / 0.45); }
 .pixel-shadow-sm{ box-shadow: 2px 2px 0 0 rgb(0 0 0 / 0.35); }
 
+/* Pixel2 stepped transitions: pixel-art UIs snap rather than tween. Every
+   chill control carries .pixel-shadow / .pixel-shadow-sm (plus Tailwind's
+   `transition*` utilities); re-time those from the default smooth ease to
+   two discrete steps so hover colours crossfade in one hard beat and the
+   physical press-slide drops in two chunky snaps — matching the 8px grid.
+   Reduced-motion is handled by the global media block at the top. */
+.pixel-shadow,
+.pixel-shadow-sm {
+  transition-duration: 120ms;
+  transition-timing-function: steps(2, jump-none);
+}
+
 /* Headings / brand in a terminal-ish monospace for the pixel vibe. */
 .pixel-heading {
   font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;

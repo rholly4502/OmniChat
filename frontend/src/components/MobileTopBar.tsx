@@ -57,7 +57,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         </span>
         {(tokenLabel || estimate) && (
           <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
-            <span aria-hidden="true">⚡</span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
+            <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
           </span>
         )}
         <button
@@ -108,7 +108,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
       </span>
       {(tokenLabel || estimate) && (
         <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
-          <span aria-hidden="true">⚡</span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
+          <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
         </span>
       )}
     </div>
