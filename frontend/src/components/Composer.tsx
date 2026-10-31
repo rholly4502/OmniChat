@@ -62,7 +62,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
             className="bg-chill-red text-chill-on-red hover:bg-chill-red-hover active:bg-chill-red-active active:translate-y-[3px] active:shadow-none rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center gap-1.5 pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="6" y="6" width="12" height="12" rx="2" />
+              <rect x="6" y="6" width="12" height="12" />
             </svg>
             Stop
           </button>
