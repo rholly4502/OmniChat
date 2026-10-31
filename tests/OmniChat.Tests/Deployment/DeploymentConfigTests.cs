@@ -931,6 +931,32 @@ public class DeploymentConfigTests
         Assert.Contains("exportExpensesPdf", view);
     }
 
+
+    [Fact]
+    public void ExpensesAdvice_ExistsBackEndAndFrontend()
+    {
+        // P1-3 Analisa & Saran: the controller route, the deterministic service
+        // and the frontend panel must all exist so the feature cannot silently
+        // regress to day-total-only.
+        var controller = Read("src/OmniChat.Api/Controllers/ExpensesController.cs");
+        Assert.Contains("[HttpGet(\"advice\")]", controller);
+        Assert.Contains("IExpenseAdviceService", controller);
+
+        var service = Read("src/OmniChat.Api/Infrastructure/Services/ExpenseAdviceService.cs");
+        Assert.Contains("\"over_budget\"", service);
+        Assert.Contains("Nabung", service);
+
+        var options = Read("src/OmniChat.Api/Infrastructure/Options/ExpenseAdviceOptions.cs");
+        Assert.Contains("PcVga", options);
+        Assert.Contains("PcSsd", options);
+
+        var panel = Read("frontend/src/components/AdvicePanel.tsx");
+        Assert.Contains("Analisa", panel);
+        Assert.Contains("getExpenseAdvice", panel);
+
+        var api = Read("frontend/src/expensesApi.ts");
+        Assert.Contains("getExpenseAdvice", api);
+    }
     [Fact]
     public void FrontendPackageJson_HasTestScript()
     {

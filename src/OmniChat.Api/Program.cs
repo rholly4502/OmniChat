@@ -147,6 +147,8 @@ builder.Services.AddHttpClient("LLMClient", client =>
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
+builder.Services.Configure<ExpenseAdviceOptions>(builder.Configuration.GetSection(ExpenseAdviceOptions.SectionName));
+builder.Services.AddScoped<IExpenseAdviceService, ExpenseAdviceService>();
 
 // Chat-history persistence (SQLite via EF Core). Registration only: nothing opens a
 // connection until a repository method runs, so an unwritable volume or a disabled

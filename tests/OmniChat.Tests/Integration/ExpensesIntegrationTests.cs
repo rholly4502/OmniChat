@@ -383,4 +383,76 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
         }
         finally { File.Delete(db); }
     }
+    [Fact]
+    public async Task Advice_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.GetAsync("/api/expenses/advice?date=2026-10-28");
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Advice_withApiKey_returnsAdvice()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "Warteg", Nominal = 20_000, SourceId = "a1b2c3" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "20:00", Kategori = "Belanja",
+                            Keterangan = "Sembako", Nominal = 300_000, SourceId = "a1b2c4" },
+                    ], CancellationToken.None);
+                await repository.UpsertTargetAsync(
+                    new ExpenseTarget { Month = "2026-10", TargetNabung = 467_000, Anggaran = 520_000 },
+                    CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/advice?date=2026-10-28");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            Assert.Equal("2026-10-28", root.GetProperty("date").GetString());
+            Assert.Equal("2026-10", root.GetProperty("month").GetString());
+            // 320000 spent on the 28th » 16774 daily budget → over.
+            Assert.Equal("over_budget", root.GetProperty("status").GetString());
+            Assert.Equal(320_000, root.GetProperty("dayTotal").GetInt64());
+            Assert.True(root.GetProperty("suggestions").GetArrayLength() > 0);
+            Assert.True(root.GetProperty("categoryTrend").GetArrayLength() >= 2);
+            Assert.Equal("Belanja", root.GetProperty("categoryTrend")[0].GetProperty("kategori").GetString());
+            Assert.Equal(520_000, root.GetProperty("projection").GetProperty("anggaran").GetInt64());
+            Assert.Equal("VGA", root.GetProperty("pcGoal").GetProperty("parts")[0].GetProperty("name").GetString());
+            Assert.Equal(8_700_000, root.GetProperty("pcGoal").GetProperty("totalNeeded").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Advice_invalidDate_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.GetAsync("/api/expenses/advice?date=not-a-date");
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
 }

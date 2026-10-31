@@ -16,7 +16,7 @@ namespace OmniChat.Api.Controllers;
 [ApiController]
 [Route("api/expenses")]
 [Tags("Expenses")]
-public sealed class ExpensesController(IExpenseRepository repository) : ControllerBase
+public sealed class ExpensesController(IExpenseRepository repository, IExpenseAdviceService advice) : ControllerBase
 {
     /// <summary>Paged transaction list for a month, newest first.</summary>
     /// <param name="month">Month key <c>YYYY-MM</c>, e.g. <c>2026-10</c>.</param>
@@ -236,6 +236,45 @@ public sealed class ExpensesController(IExpenseRepository repository) : Controll
             points = points.Select(p => new { p.Month, p.Total }).ToList(),
         });
     }
+
+    /// <summary>Daily Analisa &amp; Saran for a date: day spend vs daily budget, tips when
+    /// over budget, category trend, end-of-month projection, and the PC-goal estimate.</summary>
+    /// <param name="date">Date <c>YYYY-MM-DD</c> (WIB). Defaults to today.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">The advice report.</response>
+    /// <response code="400">Invalid date.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("advice")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Advice(
+        [FromQuery] string? date, CancellationToken cancellationToken = default)
+    {
+        var day = string.IsNullOrWhiteSpace(date)
+            ? DateOnly.FromDateTime(DateTime.UtcNow)
+            : (DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsed) ? parsed : (DateOnly?)null);
+
+        if (day is null)
+        {
+            return InvalidDate(date);
+        }
+
+        var result = await advice.BuildAsync(day.Value, cancellationToken);
+        return Ok(result);
+    }
+
+    private ObjectResult InvalidDate(string? date) => new(new ProblemDetails
+    {
+        Title = "Validation Failed",
+        Status = StatusCodes.Status400BadRequest,
+        Detail = $"'{date ?? ""}' is not a valid YYYY-MM-DD date.",
+        Instance = HttpContext.Request.Path,
+    })
+    {
+        StatusCode = StatusCodes.Status400BadRequest,
+        ContentTypes = { ProblemDetailsResponse.ContentType },
+    };
 
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
         private static string Csv(string value)

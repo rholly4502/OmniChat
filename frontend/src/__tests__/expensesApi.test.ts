@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../api';
-import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, EXPENSES_URL } from '../expensesApi';
+import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, getExpenseAdvice, EXPENSES_URL } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -122,5 +122,46 @@ describe('getExpenseTrend', () => {
   it('throws ApiError on 401', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(getExpenseTrend({ fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('getExpenseAdvice', () => {
+  it('calls the advice endpoint with the date, sends the key and parses the payload', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({
+        date: '2026-10-28',
+        month: '2026-10',
+        dayTotal: 320000,
+        dailyBudget: 16774,
+        status: 'over_budget',
+        overBy: 303226,
+        suggestions: ['Ganti minuman manis dengan air putih'],
+        categoryTrend: [{ kategori: 'Belanja', total: 300000 }],
+        projection: { spentSoFar: 320000, daysElapsed: 28, daysInMonth: 31, projectedTotal: 354286, anggaran: 520000, projectedOver: 0 },
+        pcGoal: {
+          parts: [{ name: 'VGA', price: 3500000 }],
+          totalNeeded: 8700000,
+          nabungSoFar: 1000000,
+          percentCollected: 11.5,
+          remaining: 7700000,
+          potentialSavingPerMonth: 200000,
+          monthsToReach: 39,
+        },
+      }),
+    );
+    const advice = await getExpenseAdvice('2026-10-28', { apiKey: 'secret', fetchImpl });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toContain(`${EXPENSES_URL}/advice?date=2026-10-28`);
+    expect((fetchImpl.mock.calls[0][1] as RequestInit).headers).toMatchObject({ 'X-Api-Key': 'secret' });
+    expect(advice.status).toBe('over_budget');
+    expect(advice.suggestions).toHaveLength(1);
+    expect(advice.pcGoal.totalNeeded).toBe(8700000);
+    expect(advice.pcGoal.monthsToReach).toBe(39);
+  });
+
+  it('throws ApiError on 401', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(getExpenseAdvice('2026-10-28', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });

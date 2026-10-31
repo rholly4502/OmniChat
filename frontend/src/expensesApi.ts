@@ -130,6 +130,64 @@ export async function getExpenseTrend(
 
 /** Format an integer rupiah amount for display, e.g. "Rp 20.000". */
 
+/** One category with its month total (advice trend block). */
+export interface CategoryTrendItem {
+  kategori: string;
+  total: number;
+}
+
+/** End-of-month spend projection from the run-rate so far. */
+export interface ProjectionDto {
+  spentSoFar: number;
+  daysElapsed: number;
+  daysInMonth: number;
+  projectedTotal: number;
+  anggaran: number;
+  projectedOver: number;
+}
+
+/** One PC-goal part and its price. */
+export interface PartItem {
+  name: string;
+  price: number;
+}
+
+/** PC-goal saving estimate block from the advice payload. */
+export interface PcGoalDto {
+  parts: PartItem[];
+  totalNeeded: number;
+  nabungSoFar: number;
+  percentCollected: number;
+  remaining: number;
+  potentialSavingPerMonth: number;
+  monthsToReach: number | null;
+}
+
+/** Analisa & Saran report from `GET /api/expenses/advice`. */
+export interface ExpenseAdvice {
+  /** YYYY-MM-DD (WIB). */
+  date: string;
+  /** YYYY-MM. */
+  month: string;
+  dayTotal: number;
+  dailyBudget: number;
+  status: 'oke' | 'over_budget' | 'no_target';
+  overBy: number;
+  suggestions: string[];
+  categoryTrend: CategoryTrendItem[];
+  projection: ProjectionDto;
+  pcGoal: PcGoalDto;
+}
+
+/** Fetch the daily Analisa & Saran report for a date (YYYY-MM-DD). */
+export async function getExpenseAdvice(
+  date: string,
+  options: ExpensesRequestOptions = {},
+): Promise<ExpenseAdvice> {
+  const res = await request(`${EXPENSES_URL}/advice?date=${encodeURIComponent(date)}`, options);
+  return (await res.json()) as ExpenseAdvice;
+}
+
 export function formatRupiah(value: number): string {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',

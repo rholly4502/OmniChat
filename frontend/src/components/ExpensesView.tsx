@@ -4,6 +4,7 @@ import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
+import { AdvicePanel } from './AdvicePanel';
 import type { ExpenseItem } from '../expensesApi';
 
 /** Props accepted by {@link ExpensesView}. */
@@ -215,6 +216,8 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             {summary!.catatan ? (
               <p className="text-xs text-chill-muted">{summary!.catatan}</p>
             ) : null}
+
+            <AdvicePanel apiKey={apiKey} month={month} />
 
             <section aria-label="Tren pengeluaran bulanan" className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
               <div className="flex items-center justify-between gap-3 mb-3">
