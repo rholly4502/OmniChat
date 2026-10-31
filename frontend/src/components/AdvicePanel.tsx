@@ -63,7 +63,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           onClick={toggle}
           aria-expanded={open}
           disabled={loading}
-          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
         >
           {loading ? 'Menganalisa…' : open ? 'Tutup' : 'Analisa & Saran'}
         </button>
@@ -117,7 +117,15 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
 
               {advice.categoryTrend.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-2 pixel-heading">Pola pengeluaran bulan ini</h4>
+                  <div className="flex items-center gap-1.5 mb-2">
+                    {/* Easter egg: deep-sea bubble (Dave the Diver) — decorative, decorative-hidden */}
+                    <span title="Dave the Diver: dive the monthly trend 🐠" className="inline-flex">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-deepsea">
+                        <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />
+                      </svg>
+                    </span>
+                    <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pola pengeluaran bulan ini</h4>
+                  </div>
                   <ul className="space-y-1">
                     {advice.categoryTrend.slice(0, 4).map((c) => (
                       <li key={c.kategori} className="flex items-center justify-between text-sm">
@@ -136,7 +144,15 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
               )}
 
               <div className="border-t border-chill-border pt-3">
-                <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-2 pixel-heading">Goal: Part PC</h4>
+                <div className="flex items-center gap-1.5 mb-2">
+                    {/* Easter egg: sage sprout (Stardew Valley) — decorative, aria-hidden */}
+                    <span title="Stardew Valley: keep harvesting your savings 🌱" className="inline-flex">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-sage">
+                        <path d="M12 21V10M12 10l4-4M12 10l-4-4M12 15l-3-3M12 15l3-3" />
+                      </svg>
+                    </span>
+                    <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Goal: Part PC</h4>
+                  </div>
                 <ul className="space-y-1 mb-2">
                   {advice.pcGoal.parts.map((part) => (
                     <li key={part.name} className="flex items-center justify-between text-sm">

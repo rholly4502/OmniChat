@@ -59,7 +59,6 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
     tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-accent' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
   return (
     <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden">
-      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-8 text-chill-border/40 pixel-grid opacity-50" />
       <div className="relative flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10' : tone === 'emerald' ? 'text-chill-accent border-chill-accent/40 bg-chill-accent/10' : 'text-chill-accent border-chill-accent/40 bg-chill-accent/10'}`}>
           <CategoryIcon kategori={icon} className="w-5 h-5" />
@@ -124,7 +123,6 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain bg-chill-bg text-chill-text">
       <header className="shrink-0 px-4 pt-3 pb-2 border-b border-chill-border flex items-center justify-between gap-3 flex-wrap relative overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-y-0 right-0 w-16 text-chill-border/40 pixel-grid opacity-40" />
         <h2 className="relative text-base font-semibold text-chill-text pixel-heading">Pengeluaran</h2>
         <label className="relative flex items-center gap-2 text-xs text-chill-muted">
           Bulan
@@ -133,14 +131,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             aria-label="Bulan pengeluaran"
             value={month}
             onChange={(e) => e.target.value && setMonth(e.target.value)}
-            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text"
+            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
           />
         </label>
         <button
           type="button"
           onClick={() => handleExport('csv')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
         </button>
@@ -148,7 +146,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('pdf')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
@@ -169,7 +167,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <button
               type="button"
               onClick={reload}
-              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/20 active:translate-y-[2px] active:shadow-none pixel-shadow-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
             >
               Coba lagi
             </button>
@@ -226,7 +224,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   type="button"
                   onClick={trend.reload}
                   disabled={trend.loading}
-                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-surface active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
                 >
                   {trend.loading ? 'Memuat…' : 'Segarkan'}
                 </button>
