@@ -210,7 +210,7 @@ export function Sidebar({
                             setPendingDeleteId(null);
                           }}
                           aria-label={`Batal hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] border border-chill-border px-2 text-sm text-chill-text transition hover:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                          className="min-h-[44px] min-w-[52px] rounded-none border-2 border-chill-border px-2 text-sm text-chill-text transition hover:bg-chill-surface hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                         >
                           Batal
                         </button>
@@ -222,7 +222,7 @@ export function Sidebar({
                             onDeleteSession?.(s.id);
                           }}
                           aria-label={`Konfirmasi hapus ${s.title}`}
-                          className="min-h-[44px] min-w-[52px] bg-chill-red/20 px-2 text-sm font-medium text-chill-red transition hover:bg-chill-red/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+                          className="min-h-[44px] min-w-[52px] rounded-none bg-chill-red text-chill-on-red px-2 text-sm font-medium transition hover:bg-chill-red-hover active:bg-chill-red-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
                         >
                           Hapus
                         </button>
