@@ -69,3 +69,34 @@ describe('AdvicePanel', () => {
     expect(await screen.findByText('Gagal memuat analisa (401).')).toBeInTheDocument();
   });
 });
+
+
+describe('AdvicePanel pixel2 chill design', () => {
+  it('renders in the chill register (square edges, hard offset shadow, pixel heading)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const panel = container.querySelector('section[aria-label="Analisa dan Saran"]');
+    expect(panel?.className).toContain('rounded-none');
+    expect(panel?.className).toContain('pixel-shadow');
+    expect(panel?.querySelector('h3')?.className).toContain('pixel-heading');
+  });
+
+  it('keeps the decorative easter-egg accents (deep sea + sage) subtle and aria-hidden', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const diver = screen.getByTitle('Dave the Diver: dive the monthly trend 🐠');
+    expect(diver.querySelector('svg[aria-hidden]')).toBeTruthy();
+    expect(diver.querySelector('svg')?.getAttribute('class')).toContain('text-chill-deepsea');
+
+    const sprout = screen.getByTitle('Stardew Valley: keep harvesting your savings 🌱');
+    expect(sprout.querySelector('svg[aria-hidden]')).toBeTruthy();
+    expect(sprout.querySelector('svg')?.getAttribute('class')).toContain('text-chill-sage');
+  });
+});
+

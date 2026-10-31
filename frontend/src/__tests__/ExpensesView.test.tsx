@@ -137,3 +137,20 @@ describe('ExpensesView', () => {
     expect(screen.getByText('Coba lagi')).toBeInTheDocument();
   });
 });
+
+
+describe('ExpensesView pixel2 chill design', () => {
+  it('uses square, hard-shadow control styling on the header actions and pixel heading', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const csv = screen.getByRole('button', { name: 'Ekspor CSV' });
+    expect(csv.className).toContain('rounded-none');
+    expect(csv.className).toContain('pixel-shadow-sm');
+
+    expect(screen.getByRole('button', { name: 'Ekspor PDF' }).className).toContain('rounded-none');
+    expect(screen.getByRole('heading', { name: 'Pengeluaran' }).className).toContain('pixel-heading');
+  });
+});
+
