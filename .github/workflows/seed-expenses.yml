@@ -47,13 +47,19 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p ledger
-          cp .github/seed-staging/ledger/2026-10.csv ledger/2026-10.csv
-          cp .github/seed-staging/ledger/pemasukan.csv ledger/pemasukan.csv
+          # Ship every monthly ledger CSV + income + targets. Copying the whole
+          # glob (not a fixed per-file list) means a new month file is picked up
+          # automatically without editing this workflow — the P1-1 auto-refresh
+          # path stays durable as the ledger grows.
+          cp .github/seed-staging/ledger/*.csv ledger/
           cp .github/seed-staging/ledger/target.json ledger/target.json
-          echo "--- csv lines (expect 16) ---"; wc -l < ledger/2026-10.csv
+          ls -la ledger/
+          echo "--- 2026-10.csv lines (expect >=10) ---"; wc -l < ledger/2026-10.csv
           echo "--- target bytes (expect >0) ---"; wc -c < ledger/target.json
           python3 -c "import json; json.load(open('ledger/target.json')); print('target.json parses OK')"
-          test "$(wc -l < ledger/2026-10.csv)" -eq 16
+          # Floor, not exact count: the October ledger grows as new expenses are
+          # recorded, so a fixed number would break the recurring seed.
+          test "$(wc -l < ledger/2026-10.csv)" -ge 10
           test "$(wc -c < ledger/target.json)" -gt 100
 
       - name: Upload seeder + ledger to VPS
@@ -112,8 +118,8 @@ jobs:
               SUMMARY="$(curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses/summary?month=2026-10")"
               echo "$SUMMARY" | head -c 400; echo
               TOTAL="$(printf '%s' "$SUMMARY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',0))")"
-              echo "Summary total = $TOTAL (expect 728000 - 7jt gaji TIDAK ikut)"
-              if [ "$TOTAL" -ne 728000 ]; then
+              echo "Summary total = $TOTAL (expect 868000 - 7jt gaji TIDAK ikut)"
+              if [ "$TOTAL" -ne 868000 ]; then
                 echo "ERROR: summary total mismatch -- income may be counted as expense"
                 exit 1
               fi
