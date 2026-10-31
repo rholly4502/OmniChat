@@ -144,7 +144,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'chat'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm'
-              : 'text-chill-muted hover:text-chill-accent'
+              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent'
           }`}
         >
           Chat
@@ -157,7 +157,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
             activeView === 'expenses'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm'
-              : 'text-chill-muted hover:text-chill-accent'
+              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent'
           }`}
         >
           Pengeluaran
@@ -264,7 +264,7 @@ export function Sidebar({
                       <button
                         type="submit"
                         aria-label={`Simpan nama ${s.title}`}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none transition hover:text-chill-accent hover:bg-chill-surface active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
                       </button>

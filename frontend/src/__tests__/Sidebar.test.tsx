@@ -524,4 +524,32 @@ describe('Sidebar', () => {
     expect(screen.queryByLabelText('Ganti nama Obrolan Baru')).not.toBeInTheDocument();
   });
 
+  it('gives the rename-save button a focus-visible ring and a pixel press surface', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onRenameSession: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByLabelText('Ganti nama Deploy'));
+    const save = screen.getByLabelText('Simpan nama Deploy');
+    expect(save.className).toContain('focus-visible:ring-2');
+    expect(save.className).toContain('focus-visible:ring-chill-accent/60');
+    expect(save.className).toContain('active:translate-y-[2px]');
+    expect(save.className).toContain('active:shadow-none');
+    expect(save.className).toContain('pixel-shadow-sm');
+  });
+
+  it('gives the view-switcher tabs a hard-edged hover/press surface', () => {
+    renderSidebar();
+    // Chat is the active tab (selected-state branch); Pengeluaran is inactive, so
+    // it is the one that must expose the un-selected hover/press surface.
+    const expensesTab = screen.getByRole('tab', { name: 'Pengeluaran' });
+    expect(expensesTab.className).toContain('hover:bg-chill-surface');
+    expect(expensesTab.className).toContain('active:bg-chill-surface');
+    const chatTab = screen.getByRole('tab', { name: 'Chat' });
+    expect(chatTab.className).toContain('pixel-shadow-sm');
+  });
+
 });
