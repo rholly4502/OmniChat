@@ -54,6 +54,16 @@ public interface IChatHistoryRepository
     Task<bool> DeleteConversationAsync(Guid id, string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Updates the model a conversation will resume with. Returns <c>false</c> when the
+    /// conversation does not exist or does not belong to <paramref name="userId"/>.
+    /// </summary>
+    Task<bool> SetConversationModelAsync(
+        Guid id,
+        string userId,
+        string model,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Accumulates upstream token usage onto a conversation. Returns <c>false</c> when the
     /// conversation does not exist or does not belong to <paramref name="userId"/>.
     /// </summary>

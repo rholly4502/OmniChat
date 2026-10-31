@@ -134,6 +134,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               promptTokens: row.promptTokens,
               completionTokens: row.completionTokens,
               totalTokens: row.totalTokens,
+              model: row.model,
             };
           });
           return sortSessions([...serverRows, ...drafts]);
@@ -172,6 +173,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
                   promptTokens: detail.promptTokens,
                   completionTokens: detail.completionTokens,
                   totalTokens: detail.totalTokens,
+                  model: detail.model,
                 }
               : s,
           ),

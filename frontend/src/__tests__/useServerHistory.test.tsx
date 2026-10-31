@@ -144,6 +144,32 @@ describe('useServerHistory', () => {
     expect(getImpl).toHaveBeenCalledTimes(1);
   });
 
+  it('carries the stored model into sidebar rows', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl })));
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    expect(result.current.sessions[0].model).toBe('hermes');
+  });
+
+  it('adopts the transcript model when a conversation is selected', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue({
+      ...detail(A, 'Deploy', ['halo']),
+      model: 'claude-sonnet',
+    });
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    expect(result.current.sessions.find((s) => s.id === A)?.model).toBe('claude-sonnet');
+  });
+
   it('returns null when a transcript cannot be fetched', async () => {
     const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
     const getImpl = vi.fn().mockRejectedValue(new Error('404'));

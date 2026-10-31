@@ -137,6 +137,9 @@ export default function App() {
     // counter with the server's cumulative tokens for that conversation.
     const session = sessions.find((s) => s.id === id);
     loadMessages(loaded, isServerConversation(id) ? id : null, baseUsageFor(session));
+    // Multi-model per chat: resuming a conversation restores the model it last used,
+    // so the header and sidebar reflect that conversation's model, not the global one.
+    if (session?.model) setModel(session.model);
   }
 
   function handleNewSession() {
@@ -144,6 +147,7 @@ export default function App() {
     loadTokenRef.current++;
     const fresh = createSession();
     loadMessages(fresh.messages, null, { promptTokens: 0, completionTokens: 0 });
+    setModel(DEFAULT_MODEL);
   }
 
   async function handleDeleteSession(id: string) {

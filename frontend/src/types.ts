@@ -58,6 +58,8 @@ export interface ChatSession {
   completionTokens?: number;
   /** Server-reported cumulative token total (undefined for a local draft). */
   totalTokens?: number;
+  /** Model the conversation last used (undefined for a local draft). */
+  model?: string;
 }
 
 /** One row of the server-side history list, without message bodies. */

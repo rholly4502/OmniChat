@@ -252,4 +252,40 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
 
         Assert.Equal(2, listed.Count);
     }
+
+    [Fact]
+    public async Task SetConversationModel_updates_model_for_the_owner()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation());
+
+        var updated = await _repository.SetConversationModelAsync(created.Id, "admin", "claude-sonnet");
+
+        Assert.True(updated);
+        var stored = await _repository.GetConversationAsync(created.Id, "admin");
+        Assert.Equal("claude-sonnet", stored!.Model);
+    }
+
+    [Fact]
+    public async Task SetConversationModel_does_not_bump_updated_at_when_unchanged()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation());
+        var before = (await _repository.GetConversationAsync(created.Id, "admin"))!.UpdatedAt;
+
+        await _repository.SetConversationModelAsync(created.Id, "admin", "hermes-default");
+
+        var after = (await _repository.GetConversationAsync(created.Id, "admin"))!.UpdatedAt;
+        Assert.Equal(before, after);
+    }
+
+    [Fact]
+    public async Task SetConversationModel_returns_false_when_unowned()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        var updated = await _repository.SetConversationModelAsync(created.Id, "guest", "claude-sonnet");
+
+        Assert.False(updated);
+        var stored = await _repository.GetConversationAsync(created.Id, "admin");
+        Assert.Equal("hermes-default", stored!.Model);
+    }
 }

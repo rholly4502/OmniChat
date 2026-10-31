@@ -29,6 +29,19 @@ public sealed class ChatTurnRecorder(
             {
                 await repository.AppendMessageAsync(
                     existing, turn.UserId, NewMessage("user", turn.UserContent), cancellationToken);
+
+                // Persist a per-conversation model switch so resuming the thread resumes with the
+                // model it last used, not the one it started with. This is best-effort and
+                // isolated: a failure here must not cost the turn that was just filed.
+                try
+                {
+                    await repository.SetConversationModelAsync(existing, turn.UserId, turn.Model, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogDebug(ex, "Conversation model switch could not be persisted.");
+                }
+
                 return existing;
             }
 

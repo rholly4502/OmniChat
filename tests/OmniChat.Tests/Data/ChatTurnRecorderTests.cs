@@ -212,4 +212,29 @@ public sealed class ChatTurnRecorderTests : IDisposable
 
         Assert.Equal(prompt, ChatTurnRecorder.BuildTitle(prompt));
     }
+
+    [Fact]
+    public async Task StartTurn_AppendsToAnExistingConversation_AndPersistsTheNewModel()
+    {
+        var id = await _recorder.StartTurnAsync(NewTurn("pertama"));
+        var turn = NewTurn("kedua", id);
+        turn = turn with { Model = "claude-sonnet" };
+
+        await _recorder.StartTurnAsync(turn);
+
+        var stored = await _repository.GetConversationAsync(id!.Value, Admin);
+        Assert.Equal("claude-sonnet", stored!.Model);
+        Assert.Equal(["pertama", "kedua"], stored.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task StartTurn_AppendingToAnExistingConversation_KeepsItsModelWhenUnchanged()
+    {
+        var id = await _recorder.StartTurnAsync(NewTurn("pertama"));
+
+        await _recorder.StartTurnAsync(NewTurn("kedua", id));
+
+        var stored = await _repository.GetConversationAsync(id!.Value, Admin);
+        Assert.Equal("hermes-default", stored!.Model);
+    }
 }

@@ -25,6 +25,7 @@ const MOCK_CATALOG = {
 function setupFetchMock(opts?: {
   modelsOk?: boolean;
   modelsData?: unknown;
+  conversations?: unknown[];
 }) {
   const fetchMock = vi.fn().mockImplementation((url: string | URL) => {
     const urlStr = String(url);
@@ -41,6 +42,17 @@ function setupFetchMock(opts?: {
         status: 200,
         json: () => Promise.resolve(opts?.modelsData ?? MOCK_CATALOG),
       });
+    }
+    if (urlStr.includes('/api/conversations')) {
+      const idMatch = urlStr.match(/\/api\/conversations\/([0-9a-f-]+)$/);
+      const rows = opts?.conversations ?? [];
+      if (idMatch) {
+        const conv = (rows as { id: string }[]).find((c) => c.id === idMatch[1]);
+        if (conv) {
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(conv) });
+        }
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(rows) });
     }
     // /api/chat/stream or any other endpoint — return 401 by default
     return Promise.resolve({
@@ -549,6 +561,30 @@ describe('App', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'Lanjut sebagai tamu' }));
     expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
+  });
+
+  it('resumes a conversation with the model that conversation last used', async () => {
+    const conv = {
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      title: 'Deploy',
+      mode: 'agent',
+      model: 'test-agent',
+      createdAt: '2026-10-25T09:00:00+00:00',
+      updatedAt: '2026-10-25T10:00:00+00:00',
+      isPinned: false,
+      promptTokens: 0,
+      completionTokens: 0,
+      totalTokens: 0,
+      messages: [{ id: 'm1', role: 'user', content: 'halo', createdAt: '2026-10-25T09:00:00+00:00' }],
+    };
+    setupFetchMock({ conversations: [conv] });
+    render(<App />);
+
+    await screen.findByText('Deploy');
+    fireEvent.click(screen.getByRole('button', { name: 'Deploy' }));
+
+    const select = (await screen.findByRole('combobox')) as HTMLSelectElement;
+    expect(select.value).toBe('test-agent');
   });
 
 });
