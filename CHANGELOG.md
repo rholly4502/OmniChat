@@ -5,6 +5,16 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P2 — Pin conversations in the sidebar (frontend)
+
+#### Added
+- Sidebar pin toggle on server-backed conversation rows (`Sematkan` / `Lepas
+  sematan`): calls `PUT /api/conversations/{id}/pin`, reflects `aria-pressed`
+  and a filled pin glyph when pinned, and re-sorts pinned rows above unpinned
+  ones (mirroring the API's pinned-first ordering). `historyApi` gained
+  `pinConversation`; `useServerHistory` gained `pinSession` and carries
+  `isPinned` through the list rows. Frontend tests 340 → 352.
+
 ### P2 — Conversation content search (backend + frontend)
 
 #### Added

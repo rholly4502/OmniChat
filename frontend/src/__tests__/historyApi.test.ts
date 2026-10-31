@@ -4,6 +4,7 @@ import {
   deleteConversation,
   getConversation,
   listConversations,
+  pinConversation,
   renameConversation,
 } from '../historyApi';
 import { ApiError } from '../api';
@@ -188,5 +189,34 @@ describe('renameConversation', () => {
 
     const [, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
     expect(init.headers).toEqual({ 'X-Api-Key': 'k', 'Content-Type': 'application/json' });
+  });
+});
+
+describe('pinConversation', () => {
+  it('PUTs a JSON body carrying the pin state to the /pin path', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await pinConversation(SUMMARY.id, true, { fetchImpl });
+
+    const [path, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(path).toBe(`${CONVERSATIONS_URL}/${SUMMARY.id}/pin`);
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+    expect(init.body).toBe(JSON.stringify({ isPinned: true }));
+  });
+
+  it('keeps the auth header alongside the JSON content type', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await pinConversation(SUMMARY.id, false, { apiKey: 'k', fetchImpl });
+
+    const [, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(init.headers).toEqual({ 'X-Api-Key': 'k', 'Content-Type': 'application/json' });
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
+
+    await expect(pinConversation('gone', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });

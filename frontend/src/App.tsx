@@ -67,6 +67,7 @@ export default function App() {
     selectSession,
     deleteSession,
     renameSession,
+    pinSession,
     adoptConversation,
     exportSessionMarkdown,
   } = useServerHistory({ apiKey, search: historySearch });
@@ -147,6 +148,12 @@ export default function App() {
     return renameSession(id, title);
   }
 
+  /** Pin/unpin a stored conversation; the hook re-sorts on success. */
+  async function handlePinSession(id: string, pinned: boolean): Promise<boolean> {
+    if (streaming) return false;
+    return pinSession(id, pinned);
+  }
+
   /** Validate the draft, clear it, then hand the text to the chat hook. */
   async function send() {
     if (!input.trim() || streaming) return;
@@ -221,6 +228,7 @@ export default function App() {
         onSelectSession={handleSelectSession}
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
+        onPinSession={handlePinSession}
         onExportSession={exportSessionMarkdown}
         settings={settings}
         onSystemPromptChange={updateSystemPrompt}

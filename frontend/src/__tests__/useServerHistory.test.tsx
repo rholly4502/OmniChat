@@ -290,4 +290,86 @@ describe('useServerHistory', () => {
 
     expect(result.current.activeSession?.messages).toEqual([{ role: 'user', content: 'halo' }]);
   });
+
+  it('pins a stored conversation, calls the API, and updates the row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const pinImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, pinImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.pinSession(A, true);
+    });
+
+    expect(pinImpl).toHaveBeenCalledWith(A, true, expect.objectContaining({ apiKey: 'k' }));
+    expect(ok).toBe(true);
+    expect(result.current.sessions[0]?.isPinned).toBe(true);
+  });
+
+  it('unpins a stored conversation', async () => {
+    const alreadyPinned = { ...summary(A, 'Deploy'), isPinned: true };
+    const listImpl = vi.fn().mockResolvedValue([alreadyPinned]);
+    const pinImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, pinImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    expect(result.current.sessions[0]?.isPinned).toBe(true);
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.pinSession(A, false);
+    });
+
+    expect(pinImpl).toHaveBeenCalledWith(A, false, expect.objectContaining({ apiKey: 'k' }));
+    expect(ok).toBe(true);
+    expect(result.current.sessions[0]?.isPinned).toBe(false);
+  });
+
+  it('sorts pinned conversations above unpinned ones', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy'), summary(B, 'SQL')]);
+    const pinImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, pinImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(3));
+    expect(result.current.sessions.map((s) => s.id)).toEqual([A, B, 'draft_1']);
+
+    await act(async () => {
+      await result.current.pinSession(B, true);
+    });
+
+    expect(result.current.sessions.map((s) => s.id)).toEqual([B, A, 'draft_1']);
+    expect(result.current.sessions[0]?.isPinned).toBe(true);
+  });
+
+  it('leaves the row untouched when the server refuses the pin', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const pinImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, pinImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.pinSession(A, true);
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.sessions[0]?.isPinned).toBeFalsy();
+  });
+
+  it('refuses to pin a local draft, which has no server row', async () => {
+    const pinImpl = vi.fn();
+    const { result } = renderHook(() => useServerHistory(deps({ pinImpl })));
+    await act(async () => {});
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.pinSession('draft_1', true);
+    });
+
+    expect(pinImpl).not.toHaveBeenCalled();
+    expect(ok).toBe(false);
+  });
 });

@@ -95,3 +95,20 @@ export async function renameConversation(
     options,
   );
 }
+
+/** Toggle a conversation's pin state. Resolves on 204. */
+export async function pinConversation(
+  id: string,
+  isPinned: boolean,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${id}/pin`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isPinned }),
+    },
+    options,
+  );
+}

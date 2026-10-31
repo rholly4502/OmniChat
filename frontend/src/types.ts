@@ -44,6 +44,8 @@ export interface ChatSession {
   messages: Message[];
   createdAt: number;
   updatedAt: number;
+  /** Server-side pin state; undefined for a local draft. */
+  isPinned?: boolean;
 }
 
 /** One row of the server-side history list, without message bodies. */
@@ -56,6 +58,8 @@ export interface ConversationSummary {
   createdAt: string;
   /** ISO-8601 timestamp from the API. */
   updatedAt: string;
+  /** Pin state; pinned conversations sort to the top of the sidebar. */
+  isPinned: boolean;
 }
 
 /** One replayed turn inside a {@link ConversationDetail}. */

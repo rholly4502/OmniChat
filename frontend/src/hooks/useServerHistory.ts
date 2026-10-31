@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, Message } from '../types';
-import { deleteConversation, getConversation, listConversations, renameConversation } from '../historyApi';
+import { deleteConversation, getConversation, listConversations, pinConversation, renameConversation } from '../historyApi';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
@@ -29,6 +29,7 @@ export interface ServerHistoryOptions {
   getImpl?: typeof getConversation;
   deleteImpl?: typeof deleteConversation;
   renameImpl?: typeof renameConversation;
+  pinImpl?: typeof pinConversation;
 }
 
 /** Session list plus the actions the sidebar and App drive. */
@@ -45,6 +46,8 @@ export interface ServerHistoryResult {
   deleteSession: (id: string) => Promise<Message[] | null>;
   /** Rename `id`; resolves true when the server accepted the new title. */
   renameSession: (id: string, title: string) => Promise<boolean>;
+  /** Pin/unpin `id`; resolves true when the server applied the state. */
+  pinSession: (id: string, pinned: boolean) => Promise<boolean>;
   /** Adopt the id the server assigned to the active draft, then refresh the list. */
   adoptConversation: (id: string) => void;
   /** Mirror the in-flight transcript onto the active row, so export sees it. */
@@ -66,8 +69,17 @@ export interface ServerHistoryResult {
  * and an offline browser both mean "no history to show", and the draft session
  * has to remain usable in either case.
  */
+/** Keep server rows pinned-first (mirroring the API order), drafts last. */
+function sortSessions(sessions: ChatSession[]): ChatSession[] {
+  const server = sessions.filter((s) => isServerConversation(s.id));
+  const drafts = sessions.filter((s) => !isServerConversation(s.id));
+  const pinned = server.filter((s) => s.isPinned);
+  const unpinned = server.filter((s) => !s.isPinned);
+  return [...pinned, ...unpinned, ...drafts];
+}
+
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, listImpl, getImpl, deleteImpl, renameImpl } = options;
+  const { apiKey, search, listImpl, getImpl, deleteImpl, renameImpl, pinImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -78,10 +90,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl };
-  }, [listImpl, getImpl, deleteImpl, renameImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl };
+  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -118,9 +130,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               messages: existing?.messages ?? [],
               createdAt: Date.parse(row.createdAt) || Date.now(),
               updatedAt: Date.parse(row.updatedAt) || Date.now(),
+              isPinned: row.isPinned ?? false,
             };
           });
-          return [...serverRows, ...drafts];
+          return sortSessions([...serverRows, ...drafts]);
         });
       })
       .catch(() => {
@@ -226,6 +239,23 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     },
     [apiKey],
   );
+
+  /** Pin or unpin a stored conversation; re-sorts the sidebar on success. */
+  const pinSession = useCallback(
+    async (id: string, pinned: boolean): Promise<boolean> => {
+      if (!isServerConversation(id)) return false;
+      const pin = impls.current.pin ?? pinConversation;
+      try {
+        await pin(id, pinned, { apiKey: apiKey || undefined });
+      } catch {
+        // The server still holds the old pin state; the row is left untouched.
+        return false;
+      }
+      setSessions((prev) => sortSessions(prev.map((s) => (s.id === id ? { ...s, isPinned: pinned } : s))));
+      return true;
+    },
+    [apiKey],
+  );
   const adoptConversation = useCallback((id: string) => {
     const draftId = activeRef.current;
     if (!draftId || isServerConversation(draftId)) return;
@@ -275,6 +305,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     selectSession,
     deleteSession,
     renameSession,
+    pinSession,
     adoptConversation,
     updateActiveSessionMessages,
     exportSessionMarkdown,

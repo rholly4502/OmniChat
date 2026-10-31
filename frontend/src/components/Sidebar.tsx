@@ -47,6 +47,8 @@ export interface SidebarProps {
   onDeleteSession?: (id: string) => void;
   /** Rename a session; resolves when the server accepts the new title. */
   onRenameSession?: (id: string, title: string) => Promise<boolean>;
+  /** Pin/unpin a session; resolves when the server applies the state. */
+  onPinSession?: (id: string, pinned: boolean) => Promise<boolean>;
   /** Export a session. */
   onExportSession?: (session: ChatSession) => void;
   /** Optional LLM sampling settings and system prompt. */
@@ -89,6 +91,7 @@ export function Sidebar({
   onSelectSession,
   onDeleteSession,
   onRenameSession,
+  onPinSession,
   onExportSession,
   settings,
   onSystemPromptChange,
@@ -332,6 +335,36 @@ export function Sidebar({
                         className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                      </button>
+                    )}
+                    {onPinSession && isServerConversation(s.id) && (
+                      <button
+                        type="button"
+                        title={s.isPinned ? 'Lepas sematan' : 'Sematkan'}
+                        aria-label={`${s.isPinned ? 'Lepas sematan' : 'Sematkan'} ${s.title}`}
+                        aria-pressed={!!s.isPinned}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onPinSession?.(s.id, !s.isPinned);
+                        }}
+                        className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                          s.isPinned ? 'text-chill-accent' : 'hover:text-chill-accent'
+                        }`}
+                      >
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 24 24"
+                          fill={s.isPinned ? 'currentColor' : 'none'}
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="square"
+                          shapeRendering="crispEdges"
+                          aria-hidden="true"
+                        >
+                          <path d="M12 21s-5.5-4.8-5.5-9.5a5.5 5.5 0 0 1 11 0C17.5 16.2 12 21 12 21Z" />
+                          {!s.isPinned && <circle cx="12" cy="11" r="2" />}
+                        </svg>
                       </button>
                     )}
                     {onRenameSession && isServerConversation(s.id) && (

@@ -573,4 +573,57 @@ describe('Sidebar', () => {
     expect(chatTab.className).toContain('pixel-shadow-sm');
   });
 
+  it('shows a pin button on server conversations and toggles through it', () => {
+    const onPinSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onPinSession,
+    });
+
+    const pin = screen.getByLabelText('Sematkan Deploy');
+    fireEvent.click(pin);
+    expect(onPinSession).toHaveBeenCalledWith(A, true);
+  });
+
+  it('reflects the pinned state and offers unpin for an already-pinned row', () => {
+    const onPinSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1, isPinned: true }],
+      activeSessionId: A,
+      onPinSession,
+    });
+
+    const pin = screen.getByLabelText('Lepas sematan Deploy');
+    expect(pin).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(pin);
+    expect(onPinSession).toHaveBeenCalledWith(A, false);
+  });
+
+  it('hides the pin button for a local draft', () => {
+    renderSidebar({
+      sessions: [{ id: 'draft_1', title: 'Obrolan Baru', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 'draft_1',
+      onPinSession: vi.fn(),
+    });
+
+    expect(screen.queryByLabelText('Sematkan Obrolan Baru')).not.toBeInTheDocument();
+  });
+
+  it('gives the pin button a focus-visible ring and a 44px hit area', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onPinSession: vi.fn(),
+    });
+
+    const pin = screen.getByLabelText('Sematkan Deploy');
+    expect(pin.className).toContain('min-h-[44px]');
+    expect(pin.className).toContain('min-w-[44px]');
+    expect(pin.className).toContain('focus-visible:ring-2');
+    expect(pin.className).toContain('focus-visible:ring-chill-accent/60');
+  });
 });
