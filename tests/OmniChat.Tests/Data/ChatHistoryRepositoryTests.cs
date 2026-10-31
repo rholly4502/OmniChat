@@ -213,4 +213,43 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.True(listed[0].IsPinned);
         Assert.False(listed[1].IsPinned);
     }
+
+    [Fact]
+    public async Task ListConversations_filters_by_title_when_search_is_given()
+    {
+        var matching = await _repository.CreateConversationAsync(NewConversation());
+        matching.Title = "Top up OVO";
+        await _db.SaveChangesAsync();
+        await _repository.CreateConversationAsync(NewConversation());
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "OVO");
+
+        var only = Assert.Single(listed);
+        Assert.Equal("Top up OVO", only.Title);
+    }
+
+    [Fact]
+    public async Task ListConversations_filters_by_message_content_when_search_is_given()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conversation.Id, "admin", new Message { Role = "user", Content = "berapa budget spotify bulan ini?" });
+        var other = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(other.Id, "admin", new Message { Role = "user", Content = "halo" });
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "spotify");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(conversation.Id, only.Id);
+    }
+
+    [Fact]
+    public async Task ListConversations_blank_search_returns_everything()
+    {
+        await _repository.CreateConversationAsync(NewConversation());
+        await _repository.CreateConversationAsync(NewConversation());
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "   ");
+
+        Assert.Equal(2, listed.Count);
+    }
 }

@@ -27,9 +27,15 @@ public interface IChatHistoryRepository
     /// <summary>
     /// Lists a user's conversation summaries (no message bodies), most recently
     /// updated first. Returns an empty list rather than <c>null</c> when the user
-    /// has no history.
+    /// has no history. When <paramref name="search"/> is non-blank, only
+    /// conversations whose title or a contained message matches the term are
+    /// returned.
     /// </summary>
-    Task<IReadOnlyList<Conversation>> ListConversationsAsync(string userId, int limit = 50, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<Conversation>> ListConversationsAsync(
+        string userId,
+        int limit = 50,
+        string? search = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Appends a turn and advances the parent conversation's <c>UpdatedAt</c>.

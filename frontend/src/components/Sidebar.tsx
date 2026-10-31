@@ -33,6 +33,10 @@ export interface SidebarProps {
   onClear: () => void;
   /** List of chat sessions for history. */
   sessions?: ChatSession[];
+  /** Server-side history filter term; empty means no filtering. */
+  search?: string;
+  /** Change the history filter term. */
+  onSearchChange?: (term: string) => void;
   /** Currently active session ID. */
   activeSessionId?: string;
   /** Create a new session. */
@@ -78,6 +82,8 @@ export function Sidebar({
   onLogout,
   onClear,
   sessions,
+  search = '',
+  onSearchChange,
   activeSessionId,
   onNewSession,
   onSelectSession,
@@ -179,13 +185,46 @@ export function Sidebar({
         </button>
       )}
 
+      {/* History search — filters the server-side conversation list by title or content. */}
+      {onSearchChange && (
+        <div className="relative">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="square"
+            shapeRendering="crispEdges"
+            strokeLinejoin="miter"
+            aria-hidden="true"
+            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-chill-muted"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Cari percakapan…"
+            aria-label="Cari percakapan"
+            className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent min-h-[44px]"
+          />
+        </div>
+      )}
+
       {/* Sessions History List */}
-      {sessions && sessions.length > 0 && (
+      {sessions && (sessions.length > 0 || search) && (
         <div className="space-y-1">
           <div className="text-xs text-chill-muted font-medium px-1 flex items-center justify-between">
             <span>Riwayat Sesi</span>
             <span className="text-xs text-chill-muted">{sessions.length} sesi</span>
           </div>
+          {sessions.length === 0 && search && (
+            <div className="px-1 text-sm text-chill-muted py-2">Tidak ada hasil untuk “{search}”.</div>
+          )}
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
             {sessions.map((s) => {
               const isActive = s.id === activeSessionId;

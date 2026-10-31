@@ -33,6 +33,7 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [activeView, setActiveView] = useState<'chat' | 'expenses'>('chat');
+  const [historySearch, setHistorySearch] = useState('');
   const [apiKey, setApiKey] = useApiKey();
   const { locked, busy, error, attemptLogin, enterGuest, logout, isGuest } = useAuthGate(apiKey, setApiKey);
   // A guest has no credential and must never reach the Hermes agent gateway: force direct mode.
@@ -68,7 +69,7 @@ export default function App() {
     renameSession,
     adoptConversation,
     exportSessionMarkdown,
-  } = useServerHistory({ apiKey });
+  } = useServerHistory({ apiKey, search: historySearch });
 
   const {
     settings,
@@ -213,6 +214,8 @@ export default function App() {
         onLogout={logout}
         onClear={clearMessages}
         sessions={sessions}
+        search={historySearch}
+        onSearchChange={setHistorySearch}
         activeSessionId={activeSessionId}
         onNewSession={handleNewSession}
         onSelectSession={handleSelectSession}

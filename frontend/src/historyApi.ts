@@ -52,8 +52,11 @@ async function request(
 export async function listConversations(
   options: HistoryRequestOptions = {},
   limit = 50,
+  search?: string,
 ): Promise<ConversationSummary[]> {
-  const res = await request(`${CONVERSATIONS_URL}?limit=${limit}`, { method: 'GET' }, options);
+  const term = search?.trim();
+  const params = term ? `${CONVERSATIONS_URL}?limit=${limit}&search=${encodeURIComponent(term)}` : `${CONVERSATIONS_URL}?limit=${limit}`;
+  const res = await request(params, { method: 'GET' }, options);
   const payload = (await res.json()) as unknown;
   // A malformed body must not reach the sidebar as `undefined.map(...)`.
   return Array.isArray(payload) ? (payload as ConversationSummary[]) : [];

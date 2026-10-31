@@ -44,6 +44,28 @@ describe('isServerConversation', () => {
 });
 
 describe('useServerHistory', () => {
+  it('passes the search term through to the list call', async () => {
+    const listImpl = vi.fn().mockResolvedValue([]);
+    renderHook(() => useServerHistory(deps({ listImpl, search: 'spotify' })));
+
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
+    expect(listImpl.mock.calls[0][1]).toBe(50);
+    expect(listImpl.mock.calls[0][2]).toBe('spotify');
+  });
+
+  it('refetches when the search term changes', async () => {
+    const listImpl = vi.fn().mockResolvedValue([]);
+    const { rerender } = renderHook(
+      ({ search }) => useServerHistory(deps({ listImpl, search })),
+      { initialProps: { search: 'a' } },
+    );
+
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
+    rerender({ search: 'b' });
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(2));
+    expect(listImpl.mock.calls[1][2]).toBe('b');
+  });
+
   it('starts with one draft and keeps it when the server has no history', async () => {
     const listImpl = vi.fn().mockResolvedValue([]);
     const { result } = renderHook(() => useServerHistory(deps({ listImpl })));

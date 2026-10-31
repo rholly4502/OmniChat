@@ -34,6 +34,8 @@ public sealed class ConversationsController : ControllerBase
     /// Lists the caller's conversations, most recently updated first, without message bodies.
     /// </summary>
     /// <param name="limit">Maximum rows to return; clamped by the repository to 1–200.</param>
+    /// <param name="search">When non-blank, only conversations whose title or a contained
+    /// message matches the term are returned.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
     /// <returns>An array of summaries, empty for a guest or a caller with no history.</returns>
     /// <response code="200">Conversation summaries (possibly empty).</response>
@@ -41,6 +43,7 @@ public sealed class ConversationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ConversationSummary>>> List(
         [FromQuery] int limit = 50,
+        [FromQuery] string? search = null,
         CancellationToken cancellationToken = default)
     {
         var owner = AdminOwnerId();
@@ -51,7 +54,7 @@ public sealed class ConversationsController : ControllerBase
             return Ok(Array.Empty<ConversationSummary>());
         }
 
-        var conversations = await _repository.ListConversationsAsync(owner, limit, cancellationToken);
+        var conversations = await _repository.ListConversationsAsync(owner, limit, search, cancellationToken);
 
         return Ok(conversations.Select(ConversationSummary.From).ToList());
     }

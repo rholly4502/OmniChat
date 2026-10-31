@@ -225,7 +225,9 @@ everyone's history".
 ]
 ```
 
-`limit` (default 50) is clamped to 1–200. **`GET /api/conversations/{id}`** adds a `messages`
+`limit` (default 50) is clamped to 1–200. `search` (optional) filters to conversations whose title
+or a contained message matches the term — e.g. `GET /api/conversations?search=spotify`. **`GET
+/api/conversations/{id}`** adds a `messages`
 array (`{ "id", "role", "content", "createdAt" }`, oldest first). **`PATCH`** takes
 `{ "title": "..." }` (required, max 200 chars) and returns `204`. **`DELETE`** returns `204`.
 Unknown, foreign and guest-addressed ids all return `404` in `application/problem+json`.

@@ -22,6 +22,8 @@ function draftSession(id: string): ChatSession {
 export interface ServerHistoryOptions {
   /** Forwarded as `X-Api-Key`; changing it refetches the list. */
   apiKey: string;
+  /** Server-side title/content filter for the conversation list. */
+  search?: string;
   /** Injected for tests; default to the real client. */
   listImpl?: typeof listConversations;
   getImpl?: typeof getConversation;
@@ -65,7 +67,7 @@ export interface ServerHistoryResult {
  * has to remain usable in either case.
  */
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, listImpl, getImpl, deleteImpl, renameImpl } = options;
+  const { apiKey, search, listImpl, getImpl, deleteImpl, renameImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -102,7 +104,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     const ctrl = new AbortController();
     let cancelled = false;
 
-    list({ apiKey: apiKey || undefined, signal: ctrl.signal })
+    list({ apiKey: apiKey || undefined, signal: ctrl.signal }, 50, search)
       .then((rows) => {
         if (cancelled) return;
         setSessions((prev) => {
@@ -131,7 +133,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       cancelled = true;
       ctrl.abort();
     };
-  }, [apiKey, reloadToken]);
+  }, [apiKey, search, reloadToken]);
 
   /** Fetch and cache one server transcript, returning null when it cannot be read. */
   const loadTranscript = useCallback(

@@ -5,6 +5,18 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P2 — Conversation content search (backend + frontend)
+
+#### Added
+- `GET /api/conversations?search=<term>` filters the conversation list to rows
+  whose title or a contained message matches the term (blank/filtered term
+  returns everything). Repository `ListConversationsAsync` gained a `search`
+  parameter; ownership scoping and pinned-then-recency ordering are unchanged.
+- Sidebar history search box (44px min tap target, `type=search`, `Cari
+  percakapan…` placeholder, empty-state message on no matches), wired from App
+  through `useServerHistory` to `listConversations`, with URL-encoding and
+  no-op for blank terms. Frontend tests 333 → 340; backend 418 → 422.
+
 ### P2 — Pengeluaran trend endpoint (backend slice)
 
 #### Added

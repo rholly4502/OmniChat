@@ -34,6 +34,27 @@ function renderSidebar(overrides: Partial<Parameters<typeof Sidebar>[0]> = {}) {
 }
 
 describe('Sidebar', () => {
+  it('renders a search box and forwards its value when a search is configured', () => {
+    const onSearchChange = vi.fn();
+    renderSidebar({ onSearchChange, search: '', sessions: [] });
+
+    const input = screen.getByRole('searchbox', { name: /cari percakapan/i });
+    expect(input).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: 'spotify' } });
+    expect(onSearchChange).toHaveBeenCalledWith('spotify');
+  });
+
+  it('does not render a search box when search is not wired up', () => {
+    renderSidebar({ sessions: [] });
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+  });
+
+  it('shows an empty-state message when a search has no matches', () => {
+    renderSidebar({ onSearchChange: vi.fn(), search: 'tidakada', sessions: [] });
+    expect(screen.getByText(/Tidak ada hasil/)).toBeInTheDocument();
+  });
+
   it('carries the id and label the hamburger button points at', () => {
     const { container } = renderSidebar();
     const aside = container.querySelector('aside');

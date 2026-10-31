@@ -72,6 +72,39 @@ describe('listConversations', () => {
     );
   });
 
+  it('appends the search term when one is given', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, 'spotify');
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50&search=spotify`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('omits the search param when the term is blank', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, '   ');
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('URL-encodes the search term', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, 'Top up OVO');
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50&search=Top%20up%20OVO`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
   it('returns an empty list for a payload that is not an array', async () => {
     // A proxy error page or an envelope change must not crash the sidebar.
     const fetchImpl = fetchReturning(jsonResponse({ items: [] }));

@@ -36,16 +36,32 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             .SingleOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Conversation>> ListConversationsAsync(string userId, int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Conversation>> ListConversationsAsync(
+        string userId,
+        int limit = 50,
+        string? search = null,
+        CancellationToken cancellationToken = default)
     {
         RequireOwner(userId);
         var take = Math.Clamp(limit, 1, MaxListLimit);
 
         // No Include: the sidebar shows titles only. Messages stay on the server, which
-        // is what keeps a long history cheap to list.
-        return await db.Conversations
+        // is what keeps a long history cheap to list. A search term is the one exception
+        // to that: matching it requires looking inside message bodies, but only as a
+        // filter — the returned rows still carry no bodies.
+        var query = db.Conversations
             .AsNoTracking()
-            .Where(c => c.UserId == userId)
+            .Where(c => c.UserId == userId);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var term = search.Trim();
+            query = query.Where(c =>
+                c.Title.Contains(term) ||
+                c.Messages.Any(m => m.Content.Contains(term)));
+        }
+
+        return await query
             .OrderByDescending(c => c.IsPinned)
             .ThenByDescending(c => c.UpdatedAt)
             .Take(take)
