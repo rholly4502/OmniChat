@@ -364,6 +364,29 @@ public class DeploymentConfigTests
         Assert.DoesNotContain("localStorage.setItem", hook);
     }
 
+    [Fact]
+    public void ConversationUsage_IsCapturedFromUpstreamAndExposedToTheFrontend()
+    {
+        // Tahap 2 cost/token-per-conversation: the entity and DTOs carry cumulative
+        // token totals, the service parses the upstream usage frame, the controller
+        // forwards it and hands it to the recorder, the repository accumulates it,
+        // and the frontend types expose it for the sidebar/header.
+        var entity = Read("src/OmniChat.Api/Domain/Entities/Conversation.cs");
+        var dtos = Read("src/OmniChat.Api/Domain/Models/ConversationDtos.cs");
+        var service = Read("src/OmniChat.Api/Infrastructure/Services/ChatService.cs");
+        var controller = Read("src/OmniChat.Api/Controllers/ChatController.cs");
+        var repo = Read("src/OmniChat.Api/Infrastructure/Data/ChatHistoryRepository.cs");
+        var frontendTypes = Read("frontend/src/types.ts");
+
+        Assert.Contains("PromptTokens", entity);
+        Assert.Contains("CompletionTokens", entity);
+        Assert.Contains("TotalTokens", dtos);
+        Assert.Contains("TryExtractUsage", service);
+        Assert.Contains("UsageFrame.TryRead", controller);
+        Assert.Contains("AddConversationUsageAsync", repo);
+        Assert.Contains("totalTokens", frontendTypes);
+    }
+
     // ── Milestone 15: ProblemDetails standardization ──
 
     [Fact]

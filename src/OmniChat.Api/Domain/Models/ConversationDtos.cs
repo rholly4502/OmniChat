@@ -19,7 +19,10 @@ public sealed record ConversationSummary(
     string Model,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
-    bool IsPinned)
+    bool IsPinned,
+    int PromptTokens,
+    int CompletionTokens,
+    int TotalTokens)
 {
     public static ConversationSummary From(Conversation conversation)
     {
@@ -32,7 +35,10 @@ public sealed record ConversationSummary(
             conversation.Model,
             conversation.CreatedAt,
             conversation.UpdatedAt,
-            conversation.IsPinned);
+            conversation.IsPinned,
+            conversation.PromptTokens,
+            conversation.CompletionTokens,
+            conversation.PromptTokens + conversation.CompletionTokens);
     }
 }
 
@@ -55,6 +61,9 @@ public sealed record ConversationDetail(
     string Model,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
+    int PromptTokens,
+    int CompletionTokens,
+    int TotalTokens,
     IReadOnlyList<ConversationMessage> Messages)
 {
     public static ConversationDetail From(Conversation conversation)
@@ -73,6 +82,9 @@ public sealed record ConversationDetail(
             conversation.Model,
             conversation.CreatedAt,
             conversation.UpdatedAt,
+            conversation.PromptTokens,
+            conversation.CompletionTokens,
+            conversation.PromptTokens + conversation.CompletionTokens,
             messages);
     }
 }

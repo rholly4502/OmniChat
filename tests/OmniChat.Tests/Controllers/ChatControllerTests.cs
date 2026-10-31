@@ -292,7 +292,7 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello World", It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello World", 0, 0, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -311,7 +311,7 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 0, 0, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -330,7 +330,53 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "partial", It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "partial", 0, 0, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_ForwardsUsageFrame_AndRecordsTokens()
+    {
+        // Usage is transport: it must reach the browser as an SSE event and be handed to
+        // the recorder, but never become part of the visible reply.
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello", UsageFrame.Encode(10, 5) }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        _controller.Response.Body.Position = 0;
+        using var reader = new StreamReader(_controller.Response.Body);
+        var output = await reader.ReadToEndAsync();
+
+        // The usage frame is serialised as its own SSE event.
+        Assert.Contains("\"usage\":{\"promptTokens\":10,\"completionTokens\":5}", output);
+
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_DoesNotAppendUsageFrames_ToTheReply()
+    {
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello", UsageFrame.Encode(10, 5) }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        // If the usage frame leaked into the reply, the recorded turn would contain it.
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

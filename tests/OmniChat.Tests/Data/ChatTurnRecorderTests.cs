@@ -102,6 +102,43 @@ public sealed class ChatTurnRecorderTests : IDisposable
     }
 
     [Fact]
+    public async Task CompleteTurn_AccumulatesTokenUsage_FromTheUpstream()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!", 100, 25);
+        await _recorder.CompleteTurnAsync(id, Admin, "Sekali lagi", 40, 10);
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        Assert.Equal(140, stored!.PromptTokens);
+        Assert.Equal(35, stored.CompletionTokens);
+    }
+
+    [Fact]
+    public async Task CompleteTurn_LeavesUsageZero_WhenNoneReported()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!");
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        Assert.Equal(0, stored!.PromptTokens);
+        Assert.Equal(0, stored.CompletionTokens);
+    }
+
+    [Fact]
+    public async Task CompleteTurn_DoesNotTouchAnotherUsersUsage()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo", userId: "guest-1")))!.Value;
+
+        await _recorder.CompleteTurnAsync(id, Admin, "ditolak", 50, 5);
+
+        var stored = await _repository.GetConversationAsync(id, "guest-1");
+        Assert.Equal(0, stored!.PromptTokens);
+        Assert.Equal(0, stored.CompletionTokens);
+    }
+
+    [Fact]
     public async Task CompleteTurn_SkipsABlankReply()
     {
         // An aborted stream can leave nothing behind. Writing an empty assistant bubble would

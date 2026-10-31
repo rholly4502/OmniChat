@@ -28,6 +28,12 @@ export interface ChatSettings {
   maxTokens: number;
 }
 
+/** Token usage reported by the upstream via the streaming endpoint. */
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+}
+
 export interface ChatRequestBody {
   model: string;
   useHermesBridge: boolean;
@@ -46,6 +52,12 @@ export interface ChatSession {
   updatedAt: number;
   /** Server-side pin state; undefined for a local draft. */
   isPinned?: boolean;
+  /** Server-reported cumulative input tokens (undefined for a local draft). */
+  promptTokens?: number;
+  /** Server-reported cumulative output tokens (undefined for a local draft). */
+  completionTokens?: number;
+  /** Server-reported cumulative token total (undefined for a local draft). */
+  totalTokens?: number;
 }
 
 /** One row of the server-side history list, without message bodies. */
@@ -60,6 +72,12 @@ export interface ConversationSummary {
   updatedAt: string;
   /** Pin state; pinned conversations sort to the top of the sidebar. */
   isPinned: boolean;
+  /** Cumulative input tokens billed to this conversation. */
+  promptTokens?: number;
+  /** Cumulative output tokens billed to this conversation. */
+  completionTokens?: number;
+  /** Cumulative prompt + completion tokens. */
+  totalTokens?: number;
 }
 
 /** One replayed turn inside a {@link ConversationDetail}. */

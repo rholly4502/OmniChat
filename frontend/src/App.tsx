@@ -16,6 +16,7 @@ import { isServerConversation, useServerHistory } from './hooks/useServerHistory
 import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
 import { describeApiError } from './errors';
+import type { TokenUsage } from './types';
 import { DEFAULT_MODEL } from './constants';
 
 // Re-exported for backwards compatibility (tests import it from './App').
@@ -91,6 +92,7 @@ export default function App() {
     loadMessages,
     regenerate,
     editAndResend,
+    usage,
   } = useChat({
     model,
     useHermesBridge: effectiveUseAgent,
@@ -118,6 +120,11 @@ export default function App() {
     setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
   }
 
+  /** Server-reported token base for a session, used to seed the live usage counter. */
+  function baseUsageFor(s: { promptTokens?: number; completionTokens?: number } | undefined): TokenUsage {
+    return { promptTokens: s?.promptTokens ?? 0, completionTokens: s?.completionTokens ?? 0 };
+  }
+
   async function handleSelectSession(id: string) {
     if (streaming) return;
     const token = ++loadTokenRef.current;
@@ -126,22 +133,24 @@ export default function App() {
     // A second click while this fetch was in flight owns the screen instead.
     if (!loaded || token !== loadTokenRef.current) return;
     // Continuing a stored conversation must append to *that* thread on the server,
-    // not silently create a second one under the same title.
-    loadMessages(loaded, isServerConversation(id) ? id : null);
+    // not silently create a second one under the same title. Seed the live usage
+    // counter with the server's cumulative tokens for that conversation.
+    const session = sessions.find((s) => s.id === id);
+    loadMessages(loaded, isServerConversation(id) ? id : null, baseUsageFor(session));
   }
 
   function handleNewSession() {
     if (streaming) return;
     loadTokenRef.current++;
     const fresh = createSession();
-    loadMessages(fresh.messages);
+    loadMessages(fresh.messages, null, { promptTokens: 0, completionTokens: 0 });
   }
 
   async function handleDeleteSession(id: string) {
     if (streaming) return;
     loadTokenRef.current++;
     const next = await deleteSession(id);
-    if (next) loadMessages(next);
+    if (next) loadMessages(next, null, { promptTokens: 0, completionTokens: 0 });
   }
 
   /** Rename a stored conversation; updates the sidebar row on success. */
@@ -177,7 +186,7 @@ export default function App() {
       <div className="relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden">
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -248,6 +257,8 @@ export default function App() {
           onOpenSidebar={openDrawer}
           useAgent={useAgent}
           menuButtonRef={menuButtonRef}
+          usage={usage}
+          model={model}
         />
 
         {activeView === 'expenses' ? (

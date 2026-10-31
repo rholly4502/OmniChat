@@ -119,6 +119,8 @@ public sealed class ChatController : ControllerBase
         // text alone, so the two channels can never be mixed up. The phase is sent by the
         // service; this layer only decides which envelope it travels in.
         var latestPhase = default(string);
+        var promptTokens = 0;
+        var completionTokens = 0;
         var reply = new StringBuilder();
 
         try
@@ -134,6 +136,15 @@ public sealed class ChatController : ControllerBase
                         await WriteEventAsync(new { status = phase }, cancellationToken);
                     }
 
+                    continue;
+                }
+
+                var usage = UsageFrame.TryRead(token);
+                if (usage is { } u)
+                {
+                    promptTokens += u.PromptTokens;
+                    completionTokens += u.CompletionTokens;
+                    await WriteEventAsync(new { usage = new { promptTokens = u.PromptTokens, completionTokens = u.CompletionTokens } }, cancellationToken);
                     continue;
                 }
 
@@ -164,7 +175,7 @@ public sealed class ChatController : ControllerBase
             // still filed: a turn with a question and no reply would read as lost data in the log.
             if (conversationId is Guid recorded)
             {
-                await _turnRecorder.CompleteTurnAsync(recorded, userId, reply.ToString(), CancellationToken.None);
+                await _turnRecorder.CompleteTurnAsync(recorded, userId, reply.ToString(), promptTokens, completionTokens, CancellationToken.None);
             }
         }
     }

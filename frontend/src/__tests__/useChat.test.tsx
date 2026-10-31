@@ -57,6 +57,45 @@ function setup(overrides: Partial<Parameters<typeof useChat>[0]> = {}) {
 }
 
 describe('useChat', () => {
+  it('accumulates token usage from usage frames and reports it', async () => {
+    const onUsage = vi.fn();
+    const { result } = setup({ onUsage, streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]) });
+
+    await act(async () => { await result.current.send('halo'); });
+
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+    expect(onUsage).toHaveBeenCalledWith({ promptTokens: 10, completionTokens: 5 });
+  });
+
+  it('accumulates usage across multiple turns', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]) });
+
+    await act(async () => { await result.current.send('satu'); });
+    await act(async () => { await result.current.send('dua'); });
+
+    expect(result.current.usage).toEqual({ promptTokens: 20, completionTokens: 10 });
+  });
+
+  it('resets usage on clear', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]) });
+
+    await act(async () => { await result.current.send('halo'); });
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+
+    act(() => result.current.clear());
+    expect(result.current.usage).toEqual({ promptTokens: 0, completionTokens: 0 });
+  });
+
+  it('seeds usage from the initial base on loadMessages', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ usage: { promptTokens: 5, completionTokens: 2 } }]) });
+    act(() => result.current.loadMessages([{ role: 'user', content: 'x' }], null, { promptTokens: 100, completionTokens: 20 }));
+    expect(result.current.usage).toEqual({ promptTokens: 100, completionTokens: 20 });
+
+    await act(async () => { await result.current.send('halo'); });
+    // The base is preserved and the live frames add on top.
+    expect(result.current.usage).toEqual({ promptTokens: 105, completionTokens: 22 });
+  });
+
   it('reports the conversation id the backend assigned to the turn', async () => {
     const onConversationId = vi.fn();
     const { result } = setup({

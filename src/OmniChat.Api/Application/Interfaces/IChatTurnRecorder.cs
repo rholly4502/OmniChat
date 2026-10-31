@@ -40,5 +40,5 @@ public interface IChatTurnRecorder
     /// Stores the assistant's half of the turn, including a partial reply when the stream was
     /// cut short. A blank reply is not written.
     /// </summary>
-    Task CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, CancellationToken cancellationToken = default);
+    Task CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, CancellationToken cancellationToken = default);
 }

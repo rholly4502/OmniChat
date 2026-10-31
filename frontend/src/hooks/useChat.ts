@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { Message } from '../types';
+import type { Message, TokenUsage } from '../types';
 import { streamChat, ApiError, type StreamChunk, type StreamChatOptions } from '../api';
 
 /**
@@ -46,6 +46,12 @@ export interface UseChatOptions {
    * the transcript re-render just because the server picked an id.
    */
   onConversationId?: (id: string) => void;
+  /**
+   * Called with the cumulative token usage for the current thread after a usage
+   * frame arrives. Used to update the header/export without re-rendering on
+   * every token.
+   */
+  onUsage?: (usage: TokenUsage) => void;
 }
 
 /** Conversation state and the actions that mutate it. */
@@ -72,6 +78,8 @@ export interface UseChatResult {
   stop: () => void;
   /** Drop the whole conversation. */
   clear: () => void;
+  /** Cumulative token usage for the current thread (server base + live frames). */
+  usage: TokenUsage;
   /**
    * Replace current messages with a loaded session.
    *
@@ -79,7 +87,7 @@ export interface UseChatResult {
    * turn continues that thread instead of starting a second one; omit it for a
    * draft or a cleared transcript.
    */
-  loadMessages: (newMessages: Message[], conversationId?: string | null) => void;
+  loadMessages: (newMessages: Message[], conversationId?: string | null, initialUsage?: TokenUsage) => void;
 }
 
 /**
@@ -108,10 +116,25 @@ export interface UseChatResult {
  * every streaming/error/abort guarantee with a plain send.
  */
 export function useChat(options: UseChatOptions): UseChatResult {
-  const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages, onConversationId } = options;
+  const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages, onConversationId, onUsage } = options;
 
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? []);
   const [streaming, setStreaming] = useState(false);
+  const [usage, setUsage] = useState<TokenUsage>({ promptTokens: 0, completionTokens: 0 });
+  /** Imperative mirror of `usage` so onUsage can fire outside a state updater. */
+  const usageRef = useRef<TokenUsage>({ promptTokens: 0, completionTokens: 0 });
+  const recordUsage = useCallback(
+    (u: TokenUsage) => {
+      const next = {
+        promptTokens: usageRef.current.promptTokens + u.promptTokens,
+        completionTokens: usageRef.current.completionTokens + u.completionTokens,
+      };
+      usageRef.current = next;
+      setUsage(next);
+      onUsage?.(next);
+    },
+    [onUsage],
+  );
   const abortRef = useRef<AbortController | null>(null);
   /**
    * Backend id of the thread this conversation is being filed under. A ref, not
@@ -124,11 +147,16 @@ export function useChat(options: UseChatOptions): UseChatResult {
 
   const clear = useCallback(() => {
     conversationIdRef.current = null;
+    usageRef.current = { promptTokens: 0, completionTokens: 0 };
+    setUsage({ promptTokens: 0, completionTokens: 0 });
     setMessages([]);
   }, []);
 
-  const loadMessages = useCallback((newMessages: Message[], conversationId: string | null = null) => {
+  const loadMessages = useCallback((newMessages: Message[], conversationId: string | null = null, initialUsage?: TokenUsage) => {
     conversationIdRef.current = conversationId;
+    const base = initialUsage ?? { promptTokens: 0, completionTokens: 0 };
+    usageRef.current = { promptTokens: base.promptTokens, completionTokens: base.completionTokens };
+    setUsage(usageRef.current);
     setMessages(newMessages);
   }, []);
 
@@ -188,6 +216,8 @@ export function useChat(options: UseChatOptions): UseChatResult {
               copy[copy.length - 1] = { ...last, status: phase };
               return copy;
             });
+          } else if (chunk.usage) {
+            recordUsage(chunk.usage);
           } else if (chunk.error) {
             const detail = chunk.error;
             setMessages((prev) => {
@@ -244,7 +274,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       }
     },
     [streaming, systemPrompt, model, useHermesBridge, apiKey, temperature,
-     maxTokens, describeError, streamImpl, onConversationId]
+     maxTokens, describeError, streamImpl, onConversationId, recordUsage]
   );
 
   const send = useCallback(
@@ -282,5 +312,5 @@ export function useChat(options: UseChatOptions): UseChatResult {
     [messages, streaming, runTurn]
   );
 
-  return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages };
+  return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages, usage };
 }

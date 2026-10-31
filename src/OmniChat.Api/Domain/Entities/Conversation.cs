@@ -32,5 +32,11 @@ public class Conversation
     /// <summary>Pinned state for the sidebar; pinned conversations sort to the top.</summary>
     public bool IsPinned { get; set; }
 
+    /// <summary>Accumulated input tokens billed to this conversation (from upstream usage).</summary>
+    public int PromptTokens { get; set; }
+
+    /// <summary>Accumulated output tokens billed to this conversation (from upstream usage).</summary>
+    public int CompletionTokens { get; set; }
+
     public List<Message> Messages { get; set; } = [];
 }

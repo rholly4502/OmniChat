@@ -1,5 +1,7 @@
 import type { RefObject } from 'react';
 import { BotIcon, BoltIcon } from './Icons';
+import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import type { TokenUsage } from '../types';
 
 /** Props accepted by {@link MobileTopBar}. */
 export interface MobileTopBarProps {
@@ -15,6 +17,10 @@ export interface MobileTopBarProps {
   isGuest?: boolean;
   /** Return to the login screen from a guest session. */
   onLogout?: () => void;
+  /** Cumulative token usage for the active conversation (server base + live). */
+  usage?: TokenUsage;
+  /** Active model id, used for the cost estimate. */
+  model?: string;
 }
 
 /**
@@ -24,7 +30,10 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model }: MobileTopBarProps) {
+  const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
+  const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
+  const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
   if (isGuest) {
     return (
       <div className="flex items-center gap-3 px-3 py-2.5 border-b border-chill-border bg-chill-bg" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
@@ -46,6 +55,11 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
           <BoltIcon size={14} /> Guest · Direct
         </span>
+        {(tokenLabel || estimate) && (
+          <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
+            <span aria-hidden="true">⚡</span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
+          </span>
+        )}
         <button
           onClick={onLogout}
           aria-label="Keluar"
@@ -92,6 +106,11 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
         {useAgent ? 'Agent' : 'Direct'}
       </span>
+      {(tokenLabel || estimate) && (
+        <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
+          <span aria-hidden="true">⚡</span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
+        </span>
+      )}
     </div>
   );
 }

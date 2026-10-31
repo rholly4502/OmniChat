@@ -179,6 +179,16 @@ public sealed class ChatService : IChatService
                 var data = line["data: ".Length..].Trim();
                 if (data == "[DONE]") break;
 
+                var usage = TryExtractUsage(data);
+                if (usage is { } u)
+                {
+                    if (u.Prompt > 0 || u.Completion > 0)
+                    {
+                        await writer.WriteAsync(UsageFrame.Encode(u.Prompt, u.Completion), ct);
+                    }
+                    continue;
+                }
+
                 var text = TryExtractDeltaContent(data);
                 if (!string.IsNullOrEmpty(text))
                 {
@@ -269,6 +279,44 @@ public sealed class ChatService : IChatService
                     return reasoningProp.GetString();
                 }
             }
+        }
+        catch (JsonException)
+        {
+            // Ignore malformed JSON chunks.
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Extracts the top-level <c>usage</c> object (<c>prompt_tokens</c> / <c>completion_tokens</c>)
+    /// from one SSE payload. OpenAI-compatible providers put it on the final chunk; Hermes
+    /// mirrors the same shape. Returns <c>null</c> for a chunk without usage or malformed JSON.
+    /// </summary>
+    private static (int Prompt, int Completion)? TryExtractUsage(string data)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(data);
+            if (!doc.RootElement.TryGetProperty("usage", out var usage) ||
+                usage.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            if (!usage.TryGetProperty("prompt_tokens", out var promptProp) ||
+                promptProp.ValueKind != JsonValueKind.Number ||
+                !usage.TryGetProperty("completion_tokens", out var completionProp) ||
+                completionProp.ValueKind != JsonValueKind.Number)
+            {
+                return null;
+            }
+
+            var prompt = promptProp.GetInt32();
+            var completion = completionProp.GetInt32();
+            if (prompt < 0 || completion < 0) return null;
+
+            return (prompt, completion);
         }
         catch (JsonException)
         {

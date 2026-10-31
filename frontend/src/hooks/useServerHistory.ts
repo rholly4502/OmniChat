@@ -131,6 +131,9 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               createdAt: Date.parse(row.createdAt) || Date.now(),
               updatedAt: Date.parse(row.updatedAt) || Date.now(),
               isPinned: row.isPinned ?? false,
+              promptTokens: row.promptTokens,
+              completionTokens: row.completionTokens,
+              totalTokens: row.totalTokens,
             };
           });
           return sortSessions([...serverRows, ...drafts]);
@@ -161,7 +164,15 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
         setSessions((prev) =>
           prev.map((s) =>
             s.id === id
-              ? { ...s, title: detail.title, messages, updatedAt: Date.parse(detail.updatedAt) || s.updatedAt }
+              ? {
+                  ...s,
+                  title: detail.title,
+                  messages,
+                  updatedAt: Date.parse(detail.updatedAt) || s.updatedAt,
+                  promptTokens: detail.promptTokens,
+                  completionTokens: detail.completionTokens,
+                  totalTokens: detail.totalTokens,
+                }
               : s,
           ),
         );

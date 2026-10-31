@@ -202,6 +202,71 @@ public class ChatServiceTests
     }
 
     [Fact]
+    public async Task StreamChatResponseAsync_EmitsUsageFrame_WhenUpstreamReportsUsage()
+    {
+        // A final chunk carrying a top-level `usage` object must surface as a usage
+        // sentinel frame, and never as assistant text.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\n"
+                    + "data: {\"choices\":[],\"usage\":{\"prompt_tokens\":12,\"completion_tokens\":34}}\n\n"
+                    + "data: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Contains("ok", tokens);
+        Assert.Contains(OmniChat.Domain.Models.UsageFrame.Encode(12, 34), tokens);
+        // The usage frame is transport, not answer: it must never be appended to the reply.
+        Assert.DoesNotContain(tokens, token => token.Contains("usage:", StringComparison.Ordinal) && token != OmniChat.Domain.Models.UsageFrame.Encode(12, 34));
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_SkipsMalformedUsage_WithoutEmittingAFrame()
+    {
+        // A chunk with a usage object that is not numeric must be ignored, not thrown.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"a\"}}]}\n\n"
+                    + "data: {\"usage\":{\"prompt_tokens\":\"many\"}}\n\n"
+                    + "data: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.DoesNotContain(tokens, token => token.StartsWith("[usage:", StringComparison.Ordinal));
+        Assert.Contains("a", tokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_WithNoUsage_EmitsNoUsageFrame()
+    {
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"content\":\"hi\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.DoesNotContain(tokens, token => token.StartsWith("[usage:", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task StreamChatResponseAsync_WithProgressDisabled_EmitsNoStatusFrames()
     {
         // ProgressIntervalSeconds <= 0 must switch the heartbeat off completely, matching

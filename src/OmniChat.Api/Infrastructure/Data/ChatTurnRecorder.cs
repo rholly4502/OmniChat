@@ -62,17 +62,25 @@ public sealed class ChatTurnRecorder(
         }
     }
 
-    public async Task CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, CancellationToken cancellationToken = default)
+    public async Task CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(assistantContent))
-        {
-            return;
-        }
-
+        // The assistant's half of the turn is filed even when it came back blank (an
+        // aborted generation), so the reply column is never a silent gap. The usage
+        // accumulation is separate and best-effort: when recording the turn or the
+        // usage fails, streaming must not be affected.
         try
         {
-            await repository.AppendMessageAsync(
-                conversationId, userId, NewMessage("assistant", assistantContent.Trim()), cancellationToken);
+            if (!string.IsNullOrWhiteSpace(assistantContent))
+            {
+                await repository.AppendMessageAsync(
+                    conversationId, userId, NewMessage("assistant", assistantContent.Trim()), cancellationToken);
+            }
+
+            if (promptTokens > 0 || completionTokens > 0)
+            {
+                await repository.AddConversationUsageAsync(
+                    conversationId, userId, promptTokens, completionTokens, cancellationToken);
+            }
         }
         catch (OperationCanceledException)
         {

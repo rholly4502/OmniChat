@@ -52,4 +52,15 @@ public interface IChatHistoryRepository
 
     /// <summary>Deletes a conversation and its messages. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> DeleteConversationAsync(Guid id, string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Accumulates upstream token usage onto a conversation. Returns <c>false</c> when the
+    /// conversation does not exist or does not belong to <paramref name="userId"/>.
+    /// </summary>
+    Task<bool> AddConversationUsageAsync(
+        Guid conversationId,
+        string userId,
+        int promptTokens,
+        int completionTokens,
+        CancellationToken cancellationToken = default);
 }

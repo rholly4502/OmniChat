@@ -62,6 +62,17 @@ describe('parseSseBuffer', () => {
     expect(events.map((e) => e.content)).toEqual(['a', 'b']);
   });
 
+  it('parses a usage frame into a usage event', () => {
+    const { events } = parseSseBuffer('data: {"usage":{"promptTokens":12,"completionTokens":34}}\n\n');
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({ usage: { promptTokens: 12, completionTokens: 34 } });
+  });
+
+  it('does not treat a usage frame as content', () => {
+    const { events } = parseSseBuffer('data: {"usage":{"promptTokens":1,"completionTokens":2}}\n\n');
+    expect(events[0]).not.toHaveProperty('content');
+  });
+
   it('surfaces a conversation id frame on its own field', () => {
     // The server names the thread it filed the turn under. It must never be mistaken
     // for assistant text, or the id would be printed into the transcript.

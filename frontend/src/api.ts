@@ -1,5 +1,5 @@
 import { API_URL } from './constants';
-import type { ChatRequestBody } from './types';
+import type { ChatRequestBody, TokenUsage } from './types';
 
 /** A streamed piece of an assistant reply. */
 export interface StreamChunk {
@@ -19,6 +19,11 @@ export interface StreamChunk {
    * first frame, and only when the server actually recorded the turn.
    */
   conversationId?: string;
+  /**
+   * Token usage reported by the upstream on the final chunk. Mutually exclusive
+   * with the other keys: it is transport, never assistant text.
+   */
+  usage?: TokenUsage;
 }
 
 /**
@@ -59,6 +64,7 @@ export function parseSseBuffer(buffer: string): { events: StreamChunk[]; rest: s
       if (parsed.error) events.push({ error: parsed.error });
       else if (parsed.status) events.push({ status: parsed.status });
       else if (parsed.conversationId) events.push({ conversationId: parsed.conversationId });
+      else if (parsed.usage) events.push({ usage: parsed.usage });
       else if (parsed.content) events.push({ content: parsed.content });
     } catch {
       // Ignore malformed frames: a single bad event must not kill the stream.

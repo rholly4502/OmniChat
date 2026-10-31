@@ -145,6 +145,33 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return true;
     }
 
+    public async Task<bool> AddConversationUsageAsync(
+        Guid conversationId,
+        string userId,
+        int promptTokens,
+        int completionTokens,
+        CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var conversation = await db.Conversations
+            .SingleOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId, cancellationToken);
+        if (conversation is null)
+        {
+            return false;
+        }
+
+        // A report of 0 tokens (or a malformed/absent usage frame) is a no-op.
+        if (promptTokens < 0) promptTokens = 0;
+        if (completionTokens < 0) completionTokens = 0;
+
+        conversation.PromptTokens += promptTokens;
+        conversation.CompletionTokens += completionTokens;
+        conversation.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     private static void RequireOwner(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
