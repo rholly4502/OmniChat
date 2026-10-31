@@ -56,6 +56,18 @@ export interface UseChatResult {
   streaming: boolean;
   /** Append `content` as a user turn and stream the assistant reply. */
   send: (content: string) => Promise<void>;
+  /**
+   * Re-run the last turn: drop the trailing assistant reply and stream a fresh
+   * one from the same user context. No-op while streaming, on an empty
+   * conversation, or when the newest message is not a user turn.
+   */
+  regenerate: () => Promise<void>;
+  /**
+   * Replace the user message at `index` with `newContent`, discard everything
+   * after it, and stream a fresh assistant reply from the edited context.
+   * No-op while streaming or when `index` is not a user message.
+   */
+  editAndResend: (index: number, newContent: string) => Promise<void>;
   /** Abort the in-flight request, if any. No-op when idle. */
   stop: () => void;
   /** Drop the whole conversation. */
@@ -91,6 +103,9 @@ export interface UseChatResult {
  *    nothing arrived yet
  *  - any other failure surfaces `⚠️ Koneksi ke backend gagal: <message>`
  *  - `streaming` is cleared and the controller released in `finally`
+ *
+ * Regenerate and edit-resend reuse the same {@link runTurn} core, so they share
+ * every streaming/error/abort guarantee with a plain send.
  */
 export function useChat(options: UseChatOptions): UseChatResult {
   const { model, useHermesBridge, apiKey, systemPrompt, temperature, maxTokens, describeError, streamImpl, initialMessages, onConversationId } = options;
@@ -121,24 +136,33 @@ export function useChat(options: UseChatOptions): UseChatResult {
     abortRef.current?.abort();
   }, []);
 
-  const send = useCallback(
-    async (content: string) => {
-      if (!content.trim() || streaming) return;
-
-      const userMsg: Message = { role: 'user', content };
-      const history = [...messages, userMsg];
-      setMessages([...history, { role: 'assistant', content: '' }]);
-      setStreaming(true);
-
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-      const stream = streamImpl ?? streamChat;
+  /**
+   * Core of a single assistant turn. Takes the context history (user turns and
+   * any earlier assistant replies) that should be sent to the backend, appends
+   * an empty assistant placeholder, and streams the reply into it.
+   *
+   * `history` is the *complete* outgoing context — for a plain send it already
+   * includes the new user turn; for regenerate it is the transcript with the
+   * trailing assistant reply removed; for edit-resend it is the transcript up to
+   * and including the edited user turn. The placeholder is always appended here,
+   * never by the caller.
+   */
+  const runTurn = useCallback(
+    async (history: Message[]) => {
+      if (streaming) return;
 
       const outgoingMessages: Message[] = [];
       if (systemPrompt && systemPrompt.trim()) {
         outgoingMessages.push({ role: 'system', content: systemPrompt.trim() });
       }
       outgoingMessages.push(...history.map((m) => ({ role: m.role, content: m.content })));
+
+      setMessages([...history, { role: 'assistant', content: '' }]);
+      setStreaming(true);
+
+      const ctrl = new AbortController();
+      abortRef.current = ctrl;
+      const stream = streamImpl ?? streamChat;
 
       try {
         for await (const chunk of stream({
@@ -219,9 +243,44 @@ export function useChat(options: UseChatOptions): UseChatResult {
         abortRef.current = null;
       }
     },
-    [messages, streaming, model, useHermesBridge, apiKey, systemPrompt,
-     temperature, maxTokens, describeError, streamImpl, onConversationId]
+    [streaming, systemPrompt, model, useHermesBridge, apiKey, temperature,
+     maxTokens, describeError, streamImpl, onConversationId]
   );
 
-  return { messages, streaming, send, stop, clear, loadMessages };
+  const send = useCallback(
+    async (content: string) => {
+      if (!content.trim() || streaming) return;
+      await runTurn([...messages, { role: 'user', content }]);
+    },
+    [messages, streaming, runTurn]
+  );
+
+  const regenerate = useCallback(
+    async () => {
+      if (streaming) return;
+      // Drop a trailing assistant reply; the user turn that prompted it stays.
+      let history = messages;
+      const last = history[history.length - 1];
+      if (last && last.role === 'assistant') history = history.slice(0, -1);
+      // There must be a user turn to re-answer.
+      const tail = history[history.length - 1];
+      if (!tail || tail.role !== 'user') return;
+      await runTurn(history);
+    },
+    [messages, streaming, runTurn]
+  );
+
+  const editAndResend = useCallback(
+    async (index: number, newContent: string) => {
+      if (streaming) return;
+      if (!newContent.trim()) return;
+      const target = messages[index];
+      if (!target || target.role !== 'user') return;
+      // Replace the edited turn and drop everything that followed it.
+      await runTurn([...messages.slice(0, index), { role: 'user', content: newContent }]);
+    },
+    [messages, streaming, runTurn]
+  );
+
+  return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages };
 }

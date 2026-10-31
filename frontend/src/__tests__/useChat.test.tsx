@@ -555,6 +555,177 @@ describe('useChat', () => {
 
     expect(seen).toEqual([null, null]);
   });
+
+  // ─── regenerate (re-run last turn) ──────────────────────────
+  it('returns regenerate and editAndResend', () => {
+    const { result } = setup();
+    expect(typeof result.current.regenerate).toBe('function');
+    expect(typeof result.current.editAndResend).toBe('function');
+  });
+
+  it('regenerate drops the trailing assistant reply and re-streams from the same user context', async () => {
+    const seen: StreamChatOptions[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options);
+        return streamOf([{ content: 'first' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.regenerate(); });
+
+    // The regenerated turn sends only the user context — not the dropped reply.
+    expect(seen).toHaveLength(2);
+    expect(seen[1].messages.map((m) => m.content)).toEqual(['q']);
+    expect(result.current.messages.map((m) => m.content)).toEqual(['q', 'first']);
+    expect(result.current.streaming).toBe(false);
+  });
+
+  it('regenerate keeps earlier turns intact and only drops the trailing reply', async () => {
+    const seen: StreamChatOptions[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options);
+        return streamOf([{ content: `a${seen.length}` }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q1'); });
+    await act(async () => { await result.current.send('q2'); });
+    await act(async () => { await result.current.regenerate(); });
+
+    // Context still carries q1 … a1, q2 (the prior complete turn + the current user turn).
+    expect(seen[2].messages.map((m) => m.content)).toEqual(['q1', 'a1', 'q2']);
+    expect(result.current.messages.map((m) => m.content)).toEqual(['q1', 'a1', 'q2', 'a3']);
+  });
+
+  it('regenerate continues the same server thread', async () => {
+    const seen: (string | null | undefined)[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options.conversationId);
+        return streamOf(seen.length === 1
+          ? [{ conversationId: 'conv-1' }, { content: 'a1' }]
+          : [{ content: 'a2' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.regenerate(); });
+
+    expect(seen).toEqual([null, 'conv-1']);
+  });
+
+  it('regenerate is a no-op while streaming', async () => {
+    const streamImpl = vi.fn(streamUntilAbort());
+    const { result } = setup({ streamImpl });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('first');
+      await Promise.resolve();
+    });
+
+    await act(async () => { await result.current.regenerate(); });
+    expect(streamImpl).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.stop());
+    await act(async () => { await pending; });
+  });
+
+  it('regenerate is a no-op on an empty conversation', async () => {
+    const streamImpl = vi.fn(streamOf([{ content: 'x' }]));
+    const { result } = setup({ streamImpl });
+
+    await act(async () => { await result.current.regenerate(); });
+    expect(streamImpl).not.toHaveBeenCalled();
+    expect(result.current.messages).toEqual([]);
+  });
+
+  it('regenerate is a no-op when there is no user turn to re-answer', async () => {
+    const streamImpl = vi.fn(streamOf([{ content: 'x' }]));
+    const { result } = setup({ streamImpl });
+
+    act(() => result.current.loadMessages([]));
+    await act(async () => { await result.current.regenerate(); });
+    expect(streamImpl).not.toHaveBeenCalled();
+  });
+
+  // ─── editAndResend (edit a user turn) ──────────────────────
+  it('editAndResend replaces the edited user message and discards everything after it', async () => {
+    const seen: StreamChatOptions[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options);
+        return streamOf([{ content: `a${seen.length}` }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q1'); });
+    await act(async () => { await result.current.send('q2'); });
+    await act(async () => { await result.current.editAndResend(0, 'modified'); });
+
+    // Editing turn 0 truncates the whole tail: only 'modified' is sent.
+    expect(seen).toHaveLength(3);
+    expect(seen[2].messages.map((m) => m.content)).toEqual(['modified']);
+    expect(result.current.messages.map((m) => m.content)).toEqual(['modified', 'a3']);
+  });
+
+  it('editAndResend on the latest user turn keeps the conversation before it', async () => {
+    const seen: StreamChatOptions[] = [];
+    const { result } = setup({
+      streamImpl: (options) => {
+        seen.push(options);
+        return streamOf([{ content: `a${seen.length}` }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q1'); });
+    await act(async () => { await result.current.send('q2'); });
+    await act(async () => { await result.current.editAndResend(2, 'q2-edited'); });
+
+    expect(seen[2].messages.map((m) => m.content)).toEqual(['q1', 'a1', 'q2-edited']);
+    expect(result.current.messages.map((m) => m.content)).toEqual(['q1', 'a1', 'q2-edited', 'a3']);
+  });
+
+  it('editAndResend ignores a non-user index', async () => {
+    const streamImpl = vi.fn(streamOf([{ content: 'x' }]));
+    const { result } = setup({ streamImpl });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.editAndResend(1, 'nope'); });
+
+    expect(streamImpl).toHaveBeenCalledTimes(1);
+    expect(result.current.messages.map((m) => m.content)).toEqual(['q', 'x']);
+  });
+
+  it('editAndResend rejects empty or whitespace-only content', async () => {
+    const streamImpl = vi.fn(streamOf([{ content: 'x' }]));
+    const { result } = setup({ streamImpl });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.editAndResend(0, '   '); });
+
+    expect(streamImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('editAndResend is a no-op while streaming', async () => {
+    const streamImpl = vi.fn(streamUntilAbort());
+    const { result } = setup({ streamImpl });
+
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('first');
+      await Promise.resolve();
+    });
+
+    await act(async () => { await result.current.editAndResend(0, 'edited'); });
+    expect(streamImpl).toHaveBeenCalledTimes(1);
+
+    act(() => result.current.stop());
+    await act(async () => { await pending; });
+  });
 });
 
 /** Aborts before yielding anything, so `send` leaves no partial reply. */

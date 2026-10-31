@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MessageList } from '../components/MessageList';
 import type { Message, ModelOption } from '../types';
 
@@ -15,6 +15,8 @@ function renderList(overrides: {
   models?: ModelOption[];
   model?: string;
   useAgent?: boolean;
+  onRegenerate?: () => void;
+  onEditMessage?: (index: number, newContent: string) => void;
 } = {}) {
   const scrollRef = createRef<HTMLDivElement>();
   const view = render(
@@ -25,6 +27,8 @@ function renderList(overrides: {
       model={overrides.model ?? 'hermes'}
       useAgent={overrides.useAgent ?? true}
       scrollRef={scrollRef}
+      onRegenerate={overrides.onRegenerate}
+      onEditMessage={overrides.onEditMessage}
     />
   );
   return { ...view, scrollRef };
@@ -162,5 +166,121 @@ describe('MessageList', () => {
     const btn = screen.getByRole('button', { name: 'Salin pesan' });
     expect(btn.className).toContain('min-h-[44px]');
     expect(btn.className).toContain('min-w-[44px]');
+  });
+
+  // ─── regenerate (Coba lagi) ────────────────────────────────
+  it('shows a regenerate button on the trailing assistant message when idle', () => {
+    const onRegenerate = vi.fn();
+    renderList({
+      messages: [
+        { role: 'user', content: 'hai' },
+        { role: 'assistant', content: 'halo' },
+      ],
+      onRegenerate,
+    });
+    const btn = screen.getByRole('button', { name: 'Coba lagi' });
+    expect(btn).toBeInTheDocument();
+    btn.click();
+    expect(onRegenerate).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the regenerate button while streaming', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'hai' },
+        { role: 'assistant', content: 'halo' },
+      ],
+      streaming: true,
+      onRegenerate: vi.fn(),
+    });
+    expect(screen.queryByRole('button', { name: 'Coba lagi' })).not.toBeInTheDocument();
+  });
+
+  it('only shows regenerate on the final assistant message', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'q1' },
+        { role: 'assistant', content: 'a1' },
+        { role: 'user', content: 'q2' },
+        { role: 'assistant', content: 'a2' },
+      ],
+      onRegenerate: vi.fn(),
+    });
+    expect(screen.getAllByRole('button', { name: 'Coba lagi' })).toHaveLength(1);
+  });
+
+  it('does not render a regenerate button when no handler is provided', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'q' },
+        { role: 'assistant', content: 'a' },
+      ],
+    });
+    expect(screen.queryByRole('button', { name: 'Coba lagi' })).not.toBeInTheDocument();
+  });
+
+  // ─── edit / resend ─────────────────────────────────────────
+  it('shows an edit button on user turns when a handler is provided', () => {
+    renderList({
+      messages: [{ role: 'user', content: 'hai' }],
+      onEditMessage: vi.fn(),
+    });
+    expect(screen.getByRole('button', { name: 'Edit pesan' })).toBeInTheDocument();
+  });
+
+  it('does not show an edit button without a handler', () => {
+    renderList({ messages: [{ role: 'user', content: 'hai' }] });
+    expect(screen.queryByRole('button', { name: 'Edit pesan' })).not.toBeInTheDocument();
+  });
+
+  it('opens an inline editor pre-filled with the message text when Edit is clicked', () => {
+    renderList({
+      messages: [{ role: 'user', content: 'teks asli' }],
+      onEditMessage: vi.fn(),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    const editor = screen.getByLabelText('Edit pesan');
+    expect(editor).toBeInTheDocument();
+    expect(editor).toHaveValue('teks asli');
+  });
+
+  it('save submits the edited text and closes the editor', () => {
+    const onEditMessage = vi.fn();
+    renderList({
+      messages: [{ role: 'user', content: 'teks asli' }],
+      onEditMessage,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    const editor = screen.getByLabelText('Edit pesan');
+    fireEvent.change(editor, { target: { value: 'teks baru' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan & kirim' }));
+
+    expect(onEditMessage).toHaveBeenCalledWith(0, 'teks baru');
+    expect(screen.queryByRole('textbox', { name: 'Edit pesan' })).not.toBeInTheDocument();
+  });
+
+  it('cancel closes the editor without submitting', () => {
+    const onEditMessage = vi.fn();
+    renderList({
+      messages: [{ role: 'user', content: 'teks asli' }],
+      onEditMessage,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Batal' }));
+
+    expect(onEditMessage).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox', { name: 'Edit pesan' })).not.toBeInTheDocument();
+  });
+
+  it('disables save while the draft is empty', () => {
+    renderList({
+      messages: [{ role: 'user', content: 'teks asli' }],
+      onEditMessage: vi.fn(),
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    const editor = screen.getByLabelText('Edit pesan');
+    fireEvent.change(editor, { target: { value: '   ' } });
+    const save = screen.getByRole('button', { name: 'Simpan & kirim' });
+    expect(save).toBeDisabled();
   });
 });

@@ -89,6 +89,8 @@ export default function App() {
     stop: stopStreaming,
     clear: clearMessages,
     loadMessages,
+    regenerate,
+    editAndResend,
   } = useChat({
     model,
     useHermesBridge: effectiveUseAgent,
@@ -183,6 +185,8 @@ export default function App() {
             model={model}
             useAgent={false}
             scrollRef={scrollRef}
+            onRegenerate={regenerate}
+            onEditMessage={editAndResend}
           />
           <Composer
             input={input}
@@ -257,6 +261,8 @@ export default function App() {
               model={model}
               useAgent={useAgent}
               scrollRef={scrollRef}
+              onRegenerate={regenerate}
+              onEditMessage={editAndResend}
             />
 
             <Composer
