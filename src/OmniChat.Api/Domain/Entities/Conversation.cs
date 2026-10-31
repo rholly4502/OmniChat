@@ -29,5 +29,8 @@ public class Conversation
 
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
+    /// <summary>Pinned state for the sidebar; pinned conversations sort to the top.</summary>
+    public bool IsPinned { get; set; }
+
     public List<Message> Messages { get; set; } = [];
 }

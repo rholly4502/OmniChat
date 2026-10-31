@@ -41,6 +41,7 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         conversation.Property(c => c.UserId).IsRequired().HasMaxLength(128);
         conversation.Property(c => c.CreatedAt).HasConversion(timestamp);
         conversation.Property(c => c.UpdatedAt).HasConversion(timestamp);
+        conversation.Property(c => c.IsPinned);
         // Sidebar listing is "this user's conversations, newest first" — that exact
         // shape, so the index covers the filter and the sort together.
         conversation.HasIndex(c => new { c.UserId, c.UpdatedAt });

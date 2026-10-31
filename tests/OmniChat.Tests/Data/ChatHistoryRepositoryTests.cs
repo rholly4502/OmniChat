@@ -171,4 +171,46 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.False(await _repository.DeleteConversationAsync(conversation.Id, "guest"));
         Assert.NotNull(await _repository.GetConversationAsync(conversation.Id, "admin"));
     }
+
+    [Fact]
+    public async Task PinConversation_marks_and_unmarks_a_conversation()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+
+        Assert.True(await _repository.PinConversationAsync(conversation.Id, "admin", true));
+        Assert.True((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsPinned);
+
+        Assert.True(await _repository.PinConversationAsync(conversation.Id, "admin", false));
+        Assert.False((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsPinned);
+    }
+
+    [Fact]
+    public async Task PinConversation_returns_false_for_an_unowned_conversation()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        Assert.False(await _repository.PinConversationAsync(conversation.Id, "guest", true));
+        Assert.False((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsPinned);
+    }
+
+    [Fact]
+    public async Task ListConversations_sorts_pinned_first_then_by_recency()
+    {
+        var olderPinned = await _repository.CreateConversationAsync(NewConversation());
+        var newerUnpinned = await _repository.CreateConversationAsync(NewConversation());
+
+        // Pin the older one; it must float above a more recent unpinned row.
+        await _repository.PinConversationAsync(olderPinned.Id, "admin", true);
+
+        newerUnpinned.UpdatedAt = DateTimeOffset.UtcNow.AddMinutes(5);
+        await _db.SaveChangesAsync();
+
+        var listed = await _repository.ListConversationsAsync("admin");
+
+        Assert.Equal(2, listed.Count);
+        Assert.Equal(olderPinned.Id, listed[0].Id);
+        Assert.Equal(newerUnpinned.Id, listed[1].Id);
+        Assert.True(listed[0].IsPinned);
+        Assert.False(listed[1].IsPinned);
+    }
 }

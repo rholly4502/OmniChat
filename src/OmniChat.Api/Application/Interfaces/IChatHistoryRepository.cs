@@ -41,6 +41,9 @@ public interface IChatHistoryRepository
     /// <summary>Renames a conversation. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> RenameConversationAsync(Guid id, string userId, string title, CancellationToken cancellationToken = default);
 
+    /// <summary>Pins or unpins a conversation. Returns <c>false</c> when not found or not owned.</summary>
+    Task<bool> PinConversationAsync(Guid id, string userId, bool isPinned, CancellationToken cancellationToken = default);
+
     /// <summary>Deletes a conversation and its messages. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> DeleteConversationAsync(Guid id, string userId, CancellationToken cancellationToken = default);
 }

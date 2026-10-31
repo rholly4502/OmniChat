@@ -18,7 +18,8 @@ public sealed record ConversationSummary(
     string Mode,
     string Model,
     DateTimeOffset CreatedAt,
-    DateTimeOffset UpdatedAt)
+    DateTimeOffset UpdatedAt,
+    bool IsPinned)
 {
     public static ConversationSummary From(Conversation conversation)
     {
@@ -30,7 +31,8 @@ public sealed record ConversationSummary(
             conversation.Mode,
             conversation.Model,
             conversation.CreatedAt,
-            conversation.UpdatedAt);
+            conversation.UpdatedAt,
+            conversation.IsPinned);
     }
 }
 
@@ -82,4 +84,11 @@ public sealed class RenameConversationRequest
     [Required]
     [MaxLength(200)]
     public string Title { get; set; } = string.Empty;
+}
+
+/// <summary>Body of <c>PUT /api/conversations/{id}/pin</c>.</summary>
+public sealed class PinConversationRequest
+{
+    /// <summary>Pin state to apply. Pinned conversations sort to the top of the sidebar.</summary>
+    public bool IsPinned { get; set; }
 }

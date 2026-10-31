@@ -260,4 +260,49 @@ public class ConversationsControllerTests
             r => r.DeleteConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task SetPinned_Returns204_WhenThePinStateWasApplied()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.PinConversationAsync(id, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetPinned(id, new PinConversationRequest { IsPinned = true }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.PinConversationAsync(id, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetPinned_Returns404_WhenTheConversationIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.PinConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.SetPinned(Guid.CreateVersion7(), new PinConversationRequest { IsPinned = true }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SetPinned_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.SetPinned(Guid.CreateVersion7(), new PinConversationRequest { IsPinned = true }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.PinConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

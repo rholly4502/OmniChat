@@ -113,6 +113,38 @@ public sealed class ConversationsController : ControllerBase
         return renamed ? NoContent() : ConversationNotFound(id);
     }
 
+    /// <summary>Pins or unpins a conversation.</summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="request">Requested pin state.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Pin state applied.</response>
+    /// <response code="400">Malformed body.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPut("{id:guid}/pin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetPinned(
+        Guid id,
+        [FromBody] PinConversationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblemObject();
+        }
+
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var pinned = await _repository.PinConversationAsync(id, owner, request.IsPinned, cancellationToken);
+
+        return pinned ? NoContent() : ConversationNotFound(id);
+    }
+
     /// <summary>Deletes a conversation and its messages.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>

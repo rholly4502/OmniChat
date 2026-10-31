@@ -46,7 +46,8 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return await db.Conversations
             .AsNoTracking()
             .Where(c => c.UserId == userId)
-            .OrderByDescending(c => c.UpdatedAt)
+            .OrderByDescending(c => c.IsPinned)
+            .ThenByDescending(c => c.UpdatedAt)
             .Take(take)
             .ToListAsync(cancellationToken);
     }
@@ -111,6 +112,23 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
     /// column happened to be empty, which is exactly the cross-user leak this
     /// repository exists to prevent.
     /// </summary>
+    public async Task<bool> PinConversationAsync(Guid id, string userId, bool isPinned, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var conversation = await db.Conversations
+            .SingleOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
+        if (conversation is null)
+        {
+            return false;
+        }
+
+        conversation.IsPinned = isPinned;
+        conversation.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     private static void RequireOwner(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))
