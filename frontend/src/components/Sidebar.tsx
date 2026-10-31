@@ -336,7 +336,7 @@ export function Sidebar({
 
       {/* Mode Toggle */}
       <div className="mt-2 space-y-2">
-        <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent transition pixel-shadow-sm">
+        <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent active:translate-y-[2px] active:shadow-none transition pixel-shadow-sm">
           <input
             type="checkbox"
             checked={useAgent}
