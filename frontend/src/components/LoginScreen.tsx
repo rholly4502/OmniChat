@@ -116,7 +116,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
           <button
             type="button"
             onClick={onEnterGuest}
-            className="mt-3 w-full min-h-[44px] rounded-none border border-chill-border bg-transparent px-4 py-2.5 text-sm font-medium text-chill-text transition hover:border-chill-accent/60 hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="mt-3 w-full min-h-[44px] rounded-none border border-chill-border bg-transparent px-4 py-2.5 text-sm font-medium text-chill-text transition hover:border-chill-accent/60 hover:text-chill-accent active:bg-chill-surface/60 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             Lanjut sebagai tamu
           </button>

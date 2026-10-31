@@ -210,7 +210,7 @@ export function Sidebar({
             onChange={(e) => onSearchChange(e.target.value)}
             placeholder="Cari percakapan…"
             aria-label="Cari percakapan"
-            className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent min-h-[44px]"
+            className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
           />
         </div>
       )}
@@ -298,7 +298,7 @@ export function Sidebar({
                           }
                         }}
                         aria-label={`Judul baru untuk ${s.title}`}
-                        className="min-w-0 flex-1 bg-chill-surface border border-chill-border px-2 py-1 text-base md:text-sm outline-none focus:border-chill-accent min-h-[44px]"
+                        className="min-w-0 flex-1 bg-chill-surface border border-chill-border px-2 py-1 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
                       />
                       <button
                         type="submit"
@@ -452,7 +452,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="mt-2 w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             Keluar
           </button>
