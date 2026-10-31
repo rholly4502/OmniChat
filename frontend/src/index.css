@@ -100,6 +100,15 @@ pre.code-block-pre {
 .md-body a {
   color: var(--color-chill-accent);
   text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.md-body a:hover {
+  color: var(--color-chill-accent-hover);
+  text-decoration-thickness: 2px;
+}
+.md-body a:focus-visible {
+  outline: 2px solid var(--color-chill-accent);
+  outline-offset: 2px;
 }
 .md-body blockquote {
   border-left: 3px solid var(--color-chill-border);
