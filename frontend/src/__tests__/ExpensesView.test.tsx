@@ -190,5 +190,104 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(svg!.getAttribute('aria-hidden')).toBe('true');
     expect(container.querySelectorAll('svg[aria-hidden="true"]').length).toBeGreaterThan(0);
   });
+
+  it('opens the add form and POSTs a new expense, then reloads', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 3, tanggal: '2026-10-29', waktu: '10:00', kategori: 'Makan', keterangan: 'Sarapan', nominal: 15000 },
+          201,
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const tambah = screen.getByRole('button', { name: 'Tambah' });
+    fireEvent.click(tambah);
+    expect(screen.getByLabelText('Tambah pengeluaran')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '15000' } });
+    fireEvent.change(screen.getByLabelText('Keterangan'), { target: { value: 'Sarapan' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+    });
+    const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST')!;
+    expect(String(post[0])).toContain('/api/expenses');
+    const body = JSON.parse(String((post[1] as RequestInit).body));
+    expect(body).toMatchObject({ tanggal: '2026-10-29', kategori: 'Makan', nominal: 15000 });
+  });
+
+  it('shows an error when saving without an API key', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey={undefined} />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '15000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('API key diperlukan untuk menyimpan pengeluaran.')).toBeInTheDocument(),
+    );
+  });
+
+  it('opens edit form on Edit click and PUTs the change', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return jsonResponse(
+          { id: 1, tanggal: '2026-10-28', waktu: '12:30', kategori: 'Transport', keterangan: 'Gojek', nominal: 25000 },
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Warteg' }));
+    expect(screen.getByLabelText('Edit pengeluaran')).toBeInTheDocument();
+    expect(screen.getByLabelText('Nominal (Rp)')).toHaveValue(12000);
+
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '25000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan Perubahan' }));
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'PUT');
+      expect(put).toBeTruthy();
+    });
+    const put = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'PUT')!;
+    expect(String(put[0])).toContain('/api/expenses/1');
+    const body = JSON.parse(String((put[1] as RequestInit).body));
+    expect(body.nominal).toBe(25000);
+  });
+
+  it('DELETEs a row on delete click', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response('', { status: 204 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+
+    await waitFor(() => {
+      const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE');
+      expect(del).toBeTruthy();
+    });
+    const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE')!;
+    expect(String(del[0])).toContain('/api/expenses/1');
+  });
 });
 

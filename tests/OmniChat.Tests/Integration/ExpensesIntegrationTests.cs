@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -451,6 +452,185 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
             var response = await client.GetAsync("/api/expenses/advice?date=not-a-date");
 
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Create_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "Makan",
+                keterangan = "Sarapan", nominal = 20_000,
+            });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Create_withApiKey_persistsNewRow()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+
+            var response = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "Makan",
+                keterangan = "Sarapan", nominal = 20_000,
+            });
+
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            Assert.True(root.GetProperty("id").GetInt64() > 0);
+            Assert.Equal("Makan", root.GetProperty("kategori").GetString());
+            Assert.Equal(20_000, root.GetProperty("nominal").GetInt64());
+
+            // Verify it is listable.
+            var list = await client.GetAsync("/api/expenses?month=2026-11&pageSize=50");
+            Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+            using var listJson = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
+            Assert.Equal(1, listJson.RootElement.GetProperty("total").GetInt32());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Create_invalidPayload_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+
+            // Bad category.
+            var badCategory = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "BukanKategori",
+                keterangan = "x", nominal = 10_000,
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, badCategory.StatusCode);
+
+            // Negative nominal.
+            var badNominal = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "Makan",
+                keterangan = "x", nominal = -5,
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, badNominal.StatusCode);
+
+            // Bad date.
+            var badDate = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "not-a-date", waktu = "10:00", kategori = "Makan",
+                keterangan = "x", nominal = 10_000,
+            });
+            Assert.Equal(HttpStatusCode.BadRequest, badDate.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Update_withApiKey_changesRow()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+
+            var created = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "Makan",
+                keterangan = "Sarapan", nominal = 20_000,
+            });
+            using var createdJson = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+            var id = createdJson.RootElement.GetProperty("id").GetInt64();
+
+            var update = await client.PutAsJsonAsync($"/api/expenses/{id}", new
+            {
+                tanggal = "2026-11-02", waktu = "11:00", kategori = "Transport",
+                keterangan = "Gojek", nominal = 15_000,
+            });
+
+            Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+            using var updateJson = JsonDocument.Parse(await update.Content.ReadAsStringAsync());
+            Assert.Equal("Transport", updateJson.RootElement.GetProperty("kategori").GetString());
+            Assert.Equal(15_000, updateJson.RootElement.GetProperty("nominal").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Update_missingRow_returns404()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.PutAsJsonAsync("/api/expenses/9999", new
+            {
+                tanggal = "2026-11-02", waktu = "11:00", kategori = "Lain",
+                keterangan = "x", nominal = 5_000,
+            });
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Delete_withApiKey_removesRow()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+
+            var created = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-11-01", waktu = "10:00", kategori = "Makan",
+                keterangan = "Sarapan", nominal = 20_000,
+            });
+            using var createdJson = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+            var id = createdJson.RootElement.GetProperty("id").GetInt64();
+
+            var del = await client.DeleteAsync($"/api/expenses/{id}");
+            Assert.Equal(HttpStatusCode.NoContent, del.StatusCode);
+
+            var list = await client.GetAsync("/api/expenses?month=2026-11&pageSize=50");
+            using var listJson = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
+            Assert.Equal(0, listJson.RootElement.GetProperty("total").GetInt32());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task Delete_missingRow_returns404()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.DeleteAsync("/api/expenses/9999");
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
         finally { File.Delete(db); }
     }

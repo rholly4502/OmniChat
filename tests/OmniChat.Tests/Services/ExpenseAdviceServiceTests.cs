@@ -46,6 +46,34 @@ public sealed class ExpenseAdviceServiceTests
 
         public Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(string endMonth, int months, CancellationToken ct) =>
             Task.FromResult((IReadOnlyList<(string, long)>)[]);
+
+        public Task<Expense?> GetByIdAsync(long id, CancellationToken ct) =>
+            Task.FromResult(Rows.FirstOrDefault(r => r.Id == id));
+
+        public Task<Expense> AddAsync(Expense expense, CancellationToken ct)
+        {
+            expense.Id = Rows.Count + 1;
+            Rows.Add(expense);
+            return Task.FromResult(expense);
+        }
+
+        public Task<bool> UpdateAsync(Expense expense, CancellationToken ct)
+        {
+            var row = Rows.FirstOrDefault(r => r.Id == expense.Id);
+            if (row is null) return Task.FromResult(false);
+            row.Tanggal = expense.Tanggal;
+            row.Waktu = expense.Waktu;
+            row.Kategori = expense.Kategori;
+            row.Keterangan = expense.Keterangan;
+            row.Nominal = expense.Nominal;
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> DeleteAsync(long id, CancellationToken ct)
+        {
+            var removed = Rows.RemoveAll(r => r.Id == id);
+            return Task.FromResult(removed > 0);
+        }
     }
 
     private static ExpenseAdviceService NewService(FakeExpenseRepository repo) =>

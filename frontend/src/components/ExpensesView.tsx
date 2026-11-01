@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { formatRupiah, exportExpensesCsv, exportExpensesPdf } from '../expensesApi';
+import {
+  formatRupiah,
+  exportExpensesCsv,
+  exportExpensesPdf,
+  createExpense,
+  updateExpense,
+  deleteExpense,
+  type ExpenseWritePayload,
+} from '../expensesApi';
 import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
@@ -94,6 +102,10 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   async function handleExport(format: 'csv' | 'pdf') {
     if (!apiKey) {
@@ -120,6 +132,56 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     } finally {
       setExporting(false);
     }
+  }
+
+  async function handleSave(payload: ExpenseWritePayload) {
+    if (!apiKey) {
+      setFormError('API key diperlukan untuk menyimpan pengeluaran.');
+      return;
+    }
+    if (payload.nominal <= 0) {
+      setFormError('Nominal harus lebih dari 0.');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editingItem) {
+        await updateExpense(editingItem.id, payload, { apiKey });
+      } else {
+        await createExpense(payload, { apiKey });
+      }
+      setShowForm(false);
+      setEditingItem(null);
+      reload();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? `Gagal menyimpan (${err.status}).` : 'Gagal menyimpan.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id: number) {
+    if (!apiKey) {
+      setExportError('API key diperlukan untuk menghapus pengeluaran.');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      await deleteExpense(id, { apiKey });
+      reload();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(item: ExpenseItem) {
+    setEditingItem(item);
+    setShowForm(true);
+    setFormError(null);
   }
 
   const hasData = (summary !== null && summary.total > 0) || items.length > 0;
@@ -163,6 +225,17 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditingItem(null);
+            setShowForm((v) => !v);
+            setFormError(null);
+          }}
+          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent/20 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/30 active:bg-chill-accent/35 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+        >
+          {showForm && !editingItem ? 'Batal' : 'Tambah'}
+        </button>
       </header>
 
       <div className="flex-1 px-4 py-4 space-y-5">
@@ -170,6 +243,19 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           <div role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red">
             {exportError}
           </div>
+        )}
+        {showForm && (
+          <ExpenseForm
+            initial={editingItem}
+            saving={saving}
+            error={formError}
+            onSave={handleSave}
+            onCancel={() => {
+              setShowForm(false);
+              setEditingItem(null);
+              setFormError(null);
+            }}
+          />
         )}
         {error && (
           <div
@@ -269,7 +355,13 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               ) : (
                 <ul className="space-y-2">
                   {items.map((item) => (
-                    <TransactionRow key={item.id} item={item} />
+                    <TransactionRow
+                      key={item.id}
+                      item={item}
+                      onEdit={() => startEdit(item)}
+                      onDelete={() => handleDelete(item.id)}
+                      busy={saving}
+                    />
                   ))}
                 </ul>
               )}
@@ -327,9 +419,16 @@ function CategoryBreakdown({ perKategori }: { perKategori: Record<string, number
   );
 }
 
-function TransactionRow({ item }: { item: ExpenseItem }) {
+interface TransactionRowProps {
+  item: ExpenseItem;
+  onEdit: () => void;
+  onDelete: () => void;
+  busy: boolean;
+}
+
+function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
   return (
-    <li className="flex items-center gap-3 rounded-none bg-chill-surface border border-chill-border px-3 py-2.5 pixel-shadow-sm">
+    <li className="flex items-center gap-2 rounded-none bg-chill-surface border border-chill-border px-3 py-2.5 pixel-shadow-sm">
       <div className="shrink-0 text-center leading-tight w-14 border-r border-chill-border pr-3">
         <div className="text-sm font-medium text-chill-text tabular-nums">{item.tanggal.slice(8, 10)}</div>
         <div className="text-xs text-chill-muted tabular-nums">{item.tanggal.slice(5, 7)}/{item.tanggal.slice(0, 4)}</div>
@@ -344,6 +443,160 @@ function TransactionRow({ item }: { item: ExpenseItem }) {
         )}
       </div>
       <span className="shrink-0 text-sm font-medium text-chill-text tabular-nums">{formatRupiah(item.nominal)}</span>
+      <div className="shrink-0 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={busy}
+          aria-label={`Edit ${item.keterangan || item.kategori}`}
+          className="rounded-none border border-chill-border w-10 h-10 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
+            <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 7.5l4 4" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={busy}
+          aria-label={`Hapus ${item.keterangan || item.kategori}`}
+          className="rounded-none border border-chill-border w-10 h-10 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
+            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+          </svg>
+        </button>
+      </div>
     </li>
+  );
+}
+
+
+interface ExpenseFormProps {
+  initial: ExpenseItem | null;
+  saving: boolean;
+  error: string | null;
+  onSave: (payload: ExpenseWritePayload) => void;
+  onCancel: () => void;
+}
+
+/** Small inline form to add or edit one expense row (P1-4 / P1-5). */
+function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormProps) {
+  const [tanggal, setTanggal] = useState(initial?.tanggal ?? '');
+  const [waktu, setWaktu] = useState(initial?.waktu ?? '');
+  const [kategori, setKategori] = useState(initial?.kategori ?? 'Makan');
+  const [keterangan, setKeterangan] = useState(initial?.keterangan ?? '');
+  const [nominal, setNominal] = useState(initial ? String(initial.nominal) : '');
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  function submit() {
+    const amount = Number(nominal);
+    if (!tanggal) {
+      setLocalError('Tanggal wajib diisi.');
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setLocalError('Nominal harus angka lebih dari 0.');
+      return;
+    }
+    setLocalError(null);
+    onSave({
+      tanggal,
+      waktu: waktu || undefined,
+      kategori,
+      keterangan: keterangan.trim(),
+      nominal: amount,
+    });
+  }
+
+  return (
+    <section
+      aria-label={initial ? 'Edit pengeluaran' : 'Tambah pengeluaran'}
+      className="rounded-none bg-chill-surface border border-chill-accent/40 p-4 pixel-shadow-sm space-y-3"
+    >
+      <h3 className="text-sm font-semibold text-chill-text pixel-heading">
+        {initial ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Tanggal
+          <input
+            type="date"
+            value={tanggal}
+            onChange={(e) => setTanggal(e.target.value)}
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Kategori
+          <select
+            value={kategori}
+            onChange={(e) => setKategori(e.target.value)}
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          >
+            {CATEGORY_ORDER.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Nominal (Rp)
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            value={nominal}
+            onChange={(e) => setNominal(e.target.value)}
+            placeholder="20000"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Waktu (HH:MM, opsional)
+          <input
+            type="time"
+            value={waktu}
+            onChange={(e) => setWaktu(e.target.value)}
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-xs text-chill-muted">
+        Keterangan
+        <input
+          type="text"
+          maxLength={500}
+          value={keterangan}
+          onChange={(e) => setKeterangan(e.target.value)}
+          placeholder="Mis. Makan warteg"
+          className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+        />
+      </label>
+      {(localError || error) && (
+        <p role="alert" className="text-sm text-chill-red">
+          {localError ?? error}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="rounded-none border border-chill-accent/60 bg-chill-accent/20 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/30 active:bg-chill-accent/35 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+        >
+          {saving ? 'Menyimpan…' : initial ? 'Simpan Perubahan' : 'Simpan'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="rounded-none border border-chill-border px-4 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+        >
+          Batal
+        </button>
+      </div>
+    </section>
   );
 }

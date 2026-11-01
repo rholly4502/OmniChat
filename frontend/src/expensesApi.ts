@@ -46,6 +46,18 @@ export interface ExpenseSummary {
   catatan?: string | null;
 }
 
+/** Fields that can be written for a new or edited expense row. */
+export interface ExpenseWritePayload {
+  /** YYYY-MM-DD (WIB). */
+  tanggal: string;
+  /** HH:MM (WIB), optional. */
+  waktu?: string;
+  kategori: string;
+  keterangan: string;
+  /** Rupiah, positive integer. */
+  nominal: number;
+}
+
 function authHeaders(apiKey?: string): Record<string, string> {
   return apiKey ? { 'X-Api-Key': apiKey } : {};
 }
@@ -63,6 +75,55 @@ async function request(path: string, options: ExpensesRequestOptions): Promise<R
   }
 
   return res;
+}
+
+async function requestJson(
+  path: string,
+  method: 'POST' | 'PUT' | 'DELETE',
+  body?: ExpenseWritePayload,
+  options: ExpensesRequestOptions = {},
+): Promise<Response> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const headers: Record<string, string> = { ...authHeaders(options.apiKey) };
+  if (body) {
+    headers['Content-Type'] = 'application/json';
+  }
+  const res = await doFetch(path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+    signal: options.signal,
+  });
+
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+
+  return res;
+}
+
+/** Create a new expense row (operator only). Returns the created row. */
+export async function createExpense(
+  payload: ExpenseWritePayload,
+  options: ExpensesRequestOptions = {},
+): Promise<ExpenseItem> {
+  const res = await requestJson(EXPENSES_URL, 'POST', payload, options);
+  return (await res.json()) as ExpenseItem;
+}
+
+/** Update an existing expense row (operator only). Returns the updated row. */
+export async function updateExpense(
+  id: number,
+  payload: ExpenseWritePayload,
+  options: ExpensesRequestOptions = {},
+): Promise<ExpenseItem> {
+  const res = await requestJson(`${EXPENSES_URL}/${id}`, 'PUT', payload, options);
+  return (await res.json()) as ExpenseItem;
+}
+
+/** Delete an expense row (operator only). */
+export async function deleteExpense(id: number, options: ExpensesRequestOptions = {}): Promise<void> {
+  await requestJson(`${EXPENSES_URL}/${id}`, 'DELETE', undefined, options);
 }
 
 /** Fetch one page of transactions for a month, newest first. */

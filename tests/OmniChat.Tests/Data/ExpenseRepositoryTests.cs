@@ -200,4 +200,81 @@ public sealed class ExpenseRepositoryTests : IDisposable
         var trend = await _repository.GetMonthlyTrendAsync("2026-10", 3, CancellationToken.None);
         Assert.All(trend, p => Assert.Equal(0L, p.Total));
     }
+
+    [Fact]
+    public async Task AddAsync_persistsAndPopulatesId()
+    {
+        var expense = NewExpense(28, "Makan", 25_000, "web-abc12345");
+
+        var created = await _repository.AddAsync(expense, CancellationToken.None);
+
+        Assert.True(created.Id > 0);
+        var fetched = await _repository.GetByIdAsync(created.Id, CancellationToken.None);
+        Assert.NotNull(fetched);
+        Assert.Equal(25_000, fetched!.Nominal);
+        Assert.Equal("web-abc12345", fetched.SourceId);
+    }
+
+    [Fact]
+    public async Task GetByIdAsync_returnsNullForMissingRow()
+    {
+        var fetched = await _repository.GetByIdAsync(9999, CancellationToken.None);
+        Assert.Null(fetched);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_changesFields()
+    {
+        var created = await _repository.AddAsync(NewExpense(28, "Makan", 20_000, "web-abc12345"), CancellationToken.None);
+
+        var ok = await _repository.UpdateAsync(new Expense
+        {
+            Id = created.Id,
+            Tanggal = new DateOnly(2026, 11, 1),
+            Waktu = "09:00",
+            Kategori = "Transport",
+            Keterangan = "update",
+            Nominal = 15_000,
+        }, CancellationToken.None);
+
+        Assert.True(ok);
+        var fetched = await _repository.GetByIdAsync(created.Id, CancellationToken.None);
+        Assert.Equal(new DateOnly(2026, 11, 1), fetched!.Tanggal);
+        Assert.Equal("Transport", fetched.Kategori);
+        Assert.Equal(15_000, fetched.Nominal);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_returnsFalseForMissingRow()
+    {
+        var ok = await _repository.UpdateAsync(new Expense
+        {
+            Id = 9999,
+            Tanggal = new DateOnly(2026, 11, 1),
+            Waktu = "09:00",
+            Kategori = "Lain",
+            Keterangan = "x",
+            Nominal = 5_000,
+        }, CancellationToken.None);
+
+        Assert.False(ok);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_removesRow()
+    {
+        var created = await _repository.AddAsync(NewExpense(28, "Makan", 20_000, "web-abc12345"), CancellationToken.None);
+
+        var ok = await _repository.DeleteAsync(created.Id, CancellationToken.None);
+
+        Assert.True(ok);
+        Assert.Null(await _repository.GetByIdAsync(created.Id, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_returnsFalseForMissingRow()
+    {
+        var ok = await _repository.DeleteAsync(9999, CancellationToken.None);
+        Assert.False(ok);
+    }
 }

@@ -46,4 +46,16 @@ public interface IExpenseRepository
     /// </summary>
     Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(
         string endMonth, int months, CancellationToken cancellationToken);
+
+    /// <summary>Fetches a single expense row by its surrogate primary key.</summary>
+    Task<Expense?> GetByIdAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>Creates a new expense row (web-added) and returns it with its Id populated.</summary>
+    Task<Expense> AddAsync(Expense expense, CancellationToken cancellationToken);
+
+    /// <summary>Applies edits to an existing expense row; returns false when no such row exists.</summary>
+    Task<bool> UpdateAsync(Expense expense, CancellationToken cancellationToken);
+
+    /// <summary>Deletes an expense row by Id; returns false when no such row exists.</summary>
+    Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
 }

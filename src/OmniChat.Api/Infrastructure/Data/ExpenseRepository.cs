@@ -186,6 +186,48 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         return result;
     }
 
+    public async Task<Expense?> GetByIdAsync(long id, CancellationToken cancellationToken) =>
+        await db.Expenses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public async Task<Expense> AddAsync(Expense expense, CancellationToken cancellationToken)
+    {
+        db.Expenses.Add(expense);
+        await db.SaveChangesAsync(cancellationToken);
+        return expense;
+    }
+
+    public async Task<bool> UpdateAsync(Expense expense, CancellationToken cancellationToken)
+    {
+        var row = await db.Expenses.FirstOrDefaultAsync(e => e.Id == expense.Id, cancellationToken);
+        if (row is null)
+        {
+            return false;
+        }
+
+        row.Tanggal = expense.Tanggal;
+        row.Waktu = expense.Waktu;
+        row.Kategori = expense.Kategori;
+        row.Keterangan = expense.Keterangan;
+        row.Nominal = expense.Nominal;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        var row = await db.Expenses.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (row is null)
+        {
+            return false;
+        }
+
+        db.Expenses.Remove(row);
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     /// <summary>Turns a YYYY-MM key into an inclusive start and exclusive end DateOnly.</summary>
     private static (DateOnly From, DateOnly ToExclusive) MonthRange(string month)
     {

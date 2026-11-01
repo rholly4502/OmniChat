@@ -276,6 +276,189 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         ContentTypes = { ProblemDetailsResponse.ContentType },
     };
 
+    /// <summary>The standard ledger categories (source of truth for category validation).</summary>
+    private static readonly string[] StandardCategories =
+    [
+        "Makan", "Transport", "Belanja", "Tagihan", "Kesehatan", "Hiburan", "Nabung", "Lain",
+    ];
+
+    /// <summary>Creates a new expense row from the web UI (operator only, key required).</summary>
+    /// <param name="request">The new expense fields.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="201">The created expense row.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Create([FromBody] ExpenseWriteRequest request, CancellationToken cancellationToken)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var expense = new Expense
+        {
+            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd"),
+            Waktu = string.IsNullOrWhiteSpace(request.Waktu) ? string.Empty : request.Waktu.Trim(),
+            Kategori = request.Kategori.Trim(),
+            Keterangan = request.Keterangan.Trim(),
+            Nominal = request.Nominal,
+            // Web-added rows get a distinct SourceId prefix so the ledger importer's
+            // self-healing dedup can never mistake them for a ledger or income row.
+            SourceId = "web-" + Guid.NewGuid().ToString("N")[..8],
+        };
+
+        var created = await repository.AddAsync(expense, cancellationToken);
+        return CreatedAtAction(nameof(List), new { month = expense.Tanggal.ToString("yyyy-MM") }, ExpenseDto.From(created));
+    }
+
+    /// <summary>Updates an existing expense row from the web UI (operator only, key required).</summary>
+    /// <param name="id">The row id to update.</param>
+    /// <param name="request">The replacement expense fields.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">The updated expense row.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No such expense row.</response>
+    [HttpPut("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(long id, [FromBody] ExpenseWriteRequest request, CancellationToken cancellationToken)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var expense = new Expense
+        {
+            Id = id,
+            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd"),
+            Waktu = string.IsNullOrWhiteSpace(request.Waktu) ? string.Empty : request.Waktu.Trim(),
+            Kategori = request.Kategori.Trim(),
+            Keterangan = request.Keterangan.Trim(),
+            Nominal = request.Nominal,
+        };
+
+        var ok = await repository.UpdateAsync(expense, cancellationToken);
+        if (!ok)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No expense row with id {id} exists.",
+                Instance = HttpContext.Request.Path,
+            });
+        }
+
+        var updated = await repository.GetByIdAsync(id, cancellationToken);
+        return Ok(ExpenseDto.From(updated!));
+    }
+
+    /// <summary>Deletes an expense row from the web UI (operator only, key required).</summary>
+    /// <param name="id">The row id to delete.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Deleted.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No such expense row.</response>
+    [HttpDelete("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    {
+        var ok = await repository.DeleteAsync(id, cancellationToken);
+        if (!ok)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No expense row with id {id} exists.",
+                Instance = HttpContext.Request.Path,
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>Validates a write request, returning a 400 ProblemDetails or null when valid.</summary>
+    private ObjectResult? Validate(ExpenseWriteRequest request)
+    {
+        if (!DateOnly.TryParseExact(request.Tanggal, "yyyy-MM-dd", out _))
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'tanggal' must be a valid YYYY-MM-DD date.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        if (!StandardCategories.Contains(request.Kategori.Trim()))
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = $"'kategori' must be one of: {string.Join(", ", StandardCategories)}.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        if (request.Nominal <= 0)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'nominal' must be a positive amount.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        if (request.Keterangan.Length > 500)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'keterangan' must be 500 characters or fewer.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        return null;
+    }
+
+    /// <summary>Request shape for creating or updating one expense row.</summary>
+    public sealed record ExpenseWriteRequest(string Tanggal, string? Waktu, string Kategori, string Keterangan, long Nominal);
+
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
         private static string Csv(string value)
     {

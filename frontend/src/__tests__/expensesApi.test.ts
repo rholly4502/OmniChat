@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../api';
-import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, getExpenseAdvice, EXPENSES_URL } from '../expensesApi';
+import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, getExpenseAdvice, createExpense, updateExpense, deleteExpense, EXPENSES_URL } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -163,5 +163,71 @@ describe('getExpenseAdvice', () => {
   it('throws ApiError on 401', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(getExpenseAdvice('2026-10-28', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('createExpense', () => {
+  it('POSTs the payload with the key and parses the created row', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({ id: 7, tanggal: '2026-11-01', waktu: '10:00', kategori: 'Makan', keterangan: 'Sarapan', nominal: 20000 }, 201),
+    );
+    const row = await createExpense(
+      { tanggal: '2026-11-01', waktu: '10:00', kategori: 'Makan', keterangan: 'Sarapan', nominal: 20000 },
+      { apiKey: 'secret', fetchImpl },
+    );
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toBe(`${EXPENSES_URL}`);
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe('POST');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'secret', 'Content-Type': 'application/json' });
+    expect(JSON.parse(String(init.body))).toMatchObject({ kategori: 'Makan', nominal: 20000 });
+    expect(row.id).toBe(7);
+    expect(row.nominal).toBe(20000);
+  });
+
+  it('throws ApiError on a 401', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(
+      createExpense({ tanggal: '2026-11-01', kategori: 'Makan', keterangan: 'x', nominal: 1000 }, { fetchImpl }),
+    ).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('updateExpense', () => {
+  it('PUTs to the row id with the key and parses the updated row', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({ id: 7, tanggal: '2026-11-02', waktu: '', kategori: 'Transport', keterangan: 'Gojek', nominal: 15000 }),
+    );
+    const row = await updateExpense(
+      7,
+      { tanggal: '2026-11-02', kategori: 'Transport', keterangan: 'Gojek', nominal: 15000 },
+      { apiKey: 'secret', fetchImpl },
+    );
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toBe(`${EXPENSES_URL}/7`);
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'secret' });
+    expect(row.kategori).toBe('Transport');
+  });
+});
+
+describe('deleteExpense', () => {
+  it('DELETEs the row id with the key and resolves', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    await deleteExpense(7, { apiKey: 'secret', fetchImpl });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toBe(`${EXPENSES_URL}/7`);
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe('DELETE');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'secret' });
+  });
+
+  it('throws ApiError on a 404', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
+    await expect(deleteExpense(999, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });

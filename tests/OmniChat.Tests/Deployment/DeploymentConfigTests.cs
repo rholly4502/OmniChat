@@ -981,6 +981,34 @@ public class DeploymentConfigTests
         Assert.Contains("getExpenseAdvice", api);
     }
     [Fact]
+    public void ExpensesWriteEndpoints_ExistBackEndAndFrontend()
+    {
+        // P1-4/P1-5 add + edit + delete from the web: the controller write routes,
+        // the repository write methods and the frontend form + handlers must all
+        // exist so the feature cannot silently regress to read-only.
+        var controller = Read("src/OmniChat.Api/Controllers/ExpensesController.cs");
+        Assert.Contains("[HttpPost]", controller);
+        Assert.Contains("[HttpPut(\"{id:long}\")]", controller);
+        Assert.Contains("[HttpDelete(\"{id:long}\")]", controller);
+        Assert.Contains("StandardCategories", controller);
+
+        var repository = Read("src/OmniChat.Api/Infrastructure/Data/ExpenseRepository.cs");
+        Assert.Contains("AddAsync", repository);
+        Assert.Contains("UpdateAsync", repository);
+        Assert.Contains("DeleteAsync", repository);
+
+        var api = Read("frontend/src/expensesApi.ts");
+        Assert.Contains("createExpense", api);
+        Assert.Contains("updateExpense", api);
+        Assert.Contains("deleteExpense", api);
+
+        var view = Read("frontend/src/components/ExpensesView.tsx");
+        Assert.Contains("ExpenseForm", view);
+        Assert.Contains("Tambah Pengeluaran", view);
+        Assert.Contains("Hapus", view);
+    }
+
+    [Fact]
     public void FrontendPackageJson_HasTestScript()
     {
         // The frontend package.json must have a "test" script so `npm run test`
