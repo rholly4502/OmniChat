@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
 import { TypingIndicator } from './TypingIndicator';
 import type { Message, ModelOption } from '../types';
+import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 
 /** Props accepted by {@link MessageList}. */
 export interface MessageListProps {
@@ -243,6 +244,11 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         }
                       />
                       <span>OmniChat</span>
+                      {m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0) && (
+                        <span title={`${formatTokens(m.usage.promptTokens)} in · ${formatTokens(m.usage.completionTokens)} out`}>
+                          · {formatTokens(m.usage.promptTokens + m.usage.completionTokens)} tok ≈ {formatUsd(estimateUsd(m.usage, model))}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center">
                       {isLastMessage(i) && !streaming && onRegenerate && (

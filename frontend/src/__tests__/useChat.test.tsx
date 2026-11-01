@@ -67,6 +67,41 @@ describe('useChat', () => {
     expect(onUsage).toHaveBeenCalledWith({ promptTokens: 10, completionTokens: 5 });
   });
 
+  it('attaches the turn usage to the trailing assistant message on completion', async () => {
+    const { result } = setup({ streamImpl: streamOf([
+      { content: 'halo', usage: { promptTokens: 10, completionTokens: 5 } },
+    ]) });
+
+    await act(async () => { await result.current.send('hai'); });
+
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.role).toBe('assistant');
+    expect(last.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+    // The cumulative total is unaffected by the per-message attachment.
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+  });
+
+  it('does not attach usage when the provider reports none', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: 'halo' }]) });
+
+    await act(async () => { await result.current.send('hai'); });
+
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.usage).toBeUndefined();
+  });
+
+  it('does not attach usage when the turn errors out', async () => {
+    const { result } = setup({ streamImpl: streamOf(
+      [{ error: 'upstream' }],
+    ) });
+
+    await act(async () => { await result.current.send('hai'); });
+
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.role).toBe('assistant');
+    expect(last.usage).toBeUndefined();
+  });
+
   it('accumulates usage across multiple turns', async () => {
     const { result } = setup({ streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]) });
 

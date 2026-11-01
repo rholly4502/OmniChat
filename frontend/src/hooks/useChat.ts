@@ -192,6 +192,12 @@ export function useChat(options: UseChatOptions): UseChatResult {
       abortRef.current = ctrl;
       const stream = streamImpl ?? streamChat;
 
+      // Per-turn usage accumulator: the provider reports usage on the final chunk of
+      // the turn, and we attach those tokens to the trailing assistant message so the
+      // transcript can show a per-message cost footnote. Distinct from the cumulative
+      // `usageRef`, which keeps the header/sidebar total.
+      const turnUsage = { promptTokens: 0, completionTokens: 0 };
+
       try {
         for await (const chunk of stream({
           model,
@@ -218,6 +224,8 @@ export function useChat(options: UseChatOptions): UseChatResult {
             });
           } else if (chunk.usage) {
             recordUsage(chunk.usage);
+            turnUsage.promptTokens += chunk.usage.promptTokens;
+            turnUsage.completionTokens += chunk.usage.completionTokens;
           } else if (chunk.error) {
             const detail = chunk.error;
             setMessages((prev) => {
@@ -242,6 +250,16 @@ export function useChat(options: UseChatOptions): UseChatResult {
               return copy;
             });
           }
+        }
+
+        if (turnUsage.promptTokens > 0 || turnUsage.completionTokens > 0) {
+          setMessages((prev) => {
+            const copy = [...prev];
+            const last = copy[copy.length - 1];
+            if (!last || last.role !== 'assistant') return prev;
+            copy[copy.length - 1] = { ...last, usage: { ...turnUsage } };
+            return copy;
+          });
         }
       } catch (e) {
         if (e instanceof ApiError) {

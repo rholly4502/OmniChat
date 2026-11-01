@@ -387,6 +387,23 @@ public class DeploymentConfigTests
         Assert.Contains("totalTokens", frontendTypes);
     }
 
+    [Fact]
+    public void PerMessageUsage_IsAttachedToTheTrailingAssistantReply()
+    {
+        // Tahap 3 cost/status deepening: the chat hook accumulates per-turn tokens
+        // and attaches them to the assistant message that produced them, and the
+        // transcript renders a token/cost footnote from that usage. The cumulative
+        // header/sidebar total is untouched.
+        var chat = Read("frontend/src/hooks/useChat.ts");
+        var messageList = Read("frontend/src/components/MessageList.tsx");
+        var frontendTypes = Read("frontend/src/types.ts");
+
+        Assert.Contains("turnUsage", chat);
+        Assert.Contains("usage: { ...turnUsage }", chat);
+        Assert.Contains("estimateUsd", messageList);
+        Assert.Contains("usage?: TokenUsage", frontendTypes);
+    }
+
     // ── Milestone 15: ProblemDetails standardization ──
 
     [Fact]

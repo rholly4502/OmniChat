@@ -8,6 +8,13 @@ export interface Message {
    * produced. Absent on user turns, on finished replies and when the heartbeat is off.
    */
   status?: string;
+  /**
+   * Token usage for this specific turn, attached when the streaming turn completes
+   * with a usage frame. Undefined on user turns and on replies the provider did not
+   * report usage for (e.g. error/abort before any usage frame arrived). Used to render
+   * a per-message cost footnote in the transcript without touching the cumulative total.
+   */
+  usage?: TokenUsage;
 }
 
 export interface ModelOption {

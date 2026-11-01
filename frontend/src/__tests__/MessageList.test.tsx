@@ -320,6 +320,26 @@ describe('MessageList', () => {
     expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument();
   });
 
+  // ─── per-message cost footnote ──────────────────────────────────
+  it('renders a token/cost footnote on an assistant reply with usage', () => {
+    renderList({
+      model: 'hermes',
+      messages: [{ role: 'assistant', content: 'halo', usage: { promptTokens: 1000, completionTokens: 500 } }],
+    });
+    // 1500 tokens -> "1.5k", hermes rate 0.002/0.008 per 1K -> ≈$0.006
+    expect(screen.getByText(/1\.5k tok ≈/)).toBeInTheDocument();
+  });
+
+  it('omits the footnote when no usage is present', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    expect(screen.queryByText(/tok ≈/)).not.toBeInTheDocument();
+  });
+
+  it('omits the footnote when usage is all zero', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo', usage: { promptTokens: 0, completionTokens: 0 } }] });
+    expect(screen.queryByText(/tok ≈/)).not.toBeInTheDocument();
+  });
+
   // ─── copy message as JSON ───────────────────────────────────────
   it('copies an assistant reply as JSON', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
