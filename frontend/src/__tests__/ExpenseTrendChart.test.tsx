@@ -28,5 +28,7 @@ describe('ExpenseTrendChart', () => {
     // two bars (one real, one zero placeholder)
     expect(container.querySelectorAll('div[title]')).toHaveLength(1);
     expect(container.querySelector('div[title]')!.getAttribute('title')).toContain('100.000');
+    // pixel meter register: the filled bar carries a hard top-left bevel highlight
+    expect(container.querySelector('div[title]')!.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 });
