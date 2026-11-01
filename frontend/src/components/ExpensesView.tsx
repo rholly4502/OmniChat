@@ -105,6 +105,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<ExpenseItem | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleExport(format: 'csv' | 'pdf') {
@@ -163,16 +164,16 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
   async function handleDelete(id: number) {
     if (!apiKey) {
-      setExportError('API key diperlukan untuk menghapus pengeluaran.');
+      setDeleteError('API key diperlukan untuk menghapus pengeluaran.');
       return;
     }
     setSaving(true);
-    setFormError(null);
+    setDeleteError(null);
     try {
       await deleteExpense(id, { apiKey });
       reload();
     } catch (err) {
-      setFormError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
+      setDeleteError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
     } finally {
       setSaving(false);
     }
@@ -242,6 +243,11 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         {exportError && (
           <div role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red">
             {exportError}
+          </div>
+        )}
+        {deleteError && (
+          <div role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red">
+            {deleteError}
           </div>
         )}
         {showForm && (

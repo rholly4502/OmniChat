@@ -315,5 +315,24 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(screen.getByRole('button', { name: 'Hapus Warteg' })).toBeInTheDocument();
     expect(fetchMock.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBe(false);
   });
+
+  it('surfaces a delete failure as a visible alert with the form closed', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response('', { status: 500 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yakin hapus Warteg' }));
+
+    await waitFor(() =>
+      expect(screen.getByText('Gagal menghapus (500).')).toBeInTheDocument(),
+    );
+  });
 });
 
