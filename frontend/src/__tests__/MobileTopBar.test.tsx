@@ -122,4 +122,20 @@ describe('MobileTopBar', () => {
     expect(screen.queryByText('Direct')).not.toBeInTheDocument();
     expect(screen.queryByText(/token/)).not.toBeInTheDocument();
   });
+
+  it('renders the active model label beside the mode badge in the admin header', () => {
+    renderBar({ model: 'hermes-default', modelLabel: 'Hermes Default' });
+    expect(screen.getByText('Hermes Default')).toBeInTheDocument();
+    expect(screen.getByText('Agent')).toBeInTheDocument();
+  });
+
+  it('guest variant appends the active model label to the Guest · Direct badge', () => {
+    renderBar({ isGuest: true, modelLabel: 'DeepSeek' });
+    expect(screen.getByText(/Guest · Direct · DeepSeek/)).toBeInTheDocument();
+  });
+
+  it('omits the model label when none is provided', () => {
+    renderBar();
+    expect(screen.queryByText(/Hermes|DeepSeek/)).not.toBeInTheDocument();
+  });
 });

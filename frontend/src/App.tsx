@@ -195,7 +195,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -277,6 +277,7 @@ export default function App() {
           menuButtonRef={menuButtonRef}
           usage={usage}
           model={model}
+          modelLabel={models.find((m) => m.id === model)?.label}
           activeView={activeView}
         />
 

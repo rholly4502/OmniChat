@@ -21,6 +21,8 @@ export interface MobileTopBarProps {
   usage?: TokenUsage;
   /** Active model id, used for the cost estimate. */
   model?: string;
+  /** Human-readable label of the active model, shown beside the mode badge. */
+  modelLabel?: string;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
   activeView?: 'chat' | 'expenses';
 }
@@ -32,7 +34,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, activeView }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, activeView }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -55,7 +57,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         </svg>
       </span>
         <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
-          <BoltIcon size={14} /> Guest · Direct
+          <BoltIcon size={14} /> Guest · Direct{modelLabel ? ` · ${modelLabel}` : ''}
         </span>
         {(tokenLabel || estimate) && (
           <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
@@ -109,6 +111,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">
             {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
             {useAgent ? 'Agent' : 'Direct'}
+            {modelLabel ? <span className="text-chill-accent font-medium">{modelLabel}</span> : null}
           </span>
           {(tokenLabel || estimate) && (
             <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
