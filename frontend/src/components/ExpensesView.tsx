@@ -5,6 +5,7 @@ import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
 import { AdvicePanel } from './AdvicePanel';
+import { PixelProgress } from './PixelProgress';
 import type { ExpenseItem } from '../expensesApi';
 
 /** Props accepted by {@link ExpensesView}. */
@@ -203,12 +204,10 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             </section>
 
             {summary!.anggaran !== null && summary!.anggaran > 0 && (
-              <div aria-hidden="true" className="h-2 rounded-none bg-chill-surface border border-chill-border overflow-hidden">
-                <div
-                  className={`h-full ${summary!.total > summary!.anggaran! ? 'bg-chill-red' : 'bg-chill-accent'}`}
-                  style={{ width: `${Math.min(100, Math.round((summary!.total / summary!.anggaran!) * 100))}%` }}
-                />
-              </div>
+              <PixelProgress
+                percent={(summary!.total / summary!.anggaran!) * 100}
+                tone={summary!.total > summary!.anggaran! ? 'red' : 'accent'}
+              />
             )}
 
             {summary!.catatan ? (

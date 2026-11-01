@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { formatRupiah, getExpenseAdvice } from '../expensesApi';
 import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
+import { PixelProgress } from './PixelProgress';
 
 /** Props accepted by {@link AdvicePanel}. */
 export interface AdvicePanelProps {
@@ -116,7 +117,9 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   <ul className="space-y-1.5">
                     {advice.suggestions.map((s, i) => (
                       <li key={i} className="flex gap-2 text-sm text-chill-text">
-                        <span className="shrink-0 text-chill-accent" aria-hidden="true">▸</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 shrink-0 mt-0.5 text-chill-accent">
+                          <path d="M7 7h10v10H7z" />
+                        </svg>
                         <span>{s}</span>
                       </li>
                     ))}
@@ -174,12 +177,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     <span className="tabular-nums text-chill-accent">{formatRupiah(advice.pcGoal.totalNeeded)}</span>
                   </li>
                 </ul>
-                <div className="h-2 rounded-none bg-chill-surface border border-chill-border overflow-hidden" aria-hidden="true">
-                  <div
-                    className="h-full bg-chill-accent"
-                    style={{ width: `${Math.min(100, advice.pcGoal.percentCollected)}%` }}
-                  />
-                </div>
+                <PixelProgress percent={advice.pcGoal.percentCollected} />
                 <p className="mt-2 text-sm text-chill-muted">
                   Terkumpul {formatRupiah(advice.pcGoal.nabungSoFar)} ({advice.pcGoal.percentCollected}%) · kurang {formatRupiah(advice.pcGoal.remaining)}
                 </p>
