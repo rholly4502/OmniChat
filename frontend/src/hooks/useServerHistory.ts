@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { ChatSession, Message } from '../types';
-import { deleteConversation, getConversation, listConversations, pinConversation, renameConversation } from '../historyApi';
+import type { ChatSession, ConversationUsageSummary, Message } from '../types';
+import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation } from '../historyApi';
 import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
+
+/** The shape a guest or an empty history sees; also the initial state. */
+export const EMPTY_USAGE: ConversationUsageSummary = {
+  totalPromptTokens: 0,
+  totalCompletionTokens: 0,
+  totalTokens: 0,
+  conversationCount: 0,
+  byModel: {},
+};
 
 /** Ids the server issued are GUIDs; anything else is a purely local draft. */
 const SERVER_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -37,6 +46,8 @@ export interface ServerHistoryOptions {
   deleteImpl?: typeof deleteConversation;
   renameImpl?: typeof renameConversation;
   pinImpl?: typeof pinConversation;
+  /** Injected for tests; default to the real client. */
+  usageImpl?: typeof getConversationUsage;
 }
 
 /** Session list plus the actions the sidebar and App drive. */
@@ -61,6 +72,8 @@ export interface ServerHistoryResult {
   updateActiveSessionMessages: (messages: Message[]) => void;
   /** Download the session in the requested format (default Markdown). */
   exportSession: (session: ChatSession, format?: ConversationExportFormat) => void;
+  /** Aggregate token usage across every stored conversation (all-zero for a guest). */
+  usageSummary: ConversationUsageSummary;
 }
 
 /**
@@ -86,7 +99,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -94,13 +107,14 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
   const [activeSessionId, setActiveSessionId] = useState('draft_1');
   /** Bumped to force a refetch after the server names a draft. */
   const [reloadToken, setReloadToken] = useState(0);
+  const [usageSummary, setUsageSummary] = useState<ConversationUsageSummary>(EMPTY_USAGE);
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, usage: usageImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl };
-  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, usage: usageImpl };
+  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl, usageImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -161,6 +175,27 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       ctrl.abort();
     };
   }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken]);
+
+  // Aggregate usage is global (not affected by search/filter), so it refetches
+  // only when the key changes or the server names a draft.
+  useEffect(() => {
+    const getUsage = impls.current.usage ?? getConversationUsage;
+    const ctrl = new AbortController();
+    let cancelled = false;
+
+    getUsage({ apiKey: apiKey || undefined, signal: ctrl.signal })
+      .then((summary) => {
+        if (!cancelled) setUsageSummary(summary);
+      })
+      .catch(() => {
+        if (!cancelled) setUsageSummary(EMPTY_USAGE);
+      });
+
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+    };
+  }, [apiKey, reloadToken]);
 
   /** Fetch and cache one server transcript, returning null when it cannot be read. */
   const loadTranscript = useCallback(
@@ -341,5 +376,6 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     adoptConversation,
     updateActiveSessionMessages,
     exportSession,
+    usageSummary,
   };
 }

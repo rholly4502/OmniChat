@@ -1,4 +1,5 @@
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Application.Interfaces;
 
@@ -72,6 +73,13 @@ public interface IChatHistoryRepository
     /// Accumulates upstream token usage onto a conversation. Returns <c>false</c> when the
     /// conversation does not exist or does not belong to <paramref name="userId"/>.
     /// </summary>
+    /// <summary>
+    /// Aggregates token usage across all of the caller's conversations (no message
+    /// bodies). Always returns a summary — a caller with no history gets all-zero
+    /// totals and an empty per-model breakdown.
+    /// </summary>
+    Task<ConversationUsageSummary> GetUsageSummaryAsync(string userId, CancellationToken cancellationToken = default);
+
     Task<bool> AddConversationUsageAsync(
         Guid conversationId,
         string userId,

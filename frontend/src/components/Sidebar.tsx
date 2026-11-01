@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
 import { HistoryFilters } from './HistoryFilters';
-import { formatTokens } from '../tokenCost';
-import type { ChatSession, ChatSettings, ModelOption } from '../types';
+import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import type { ChatSession, ChatSettings, ConversationUsageSummary, ModelOption } from '../types';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
 
 /** Props accepted by {@link Sidebar}. */
@@ -82,6 +82,8 @@ export interface SidebarProps {
   activeView?: 'chat' | 'expenses';
   /** Switch the active top-level view. */
   onSelectView?: (view: 'chat' | 'expenses') => void;
+  /** Aggregate token usage across every stored conversation (all-zero for a guest). */
+  usageSummary?: ConversationUsageSummary;
 }
 
 /**
@@ -126,6 +128,7 @@ export function Sidebar({
   onNightModeChange,
   activeView = 'chat',
   onSelectView = () => {},
+  usageSummary,
 }: SidebarProps) {
   // Two-step delete: tapping the bin only arms the row; the session is removed
   // when the user confirms. A 44px bin sits next to the session label, so a
@@ -134,6 +137,12 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
+  const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, byModel: {} };
+  const byModelEntries = Object.entries(usage.byModel);
+  const totalUsd = byModelEntries.reduce(
+    (acc, [id, u]) => acc + estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id),
+    0,
+  );
 
   const [exportMenuFor, setExportMenuFor] = useState<string | null>(null);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -500,6 +509,38 @@ export function Sidebar({
             })}
           </div>
         </div>
+      )}
+
+      {/* Usage / audit overview — cumulative tokens and estimated cost across every stored conversation */}
+      {byModelEntries.length > 0 && (
+        <details className="group space-y-2 bg-chill-surface/70 border border-chill-border rounded-none p-2.5">
+          <summary className="list-none text-sm font-semibold text-chill-text cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+            <span className="flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
+              Penggunaan
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-xs text-chill-accent font-mono">{formatTokens(usage.totalTokens)} token</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted transition-transform duration-150 group-open:rotate-180">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </span>
+          </summary>
+          <div className="pt-2 space-y-2.5">
+            <div className="flex items-center justify-between text-xs text-chill-muted">
+              <span>{usage.conversationCount} percakapan</span>
+              <span aria-label={`Perkiraan total biaya ${formatUsd(totalUsd)}`}>≈ {formatUsd(totalUsd)}</span>
+            </div>
+            <div className="space-y-1.5">
+              {byModelEntries.map(([id, u]) => (
+                <div key={id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="truncate font-mono text-chill-muted" title={id}>{id}</span>
+                  <span className="shrink-0 text-chill-text">{formatTokens(u.totalTokens)} · ≈{formatUsd(estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id))}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </details>
       )}
 
       {/* Mode Toggle */}

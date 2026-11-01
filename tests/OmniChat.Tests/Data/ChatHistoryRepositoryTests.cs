@@ -378,4 +378,58 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         var stored = await _repository.GetConversationAsync(created.Id, "admin");
         Assert.Equal("hermes-default", stored!.Model);
     }
+
+    [Fact]
+    public async Task GetUsageSummary_aggregates_tokens_and_groups_by_model()
+    {
+        var a = await _repository.CreateConversationAsync(NewConversation());
+        var b = await _repository.CreateConversationAsync(NewConversation());
+        b.Model = "claude-sonnet";
+        await _db.SaveChangesAsync();
+
+        await _repository.AddConversationUsageAsync(a.Id, "admin", 100, 50);
+        await _repository.AddConversationUsageAsync(a.Id, "admin", 30, 20);
+        await _repository.AddConversationUsageAsync(b.Id, "admin", 1000, 500);
+
+        var summary = await _repository.GetUsageSummaryAsync("admin");
+
+        Assert.Equal(2, summary.ConversationCount);
+        Assert.Equal(1130, summary.TotalPromptTokens);
+        Assert.Equal(570, summary.TotalCompletionTokens);
+        Assert.Equal(1700, summary.TotalTokens);
+        Assert.Equal(2, summary.ByModel.Count);
+        Assert.Equal(1500, summary.ByModel["claude-sonnet"].TotalTokens);
+        Assert.Equal(1000, summary.ByModel["claude-sonnet"].PromptTokens);
+        Assert.Equal(500, summary.ByModel["claude-sonnet"].CompletionTokens);
+        Assert.Equal(200, summary.ByModel["hermes-default"].TotalTokens);
+    }
+
+    [Fact]
+    public async Task GetUsageSummary_returns_an_empty_all_zero_summary_when_no_history()
+    {
+        var summary = await _repository.GetUsageSummaryAsync("admin");
+
+        Assert.Equal(0, summary.ConversationCount);
+        Assert.Equal(0, summary.TotalTokens);
+        Assert.Empty(summary.ByModel);
+    }
+
+    [Fact]
+    public async Task GetUsageSummary_excludes_other_users_and_blank_models()
+    {
+        var owned = await _repository.CreateConversationAsync(NewConversation("admin"));
+        owned.Model = "   ";
+        await _db.SaveChangesAsync();
+        await _repository.AddConversationUsageAsync(owned.Id, "admin", 10, 5);
+
+        var other = await _repository.CreateConversationAsync(NewConversation("guest"));
+        await _repository.AddConversationUsageAsync(other.Id, "guest", 999, 999);
+
+        var summary = await _repository.GetUsageSummaryAsync("admin");
+
+        Assert.Equal(1, summary.ConversationCount);
+        Assert.Equal(15, summary.TotalTokens);
+        Assert.Single(summary.ByModel);
+        Assert.True(summary.ByModel.ContainsKey(""));
+    }
 }

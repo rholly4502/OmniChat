@@ -128,6 +128,18 @@ public class GuestIsolationIntegrationTests : IClassFixture<WebApplicationFactor
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Guest_UsageSummary_Returns401()
+    {
+        var factory = WithRecordingTransport(new RecordingHttpClientFactory());
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/conversations/usage");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
     /// <summary>Records every outbound provider call the backend makes.</summary>
     public sealed class RecordingHttpClientFactory : IHttpClientFactory
     {

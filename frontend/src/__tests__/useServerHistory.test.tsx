@@ -427,4 +427,37 @@ describe('useServerHistory', () => {
     expect(pinImpl).not.toHaveBeenCalled();
     expect(ok).toBe(false);
   });
+
+  it('fetches the aggregate usage summary and exposes it', async () => {
+    const usageSummary = {
+      totalPromptTokens: 1100,
+      totalCompletionTokens: 500,
+      totalTokens: 1600,
+      conversationCount: 3,
+      byModel: { hermes: { promptTokens: 1100, completionTokens: 500, totalTokens: 1600 } },
+    };
+    const usageImpl = vi.fn().mockResolvedValue(usageSummary);
+    const { result } = renderHook(() => useServerHistory(deps({ usageImpl })));
+
+    await waitFor(() => expect(usageImpl).toHaveBeenCalledTimes(1));
+    const usageArg = usageImpl.mock.calls[0][0] as { apiKey?: string; signal?: AbortSignal };
+    expect(usageArg.apiKey).toBe('k');
+    expect(usageArg.signal).toBeInstanceOf(AbortSignal);
+    // Wait on the result (not just the call) so the state update has committed.
+    await waitFor(() => expect(result.current.usageSummary).toEqual(usageSummary));
+  });
+
+  it('falls back to the all-zero summary when the usage request fails', async () => {
+    const usageImpl = vi.fn().mockRejectedValue(new Error('429'));
+    const { result } = renderHook(() => useServerHistory(deps({ usageImpl })));
+
+    await waitFor(() => expect(usageImpl).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(result.current.usageSummary).toEqual({
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalTokens: 0,
+      conversationCount: 0,
+      byModel: {},
+    }));
+  });
 });

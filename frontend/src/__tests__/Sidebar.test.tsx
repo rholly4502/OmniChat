@@ -684,3 +684,34 @@ describe('Sidebar', () => {
     });
   });
 });
+
+describe('Sidebar usage panel', () => {
+  const USAGE = {
+    totalPromptTokens: 1100,
+    totalCompletionTokens: 500,
+    totalTokens: 1600,
+    conversationCount: 3,
+    byModel: { hermes: { promptTokens: 1100, completionTokens: 500, totalTokens: 1600 } },
+  };
+
+  it('renders the aggregate token total and estimated cost', () => {
+    renderSidebar({ sessions: [], usageSummary: USAGE });
+
+    expect(screen.getByText('1.6k token')).toBeInTheDocument();
+    expect(screen.getByText('3 percakapan')).toBeInTheDocument();
+    expect(screen.getByLabelText('Perkiraan total biaya $0.0062')).toBeInTheDocument();
+  });
+
+  it('lists each model with its own token count and cost estimate', () => {
+    renderSidebar({ sessions: [], usageSummary: USAGE });
+
+    expect(screen.getByText('hermes')).toBeInTheDocument();
+    expect(screen.getByText('1.6k · ≈$0.0062')).toBeInTheDocument();
+  });
+
+  it('omits the panel when there is no usage to report', () => {
+    renderSidebar({ sessions: [], usageSummary: { totalTokens: 0, conversationCount: 0, totalPromptTokens: 0, totalCompletionTokens: 0, byModel: {} } });
+
+    expect(screen.queryByText('Penggunaan')).not.toBeInTheDocument();
+  });
+});

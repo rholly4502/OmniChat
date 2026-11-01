@@ -99,6 +99,29 @@ public sealed class RenameConversationRequest
 }
 
 /// <summary>Body of <c>PUT /api/conversations/{id}/pin</c>.</summary>
+
+/// <summary>Per-model token subtotals within a {@link ConversationUsageSummary}.</summary>
+public sealed record ConversationModelUsage(int PromptTokens, int CompletionTokens)
+{
+    public int TotalTokens => PromptTokens + CompletionTokens;
+}
+
+/// <summary>
+/// Aggregate token usage across all of a caller's stored conversations. An admin
+/// uses this as the audit overview; a guest always sees the empty shape, exactly
+/// as a guest never sees history rows.
+/// </summary>
+public sealed record ConversationUsageSummary(
+    int TotalPromptTokens,
+    int TotalCompletionTokens,
+    int TotalTokens,
+    int ConversationCount,
+    IReadOnlyDictionary<string, ConversationModelUsage> ByModel)
+{
+    public static ConversationUsageSummary Empty { get; } = new(
+        0, 0, 0, 0, new Dictionary<string, ConversationModelUsage>());
+}
+
 public sealed class PinConversationRequest
 {
     /// <summary>Pin state to apply. Pinned conversations sort to the top of the sidebar.</summary>

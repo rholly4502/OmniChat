@@ -87,6 +87,30 @@ public sealed class ConversationsController : ControllerBase
         return conversation is null ? ConversationNotFound(id) : Ok(ConversationDetail.From(conversation));
     }
 
+    /// <summary>
+    /// Aggregates the caller's token usage across every stored conversation. An admin
+    /// uses this as the usage/audit overview; a guest gets the empty shape (200), so the
+    /// frontend can render the same panel in both states without a branch.
+    /// </summary>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <returns>Aggregate token totals plus a per-model breakdown.</returns>
+    /// <response code="200">Usage summary (possibly all-zero).</response>
+    [HttpGet("usage")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ConversationUsageSummary>> Usage(CancellationToken cancellationToken = default)
+    {
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            // Same shape as the guest list: report "no usage" rather than a 403, so the
+            // client never has to special-case an authenticated-but-empty audit view.
+            return Ok(ConversationUsageSummary.Empty);
+        }
+
+        var summary = await _repository.GetUsageSummaryAsync(owner, cancellationToken);
+        return Ok(summary);
+    }
+
     /// <summary>Renames a conversation.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="request">New title.</param>

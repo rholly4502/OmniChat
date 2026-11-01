@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Infrastructure.Data;
 
@@ -221,6 +222,37 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         conversation.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<ConversationUsageSummary> GetUsageSummaryAsync(string userId, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        // Only the stored columns are pulled (no message bodies), so the aggregate stays
+        // cheap even for a long history.
+        var rows = await db.Conversations
+            .AsNoTracking()
+            .Where(c => c.UserId == userId)
+            .Select(c => new { c.Model, c.PromptTokens, c.CompletionTokens })
+            .ToListAsync(cancellationToken);
+
+        var totalPrompt = rows.Sum(r => r.PromptTokens);
+        var totalCompletion = rows.Sum(r => r.CompletionTokens);
+
+        var byModel = rows
+            .GroupBy(r => r.Model?.Trim() ?? string.Empty)
+            .ToDictionary(
+                g => g.Key,
+                g => new ConversationModelUsage(
+                    g.Sum(r => r.PromptTokens),
+                    g.Sum(r => r.CompletionTokens)));
+
+        return new ConversationUsageSummary(
+            totalPrompt,
+            totalCompletion,
+            totalPrompt + totalCompletion,
+            rows.Count,
+            byModel);
     }
 
     private static void RequireOwner(string userId)

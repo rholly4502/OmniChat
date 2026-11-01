@@ -339,4 +339,43 @@ public class ConversationsControllerTests
             r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 50, null, "claude-sonnet", from, to, It.IsAny<CancellationToken>()),
             Times.Once);
     }
+
+    [Fact]
+    public async Task Usage_ReturnsSummary_ForAnAdminCaller()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var summary = new ConversationUsageSummary(
+            100, 50, 150, 2, new Dictionary<string, ConversationModelUsage>
+            {
+                ["hermes-default"] = new(100, 50),
+            });
+
+        _repository
+            .Setup(r => r.GetUsageSummaryAsync(ChatIdentity.AdminUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(summary);
+
+        var result = await controller.Usage(CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var payload = Assert.IsType<ConversationUsageSummary>(ok.Value);
+        Assert.Equal(150, payload.TotalTokens);
+        Assert.Equal(2, payload.ConversationCount);
+        Assert.Equal(100, payload.ByModel["hermes-default"].PromptTokens);
+    }
+
+    [Fact]
+    public async Task Usage_ReturnsEmptySummary_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.Usage(CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var payload = Assert.IsType<ConversationUsageSummary>(ok.Value);
+        Assert.Equal(0, payload.TotalTokens);
+        Assert.Empty(payload.ByModel);
+        _repository.Verify(
+            r => r.GetUsageSummaryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

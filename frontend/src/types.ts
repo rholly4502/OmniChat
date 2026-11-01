@@ -93,6 +93,25 @@ export interface ConversationMessage {
 }
 
 /** A stored conversation together with its transcript. */
+/** Per-model token subtotals within a {@link ConversationUsageSummary}. */
+export interface ConversationModelUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+/**
+ * Aggregate token usage across all of the caller's stored conversations (the
+ * server's `GET /api/conversations/usage` response).
+ */
+export interface ConversationUsageSummary {
+  totalPromptTokens: number;
+  totalCompletionTokens: number;
+  totalTokens: number;
+  conversationCount: number;
+  byModel: Record<string, ConversationModelUsage>;
+}
+
 export interface ConversationDetail extends ConversationSummary {
   messages: ConversationMessage[];
 }

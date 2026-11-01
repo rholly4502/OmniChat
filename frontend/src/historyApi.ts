@@ -1,5 +1,5 @@
 import { ApiError } from './api';
-import type { ConversationDetail, ConversationSummary } from './types';
+import type { ConversationDetail, ConversationSummary, ConversationUsageSummary } from './types';
 
 /** Base path of the read-side history API (see `ConversationsController`). */
 export const CONVERSATIONS_URL = '/api/conversations';
@@ -128,4 +128,20 @@ export async function pinConversation(
     },
     options,
   );
+}
+
+/**
+ * Fetch the aggregate token usage for all of the caller's conversations. An
+ * admin sees real totals; a guest gets the all-zero shape, so the audit panel
+ * renders the same either way.
+ */
+export async function getConversationUsage(
+  options: HistoryRequestOptions = {},
+): Promise<ConversationUsageSummary> {
+  const res = await request(`${CONVERSATIONS_URL}/usage`, { method: 'GET' }, options);
+  const payload = (await res.json()) as unknown;
+  if (!payload || typeof payload !== 'object' || !('totalTokens' in payload)) {
+    return { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, byModel: {} };
+  }
+  return payload as ConversationUsageSummary;
 }

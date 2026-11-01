@@ -3,6 +3,7 @@ import {
   CONVERSATIONS_URL,
   deleteConversation,
   getConversation,
+  getConversationUsage,
   listConversations,
   pinConversation,
   renameConversation,
@@ -244,5 +245,59 @@ describe('pinConversation', () => {
     const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
 
     await expect(pinConversation('gone', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('getConversationUsage', () => {
+  it('requests /usage and returns the parsed summary', async () => {
+    const summary = {
+      totalPromptTokens: 1100,
+      totalCompletionTokens: 500,
+      totalTokens: 1600,
+      conversationCount: 3,
+      byModel: { hermes: { promptTokens: 1100, completionTokens: 500, totalTokens: 1600 } },
+    };
+    const fetchImpl = fetchReturning(jsonResponse(summary));
+
+    const got = await getConversationUsage({ fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(got).toEqual(summary);
+  });
+
+  it('sends the API key as X-Api-Key', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({ totalTokens: 0, byModel: {} }));
+
+    await getConversationUsage({ apiKey: 'secret', fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: { 'X-Api-Key': 'secret' } }),
+    );
+  });
+
+  it('returns the all-zero shape for a payload without totalTokens', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({ items: [] }));
+
+    await expect(getConversationUsage({ fetchImpl })).resolves.toEqual({
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalTokens: 0,
+      conversationCount: 0,
+      byModel: {},
+    });
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 429, retryAfter: '15' }));
+
+    const err = await getConversationUsage({ fetchImpl }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(429);
+    expect((err as ApiError).retryAfter).toBe('15');
   });
 });
