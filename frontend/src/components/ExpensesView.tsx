@@ -277,6 +277,23 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   );
 }
 
+/** Segmented pixel comparison bar for a category's share of the month max
+    (same register as PixelProgress: discrete blocks, zero radius, hard gaps). */
+function CategoryBar({ ratio, className = '' }: { ratio: number; className?: string }) {
+  const SEGMENTS = 12;
+  const filled = Math.max(1, Math.round(ratio * SEGMENTS));
+  return (
+    <div
+      aria-hidden="true"
+      className={`flex h-2.5 items-stretch gap-[3px] rounded-none border border-chill-border bg-chill-surface px-[2px] ${className}`}
+    >
+      {Array.from({ length: SEGMENTS }, (_, i) => (
+        <div key={i} className={`h-full flex-1 ${i < filled ? 'bg-chill-accent' : 'bg-chill-border/30'}`} />
+      ))}
+    </div>
+  );
+}
+
 function CategoryBreakdown({ perKategori }: { perKategori: Record<string, number> }) {
   const entries = Object.entries(perKategori).sort((a, b) => b[1] - a[1]);
   const max = Math.max(1, ...entries.map(([, v]) => v));
@@ -294,9 +311,7 @@ function CategoryBreakdown({ perKategori }: { perKategori: Record<string, number
             <CategoryIcon kategori={kategori} className="w-4 h-4" />
           </span>
           <span className="w-20 shrink-0 text-sm text-chill-text">{kategori}</span>
-          <div className="flex-1 h-2.5 rounded-none bg-chill-surface border border-chill-border overflow-hidden" aria-hidden="true">
-            <div className="h-full bg-chill-accent/70" style={{ width: `${Math.max(4, Math.round((amount / max) * 100))}%` }} />
-          </div>
+          <CategoryBar ratio={amount / max} className="flex-1" />
           <span className="w-28 text-right text-sm tabular-nums text-chill-text">{formatRupiah(amount)}</span>
         </li>
       ))}

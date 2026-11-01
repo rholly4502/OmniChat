@@ -160,5 +160,19 @@ describe('ExpensesView pixel2 chill design', () => {
     const sisa = screen.getByText('Rp 500.000');
     expect(sisa.className).toContain('text-chill-sage');
   });
+
+  it('renders segmented (not continuous) per-category comparison bars', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const { container } = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const catSection = container.querySelector('section[aria-label="Total per kategori"]');
+    expect(catSection).toBeTruthy();
+    const tracks = catSection!.querySelectorAll('div[class*="gap-[3px]"]');
+    expect(tracks.length).toBeGreaterThan(0);
+    expect([...tracks][0].childElementCount).toBeGreaterThanOrEqual(4);
+    // no proportional width-style fill remains anywhere in the category section
+    expect(catSection!.querySelector('[style*="width"]')).toBeNull();
+  });
 });
 
