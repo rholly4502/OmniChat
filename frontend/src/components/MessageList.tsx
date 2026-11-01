@@ -64,6 +64,7 @@ function ActionButton({ label, activeLabel, active, onClick, icon, activeIcon }:
  */
 export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
 
@@ -220,7 +221,27 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                     >{m.content}</ReactMarkdown>
                   </div>
                   <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-between text-xs text-chill-muted select-none">
-                    <span>OmniChat</span>
+                    <div className="flex items-center gap-0.5">
+                      <ActionButton
+                        label="Suka"
+                        activeLabel="Disukai"
+                        active={feedback[i] === 'up'}
+                        onClick={() => setFeedback((f) => ({ ...f, [i]: f[i] === 'up' ? undefined : 'up' }))}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
+                        }
+                      />
+                      <ActionButton
+                        label="Tidak suka"
+                        activeLabel="Tidak disukai"
+                        active={feedback[i] === 'down'}
+                        onClick={() => setFeedback((f) => ({ ...f, [i]: f[i] === 'down' ? undefined : 'down' }))}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /></svg>
+                        }
+                      />
+                      <span>OmniChat</span>
+                    </div>
                     <div className="flex items-center">
                       {isLastMessage(i) && !streaming && onRegenerate && (
                         <ActionButton
@@ -231,6 +252,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           }
                         />
                       )}
+                      <ActionButton
+                        label="Salin sebagai JSON"
+                        activeLabel="JSON tersalin"
+                        active={copiedIndex === i}
+                        onClick={() => handleCopy(JSON.stringify({ role: m.role, content: m.content }, null, 2), i)}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
+                        }
+                      />
                       <ActionButton
                         label="Salin pesan"
                         activeLabel="Pesan tersalin"

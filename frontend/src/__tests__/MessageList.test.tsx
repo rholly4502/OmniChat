@@ -283,4 +283,51 @@ describe('MessageList', () => {
     const save = screen.getByRole('button', { name: 'Simpan & kirim' });
     expect(save).toBeDisabled();
   });
+
+  // ─── like / dislike feedback (local) ─────────────────────────────
+  it('offers like/dislike feedback on assistant replies', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    expect(screen.getByRole('button', { name: 'Suka' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tidak suka' })).toBeInTheDocument();
+  });
+
+  it('does not put feedback buttons on user turns', () => {
+    renderList({ messages: [{ role: 'user', content: 'halo' }] });
+    expect(screen.queryByRole('button', { name: 'Suka' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tidak suka' })).not.toBeInTheDocument();
+  });
+
+  it('toggles like on click and clears on second click', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    const like = screen.getByRole('button', { name: 'Disukai' });
+    expect(like).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(like);
+    expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument();
+  });
+
+  it('switches from like to dislike in one click', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tidak suka' }));
+    expect(screen.getByRole('button', { name: 'Tidak disukai' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument();
+  });
+
+  // ─── copy message as JSON ───────────────────────────────────────
+  it('copies an assistant reply as JSON', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith(JSON.stringify({ role: 'assistant', content: 'halo' }, null, 2));
+  });
+
+  it('shows a transient copied confirmation for JSON', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
+  });
 });

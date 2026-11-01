@@ -1,8 +1,9 @@
-import { useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
 import { formatTokens } from '../tokenCost';
 import type { ChatSession, ChatSettings, ModelOption } from '../types';
+import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
 
 /** Props accepted by {@link Sidebar}. */
 export interface SidebarProps {
@@ -50,8 +51,8 @@ export interface SidebarProps {
   onRenameSession?: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin a session; resolves when the server applies the state. */
   onPinSession?: (id: string, pinned: boolean) => Promise<boolean>;
-  /** Export a session. */
-  onExportSession?: (session: ChatSession) => void;
+  /** Export a session in the requested format (default Markdown). */
+  onExportSession?: (session: ChatSession, format?: ConversationExportFormat) => void;
   /** Optional LLM sampling settings and system prompt. */
   settings?: ChatSettings;
   /** System prompt change handler. */
@@ -107,6 +108,29 @@ export function Sidebar({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+
+  const [exportMenuFor, setExportMenuFor] = useState<string | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
+
+  /** Close the export format menu when clicking elsewhere or pressing Escape. */
+  useEffect(() => {
+    if (!exportMenuFor) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key === 'Escape') {
+        setExportMenuFor(null);
+        return;
+      }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) {
+        setExportMenuFor(null);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [exportMenuFor]);
 
   return (
     <aside
@@ -333,20 +357,46 @@ export function Sidebar({
                   )}
                   <div className="flex items-center gap-0.5 opacity-100 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
                     {onExportSession && s.messages.length > 0 && (
-                      <button
-                        type="button"
-                        title="Ekspor Markdown"
-                        aria-label={`Ekspor ${s.title}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onExportSession(s);
-                        }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-                      </button>
-                    )}
-                    {onPinSession && isServerConversation(s.id) && (
+                      <div className="relative" ref={exportMenuFor === s.id ? exportMenuRef : undefined}>
+                        <button
+                          type="button"
+                          title="Ekspor percakapan"
+                          aria-label={`Ekspor ${s.title}`}
+                          aria-haspopup="menu"
+                          aria-expanded={exportMenuFor === s.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExportMenuFor(exportMenuFor === s.id ? null : s.id);
+                          }}
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                        </button>
+                        {exportMenuFor === s.id && (
+                          <div
+                            role="menu"
+                            aria-label={`Format ekspor ${s.title}`}
+                            className="absolute right-0 top-full z-30 mt-1 w-40 bg-chill-elevated border-2 border-chill-border pixel-shadow"
+                          >
+                            {(Object.keys(EXPORT_FORMAT_LABELS) as ConversationExportFormat[]).map((fmt) => (
+                              <button
+                                key={fmt}
+                                type="button"
+                                role="menuitem"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExportMenuFor(null);
+                                  onExportSession(s, fmt);
+                                }}
+                                className="block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
+                              >
+                                {EXPORT_FORMAT_LABELS[fmt]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}{onPinSession && isServerConversation(s.id) && (
                       <button
                         type="button"
                         title={s.isPinned ? 'Lepas sematan' : 'Sematkan'}

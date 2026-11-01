@@ -626,4 +626,42 @@ describe('Sidebar', () => {
     expect(pin.className).toContain('focus-visible:ring-2');
     expect(pin.className).toContain('focus-visible:ring-chill-accent/60');
   });
+
+  describe('conversation export menu', () => {
+    const session = {
+      id: 's1',
+      title: 'Deploy',
+      messages: [{ role: 'user' as const, content: 'halo' }],
+      createdAt: 1,
+      updatedAt: 1,
+    };
+
+    it('opens a menu listing all four formats on click', () => {
+      renderSidebar({ sessions: [session], onExportSession: vi.fn() });
+      fireEvent.click(screen.getByLabelText('Ekspor Deploy'));
+
+      expect(screen.getByRole('menu', { name: 'Format ekspor Deploy' })).toBeInTheDocument();
+      for (const label of ['Markdown', 'JSON', 'CSV', 'PDF']) {
+        expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument();
+      }
+    });
+
+    it('calls onExportSession with the chosen format and closes the menu', () => {
+      const onExportSession = vi.fn();
+      renderSidebar({ sessions: [session], onExportSession });
+      fireEvent.click(screen.getByLabelText('Ekspor Deploy'));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'PDF' }));
+
+      expect(onExportSession).toHaveBeenCalledWith(session, 'pdf');
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
+
+    it('does not render the export control when the session has no messages', () => {
+      renderSidebar({
+        sessions: [{ id: 's1', title: 'Kosong', messages: [], createdAt: 1, updatedAt: 1 }],
+        onExportSession: vi.fn(),
+      });
+      expect(screen.queryByLabelText('Ekspor Kosong')).not.toBeInTheDocument();
+    });
+  });
 });

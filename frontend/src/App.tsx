@@ -70,7 +70,7 @@ export default function App() {
     renameSession,
     pinSession,
     adoptConversation,
-    exportSessionMarkdown,
+    exportSession,
   } = useServerHistory({ apiKey, search: historySearch });
 
   const {
@@ -246,7 +246,7 @@ export default function App() {
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
         onPinSession={handlePinSession}
-        onExportSession={exportSessionMarkdown}
+        onExportSession={exportSession}
         settings={settings}
         onSystemPromptChange={updateSystemPrompt}
         onTemperatureChange={updateTemperature}

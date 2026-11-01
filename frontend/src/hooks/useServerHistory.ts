@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, Message } from '../types';
 import { deleteConversation, getConversation, listConversations, pinConversation, renameConversation } from '../historyApi';
+import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
@@ -52,8 +53,8 @@ export interface ServerHistoryResult {
   adoptConversation: (id: string) => void;
   /** Mirror the in-flight transcript onto the active row, so export sees it. */
   updateActiveSessionMessages: (messages: Message[]) => void;
-  /** Download the session as Markdown. */
-  exportSessionMarkdown: (session: ChatSession) => void;
+  /** Download the session in the requested format (default Markdown). */
+  exportSession: (session: ChatSession, format?: ConversationExportFormat) => void;
 }
 
 /**
@@ -289,25 +290,34 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     );
   }, []);
 
-  const exportSessionMarkdown = useCallback((session: ChatSession) => {
+  const exportSession = useCallback((session: ChatSession, format: ConversationExportFormat = 'markdown') => {
+    const slug = safeFilenameSlug(session.title);
+    if (format === 'json') {
+      const blob = new Blob([buildConversationJson(session.messages, session.title)], { type: 'application/json;charset=utf-8' });
+      downloadBlob(blob, `${slug}.json`);
+      return;
+    }
+    if (format === 'csv') {
+      // UTF-8 BOM so Excel renders the CSV as UTF-8 rather than ANSI.
+      const blob = new Blob(['\uFEFF' + buildConversationCsv(session.messages)], { type: 'text/csv;charset=utf-8' });
+      downloadBlob(blob, `${slug}.csv`);
+      return;
+    }
+    if (format === 'pdf') {
+      downloadBlob(buildConversationPdf(session.messages, session.title), `${slug}.pdf`);
+      return;
+    }
     const lines = [
       `# ${session.title}`,
       `*Dibuat: ${new Date(session.createdAt).toLocaleString('id-ID')}*`,
       '',
     ];
-
     for (const msg of session.messages) {
-      const roleLabel = msg.role === 'user' ? '👤 Pengguna' : '🤖 Asisten';
+      const roleLabel = msg.role === 'user' ? 'Pengguna' : 'Asisten';
       lines.push(`### ${roleLabel}`, '', msg.content, '');
     }
-
     const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${session.title.replace(/[/\\?%*:|"<>]/g, '_')}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `${slug}.md`);
   }, []);
 
   return {
@@ -321,6 +331,6 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     pinSession,
     adoptConversation,
     updateActiveSessionMessages,
-    exportSessionMarkdown,
+    exportSession,
   };
 }
