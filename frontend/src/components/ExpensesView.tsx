@@ -188,7 +188,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const showSummary = summary !== null;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain bg-chill-bg text-chill-text">
+    <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain text-chill-text">
       <header className="shrink-0 px-4 pt-3 pb-2 border-b border-chill-border flex items-center justify-between gap-3 flex-wrap relative overflow-hidden">
         <div className="relative flex items-center gap-1.5">
           <h2 className="text-base font-semibold text-chill-text pixel-heading">Pengeluaran</h2>
@@ -449,7 +449,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
           onClick={onEdit}
           disabled={busy}
           aria-label={`Edit ${item.keterangan || item.kategori}`}
-          className="rounded-none border border-chill-border w-10 h-10 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
             <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 7.5l4 4" />
@@ -460,7 +460,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
           onClick={onDelete}
           disabled={busy}
           aria-label={`Hapus ${item.keterangan || item.kategori}`}
-          className="rounded-none border border-chill-border w-10 h-10 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
             <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
