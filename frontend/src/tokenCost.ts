@@ -12,6 +12,7 @@ const MODEL_RATES: Record<string, { input: number; output: number }> = {
   'claude-sonnet': { input: 0.003, output: 0.015 },
   'claude-haiku': { input: 0.001, output: 0.005 },
   'hermes-default': { input: 0.002, output: 0.008 },
+  'hermes': { input: 0.002, output: 0.008 },
 };
 
 /** Conservative fallback for unknown models. */
@@ -19,6 +20,9 @@ const FALLBACK_RATE = { input: 0.001, output: 0.004 };
 
 /** Estimated USD cost for a token usage, given the model id. */
 export function estimateUsd(usage: TokenUsage, model: string): number {
+  // OpenRouter free-tier endpoints ('...:free') cost nothing — report $0
+  // instead of falling back to a paid per-1K rate.
+  if (model.endsWith(':free')) return 0;
   const rate = MODEL_RATES[model] ?? FALLBACK_RATE;
   return (usage.promptTokens / 1000) * rate.input + (usage.completionTokens / 1000) * rate.output;
 }
