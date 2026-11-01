@@ -152,5 +152,13 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(screen.getByRole('button', { name: 'Ekspor PDF' }).className).toContain('rounded-none');
     expect(screen.getByRole('heading', { name: 'Pengeluaran' }).className).toContain('pixel-heading');
   });
+
+  it('renders the positive budget-remaining state in the sage positive-green register', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    const sisa = screen.getByText('Rp 500.000');
+    expect(sisa.className).toContain('text-chill-sage');
+  });
 });
 

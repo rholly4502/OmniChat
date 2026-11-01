@@ -57,11 +57,15 @@ function KategoriBadge({ kategori }: { kategori: string }) {
 
 function StatCard({ label, value, icon, tone = 'default' }: { label: string; value: string; icon: string; tone?: 'default' | 'accent' | 'emerald' | 'red' }) {
   const valueClass =
-    tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-accent' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
+    tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-sage' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
   return (
     <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden">
       <div className="relative flex items-start gap-3">
-        <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10' : tone === 'emerald' ? 'text-chill-accent border-chill-accent/40 bg-chill-accent/10' : 'text-chill-accent border-chill-accent/40 bg-chill-accent/10'}`}>
+        <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${
+          tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10'
+          : tone === 'emerald' ? 'text-chill-sage border-chill-sage/40 bg-chill-sage/10'
+          : 'text-chill-accent border-chill-accent/40 bg-chill-accent/10'
+        }`}>
           <CategoryIcon kategori={icon} className="w-5 h-5" />
         </div>
         <div className="min-w-0">
