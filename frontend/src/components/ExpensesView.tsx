@@ -213,7 +213,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('csv')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
         </button>
@@ -221,7 +221,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('pdf')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
@@ -232,7 +232,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             setShowForm((v) => !v);
             setFormError(null);
           }}
-          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent/20 px-4 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/30 active:bg-chill-accent/35 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+          className="relative shrink-0 rounded-none bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
         >
           {showForm && !editingItem ? 'Batal' : 'Tambah'}
         </button>
