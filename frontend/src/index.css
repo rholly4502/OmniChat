@@ -275,6 +275,15 @@ body {
   animation: pixel-blink 1s linear infinite;
 }
 
+/* Stepped fade for reveal-on-hover text (expenses empty-state easter-egg label):
+   snaps between hidden/visible in two hard beats instead of tweening - the same
+   pixel transition language as the buttons. Reduced-motion handled globally. */
+.pixel-step-fade {
+  transition-property: opacity;
+  transition-duration: 120ms;
+  transition-timing-function: steps(2, jump-none);
+}
+
 /* Pixel scan loader: a single highlight sweeps left→right across a row of
    hard-edged blocks, one duty-cycle step per block (stepped keyframes so it
    snaps between blocks instead of tweening). Reduced-motion falls back to the

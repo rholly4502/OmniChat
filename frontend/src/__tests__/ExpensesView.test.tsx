@@ -364,5 +364,13 @@ describe('ExpensesView pixel2 chill design', () => {
       expect(screen.getByText('Gagal menghapus (500).')).toBeInTheDocument(),
     );
   });
+  it('renders the pixel2 surface-texture ornaments (card bevel, corner pixel, divider diamond)', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const { container } = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    // One bevel strip per summary card (4 cards) - the chunky light edge.
+    expect(container.querySelectorAll('.bg-chill-elevated').length).toBeGreaterThanOrEqual(4);
+    // The grid-aligned pixel diamond replaces the old rotated square.
+    expect(container.querySelector('svg rect')).not.toBeNull();
+  });
 });
-

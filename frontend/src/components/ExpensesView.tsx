@@ -68,6 +68,10 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
     tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-sage' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
   return (
     <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden">
+      {/* Hard top-left bevel (pixel meter register): a chunky light edge - no soft gradient. */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+      {/* Corner highlight pixel - warm two-tone surface texture (Stardew 2-4 tone rule). */}
+      <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/25" />
       <div className="relative flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${
           tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10'
@@ -89,7 +93,11 @@ function HeaderDivider() {
   return (
     <div aria-hidden="true" className="my-6 flex items-center gap-3">
       <div className="h-px flex-1 bg-chill-border" />
-      <div className="w-2 h-2 bg-chill-accent rotate-45" />
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-3 w-3 text-chill-accent shrink-0">
+        <rect x="7" y="2" width="2" height="2" fill="currentColor" />
+        <rect x="5" y="5" width="6" height="6" fill="currentColor" />
+        <rect x="7" y="10" width="2" height="2" fill="currentColor" />
+      </svg>
       <div className="h-px flex-1 bg-chill-border" />
     </div>
   );
@@ -415,7 +423,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   <rect x="5" y="6" width="7" height="3" fill="currentColor" opacity="0.45" />
                 </svg>
               </div>
-              <span className="mt-1.5 text-xs text-chill-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 select-none">
+              <span className="mt-1.5 text-xs text-chill-muted opacity-0 pixel-step-fade group-hover:opacity-100 group-focus-within:opacity-100 select-none">
                 Keep saving — the harvest is coming 🪙🐟
               </span>
             </div>
