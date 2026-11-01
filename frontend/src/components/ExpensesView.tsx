@@ -274,7 +274,8 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         )}
 
         {loading && !showSummary && !error && (
-          <p className="text-sm text-chill-muted text-center py-10" role="status">
+          <p className="flex items-center justify-center gap-2 text-sm text-chill-muted py-10" role="status">
+            <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink" aria-hidden="true" />
             Memuat data pengeluaran…
           </p>
         )}
@@ -370,7 +371,42 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         )}
 
         {!loading && !error && !hasData && !showSummary && (
-          <p className="text-sm text-chill-muted text-center py-10">Belum ada data.</p>
+          <div className="flex flex-col items-center justify-center gap-3 px-4 text-center py-12">
+            {/* Decorative pixel-art ledger + coin ornament (chill palette, hard-edged). */}
+            <svg width="52" height="36" viewBox="0 0 52 36" fill="none" aria-hidden="true" className="text-chill-muted shrink-0">
+              <rect x="4" y="4" width="44" height="28" stroke="currentColor" strokeWidth="2" />
+              <rect x="10" y="11" width="20" height="2" fill="currentColor" opacity="0.45" />
+              <rect x="10" y="17" width="26" height="2" fill="currentColor" opacity="0.3" />
+              <rect x="10" y="23" width="16" height="2" fill="currentColor" opacity="0.45" />
+              <rect x="38" y="15" width="8" height="8" fill="currentColor" className="text-chill-accent" />
+              <rect x="40" y="17" width="4" height="4" fill="currentColor" className="text-chill-on-accent" />
+            </svg>
+            {/* Subtle easter egg — a stacked gold coin (Stardew) & a deep-sea fish
+                (Dave the Diver). Purely decorative — aria-hidden, rect-only, never
+                interactive, so it cannot affect usability or the a11y tree. */}
+            <div className="group relative flex flex-col items-center" aria-hidden="true">
+              <div className="flex items-center gap-3">
+                <svg width="20" height="22" viewBox="0 0 20 22" fill="none" aria-hidden="true" className="text-chill-accent shrink-0">
+                  <rect x="4" y="4" width="12" height="12" fill="currentColor" />
+                  <rect x="6" y="6" width="8" height="8" fill="currentColor" className="text-chill-on-accent" />
+                  <rect x="6" y="16" width="8" height="2" fill="currentColor" />
+                  <rect x="8" y="18" width="4" height="2" fill="currentColor" opacity="0.55" />
+                </svg>
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" aria-hidden="true" className="text-chill-deepsea shrink-0">
+                  <rect x="1" y="5" width="4" height="2" fill="currentColor" />
+                  <rect x="1" y="8" width="4" height="2" fill="currentColor" opacity="0.65" />
+                  <rect x="5" y="3" width="7" height="6" fill="currentColor" />
+                  <rect x="12" y="3" width="5" height="6" fill="currentColor" opacity="0.85" />
+                  <rect x="17" y="4" width="5" height="4" fill="currentColor" />
+                  <rect x="5" y="6" width="7" height="3" fill="currentColor" opacity="0.45" />
+                </svg>
+              </div>
+              <span className="mt-1.5 text-xs text-chill-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 select-none">
+                Keep saving — the harvest is coming 🪙🐟
+              </span>
+            </div>
+            <p className="text-sm text-chill-muted">Belum ada data pengeluaran bulan ini.</p>
+          </div>
         )}
       </div>
     </div>
