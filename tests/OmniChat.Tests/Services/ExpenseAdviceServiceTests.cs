@@ -103,6 +103,23 @@ public sealed class ExpenseAdviceServiceTests
     }
 
     [Fact]
+    public async Task NabungDeposit_doesNotCountAsDaySpend()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000 },
+        };
+        // A savings deposit on the 31st is not spending: day total stays 0 → "oke".
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Nabung", 1_000_000, "a"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        Assert.Equal(0, advice.DayTotal);
+        Assert.Equal("oke", advice.Status);
+        Assert.Equal(0, advice.OverBy);
+    }
+
+    [Fact]
     public async Task Oke_whenWithinBudget()
     {
         var repo = new FakeExpenseRepository
@@ -158,6 +175,8 @@ public sealed class ExpenseAdviceServiceTests
             Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000 },
         };
         // Tiny spend so projection stays well under budget → positive saving potential.
+        // The 1jt Nabung deposit must NOT count as spending (Nabung = savings), so the
+        // projection is based on the 4.000 spend only and saving potential stays positive.
         repo.Rows.Add(Row(new DateOnly(2026, 10, 1), "Makan", 4_000, "a"));
         repo.Rows.Add(Row(new DateOnly(2026, 10, 1), "Nabung", 1_000_000, "b"));
 
@@ -172,9 +191,11 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(1_000_000, pc.NabungSoFar);
         Assert.Equal(7_700_000, pc.Remaining);
         Assert.True(pc.PercentCollected > 11 && pc.PercentCollected < 12);
-        // projectedTotal = round(1004000/1*31)=31.124.000 > 520.000 → potential 0 → months null.
-        Assert.Equal(0, pc.PotentialSavingPerMonth);
-        Assert.Null(pc.MonthsToReach);
+        // Projection is computed from the non-Nabung spend (4.000): round(4000/1*31)
+        // = 124.000 < 520.000 → potential 396.000/month.
+        Assert.Equal(124_000, advice.Projection.ProjectedTotal);
+        Assert.Equal(396_000, pc.PotentialSavingPerMonth);
+        Assert.Equal(22, pc.MonthsToReach);
     }
 
     [Fact]

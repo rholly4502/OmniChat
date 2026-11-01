@@ -147,6 +147,43 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
     }
 
     [Fact]
+    public async Task Summary_excludesNabungSavingsFromBudget()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "a", Nominal = 20_000, SourceId = "a1b2c3" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Nabung",
+                            Keterangan = "setoran", Nominal = 300_000, SourceId = "a1b2c4" },
+                    ], CancellationToken.None);
+                await repository.UpsertTargetAsync(
+                    new ExpenseTarget { Month = "2026-10", TargetNabung = 467_000, Anggaran = 520_000 },
+                    CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/summary?month=2026-10");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            // Spend total excludes the 300k Nabung deposit (savings are not spending).
+            Assert.Equal(20_000, root.GetProperty("total").GetInt64());
+            Assert.Equal(300_000, root.GetProperty("perKategori").GetProperty("Nabung").GetInt64());
+            Assert.Equal(500_000, root.GetProperty("sisaAnggaran").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
     public async Task Target_withApiKey_returns404WhenUnset()
     {
         var db = TempDb();

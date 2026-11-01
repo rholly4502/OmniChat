@@ -68,7 +68,11 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             .ToListAsync(cancellationToken);
 
         var perKategori = rows.ToDictionary(r => r.Kategori, r => r.Total);
-        return (perKategori.Values.Sum(), perKategori);
+        // Savings deposits (kategori "Nabung") are savings, not spending — they must
+        // not count against the month's budget. The per-category breakdown keeps the
+        // Nabung row so the UI can still show savings separately.
+        var spend = perKategori.Where(kv => kv.Key != "Nabung").Sum(kv => kv.Value);
+        return (spend, perKategori);
     }
 
     public Task<ExpenseTarget?> GetTargetAsync(string month, CancellationToken cancellationToken) =>

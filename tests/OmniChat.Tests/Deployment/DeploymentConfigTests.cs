@@ -1009,6 +1009,20 @@ public class DeploymentConfigTests
     }
 
     [Fact]
+    public void Expenses_NabungSavingsExcludedFromBudgetSpend()
+    {
+        // Savings (kategori "Nabung") are not spending: they must be excluded from
+        // the spend total the budget meter and the advice day-total/projection derive
+        // from. This pins the rule so a regression cannot silently consume the budget.
+        var repository = Read("src/OmniChat.Api/Infrastructure/Data/ExpenseRepository.cs");
+        Assert.Contains("\"Nabung\"", repository);
+        Assert.Contains("spend", repository);
+
+        var service = Read("src/OmniChat.Api/Infrastructure/Services/ExpenseAdviceService.cs");
+        Assert.Contains("r.Kategori != \"Nabung\"", service);
+    }
+
+    [Fact]
     public void FrontendPackageJson_HasTestScript()
     {
         // The frontend package.json must have a "test" script so `npm run test`

@@ -21,8 +21,10 @@ public sealed class ExpenseAdviceService(
         var target = await repository.GetTargetAsync(month, ct);
         var rows = await repository.ListAllForMonthAsync(month, ct);
 
-        var dayTotal = rows.Where(r => r.Tanggal == date).Sum(r => r.Nominal);
-        var total = rows.Sum(r => r.Nominal);
+        // Savings deposits (kategori "Nabung") are not spending: they must not push a
+        // day over budget nor inflate the month projection / saving-potential math.
+        var dayTotal = rows.Where(r => r.Tanggal == date && r.Kategori != "Nabung").Sum(r => r.Nominal);
+        var total = rows.Where(r => r.Kategori != "Nabung").Sum(r => r.Nominal);
 
         var anggaran = target?.Anggaran ?? 0;
         var dailyBudget = anggaran > 0 ? Math.Max(1, (long)Math.Round(anggaran / (double)daysInMonth)) : 0;
