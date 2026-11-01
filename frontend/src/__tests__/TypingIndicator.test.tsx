@@ -2,12 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { TypingIndicator } from '../components/TypingIndicator';
 
-/**
- * The messages container is `aria-busy="true"` while streaming, which
- * suppresses announcements for anything inside it. The indicator must
- * therefore own a live region of its own, or screen-reader users get no
- * feedback that a reply has started.
- */
 describe('TypingIndicator', () => {
   it('exposes an accessible status label', () => {
     render(<TypingIndicator />);
@@ -15,19 +9,22 @@ describe('TypingIndicator', () => {
     expect(status).toHaveAttribute('aria-label', 'Menunggu respons');
   });
 
-  it('renders three decorative dots, each hidden from assistive tech', () => {
+  it('renders the pixel scan loader blocks inside a decorative aria-hidden row', () => {
     const { container } = render(<TypingIndicator />);
-    const dots = container.querySelectorAll('span[aria-hidden="true"]');
-    expect(dots).toHaveLength(3);
-    dots.forEach((dot) => expect(dot.className).toContain('pixel-blink'));
+    const row = container.querySelector('span[aria-hidden="true"]');
+    expect(row).not.toBeNull();
+    const blocks = row!.querySelectorAll('span.pixel-scan');
+    expect(blocks).toHaveLength(8);
   });
 
-  it('staggers the dots for a rippling stepped pixel blink', () => {
+  it('staggers the scan blocks so the highlight sweeps', () => {
     const { container } = render(<TypingIndicator />);
-    const dots = [...container.querySelectorAll('span[aria-hidden="true"]')];
-    expect(dots[0].className).not.toContain('animation-delay');
-    expect(dots[1].className).toContain('[animation-delay:200ms]');
-    expect(dots[2].className).toContain('[animation-delay:400ms]');
+    const row = container.querySelector('span[aria-hidden="true"]');
+    const blocks = [...row!.querySelectorAll('span.pixel-scan')];
+    const delays = blocks.map((b) => b.style.animationDelay);
+    expect(delays[0]).toBe('0ms');
+    expect(delays[1]).toBe('125ms');
+    expect(delays[delays.length - 1]).toBe('875ms');
   });
 
   it('renders server-provided status text and updates accessible label', () => {
@@ -35,5 +32,12 @@ describe('TypingIndicator', () => {
     const status = screen.getByRole('status');
     expect(status).toHaveAttribute('aria-label', 'Menyusun jawaban');
     expect(screen.getByText('Menyusun jawaban…')).toBeInTheDocument();
+  });
+
+  it('shows the processing model label and folds it into the accessible label', () => {
+    render(<TypingIndicator status="Menyusun jawaban" modelLabel="Hermes (Default)" />);
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-label', 'Menyusun jawaban · Hermes (Default)');
+    expect(screen.getByText('· Hermes (Default)')).toBeInTheDocument();
   });
 });

@@ -314,7 +314,9 @@ describe('App', () => {
     // The typing indicator should have role="status" and aria-label
     await waitFor(() => {
       const status = screen.getByRole('status');
-      expect(status).toHaveAttribute('aria-label', 'Menunggu respons');
+      // Fetch hangs in this test, so the catalog falls back to the engine agent
+      // defaults and the selected model resolves to 'Hermes (Default)'.
+      expect(status).toHaveAttribute('aria-label', 'Menunggu respons · Hermes (Default)');
     });
   });
 

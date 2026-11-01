@@ -67,6 +67,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  /** Resolved label of the model currently selected, for the typing indicator. */
+  const activeModelLabel = models.find((m) => m.id === model)?.label;
 
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard?.writeText(text).then(() => {
@@ -207,7 +209,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
               `}
             >
               {m.role === 'assistant' && !m.content ? (
-                <TypingIndicator status={m.status} />
+                <TypingIndicator status={m.status} modelLabel={activeModelLabel} />
               ) : m.role === 'assistant' ? (
                 <div>
                   <div className="md-body">

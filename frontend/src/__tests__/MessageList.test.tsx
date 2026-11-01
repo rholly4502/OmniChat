@@ -103,7 +103,13 @@ describe('MessageList', () => {
 
   it('shows the typing indicator while an assistant turn is still empty', () => {
     renderList({ messages: [{ role: 'assistant', content: '' }] });
-    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Menunggu respons');
+    // Default harness model is 'hermes', which resolves to 'Hermes (Default)'.
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Menunggu respons · Hermes (Default)');
+  });
+
+  it('names the model processing the reply in the typing indicator', () => {
+    renderList({ messages: [{ role: 'assistant', content: '' }], model: 'other' });
+    expect(screen.getByRole('status')).toHaveAttribute('aria-label', 'Menunggu respons · Other Model');
   });
 
   it('does not show the typing indicator once content has arrived', () => {

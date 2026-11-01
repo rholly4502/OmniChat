@@ -249,6 +249,18 @@ body {
 .pixel-blink {
   animation: pixel-blink 1s linear infinite;
 }
+
+/* Pixel scan loader: a single highlight sweeps left→right across a row of
+   hard-edged blocks, one duty-cycle step per block (stepped keyframes so it
+   snaps between blocks instead of tweening). Reduced-motion falls back to the
+   global media block. */
+@keyframes pixel-scan {
+  0%, 100% { opacity: 0.22; }
+  12.5% { opacity: 1; }
+}
+.pixel-scan {
+  animation: pixel-scan 1s linear infinite;
+}
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 
