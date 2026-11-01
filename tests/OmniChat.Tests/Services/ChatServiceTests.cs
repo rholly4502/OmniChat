@@ -637,6 +637,46 @@ public class ChatServiceTests
     }
 
     [Fact]
+    public async Task StreamChatResponseAsync_SilentUpstreamWithHeartbeat_StillAbortsAfterIdle()
+    {
+        // Regression: a silent upstream must abort after the idle deadline even when the
+        // heartbeat is enabled. Previously both shared one token source and the heartbeat
+        // re-armed the idle deadline on every fire, so a quiet upstream sent progress frames
+        // forever and never surfaced the terminal error. With ProgressIntervalSeconds = 1
+        // and IdleTimeoutSeconds = 2, the heartbeat fires at ~1s but the abort must still
+        // land at ~2s (not be postponed indefinitely).
+        var service = CreateService(
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new HangingHttpContent() },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 2, ProgressIntervalSeconds = 1 });
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = false
+        };
+
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        // Act
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(request, guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        // Assert: the heartbeat still fired (a progress frame appeared, so the reassure
+        // path is alive) yet the terminal idle-deadline error is present and terminated
+        // promptly (well inside the guard), not after an infinite heartbeat re-arm loop.
+        Assert.Contains(ProgressFrame, tokens);
+        Assert.Contains("[Error: The AI provider stopped responding. Please try again.]", tokens);
+        Assert.Equal("[Error: The AI provider stopped responding. Please try again.]", tokens[^1]);
+        Assert.True(sw.Elapsed < TimeSpan.FromSeconds(8), $"abort took {sw.ElapsedMilliseconds} ms — idle deadline was not honoured");
+    }
+
+    [Fact]
     public async Task StreamChatResponseAsync_RenewsIdleDeadlineOnEveryLine()
     {
         // Ten chunks 250 ms apart: ~2.25 s of streaming against a 2 s deadline. Every gap is far

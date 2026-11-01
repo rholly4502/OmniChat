@@ -121,79 +121,118 @@ public sealed class ChatService : IChatService
             // so an upstream that is thinking emits nothing at all for this whole window.
             await WriteProgressAsync(writer, ct);
 
-            // The named HttpClient has no overall timeout (a valid generation can stream for
-            // minutes), so a quiet upstream would otherwise hang the request forever. This
-            // deadline is pushed out on every line read: it fires on "no first token ever" and
-            // on "stalled mid-answer", but a stream that keeps producing is never cut short.
-            var idleTimeout = _streaming.IdleTimeout;
+                        var idleTimeout = _streaming.IdleTimeout;
             var progressInterval = _streaming.ProgressInterval;
 
+            // Two independent liveness timers govern the read, because a single token that
+            // serves both would let one mask the other:
+            //   - heartbeat: writes a progress frame every ProgressInterval of *silence* to
+            //     reassure a client whose request is still alive. It never touches the idle
+            //     deadline, so a quiet upstream cannot postpone its own abort.
+            //   - idle deadline: aborts the read after IdleTimeout with no bytes at all. It
+            //     is reset on every real byte, so a stream that keeps producing is never cut
+            //     short.
             using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
-            // The read deadline and the heartbeat deadline share one token source: whichever
-            // elapses first cancels the pending ReadLineAsync, and the flag says which. The
-            // heartbeat fires far sooner than the idle deadline by design.
-            var idleDeadlineElapsed = false;
-
-            void ArmDeadlines()
+            // Arm the idle deadline up front: a silent upstream must abort even if it never
+            // sends the first byte. It is re-armed below on every byte read.
+            if (idleTimeout is { } initialIdle)
             {
-                if (idleTimeout is { } idle)
-                {
-                    idleCts.CancelAfter(idle);
-                }
+                idleCts.CancelAfter(initialIdle);
             }
 
-            ArmDeadlines();
-
-            string? line;
-            while (true)
+            long lastDataTicks = Environment.TickCount64;
+            Task? heartbeatTask = null;
+            if (progressInterval is { } pi)
             {
-                try
+                heartbeatTask = Task.Run(async () =>
                 {
-                    line = await reader.ReadLineAsync(idleCts.Token);
-                }
-                catch (OperationCanceledException)
-                    when (!ct.IsCancellationRequested && !idleDeadlineElapsed && progressInterval is not null)
-                {
-                    // Silence, but not yet a stall: report progress and keep waiting. The
-                    // re-arm below restarts the idle deadline, so a genuinely dead upstream
-                    // still aborts after the full idle timeout instead of looping forever.
-                    idleDeadlineElapsed = true;
-                    await WriteProgressAsync(writer, ct);
-                    ArmDeadlines();
-                    idleDeadlineElapsed = false;
-                    continue;
-                }
-
-                if (line == null) break;
-
-                ct.ThrowIfCancellationRequested();
-
-                // Any byte from upstream — including a keep-alive or a role-only delta — proves
-                // it is still working, so restart the deadline.
-                ArmDeadlines();
-
-                if (string.IsNullOrWhiteSpace(line)) continue;
-                if (!line.StartsWith("data: ")) continue;
-
-                var data = line["data: ".Length..].Trim();
-                if (data == "[DONE]") break;
-
-                var usage = TryExtractUsage(data);
-                if (usage is { } u)
-                {
-                    if (u.Prompt > 0 || u.Completion > 0)
+                    try
                     {
-                        await writer.WriteAsync(UsageFrame.Encode(u.Prompt, u.Completion), ct);
+                        while (!heartbeatCts.IsCancellationRequested)
+                        {
+                            await Task.Delay(pi, heartbeatCts.Token);
+                            // Reassure only if nothing arrived since the previous beat.
+                            if (Environment.TickCount64 - lastDataTicks >= pi.TotalMilliseconds)
+                            {
+                                await WriteProgressAsync(writer, CancellationToken.None);
+                            }
+                        }
                     }
-                    continue;
-                }
+                    catch (OperationCanceledException)
+                    {
+                        // Shutdown or client gone — expected.
+                    }
+                }, heartbeatCts.Token);
+            }
 
-                var text = TryExtractDeltaContent(data);
-                if (!string.IsNullOrEmpty(text))
+            try
+            {
+                string? line;
+                while (true)
                 {
-                    await writer.WriteAsync(text, ct);
+                    try
+                    {
+                        line = await reader.ReadLineAsync(idleCts.Token);
+                    }
+                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    {
+                        // Only the idle deadline fired — the caller is still connected. The
+                        // upstream accepted the request and then went quiet, so report it
+                        // rather than hang. A client-disconnect cancellation falls through to
+                        // the outer handler below and is simply rethrown.
+                        _logger.LogWarning(
+                            "Upstream {Mode} endpoint at {Endpoint} sent no data for {TimeoutSeconds}s; aborting the stream.",
+                            mode, endpoint, _streaming.IdleTimeoutSeconds);
+                        await writer.WriteAsync(
+                            "[Error: The AI provider stopped responding. Please try again.]",
+                            CancellationToken.None);
+                        return;
+                    }
+
+                    if (line == null) break;
+
+                    ct.ThrowIfCancellationRequested();
+
+                    // Any byte — including a keep-alive or a role-only delta — proves liveness.
+                    lastDataTicks = Environment.TickCount64;
+                    if (idleTimeout is { } idle)
+                    {
+                        idleCts.CancelAfter(idle);
+                    }
+
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (!line.StartsWith("data: ")) continue;
+
+                    var data = line["data: ".Length..].Trim();
+                    if (data == "[DONE]") break;
+
+                    var usage = TryExtractUsage(data);
+                    if (usage is { } u)
+                    {
+                        if (u.Prompt > 0 || u.Completion > 0)
+                        {
+                            await writer.WriteAsync(UsageFrame.Encode(u.Prompt, u.Completion), ct);
+                        }
+                        continue;
+                    }
+
+                    var text = TryExtractDeltaContent(data);
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        await writer.WriteAsync(text, ct);
+                    }
                 }
+            }
+            finally
+            {
+                heartbeatCts.Cancel();
+                if (heartbeatTask is not null)
+                {
+                    try { await heartbeatTask; } catch (OperationCanceledException) { }
+                }
+                idleCts.Cancel();
             }
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
