@@ -81,6 +81,7 @@ export default function App() {
     updateSystemPrompt,
     updateTemperature,
     updateMaxTokens,
+    updateNightMode,
   } = useSettings();
 
   const catalog = useModelCatalog(apiKey);
@@ -190,7 +191,7 @@ export default function App() {
   // with a slim top bar exposing logout.
   if (isGuest) {
     return (
-      <div className="relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden">
+      <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
           <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} />
@@ -217,7 +218,7 @@ export default function App() {
   }
 
   return (
-    <div className="relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden"
+    <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -260,6 +261,8 @@ export default function App() {
         onSystemPromptChange={updateSystemPrompt}
         onTemperatureChange={updateTemperature}
         onMaxTokensChange={updateMaxTokens}
+        nightMode={settings.nightMode}
+        onNightModeChange={updateNightMode}
         activeView={activeView}
         onSelectView={setActiveView}
       />

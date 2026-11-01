@@ -7,6 +7,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
   systemPrompt: '',
   temperature: 0.7,
   maxTokens: 2048,
+  nightMode: false,
 };
 
 export function useSettings() {
@@ -46,6 +47,10 @@ export function useSettings() {
     setSettings((prev) => ({ ...prev, maxTokens }));
   };
 
+  const updateNightMode = (nightMode: boolean) => {
+    setSettings((prev) => ({ ...prev, nightMode }));
+  };
+
   const resetSettings = () => {
     setSettings(DEFAULT_SETTINGS);
   };
@@ -55,6 +60,7 @@ export function useSettings() {
     updateSystemPrompt,
     updateTemperature,
     updateMaxTokens,
+    updateNightMode,
     resetSettings,
   };
 }

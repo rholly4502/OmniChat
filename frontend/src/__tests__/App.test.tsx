@@ -190,7 +190,7 @@ describe('App', () => {
     expect(screen.getByText(/Agent Mode/)).toBeInTheDocument();
 
     // Click the checkbox to toggle
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { name: 'Mode Agen' });
     fireEvent.click(checkbox);
 
     // Should now show Direct Mode
@@ -208,10 +208,19 @@ describe('App', () => {
     expect(select.value).toBe('hermes');
 
     // Toggle to Direct Mode
-    fireEvent.click(screen.getByRole('checkbox'));
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Mode Agen' }));
 
     // Model should switch to first direct model
     expect(select.value).toBe('nvidia/nemotron-3.5-lightning:free');
+  });
+
+  it('applies the night-mode palette when Mode Malam is toggled', () => {
+    const { container } = render(<App />);
+    expect(container.firstChild as HTMLElement).not.toHaveClass('night-mode');
+    fireEvent.click(screen.getByLabelText('Mode malam'));
+    expect(container.firstChild as HTMLElement).toHaveClass('night-mode');
+    const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
+    expect(stored.nightMode).toBe(true);
   });
 
   // ─── API Key Persistence ─────────────────────────────────────

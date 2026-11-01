@@ -100,7 +100,7 @@ describe('Sidebar', () => {
   it('renders Agent mode and flips it through onToggleMode', () => {
     const { props } = renderSidebar({ useAgent: true });
     expect(screen.getByText('Agent Mode')).toBeInTheDocument();
-    const checkbox = screen.getByRole('checkbox');
+    const checkbox = screen.getByRole('checkbox', { name: 'Mode Agen' });
     expect(checkbox).toBeChecked();
     fireEvent.click(checkbox);
     expect(props.onToggleMode).toHaveBeenCalledTimes(1);
@@ -110,7 +110,26 @@ describe('Sidebar', () => {
     renderSidebar({ useAgent: false });
     expect(screen.getByText('Direct Mode')).toBeInTheDocument();
     expect(screen.getByText(/Langsung ke LLM/)).toBeInTheDocument();
-    expect(screen.getByRole('checkbox')).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Mode Agen' })).not.toBeChecked();
+  });
+
+  it('renders a Mode Malam toggle when wired and forwards state', () => {
+    const onNightModeChange = vi.fn();
+    renderSidebar({ nightMode: false, onNightModeChange });
+    const cb = screen.getByRole('checkbox', { name: 'Mode malam' });
+    expect(cb).not.toBeChecked();
+    fireEvent.click(cb);
+    expect(onNightModeChange).toHaveBeenCalledWith(true);
+  });
+
+  it('does not render the Mode Malam toggle when unwired', () => {
+    renderSidebar();
+    expect(screen.queryByRole('checkbox', { name: 'Mode malam' })).not.toBeInTheDocument();
+  });
+
+  it('reflects an active night palette as checked', () => {
+    renderSidebar({ nightMode: true, onNightModeChange: vi.fn() });
+    expect(screen.getByRole('checkbox', { name: 'Mode malam' })).toBeChecked();
   });
 
   it('lists the catalog and reports a new selection', () => {

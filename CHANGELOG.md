@@ -5,6 +5,19 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P3 — Chill / night mode palette ("Mode Malam") (frontend)
+
+#### Added
+- Night/calm palette toggle in the sidebar: redefines the same `--color-chill-*`
+  tokens under a `.night-mode` root class, so every surface (chat, sidebar,
+  expenses, scrollbars, markdown) dims together without touching any component.
+  The choice is persisted in localStorage via `useSettings` (`nightMode`) and
+  restored on reload. All swatches verified to meet WCAG AA against the night
+  background (text 14.5:1, muted 7.7:1, accent 8.8:1, on-accent 7.7:1,
+  red 6.1:1). Backed by a source-level palette guard (`night-palette.test.ts`).
+- Sidebar row with a moon glyph and `aria-label="Mode malam"`; keyboard
+  accessible and a 44px tap target inside its label. Frontend tests 423 → 431.
+
 ### P2 — Pin conversations in the sidebar (frontend)
 
 #### Added

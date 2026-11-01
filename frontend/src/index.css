@@ -206,6 +206,31 @@ input[type='range']::-moz-range-thumb {
   --color-chill-deepsea: #5f8d9c;   /* Dave-the-Diver deep sea blue · decorative accent */
 }
 
+/* Night / calm ("Mode Malam") palette — toggled by adding `.night-mode` to the app
+   root. It redefines the *same* chill tokens, so every surface (chat, sidebar,
+   expenses, scrollbars, markdown) dims together without touching any component.
+   All pairs verified to meet WCAG AA against the night background (text 14.5:1,
+   muted 7.7:1, accent 8.8:1, on-accent 7.7:1, red 6.1:1). */
+.night-mode {
+  --color-chill-bg: #120f0c;
+  --color-chill-surface: #1a1510;
+  --color-chill-elevated: #211b15;
+  --color-chill-border: #302820;
+  --color-chill-text: #e9dfd4;
+  --color-chill-muted: #b0a292;
+  --color-chill-accent: #d4a878;
+  --color-chill-on-accent: #261c12;
+  --color-chill-red: #c97e6e;
+  --color-chill-on-red: #261c12;
+  --color-chill-accent-hover: #e0b080;
+  --color-chill-accent-active: #c6976a;
+  --color-chill-red-hover: #d98b7a;
+  --color-chill-red-active: #b56a5c;
+  --color-chill-sage: #93a678;
+  --color-chill-deepsea: #557b89;
+}
+
+
 body {
   background-color: var(--color-chill-bg);
 }

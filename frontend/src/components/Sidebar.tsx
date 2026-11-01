@@ -74,6 +74,10 @@ export interface SidebarProps {
   onTemperatureChange?: (temp: number) => void;
   /** Max tokens change handler. */
   onMaxTokensChange?: (tokens: number) => void;
+  /** Dim, calm night palette (Mode Malam). */
+  nightMode?: boolean;
+  /** Toggle night mode. */
+  onNightModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
   activeView?: 'chat' | 'expenses';
   /** Switch the active top-level view. */
@@ -118,6 +122,8 @@ export function Sidebar({
   onSystemPromptChange,
   onTemperatureChange,
   onMaxTokensChange,
+  nightMode = false,
+  onNightModeChange,
   activeView = 'chat',
   onSelectView = () => {},
 }: SidebarProps) {
@@ -503,6 +509,7 @@ export function Sidebar({
             type="checkbox"
             checked={useAgent}
             onChange={onToggleMode}
+            aria-label="Mode Agen"
             className="h-4 w-4 pixel-checkbox"
           />
           <div>
@@ -516,6 +523,28 @@ export function Sidebar({
           </div>
         </label>
       </div>
+
+      {/* Night / calm mode toggle */}
+      {typeof onNightModeChange === 'function' && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent active:translate-y-[2px] active:shadow-none transition pixel-shadow-sm">
+            <input
+              type="checkbox"
+              checked={nightMode}
+              onChange={() => onNightModeChange(!nightMode)}
+              aria-label="Mode malam"
+              className="h-4 w-4 pixel-checkbox"
+            />
+            <div>
+              <div className="text-sm font-semibold flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" /></svg>
+                Mode Malam
+              </div>
+              <div className="text-xs text-chill-muted">Palet redup & tenang untuk malam</div>
+            </div>
+          </label>
+        </div>
+      )}
 
       {/* Model Selector */}
       <div className="space-y-1">

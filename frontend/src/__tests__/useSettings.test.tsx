@@ -51,4 +51,20 @@ describe('useSettings', () => {
     expect(result.current.settings.systemPrompt).toBe('');
     expect(result.current.settings.temperature).toBe(0.7);
   });
+
+  it('defaults night mode to off', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.nightMode).toBe(false);
+  });
+
+  it('updates night mode and persists to localStorage', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.nightMode).toBe(false);
+    act(() => {
+      result.current.updateNightMode(true);
+    });
+    expect(result.current.settings.nightMode).toBe(true);
+    const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
+    expect(stored.nightMode).toBe(true);
+  });
 });

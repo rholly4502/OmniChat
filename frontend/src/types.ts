@@ -26,6 +26,8 @@ export interface ChatSettings {
   systemPrompt: string;
   temperature: number;
   maxTokens: number;
+  /** Dim, calm night palette (Mode Malam). */
+  nightMode: boolean;
 }
 
 /** Token usage reported by the upstream via the streaming endpoint. */
