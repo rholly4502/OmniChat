@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   formatRupiah,
   exportExpensesCsv,
@@ -427,6 +427,14 @@ interface TransactionRowProps {
 }
 
 function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    if (!confirming) return;
+    const t = window.setTimeout(() => setConfirming(false), 5000);
+    return () => window.clearTimeout(t);
+  }, [confirming]);
+
   return (
     <li className="flex items-center gap-2 rounded-none bg-chill-surface border border-chill-border px-3 py-2.5 pixel-shadow-sm">
       <div className="shrink-0 text-center leading-tight w-14 border-r border-chill-border pr-3">
@@ -455,17 +463,42 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
             <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 7.5l4 4" />
           </svg>
         </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          aria-label={`Hapus ${item.keterangan || item.kategori}`}
-          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
-            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
-          </svg>
-        </button>
+        {!confirming ? (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            disabled={busy}
+            aria-label={`Hapus ${item.keterangan || item.kategori}`}
+            className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
+              <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+            </svg>
+          </button>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={busy}
+              aria-label={`Yakin hapus ${item.keterangan || item.kategori}`}
+              className="rounded-none border border-chill-red/70 bg-chill-red/20 w-11 h-11 inline-flex items-center justify-center text-chill-red text-xs font-semibold transition hover:bg-chill-red/30 active:bg-chill-red/40 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+            >
+              Yakin?
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              disabled={busy}
+              aria-label="Batal hapus"
+              className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-text hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </>
+        )}
       </div>
     </li>
   );

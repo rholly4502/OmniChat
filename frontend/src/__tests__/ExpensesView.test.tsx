@@ -269,7 +269,36 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(body.nominal).toBe(25000);
   });
 
-  it('DELETEs a row on delete click', async () => {
+  it('requires confirmation before DELETing a row', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response('', { status: 204 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    // First click only arms confirmation — no DELETE is issued yet.
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+
+    expect(screen.queryByRole('button', { name: 'Hapus Warteg' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yakin hapus Warteg' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBe(false);
+
+    // Second click confirms and deletes.
+    fireEvent.click(screen.getByRole('button', { name: 'Yakin hapus Warteg' }));
+
+    await waitFor(() => {
+      const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE');
+      expect(del).toBeTruthy();
+    });
+    const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE')!;
+    expect(String(del[0])).toContain('/api/expenses/1');
+  });
+
+  it('lets the user cancel a pending delete', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'DELETE') {
         return new Response('', { status: 204 });
@@ -281,13 +310,10 @@ describe('ExpensesView pixel2 chill design', () => {
     await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
 
     fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Batal hapus' }));
 
-    await waitFor(() => {
-      const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE');
-      expect(del).toBeTruthy();
-    });
-    const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE')!;
-    expect(String(del[0])).toContain('/api/expenses/1');
+    expect(screen.getByRole('button', { name: 'Hapus Warteg' })).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'DELETE')).toBe(false);
   });
 });
 
