@@ -110,4 +110,16 @@ describe('MobileTopBar', () => {
     expect(fish!.hasAttribute('role')).toBe(false);
     expect(fish!.hasAttribute('tabindex')).toBe(false);
   });
+
+  it('on the Pengeluaran view shows a pixel view chip and hides chat telemetry', () => {
+    renderBar({ activeView: 'expenses' });
+    expect(screen.getByText('Pengeluaran')).toBeInTheDocument();
+    const chip = screen.getByText('Pengeluaran');
+    expect(chip.className).toContain('pixel-heading');
+    expect(chip.className).toContain('bg-chill-elevated');
+    expect(chip.className).toContain('rounded-none');
+    expect(screen.queryByText('Agent')).not.toBeInTheDocument();
+    expect(screen.queryByText('Direct')).not.toBeInTheDocument();
+    expect(screen.queryByText(/token/)).not.toBeInTheDocument();
+  });
 });

@@ -277,6 +277,7 @@ export default function App() {
           menuButtonRef={menuButtonRef}
           usage={usage}
           model={model}
+          activeView={activeView}
         />
 
         {activeView === 'expenses' ? (
