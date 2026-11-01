@@ -224,6 +224,36 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(body).toMatchObject({ tanggal: '2026-10-29', kategori: 'Makan', nominal: 15000 });
   });
 
+  it('jumps the month picker after saving a row dated in a different month', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 9, tanggal: '2026-11-02', waktu: '08:00', kategori: 'Makan', keterangan: 'Kopi', nominal: 15000 },
+          201,
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    // Pin the viewed month to October so the cross-month jump is observable.
+    fireEvent.change(screen.getByLabelText('Bulan pengeluaran'), { target: { value: '2026-10' } });
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('month=2026-10'))).toBe(true);
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-11-02' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '15000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.some((c) => String(c[0]).includes('month=2026-11'))).toBe(true);
+    });
+  });
+
   it('shows an error when saving without an API key', async () => {
     vi.stubGlobal('fetch', fetchStub());
     render(<ExpensesView apiKey={undefined} />);

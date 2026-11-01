@@ -154,7 +154,15 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       }
       setShowForm(false);
       setEditingItem(null);
-      reload();
+      // If the saved row falls in a different month than the viewed one, jump
+      // the month picker so the result is visible — a row that saves in a
+      // month you are not looking at otherwise looks silently lost.
+      const savedMonth = payload.tanggal.slice(0, 7);
+      if (savedMonth !== month) {
+        setMonth(savedMonth);
+      } else {
+        reload();
+      }
     } catch (err) {
       setFormError(err instanceof ApiError ? `Gagal menyimpan (${err.status}).` : 'Gagal menyimpan.');
     } finally {
