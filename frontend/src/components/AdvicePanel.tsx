@@ -66,6 +66,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           disabled={loading}
           className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
         >
+          {loading && <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink mr-2 inline-block" aria-hidden="true" />}
           {loading ? 'Menganalisa…' : open ? 'Tutup' : 'Analisa & Saran'}
         </button>
       </div>
@@ -88,9 +89,14 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           {advice && !error && (
             <>
               {advice.status === 'no_target' ? (
-                <p className="text-sm text-chill-muted">
-                  Belum ada target anggaran bulan ini. Total pengeluaran {formatRupiah(advice.dayTotal)} pada {advice.date}.
-                </p>
+                <div className="rounded-none border border-chill-border bg-chill-surface px-3 py-2.5">
+                  <p className="text-sm text-chill-muted flex items-start gap-2">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5 text-chill-deepsea">
+                      <path d="M12 8v4M12 16h.01" />
+                    </svg>
+                    <span>Belum ada target anggaran bulan ini. Total pengeluaran {formatRupiah(advice.dayTotal)} pada {advice.date}.</span>
+                  </p>
+                </div>
               ) : advice.status === 'over_budget' ? (
                 <div className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2.5">
                   <p className="text-sm font-medium text-chill-red flex items-start gap-2">
