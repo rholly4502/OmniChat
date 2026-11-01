@@ -84,6 +84,32 @@ describe('listConversations', () => {
     );
   });
 
+  it('appends model and date filters when given', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, undefined, {
+      model: 'claude-sonnet',
+      from: '2026-11-01',
+      to: '2026-11-30',
+    });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50&model=claude-sonnet&from=2026-11-01&to=2026-11-30`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('omits filter params that are not provided', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, 'cek', { model: '', from: undefined, to: '' });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50&search=cek`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
   it('omits the search param when the term is blank', async () => {
     const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
 

@@ -102,7 +102,7 @@ describe('App', () => {
 
   it('shows the model selector', () => {
     render(<App />);
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: /^Model$/ })).toBeInTheDocument();
   });
 
   it('shows the API Key input', () => {
@@ -139,12 +139,14 @@ describe('App', () => {
     });
   });
 
-  it('falls back to built-in defaults when /api/models fails', async () => {
-    setupFetchMock({ modelsOk: false });
+  it('falls back to built-in defaults when the model catalog is empty', async () => {
+    setupFetchMock({ modelsData: { agent: [], direct: [] } });
     render(<App />);
     // Default agent models should be shown (from DEFAULT_AGENT_MODELS)
     await waitFor(() => {
-      expect(screen.getByText('Hermes (Default)')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('combobox', { name: /^Model$/ })).getByText('Hermes (Default)'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -152,8 +154,12 @@ describe('App', () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network error')) as unknown as typeof fetch;
     render(<App />);
     await waitFor(() => {
-      expect(screen.getByText('Hermes (Default)')).toBeInTheDocument();
-      expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('combobox', { name: /^Model$/ })).getByText('Hermes (Default)'),
+      ).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('combobox', { name: /^Model$/ })).getByText('Claude Sonnet'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -167,7 +173,9 @@ describe('App', () => {
     render(<App />);
     // After the fetch resolves, the custom model should appear in the selector
     await waitFor(() => {
-      expect(screen.getByText('Custom Agent Model')).toBeInTheDocument();
+      expect(
+        within(screen.getByRole('combobox', { name: /^Model$/ })).getByText('Custom Agent Model'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -188,7 +196,7 @@ describe('App', () => {
     // Should now show Direct Mode
     expect(screen.getByText(/Direct Mode/)).toBeInTheDocument();
     // Direct models should now be in the selector
-    expect(screen.getByText('Nemotron 3.5 (Free)')).toBeInTheDocument();
+    expect(within(screen.getByRole('combobox', { name: /^Model$/ })).getByText('Nemotron 3.5 (Free)')).toBeInTheDocument();
   });
 
   it('switches model when toggling modes', async () => {
@@ -196,7 +204,7 @@ describe('App', () => {
     render(<App />);
 
     // Default model is 'hermes' (first agent model)
-    const select = screen.getByRole('combobox') as HTMLSelectElement;
+    const select = screen.getByRole('combobox', { name: /^Model$/ }) as HTMLSelectElement;
     expect(select.value).toBe('hermes');
 
     // Toggle to Direct Mode
@@ -552,7 +560,7 @@ describe('App', () => {
     // Guest workspace: logout present, hamburger/sidebar absent
     expect(screen.getByRole('button', { name: 'Keluar' })).toBeInTheDocument();
     expect(screen.queryByLabelText('Open menu')).not.toBeInTheDocument();
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: /^Model$/ })).not.toBeInTheDocument();
   });
 
   it('guest workspace never offers the agent mode toggle', () => {
@@ -583,7 +591,7 @@ describe('App', () => {
     await screen.findByText('Deploy');
     fireEvent.click(screen.getByRole('button', { name: 'Deploy' }));
 
-    const select = (await screen.findByRole('combobox')) as HTMLSelectElement;
+    const select = (await screen.findByRole('combobox', { name: /^Model$/ })) as HTMLSelectElement;
     expect(select.value).toBe('test-agent');
   });
 

@@ -43,6 +43,16 @@ async function request(
   return res;
 }
 
+/** Optional narrowing for the history list: a model id plus an updated-at window. */
+export interface ConversationListFilters {
+  /** Only conversations last run on this model id. */
+  model?: string;
+  /** Inclusive start date (ISO `yyyy-MM-dd`) of the updated-at window. */
+  from?: string;
+  /** Inclusive end date (ISO `yyyy-MM-dd`) of the updated-at window. */
+  to?: string;
+}
+
 /**
  * List the caller's conversations, newest first, without message bodies.
  *
@@ -53,10 +63,17 @@ export async function listConversations(
   options: HistoryRequestOptions = {},
   limit = 50,
   search?: string,
+  filters: ConversationListFilters = {},
 ): Promise<ConversationSummary[]> {
   const term = search?.trim();
-  const params = term ? `${CONVERSATIONS_URL}?limit=${limit}&search=${encodeURIComponent(term)}` : `${CONVERSATIONS_URL}?limit=${limit}`;
-  const res = await request(params, { method: 'GET' }, options);
+  // Built by hand rather than with URLSearchParams so spaces stay `%20` (that
+  // class encodes them as `+`, which would needlessly change the API contract).
+  const parts = [`limit=${limit}`];
+  if (term) parts.push(`search=${encodeURIComponent(term)}`);
+  if (filters.model) parts.push(`model=${encodeURIComponent(filters.model)}`);
+  if (filters.from) parts.push(`from=${encodeURIComponent(filters.from)}`);
+  if (filters.to) parts.push(`to=${encodeURIComponent(filters.to)}`);
+  const res = await request(`${CONVERSATIONS_URL}?${parts.join('&')}`, { method: 'GET' }, options);
   const payload = (await res.json()) as unknown;
   // A malformed body must not reach the sidebar as `undefined.map(...)`.
   return Array.isArray(payload) ? (payload as ConversationSummary[]) : [];

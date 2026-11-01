@@ -40,6 +40,9 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         string userId,
         int limit = 50,
         string? search = null,
+        string? model = null,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
         CancellationToken cancellationToken = default)
     {
         RequireOwner(userId);
@@ -59,6 +62,28 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             query = query.Where(c =>
                 c.Title.Contains(term) ||
                 c.Messages.Any(m => m.Content.Contains(term)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(model))
+        {
+            // Model ids are canonical labels, so an exact match is correct and keeps a
+            // potential index on the column useful.
+            var modelId = model.Trim();
+            query = query.Where(c => c.Model == modelId);
+        }
+
+        if (from.HasValue)
+        {
+            var fromUtc = from.Value.ToUniversalTime();
+            query = query.Where(c => c.UpdatedAt >= fromUtc);
+        }
+
+        if (to.HasValue)
+        {
+            // `to` is an inclusive calendar day: everything strictly before the next day is
+            // returned, so a client sending "2026-11-01" includes all of November 1st.
+            var toExclusive = to.Value.ToUniversalTime().AddDays(1);
+            query = query.Where(c => c.UpdatedAt < toExclusive);
         }
 
         return await query

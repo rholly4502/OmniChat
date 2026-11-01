@@ -66,6 +66,35 @@ describe('useServerHistory', () => {
     expect(listImpl.mock.calls[1][2]).toBe('b');
   });
 
+  it('forwards model and date filters to the list call', async () => {
+    const listImpl = vi.fn().mockResolvedValue([]);
+    renderHook(() =>
+      useServerHistory(
+        deps({ listImpl, modelFilter: 'claude-sonnet', dateFrom: '2026-11-01', dateTo: '2026-11-30' }),
+      ),
+    );
+
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
+    expect(listImpl.mock.calls[0][3]).toEqual({
+      model: 'claude-sonnet',
+      from: '2026-11-01',
+      to: '2026-11-30',
+    });
+  });
+
+  it('refetches when a history filter changes', async () => {
+    const listImpl = vi.fn().mockResolvedValue([]);
+    const { rerender } = renderHook(
+      (f) => useServerHistory(deps({ listImpl, ...f })),
+      { initialProps: { modelFilter: 'a' } },
+    );
+
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
+    rerender({ modelFilter: 'b' });
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(2));
+    expect(listImpl.mock.calls[1][3]).toEqual({ model: 'b', from: undefined, to: undefined });
+  });
+
   it('starts with one draft and keeps it when the server has no history', async () => {
     const listImpl = vi.fn().mockResolvedValue([]);
     const { result } = renderHook(() => useServerHistory(deps({ listImpl })));

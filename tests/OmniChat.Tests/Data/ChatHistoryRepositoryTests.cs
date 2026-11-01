@@ -254,6 +254,96 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ListConversations_filters_by_model_when_model_is_given()
+    {
+        var sonnet = await _repository.CreateConversationAsync(NewConversation());
+        sonnet.Model = "claude-sonnet";
+        await _db.SaveChangesAsync();
+        await _repository.CreateConversationAsync(NewConversation()); // hermes-default
+
+        var listed = await _repository.ListConversationsAsync("admin", model: "claude-sonnet");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(sonnet.Id, only.Id);
+        Assert.Equal("claude-sonnet", only.Model);
+    }
+
+    [Fact]
+    public async Task ListConversations_model_mismatch_returns_empty()
+    {
+        await _repository.CreateConversationAsync(NewConversation());
+
+        var listed = await _repository.ListConversationsAsync("admin", model: "gpt-4o");
+
+        Assert.Empty(listed);
+    }
+
+    [Fact]
+    public async Task ListConversations_filters_by_updated_at_window()
+    {
+        var old = await _repository.CreateConversationAsync(NewConversation());
+        old.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-20);
+        var fresh = await _repository.CreateConversationAsync(NewConversation());
+        fresh.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-2);
+        await _db.SaveChangesAsync();
+
+        var from = DateTimeOffset.UtcNow.AddDays(-7);
+        var listed = await _repository.ListConversationsAsync("admin", from: from);
+
+        var only = Assert.Single(listed);
+        Assert.Equal(fresh.Id, only.Id);
+    }
+
+    [Fact]
+    public async Task ListConversations_to_filter_is_inclusive_of_its_day()
+    {
+        var within = await _repository.CreateConversationAsync(NewConversation());
+        within.UpdatedAt = new DateTimeOffset(2026, 11, 1, 15, 0, 0, TimeSpan.Zero);
+        await _db.SaveChangesAsync();
+
+        var nextDay = await _repository.CreateConversationAsync(NewConversation());
+        nextDay.UpdatedAt = new DateTimeOffset(2026, 11, 2, 12, 0, 0, TimeSpan.Zero);
+        await _db.SaveChangesAsync();
+
+        var to = new DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero);
+        var listed = await _repository.ListConversationsAsync("admin", to: to);
+
+        var only = Assert.Single(listed);
+        Assert.Equal(within.Id, only.Id);
+    }
+
+    [Fact]
+    public async Task ListConversations_combines_search_model_and_date()
+    {
+        var match = await _repository.CreateConversationAsync(NewConversation());
+        match.Model = "claude-sonnet";
+        await _db.SaveChangesAsync();
+        await _repository.AppendMessageAsync(match.Id, "admin", new Message { Role = "user", Content = "berapa budget?" });
+        match.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3);
+        await _db.SaveChangesAsync();
+
+        var wrongModel = await _repository.CreateConversationAsync(NewConversation());
+        await _db.SaveChangesAsync();
+        await _repository.AppendMessageAsync(wrongModel.Id, "admin", new Message { Role = "user", Content = "berapa budget?" });
+        wrongModel.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-3);
+        await _db.SaveChangesAsync();
+
+        var wrongDate = await _repository.CreateConversationAsync(NewConversation());
+        wrongDate.Model = "claude-sonnet";
+        await _db.SaveChangesAsync();
+        await _repository.AppendMessageAsync(wrongDate.Id, "admin", new Message { Role = "user", Content = "berapa budget?" });
+        wrongDate.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-30);
+        await _db.SaveChangesAsync();
+
+        var from = DateTimeOffset.UtcNow.AddDays(-7);
+        var listed = await _repository.ListConversationsAsync(
+            "admin", search: "budget", model: "claude-sonnet", from: from);
+
+        var only = Assert.Single(listed);
+        Assert.Equal(match.Id, only.Id);
+    }
+
+    [Fact]
     public async Task SetConversationModel_updates_model_for_the_owner()
     {
         var created = await _repository.CreateConversationAsync(NewConversation());

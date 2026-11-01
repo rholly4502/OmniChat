@@ -29,12 +29,17 @@ public interface IChatHistoryRepository
     /// updated first. Returns an empty list rather than <c>null</c> when the user
     /// has no history. When <paramref name="search"/> is non-blank, only
     /// conversations whose title or a contained message matches the term are
-    /// returned.
+    /// returned. <paramref name="model"/> narrows to a stored model id;
+    /// <paramref name="from"/> and <paramref name="to"/> bound the updated-at
+    /// window (the latter inclusive).
     /// </summary>
     Task<IReadOnlyList<Conversation>> ListConversationsAsync(
         string userId,
         int limit = 50,
         string? search = null,
+        string? model = null,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

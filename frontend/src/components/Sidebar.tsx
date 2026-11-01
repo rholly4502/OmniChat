@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
+import { HistoryFilters } from './HistoryFilters';
 import { formatTokens } from '../tokenCost';
 import type { ChatSession, ChatSettings, ModelOption } from '../types';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
@@ -39,6 +40,18 @@ export interface SidebarProps {
   search?: string;
   /** Change the history filter term. */
   onSearchChange?: (term: string) => void;
+  /** Selected model-id filter for history ("" = all models). */
+  modelFilter?: string;
+  /** Change the model-id history filter. */
+  onModelFilterChange?: (model: string) => void;
+  /** Inclusive start date (ISO yyyy-MM-dd) for history. */
+  dateFrom?: string;
+  /** Inclusive end date (ISO yyyy-MM-dd) for history. */
+  dateTo?: string;
+  /** Change the start-date history filter. */
+  onDateFromChange?: (date: string) => void;
+  /** Change the end-date history filter. */
+  onDateToChange?: (date: string) => void;
   /** Currently active session ID. */
   activeSessionId?: string;
   /** Create a new session. */
@@ -88,6 +101,12 @@ export function Sidebar({
   sessions,
   search = '',
   onSearchChange,
+  modelFilter = '',
+  onModelFilterChange,
+  dateFrom = '',
+  dateTo = '',
+  onDateFromChange,
+  onDateToChange,
   activeSessionId,
   onNewSession,
   onSelectSession,
@@ -108,6 +127,7 @@ export function Sidebar({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
 
   const [exportMenuFor, setExportMenuFor] = useState<string | null>(null);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -215,43 +235,54 @@ export function Sidebar({
 
       {/* History search — filters the server-side conversation list by title or content. */}
       {onSearchChange && (
-        <div className="relative">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="square"
-            shapeRendering="crispEdges"
-            strokeLinejoin="miter"
-            aria-hidden="true"
-            className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-chill-muted"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Cari percakapan…"
-            aria-label="Cari percakapan"
-            className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
+        <div className="space-y-3">
+          <div className="relative">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="square"
+              shapeRendering="crispEdges"
+              strokeLinejoin="miter"
+              aria-hidden="true"
+              className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-chill-muted"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => onSearchChange(e.target.value)}
+              placeholder="Cari percakapan…"
+              aria-label="Cari percakapan"
+              className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
+            />
+          </div>
+          <HistoryFilters
+            models={models}
+            modelFilter={modelFilter}
+            onModelFilterChange={onModelFilterChange ?? (() => {})}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            onDateFromChange={onDateFromChange ?? (() => {})}
+            onDateToChange={onDateToChange ?? (() => {})}
           />
         </div>
       )}
 
       {/* Sessions History List */}
-      {sessions && (sessions.length > 0 || search) && (
+      {sessions && (sessions.length > 0 || search || hasActiveFilters) && (
         <div className="space-y-1">
           <div className="text-xs text-chill-muted font-medium px-1 flex items-center justify-between">
             <span>Riwayat Sesi</span>
             <span className="text-xs text-chill-muted">{sessions.length} sesi</span>
           </div>
-          {sessions.length === 0 && search && (
-            <div className="px-1 text-sm text-chill-muted py-2">Tidak ada hasil untuk “{search}”.</div>
+          {sessions.length === 0 && (search || hasActiveFilters) && (
+            <div className="px-1 text-sm text-chill-muted py-2">Tidak ada hasil untuk {search ? `“${search}”` : 'filter ini'}.</div>
           )}
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
             {sessions.map((s) => {

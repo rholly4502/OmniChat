@@ -25,6 +25,12 @@ export interface ServerHistoryOptions {
   apiKey: string;
   /** Server-side title/content filter for the conversation list. */
   search?: string;
+  /** Narrow the list to conversations last run on this model id. */
+  modelFilter?: string;
+  /** Inclusive start date (ISO `yyyy-MM-dd`) for the updated-at window. */
+  dateFrom?: string;
+  /** Inclusive end date (ISO `yyyy-MM-dd`) for the updated-at window. */
+  dateTo?: string;
   /** Injected for tests; default to the real client. */
   listImpl?: typeof listConversations;
   getImpl?: typeof getConversation;
@@ -80,7 +86,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, listImpl, getImpl, deleteImpl, renameImpl, pinImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -117,8 +123,11 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     const ctrl = new AbortController();
     let cancelled = false;
 
-    list({ apiKey: apiKey || undefined, signal: ctrl.signal }, 50, search)
-      .then((rows) => {
+    list({ apiKey: apiKey || undefined, signal: ctrl.signal }, 50, search, {
+      model: modelFilter,
+      from: dateFrom,
+      to: dateTo,
+    }).then((rows) => {
         if (cancelled) return;
         setSessions((prev) => {
           const drafts = prev.filter((s) => !isServerConversation(s.id));
@@ -151,7 +160,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       cancelled = true;
       ctrl.abort();
     };
-  }, [apiKey, search, reloadToken]);
+  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken]);
 
   /** Fetch and cache one server transcript, returning null when it cannot be read. */
   const loadTranscript = useCallback(
