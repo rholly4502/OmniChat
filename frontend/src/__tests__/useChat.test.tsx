@@ -131,6 +131,45 @@ describe('useChat', () => {
     expect(result.current.usage).toEqual({ promptTokens: 105, completionTokens: 22 });
   });
 
+  it('regenerate subtracts the dropped turn token tokens from the cumulative total', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]),
+    });
+
+    await act(async () => { await result.current.send('q'); });
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+
+    // Regenerate replaces the reply; the old reply's tokens must leave the total,
+    // and the new reply's tokens are added on top.
+    await act(async () => { await result.current.regenerate(); });
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+    expect(result.current.messages.at(-1)?.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+  });
+
+  it('regenerate does not underflow the cumulative total when the dropped turn had no usage', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: 'a' }]) });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.regenerate(); });
+    expect(result.current.usage).toEqual({ promptTokens: 0, completionTokens: 0 });
+  });
+
+  it('editAndResend subtracts the token of every discarded turn', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([{ usage: { promptTokens: 10, completionTokens: 5 } }]),
+    });
+
+    await act(async () => { await result.current.send('q1'); });
+    await act(async () => { await result.current.send('q2'); });
+    expect(result.current.usage).toEqual({ promptTokens: 20, completionTokens: 10 });
+
+    // Edit q1: q2 and its reply are discarded; their usage leaves the total,
+    // the new reply's usage is added.
+    await act(async () => { await result.current.editAndResend(0, 'q1-edited'); });
+    expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+    expect(result.current.messages.map((m) => m.content)).toEqual(['q1-edited', '']);
+  });
+
   it('reports the conversation id the backend assigned to the turn', async () => {
     const onConversationId = vi.fn();
     const { result } = setup({

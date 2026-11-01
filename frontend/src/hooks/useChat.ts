@@ -135,6 +135,20 @@ export function useChat(options: UseChatOptions): UseChatResult {
     },
     [onUsage],
   );
+
+  /** Subtract a discarded turn's tokens from the cumulative total (clamped at 0). */
+  const subtractUsage = useCallback(
+    (u: TokenUsage) => {
+      const next = {
+        promptTokens: Math.max(0, usageRef.current.promptTokens - u.promptTokens),
+        completionTokens: Math.max(0, usageRef.current.completionTokens - u.completionTokens),
+      };
+      usageRef.current = next;
+      setUsage(next);
+      onUsage?.(next);
+    },
+    [onUsage],
+  );
   const abortRef = useRef<AbortController | null>(null);
   /**
    * Backend id of the thread this conversation is being filed under. A ref, not
@@ -309,13 +323,16 @@ export function useChat(options: UseChatOptions): UseChatResult {
       // Drop a trailing assistant reply; the user turn that prompted it stays.
       let history = messages;
       const last = history[history.length - 1];
-      if (last && last.role === 'assistant') history = history.slice(0, -1);
+      if (last && last.role === 'assistant') {
+        if (last.usage) subtractUsage(last.usage);
+        history = history.slice(0, -1);
+      }
       // There must be a user turn to re-answer.
       const tail = history[history.length - 1];
       if (!tail || tail.role !== 'user') return;
       await runTurn(history);
     },
-    [messages, streaming, runTurn]
+    [messages, streaming, runTurn, subtractUsage]
   );
 
   const editAndResend = useCallback(
@@ -324,10 +341,21 @@ export function useChat(options: UseChatOptions): UseChatResult {
       if (!newContent.trim()) return;
       const target = messages[index];
       if (!target || target.role !== 'user') return;
-      // Replace the edited turn and drop everything that followed it.
+      // Replace the edited turn and drop everything that followed it. The discarded
+      // turns' tokens leave the cumulative total, so the header/sidebar cost does
+      // not keep counting replies that no longer exist in the transcript.
+      const discarded = messages.slice(index + 1);
+      const dropped = { promptTokens: 0, completionTokens: 0 };
+      for (const m of discarded) {
+        if (m.usage) {
+          dropped.promptTokens += m.usage.promptTokens;
+          dropped.completionTokens += m.usage.completionTokens;
+        }
+      }
+      if (dropped.promptTokens > 0 || dropped.completionTokens > 0) subtractUsage(dropped);
       await runTurn([...messages.slice(0, index), { role: 'user', content: newContent }]);
     },
-    [messages, streaming, runTurn]
+    [messages, streaming, runTurn, subtractUsage]
   );
 
   return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages, usage };
