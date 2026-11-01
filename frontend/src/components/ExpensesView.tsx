@@ -128,7 +128,15 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain bg-chill-bg text-chill-text">
       <header className="shrink-0 px-4 pt-3 pb-2 border-b border-chill-border flex items-center justify-between gap-3 flex-wrap relative overflow-hidden">
-        <h2 className="relative text-base font-semibold text-chill-text pixel-heading">Pengeluaran</h2>
+        <div className="relative flex items-center gap-1.5">
+          <h2 className="text-base font-semibold text-chill-text pixel-heading">Pengeluaran</h2>
+          {/* Pixel2 easter egg: Dave the Diver deep-sea bubble (decorative, aria-hidden). */}
+          <span title="Pixel2 chill vibes — Dave the Diver & Stardew accents" className="inline-flex">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-deepsea">
+              <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />
+            </svg>
+          </span>
+        </div>
         <label className="relative flex items-center gap-2 text-xs text-chill-muted">
           Bulan
           <input
@@ -136,7 +144,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             aria-label="Bulan pengeluaran"
             value={month}
             onChange={(e) => e.target.value && setMonth(e.target.value)}
-            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
+            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
         <button

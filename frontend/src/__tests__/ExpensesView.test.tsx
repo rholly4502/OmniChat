@@ -174,5 +174,21 @@ describe('ExpensesView pixel2 chill design', () => {
     // no proportional width-style fill remains anywhere in the category section
     expect(catSection!.querySelector('[style*="width"]')).toBeNull();
   });
+
+  it('shows the decorative pixel2 easter-egg ornament (deep-sea bubble) next to the title', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const { container } = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const heading = screen.getByRole('heading', { name: 'Pengeluaran' });
+    const ornament = heading.parentElement!.querySelector('span[title*="Pixel2"]');
+    expect(ornament).toBeTruthy();
+    const svg = ornament!.querySelector('svg[aria-hidden="true"]');
+    expect(svg).toBeTruthy();
+    expect(svg!.className.baseVal || svg!.getAttribute('class')).toContain('text-chill-deepsea');
+    // the ornament must stay decorative: hidden from assistive tech
+    expect(svg!.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelectorAll('svg[aria-hidden="true"]').length).toBeGreaterThan(0);
+  });
 });
 
