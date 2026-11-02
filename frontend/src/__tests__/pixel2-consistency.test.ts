@@ -1,0 +1,147 @@
+import { describe, it, expect } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import { resolve, join } from 'node:path';
+
+/**
+ * Source-level guards for the pixel2 chill design floor.
+ *
+ * Like a11y-typography.test.ts, these read source instead of rendering, because
+ * jsdom resolves neither Tailwind colour tokens nor computed geometry — a
+ * rendered assertion would pass regardless of which class was used. They scan
+ * every shipped .ts/.tsx (production source only, tests excluded) for the
+ * anti-patterns the pixel2 direction bans: soft corners, gradients/glows/
+ * blurs, soft (non-pixel) shadows, and the cold slate/cyan/blue/gray/zinc
+ * palette that the warm chill tokens replaced. The expenses/advice components
+ * additionally must keep every button on the 44px touch floor with a hard
+ * offset shadow and a square edge.
+ */
+
+const SRC = resolve(process.cwd(), 'src');
+
+function sourceFiles(dir: string): string[] {
+  const out: string[] = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === '__tests__') continue;
+      out.push(...sourceFiles(path));
+    } else if (/\.tsx?$/.test(entry.name)) {
+      out.push(path);
+    }
+  }
+  return out;
+}
+
+/** Strips line and block comments so prose ("no soft gradient") can't false-trip. */
+function stripComments(text: string): string {
+  return text
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+/** Soft-corner utilities — anything `rounded-*` that is not `rounded-none`. */
+function softCorners(line: string): string[] {
+  const re = /rounded-(?!none\b)[a-z0-9[\]/()-]*/g;
+  return line.match(re) ?? [];
+}
+
+/** Gradients, blur, glow, and non-pixel (soft) drop shadows. */
+function softSurface(line: string): string[] {
+  const re = /\b(?:bg-gradient|bg-radial|from-(?!chill)|to-(?!chill)|via-(?!chill)|blur-|backdrop-blur|drop-shadow|shadow-(?:md|lg|xl|2xl))\b/g;
+  return line.match(re) ?? [];
+}
+
+/** Cold palette utilities (slate/cyan/blue/gray/zinc/neutral) that predate chill tokens. */
+function coldPalette(line: string): string[] {
+  const re = /-\b(?:slate|cyan|blue|gray|zinc|neutral)\b(?:-[0-9]+)?/g;
+  return line.match(re) ?? [];
+}
+
+/** Extracts the opening tag of every <button> (same scanner trick as a11y tests). */
+function buttonTags(text: string): { attrs: string; line: number }[] {
+  const out: { attrs: string; line: number }[] = [];
+  const re = /<button\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let i = re.lastIndex;
+    let braceDepth = 0;
+    let quote: string | null = null;
+    for (; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        quote = ch;
+        continue;
+      }
+      if (ch === '{') braceDepth++;
+      else if (ch === '}') braceDepth--;
+      else if (ch === '>' && braceDepth === 0) break;
+    }
+    out.push({ attrs: text.slice(m.index, i + 1), line: text.slice(0, m.index).split('\n').length });
+  }
+  return out;
+}
+
+describe('pixel2 chill consistency', () => {
+  const files = sourceFiles(SRC);
+
+  it('scans the real source tree', () => {
+    expect(files.length).toBeGreaterThan(10);
+  });
+
+  it('never uses a corner radius other than rounded-none', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      stripComments(readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
+        const hits = softCorners(line);
+        if (hits.length) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${hits.join(', ')}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('has no gradients, glows, blurs, or soft (non-pixel) shadows', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      stripComments(readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
+        const hits = softSurface(line);
+        if (hits.length) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${hits.join(', ')}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('never uses the cold slate/cyan/blue/gray/zinc/neutral palette', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      stripComments(readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
+        const hits = coldPalette(line);
+        if (hits.length) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${hits.join(', ')}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('keeps every expenses/advice button on the 44px touch floor with a hard offset shadow and square edge', () => {
+    const scoped = files.filter((f) => /ExpensesView\.tsx$|AdvicePanel\.tsx$/.test(f));
+    expect(scoped.length).toBe(2);
+    const offenders: string[] = [];
+    for (const file of scoped) {
+      for (const { attrs, line } of buttonTags(readFileSync(file, 'utf8'))) {
+        const cls = /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(attrs);
+        const classes = (cls?.[1] ?? cls?.[2] ?? '').split(/\s+/);
+        const touch = classes.includes('min-h-[44px]') || (classes.includes('h-11') && classes.includes('w-11'));
+        const hard = classes.some((c) => /^pixel-shadow(-sm)?$/.test(c));
+        const square = classes.includes('rounded-none');
+        const press = classes.some((c) => /^active:translate-y/.test(c));
+        if (!touch || !hard || !square || !press) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} button missing [touch=${touch} hard=${hard} square=${square} press=${press}] — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
