@@ -20,6 +20,13 @@ public interface IExpenseRepository
     /// <summary>Total spend and per-category totals for <paramref name="month"/>.</summary>
     Task<(long Total, IReadOnlyDictionary<string, long> PerKategori)> GetTotalsAsync(string month, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Total Nabung (savings) deposits accumulated up to and including
+    /// <paramref name="month"/> — the cumulative pot toward a savings goal,
+    /// not just that month's deposits.
+    /// </summary>
+    Task<long> GetCumulativeNabungAsync(string month, CancellationToken cancellationToken);
+
     /// <summary>Budget/saving target for <paramref name="month"/>, or null when unset.</summary>
     Task<ExpenseTarget?> GetTargetAsync(string month, CancellationToken cancellationToken);
 

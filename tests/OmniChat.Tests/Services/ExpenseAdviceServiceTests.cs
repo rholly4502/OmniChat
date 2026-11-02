@@ -28,6 +28,14 @@ public sealed class ExpenseAdviceServiceTests
             return Task.FromResult((pk.Values.Sum(), (IReadOnlyDictionary<string, long>)pk));
         }
 
+        public Task<long> GetCumulativeNabungAsync(string month, CancellationToken ct)
+        {
+            var (_, toExclusive) = MonthRangeForTests(month);
+            return Task.FromResult(Rows
+                .Where(r => r.Kategori == "Nabung" && r.Tanggal < toExclusive)
+                .Sum(r => r.Nominal));
+        }
+
         public Task<ExpenseTarget?> GetTargetAsync(string month, CancellationToken ct) => Task.FromResult(Target);
 
         public Task<int> InsertMissingExpensesAsync(IEnumerable<Expense> expenses, CancellationToken ct)
@@ -74,6 +82,14 @@ public sealed class ExpenseAdviceServiceTests
             var removed = Rows.RemoveAll(r => r.Id == id);
             return Task.FromResult(removed > 0);
         }
+    }
+
+    private static (DateOnly From, DateOnly ToExclusive) MonthRangeForTests(string month)
+    {
+        var parts = month.Split('-').Select(int.Parse).ToArray();
+        var from = new DateOnly(parts[0], parts[1], 1);
+        var toExclusive = from.AddMonths(1);
+        return (from, toExclusive);
     }
 
     private static ExpenseAdviceService NewService(FakeExpenseRepository repo) =>
@@ -196,6 +212,29 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(124_000, advice.Projection.ProjectedTotal);
         Assert.Equal(396_000, pc.PotentialSavingPerMonth);
         Assert.Equal(22, pc.MonthsToReach);
+    }
+
+    [Fact]
+    public async Task PcGoal_NabungSoFarIsCumulativeAcrossMonths()
+    {
+        // A savings goal accumulates across months: viewing a later month must count
+        // every earlier Nabung deposit, not just that month's. (Regression: the old
+        // code read the month-scoped per-category map, so October's 1jt was invisible
+        // when viewing November.)
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 520_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 15), "Nabung", 1_000_000, "oct"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 2), "Nabung", 500_000, "nov"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Makan", 10_000, "makan"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 3), CancellationToken.None);
+
+        var pc = advice.PcGoal;
+        Assert.Equal(1_500_000, pc.NabungSoFar);
+        Assert.Equal(7_200_000, pc.Remaining);
+        Assert.True(pc.PercentCollected > 17 && pc.PercentCollected < 18);
     }
 
     [Fact]

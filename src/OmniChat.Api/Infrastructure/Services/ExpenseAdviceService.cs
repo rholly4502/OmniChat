@@ -64,7 +64,10 @@ public sealed class ExpenseAdviceService(
 
         var p = options.Value;
         var totalNeeded = p.PcVga + p.PcCpu + p.PcMotherboard + p.PcSsd;
-        var nabungSoFar = perKategori.GetValueOrDefault("Nabung");
+        // Cumulative savings pot toward the PC goal: sum every Nabung deposit up to
+        // this month. The per-category map above is month-scoped, so using it here
+        // would under-report total savings whenever a previous month held deposits.
+        var nabungSoFar = await repository.GetCumulativeNabungAsync(month, ct);
         var remaining = Math.Max(0, totalNeeded - nabungSoFar);
         var percentCollected = totalNeeded > 0
             ? Math.Min(100, Math.Round(nabungSoFar / (double)totalNeeded * 100, 1))

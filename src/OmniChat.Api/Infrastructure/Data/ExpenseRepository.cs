@@ -75,6 +75,15 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         return (spend, perKategori);
     }
 
+    public async Task<long> GetCumulativeNabungAsync(string month, CancellationToken cancellationToken)
+    {
+        var (_, toExclusive) = MonthRange(month);
+        return await db.Expenses
+            .AsNoTracking()
+            .Where(e => e.Kategori == "Nabung" && e.Tanggal < toExclusive)
+            .SumAsync(e => (long?)e.Nominal, cancellationToken) ?? 0;
+    }
+
     public Task<ExpenseTarget?> GetTargetAsync(string month, CancellationToken cancellationToken) =>
         db.ExpenseTargets
             .AsNoTracking()
