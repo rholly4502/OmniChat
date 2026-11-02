@@ -350,7 +350,7 @@ describe('ExpensesView pixel2 chill design', () => {
   it('requires confirmation before DELETing a row', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'DELETE') {
-        return new Response('', { status: 204 });
+        return new Response(null, { status: 204 });
       }
       return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
     });
@@ -379,7 +379,7 @@ describe('ExpensesView pixel2 chill design', () => {
   it('lets the user cancel a pending delete', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'DELETE') {
-        return new Response('', { status: 204 });
+        return new Response(null, { status: 204 });
       }
       return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
     });
@@ -412,6 +412,86 @@ describe('ExpensesView pixel2 chill design', () => {
       expect(screen.getByText('Gagal menghapus (500).')).toBeInTheDocument(),
     );
   });
+  it('refetches the trend chart after adding an expense', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 5, tanggal: '2026-10-29', waktu: '10:00', kategori: 'Makan', keterangan: 'Sarapan', nominal: 15000 },
+          201,
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const trendCount = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/trend')).length;
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    const before = trendCount();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '15000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+    });
+    await waitFor(() => expect(trendCount()).toBeGreaterThan(before));
+  });
+
+  it('refetches the trend chart after editing an expense', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'PUT') {
+        return jsonResponse(
+          { id: 1, tanggal: '2026-10-28', waktu: '12:30', kategori: 'Transport', keterangan: 'Gojek', nominal: 25000 },
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const trendCount = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/trend')).length;
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    const before = trendCount();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Warteg' }));
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '25000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan Perubahan' }));
+
+    await waitFor(() => {
+      const put = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'PUT');
+      expect(put).toBeTruthy();
+    });
+    await waitFor(() => expect(trendCount()).toBeGreaterThan(before));
+  });
+
+  it('refetches the trend chart after deleting an expense', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response(null, { status: 204 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const trendCount = () =>
+      fetchMock.mock.calls.filter((c) => String(c[0]).includes('/trend')).length;
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    const before = trendCount();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yakin hapus Warteg' }));
+
+    await waitFor(() => {
+      const del = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'DELETE');
+      expect(del).toBeTruthy();
+    });
+    await waitFor(() => expect(trendCount()).toBeGreaterThan(before));
+  });
+
   it('renders the pixel2 surface-texture ornaments (card bevel, corner pixel, divider diamond)', async () => {
     vi.stubGlobal('fetch', fetchStub());
     const { container } = render(<ExpensesView apiKey="secret" />);

@@ -161,6 +161,9 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       }
       setShowForm(false);
       setEditingItem(null);
+      // Refresh the 6-month trend chart too — it is independent of the viewed
+      // month, so without this it stays stale until the user hits Segarkan.
+      trend.reload();
       // If the saved row falls in a different month than the viewed one, jump
       // the month picker so the result is visible — a row that saves in a
       // month you are not looking at otherwise looks silently lost.
@@ -187,6 +190,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     try {
       await deleteExpense(id, { apiKey });
       reload();
+      trend.reload();
     } catch (err) {
       setDeleteError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
     } finally {
