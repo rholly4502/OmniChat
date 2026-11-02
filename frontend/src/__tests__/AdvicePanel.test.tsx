@@ -113,5 +113,18 @@ describe('AdvicePanel pixel2 chill design', () => {
     const bars = body!.querySelectorAll('div[class*="gap-[3px]"]');
     expect(bars.length).toBeGreaterThanOrEqual(2);
   });
+
+  it('renders the status callout on the shared hard-edge bevel meter', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const callout = screen.getByText(/Over budget/).closest('div.relative');
+    expect(callout?.className).toContain('rounded-none');
+    expect(callout?.className).toContain('border-chill-red/40');
+    // hard chunky 2px top-edge bevel strip is present
+    expect(callout?.querySelector('div.absolute')).toBeTruthy();
+  });
 });
 

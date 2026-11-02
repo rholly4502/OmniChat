@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { formatRupiah, getExpenseAdvice } from '../expensesApi';
 import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
@@ -29,6 +29,38 @@ function analyseDate(month: string): string {
     the StatCard/frame surface grammar: a chunky 2px light edge, no soft gradient. */
 function StatusCalloutTopEdge({ className }: { className: string }) {
   return <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-[2px] ${className}`} />;
+}
+
+/** Shared hard-edge bevel meter for a status callout (Oke / Over budget / no
+    target). Centralises the pixel meter register: a chunky 2px light top-edge
+    strip over a flat, square, warm-filled box — no soft gradient, no radius. */
+function StatusCallout({
+  tone,
+  icon,
+  children,
+}: {
+  tone: 'neutral' | 'accent' | 'red';
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  const box =
+    tone === 'red'
+      ? 'border-chill-red/40 bg-chill-red/10'
+      : tone === 'accent'
+        ? 'border-chill-accent/40 bg-chill-accent/10'
+        : 'border-chill-border bg-chill-surface';
+  const edge =
+    tone === 'red' ? 'bg-chill-red/40' : tone === 'accent' ? 'bg-chill-accent/50' : 'bg-chill-elevated';
+  const weight = tone === 'neutral' ? '' : 'font-medium';
+  return (
+    <div className={`relative rounded-none border px-3 py-2.5 ${box}`}>
+      <StatusCalloutTopEdge className={edge} />
+      <p className={`text-sm flex items-start gap-2 ${weight}`}>
+        {icon}
+        <span>{children}</span>
+      </p>
+    </div>
+  );
 }
 
 /** The "Analisa & Saran" panel: daily budget check, tips, projection and PC goal. */
@@ -98,35 +130,29 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           {advice && !error && (
             <>
               {advice.status === 'no_target' ? (
-                <div className="relative rounded-none border border-chill-border bg-chill-surface px-3 py-2.5">
-                  <StatusCalloutTopEdge className="bg-chill-elevated" />
-                  <p className="text-sm text-chill-muted flex items-start gap-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5 text-chill-deepsea">
-                      <path d="M12 8v4M12 16h.01" />
-                    </svg>
-                    <span>Belum ada target anggaran bulan ini. Total pengeluaran {formatRupiah(advice.dayTotal)} pada {advice.date}.</span>
-                  </p>
-                </div>
+                <StatusCallout tone="neutral" icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5 text-chill-deepsea">
+                    <path d="M12 8v4M12 16h.01" />
+                  </svg>
+                }>
+                  Belum ada target anggaran bulan ini. Total pengeluaran {formatRupiah(advice.dayTotal)} pada {advice.date}.
+                </StatusCallout>
               ) : advice.status === 'over_budget' ? (
-                <div className="relative rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2.5">
-                  <StatusCalloutTopEdge className="bg-chill-red/40" />
-                  <p className="text-sm font-medium text-chill-red flex items-start gap-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
-                      <path d="M12 4l9 16H3L12 4ZM12 10v4M12 17h.01" />
-                    </svg>
-                    <span>Over budget: {formatRupiah(advice.dayTotal)} &gt; anggaran harian {formatRupiah(advice.dailyBudget)} (lebih {formatRupiah(advice.overBy)})</span>
-                  </p>
-                </div>
+                <StatusCallout tone="red" icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
+                    <path d="M12 4l9 16H3L12 4ZM12 10v4M12 17h.01" />
+                  </svg>
+                }>
+                  Over budget: {formatRupiah(advice.dayTotal)} &gt; anggaran harian {formatRupiah(advice.dailyBudget)} (lebih {formatRupiah(advice.overBy)})
+                </StatusCallout>
               ) : (
-                <div className="relative rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2.5">
-                  <StatusCalloutTopEdge className="bg-chill-accent/50" />
-                  <p className="text-sm font-medium text-chill-accent flex items-start gap-2">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
-                      <path d="M4 12l5 5L20 6" />
-                    </svg>
-                    <span>Oke: {formatRupiah(advice.dayTotal)} ≤ anggaran harian {formatRupiah(advice.dailyBudget)}</span>
-                  </p>
-                </div>
+                <StatusCallout tone="accent" icon={
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
+                    <path d="M4 12l5 5L20 6" />
+                  </svg>
+                }>
+                  Oke: {formatRupiah(advice.dayTotal)} ≤ anggaran harian {formatRupiah(advice.dailyBudget)}
+                </StatusCallout>
               )}
 
               {advice.suggestions.length > 0 && (

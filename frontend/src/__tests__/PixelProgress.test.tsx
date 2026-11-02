@@ -37,4 +37,14 @@ describe('PixelProgress', () => {
     expect(track?.className).toContain('rounded-none');
     expect(track?.className).toContain('border-chill-border');
   });
+
+  it('adds a lit highlight row to filled segments only (resource-bar depth)', () => {
+    const { container } = render(<PixelProgress percent={60} segments={5} />);
+    const b = blocks(container);
+    // filled cells carry an absolutely-positioned highlight strip
+    expect(b[0].querySelector('div.absolute')).toBeTruthy();
+    expect(b[2].querySelector('div.absolute')).toBeTruthy();
+    // empty cells get no highlight
+    expect(b[3].querySelector('div.absolute')).toBeNull();
+  });
 });

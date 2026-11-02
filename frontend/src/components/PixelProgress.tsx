@@ -23,7 +23,12 @@ export function PixelProgress({
       className="flex h-2 w-full items-stretch gap-[3px] rounded-none border border-chill-border bg-chill-surface px-[2px]"
     >
       {Array.from({ length: segments }, (_, i) => (
-        <div key={i} className={`h-full flex-1 ${i < filled ? fillClass : 'bg-chill-border/30'}`} />
+        <div key={i} className={`relative h-full flex-1 overflow-hidden ${i < filled ? fillClass : 'bg-chill-border/30'}`}>
+          {/* Lit top row on filled cells (resource-bar depth): a faint warm
+              highlight along the top edge, matching the includevel register —
+              decorative only, aria-hidden is inherited from the track. */}
+          {i < filled && <div className="absolute inset-x-0 top-0 h-[2px] bg-white/15" />}
+        </div>
       ))}
     </div>
   );

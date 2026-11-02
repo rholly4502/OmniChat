@@ -446,7 +446,9 @@ function CategoryBar({ ratio, className = '' }: { ratio: number; className?: str
       className={`flex h-2.5 items-stretch gap-[3px] rounded-none border border-chill-border bg-chill-surface px-[2px] ${className}`}
     >
       {Array.from({ length: SEGMENTS }, (_, i) => (
-        <div key={i} className={`h-full flex-1 ${i < filled ? 'bg-chill-accent' : 'bg-chill-border/30'}`} />
+        <div key={i} className={`relative h-full flex-1 overflow-hidden ${i < filled ? 'bg-chill-accent' : 'bg-chill-border/30'}`}>
+          {i < filled && <div className="absolute inset-x-0 top-0 h-[2px] bg-white/15" />}
+        </div>
       ))}
     </div>
   );
