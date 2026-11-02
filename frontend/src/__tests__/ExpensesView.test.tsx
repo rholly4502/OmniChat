@@ -224,6 +224,35 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(body).toMatchObject({ tanggal: '2026-10-29', kategori: 'Makan', nominal: 15000 });
   });
 
+  it('accepts an Indonesian thousand-separator in the nominal field', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 4, tanggal: '2026-10-29', waktu: '12:00', kategori: 'Makan', keterangan: 'Warteg', nominal: 20000 },
+          201,
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '20.000' } });
+    fireEvent.change(screen.getByLabelText('Keterangan'), { target: { value: 'Warteg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+    });
+    const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST')!;
+    const body = JSON.parse(String((post[1] as RequestInit).body));
+    expect(body.nominal).toBe(20000);
+  });
+
   it('jumps the month picker after saving a row dated in a different month', async () => {
     const fetchMock = vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'POST') {
@@ -284,7 +313,7 @@ describe('ExpensesView pixel2 chill design', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Warteg' }));
     expect(screen.getByLabelText('Edit pengeluaran')).toBeInTheDocument();
-    expect(screen.getByLabelText('Nominal (Rp)')).toHaveValue(12000);
+    expect(screen.getByLabelText('Nominal (Rp)')).toHaveValue('12000');
 
     fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '25000' } });
     fireEvent.click(screen.getByRole('button', { name: 'Simpan Perubahan' }));

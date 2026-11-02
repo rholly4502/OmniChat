@@ -581,7 +581,8 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
   const [localError, setLocalError] = useState<string | null>(null);
 
   function submit() {
-    const amount = Number(nominal);
+    const digits = nominal.replace(/\D/g, '');
+    const amount = digits ? Number(digits) : NaN;
     if (!tanggal) {
       setLocalError('Tanggal wajib diisi.');
       return;
@@ -635,9 +636,9 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
         <label className="flex flex-col gap-1 text-xs text-chill-muted">
           Nominal (Rp)
           <input
-            type="number"
+            type="text"
             inputMode="numeric"
-            min="1"
+            autoComplete="off"
             value={nominal}
             onChange={(e) => setNominal(e.target.value)}
             placeholder="20000"
