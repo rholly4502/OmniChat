@@ -118,9 +118,16 @@ jobs:
               SUMMARY="$(curl -s -H "X-Api-Key: $KEY" "http://localhost:5184/api/expenses/summary?month=2026-10")"
               echo "$SUMMARY" | head -c 400; echo
               TOTAL="$(printf '%s' "$SUMMARY" | python3 -c "import sys,json; print(json.load(sys.stdin).get('total',0))")"
-              echo "Summary total = $TOTAL (expect 979000 - 7jt gaji TIDAK ikut)"
-              if [ "$TOTAL" -ne 979000 ]; then
-                echo "ERROR: summary total mismatch -- income may be counted as expense"
+              # Expected floor: the sum of the very ledger CSV the seeder just imported.
+              # The DB may legitimately exceed it because web-added rows (P1-4) persist
+              # only in the DB (SourceId "web-..."), never back in the ledger. The ceiling
+              # guards the regression this check exists for: a ~7.3jt income row mis-seeded
+              # as an expense (fixed in cycle 24 via self-healing) would blow past any
+              # normal web-add headroom.
+              LEDGER_TOTAL="$(python3 -c "import csv; print(sum(int(r['nominal']) for r in csv.DictReader(open('/opt/OmniChat/seed-staging/ledger/2026-10.csv', newline='', encoding='utf-8'))))")"
+              echo "Summary total = $TOTAL (ledger floor = $LEDGER_TOTAL; expect floor <= total < floor + 2jt)"
+              if [ "$TOTAL" -lt "$LEDGER_TOTAL" ] || [ "$TOTAL" -ge $((LEDGER_TOTAL + 2000000)) ]; then
+                echo "ERROR: summary total outside expected range - ledger not fully seeded or income counted as expense"
                 exit 1
               fi
               echo
