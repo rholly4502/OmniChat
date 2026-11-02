@@ -411,3 +411,17 @@ input[type='checkbox'].pixel-checkbox:focus-visible {
   outline: 2px solid var(--color-chill-accent);
   outline-offset: 2px;
 }
+
+/* ============================================================================
+   FOCUS MODE (Mode Fokus) — minimal calm chat surface
+   Enabled by adding `.focus-mode` to the app root (same mechanism as
+   `.night-mode`). It hides purely decorative / telemetry chrome — the faint
+   pixel-grid backdrop, the empty-state ornament + easter egg, the message
+   footer brand and per-turn cost note, and the desktop telemetry header bar.
+   No interactive control is removed: like/dislike, copy, regenerate, edit and
+   the composer all stay reachable on the keyboard, so accessibility and WCAG
+   contrast are unaffected. Reduced-motion already handled globally.
+   ========================================================================== */
+.focus-mode .pixel-grid { display: none; }
+.focus-mode .chat-header-bar { display: none; }
+.focus-mode .focus-hidden { display: none; }

@@ -24,7 +24,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage }: ChatHeaderPro
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
   return (
-    <div className="hidden md:flex items-center gap-3 px-4 py-2 border-b border-chill-border bg-chill-bg">
+    <div className="chat-header-bar hidden md:flex items-center gap-3 px-4 py-2 border-b border-chill-border bg-chill-bg">
       <span className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text select-none">
         {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
         {useAgent ? 'Agent' : 'Direct'}

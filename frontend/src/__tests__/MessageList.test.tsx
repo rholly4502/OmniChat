@@ -402,3 +402,17 @@ describe('MessageList', () => {
     expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
   });
 });
+
+describe('MessageList focus-mode hooks', () => {
+  it('marks the decorative empty-state chrome as focus-hidden', () => {
+    const { container } = renderList();
+    const hidden = container.querySelectorAll('[class*="focus-hidden"]');
+    expect(hidden.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('hides the footer brand behind focus-hidden so focus mode can drop it', () => {
+    const { container } = renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    const hiddenText = [...container.querySelectorAll('span.focus-hidden')].map((el) => el.textContent);
+    expect(hiddenText).toContain('OmniChat');
+  });
+});

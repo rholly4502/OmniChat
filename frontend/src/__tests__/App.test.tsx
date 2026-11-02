@@ -607,3 +607,46 @@ describe('App', () => {
   });
 
 });
+
+describe('App focus mode', () => {
+  // This describe sits outside the main 'App' describe, so it owns its own auth
+  // setup: a stored key plus a /api/models that resolves 200 keeps the workspace
+  // unlocked (validateApiKey probes that endpoint).
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('omnichat_api_key', 'test-key');
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/models')) {
+        return new Response(JSON.stringify(MOCK_CATALOG), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (url.includes('/api/conversations/usage')) {
+        return new Response(JSON.stringify({ totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (url.includes('/api/conversations')) {
+        return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  it('applies the focus-mode surface when Mode Fokus is toggled', () => {
+    const { container } = render(<App />);
+    const root = container.firstChild as HTMLElement;
+    expect(root).not.toHaveClass('focus-mode');
+    fireEvent.click(screen.getByLabelText('Mode fokus'));
+    expect(root).toHaveClass('focus-mode');
+    const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
+    expect(stored.focusMode).toBe(true);
+  });
+
+  it('applies focus-mode independently of night mode', () => {
+    const { container } = render(<App />);
+    fireEvent.click(screen.getByLabelText('Mode fokus'));
+    fireEvent.click(screen.getByLabelText('Mode malam'));
+    const root = container.firstChild as HTMLElement;
+    expect(root).toHaveClass('focus-mode');
+    expect(root).toHaveClass('night-mode');
+  });
+});

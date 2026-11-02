@@ -42,6 +42,8 @@ export interface ChatSettings {
   maxTokens: number;
   /** Dim, calm night palette (Mode Malam). */
   nightMode: boolean;
+  /** Focus mode: hides decorative/telemetry chrome for a minimal calm surface. */
+  focusMode: boolean;
 }
 
 /** Token usage reported by the upstream via the streaming endpoint. */

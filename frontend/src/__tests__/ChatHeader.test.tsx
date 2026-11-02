@@ -41,3 +41,10 @@ describe('ChatHeader', () => {
     expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
   });
 });
+
+describe('ChatHeader focus-mode hook', () => {
+  it('carries the chat-header-bar class so focus mode can hide it', () => {
+    const { container } = renderHeader();
+    expect(container.firstChild as HTMLElement).toHaveClass('chat-header-bar');
+  });
+});

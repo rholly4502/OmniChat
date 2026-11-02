@@ -78,6 +78,10 @@ export interface SidebarProps {
   nightMode?: boolean;
   /** Toggle night mode. */
   onNightModeChange?: (enabled: boolean) => void;
+  /** Focus mode: hides decorative/telemetry chrome for a minimal calm surface. */
+  focusMode?: boolean;
+  /** Toggle focus mode. */
+  onFocusModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
   activeView?: 'chat' | 'expenses';
   /** Switch the active top-level view. */
@@ -126,6 +130,8 @@ export function Sidebar({
   onMaxTokensChange,
   nightMode = false,
   onNightModeChange,
+  focusMode = false,
+  onFocusModeChange,
   activeView = 'chat',
   onSelectView = () => {},
   usageSummary,
@@ -597,6 +603,28 @@ export function Sidebar({
                 Mode Malam
               </div>
               <div className="text-xs text-chill-muted">Palet redup & tenang untuk malam</div>
+            </div>
+          </label>
+        </div>
+      )}
+
+      {/* Focus mode toggle */}
+      {typeof onFocusModeChange === 'function' && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent active:translate-y-[2px] active:shadow-none transition pixel-shadow-sm">
+            <input
+              type="checkbox"
+              checked={focusMode}
+              onChange={() => onFocusModeChange(!focusMode)}
+              aria-label="Mode fokus"
+              className="h-4 w-4 pixel-checkbox"
+            />
+            <div>
+              <div className="text-sm font-semibold flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><rect x="3" y="3" width="18" height="18" /><rect x="7" y="7" width="10" height="10" /></svg>
+                Mode Fokus
+              </div>
+              <div className="text-xs text-chill-muted">Sembunyikan hiasan & telemetri</div>
             </div>
           </label>
         </div>

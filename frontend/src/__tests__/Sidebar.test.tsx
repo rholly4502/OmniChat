@@ -731,3 +731,24 @@ describe('Sidebar usage panel', () => {
     expect(screen.queryByText('Umpan balik pesan')).not.toBeInTheDocument();
   });
 });
+
+describe('Sidebar focus mode toggle', () => {
+  it('renders a Mode Fokus toggle when wired and forwards state', () => {
+    const onFocusModeChange = vi.fn();
+    renderSidebar({ focusMode: false, onFocusModeChange });
+    const cb = screen.getByRole('checkbox', { name: 'Mode fokus' });
+    expect(cb).not.toBeChecked();
+    fireEvent.click(cb);
+    expect(onFocusModeChange).toHaveBeenCalledWith(true);
+  });
+
+  it('does not render the Mode Fokus toggle when unwired', () => {
+    renderSidebar({});
+    expect(screen.queryByRole('checkbox', { name: 'Mode fokus' })).not.toBeInTheDocument();
+  });
+
+  it('reflects an enabled focus mode', () => {
+    renderSidebar({ focusMode: true, onFocusModeChange: vi.fn() });
+    expect(screen.getByRole('checkbox', { name: 'Mode fokus' })).toBeChecked();
+  });
+});

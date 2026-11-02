@@ -67,4 +67,20 @@ describe('useSettings', () => {
     const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
     expect(stored.nightMode).toBe(true);
   });
+
+  it('defaults focus mode to off', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.focusMode).toBe(false);
+  });
+
+  it('updates focus mode and persists to localStorage', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.focusMode).toBe(false);
+    act(() => {
+      result.current.updateFocusMode(true);
+    });
+    expect(result.current.settings.focusMode).toBe(true);
+    const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
+    expect(stored.focusMode).toBe(true);
+  });
 });

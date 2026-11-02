@@ -86,6 +86,7 @@ export default function App() {
     updateTemperature,
     updateMaxTokens,
     updateNightMode,
+    updateFocusMode,
   } = useSettings();
 
   const catalog = useModelCatalog(apiKey);
@@ -229,7 +230,7 @@ export default function App() {
   // with a slim top bar exposing logout.
   if (isGuest) {
     return (
-      <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}`}>
+      <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
           <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} />
@@ -256,7 +257,7 @@ export default function App() {
   }
 
   return (
-    <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}`}
+    <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -302,6 +303,8 @@ export default function App() {
         onMaxTokensChange={updateMaxTokens}
         nightMode={settings.nightMode}
         onNightModeChange={updateNightMode}
+        focusMode={settings.focusMode}
+        onFocusModeChange={updateFocusMode}
         activeView={activeView}
         onSelectView={setActiveView}
       />

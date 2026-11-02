@@ -134,7 +134,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             viewBox="0 0 44 28"
             fill="none"
             aria-hidden="true"
-            className="text-chill-muted shrink-0"
+            className="text-chill-muted shrink-0 focus-hidden"
           >
             <rect x="2" y="4" width="40" height="20" stroke="currentColor" strokeWidth="2" />
             <rect x="8" y="9" width="3" height="3" fill="currentColor" />
@@ -147,7 +147,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
               a pixel sprout (sage) and a pixel fish (deep sea). Hover reveals a
               quiet caption. Pure decoration — aria-hidden, rect-only, never
               interactive, so it cannot affect usability or the a11y tree. */}
-          <div className="group relative flex flex-col items-center" aria-hidden="true">
+          <div className="group relative flex flex-col items-center focus-hidden" aria-hidden="true">
             <div className="flex items-center gap-3 text-chill-sage">
               <svg width="30" height="22" viewBox="0 0 30 22" fill="none" aria-hidden="true" className="shrink-0">
                 <rect x="14" y="7" width="2" height="9" fill="currentColor" />
@@ -260,9 +260,9 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /></svg>
                         }
                       />
-                      <span>OmniChat</span>
+                      <span className="focus-hidden">OmniChat</span>
                       {m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0) && (
-                        <span title={`${formatTokens(m.usage.promptTokens)} in · ${formatTokens(m.usage.completionTokens)} out`}>
+                        <span className="focus-hidden" title={`${formatTokens(m.usage.promptTokens)} in · ${formatTokens(m.usage.completionTokens)} out`}>
                           · {formatTokens(m.usage.promptTokens + m.usage.completionTokens)} tok ≈ {formatUsd(estimateUsd(m.usage, model))}
                         </span>
                       )}

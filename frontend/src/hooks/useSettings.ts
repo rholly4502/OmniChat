@@ -8,6 +8,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
   temperature: 0.7,
   maxTokens: 2048,
   nightMode: false,
+  focusMode: false,
 };
 
 export function useSettings() {
@@ -51,6 +52,10 @@ export function useSettings() {
     setSettings((prev) => ({ ...prev, nightMode }));
   };
 
+  const updateFocusMode = (focusMode: boolean) => {
+    setSettings((prev) => ({ ...prev, focusMode }));
+  };
+
   const resetSettings = () => {
     setSettings(DEFAULT_SETTINGS);
   };
@@ -61,6 +66,7 @@ export function useSettings() {
     updateTemperature,
     updateMaxTokens,
     updateNightMode,
+    updateFocusMode,
     resetSettings,
   };
 }
