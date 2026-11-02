@@ -321,6 +321,18 @@ summary,
 .pixel-think {
   animation: pixel-think 1.2s linear infinite;
 }
+/* Stepped pixel reveal for embedded panels (advice body, etc.): content snaps
+   from hidden to visible in hard beats instead of tweening - the same chunky
+   transition language as the press-slide buttons. Reduced-motion falls back to
+   the global media block (duration ~0, 1 iteration -> it lands on the visible
+   state immediately). */
+@keyframes pixel-reveal {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.pixel-reveal {
+  animation: pixel-reveal 200ms steps(3, jump-none) both;
+}
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 

@@ -66,9 +66,12 @@ function StatusCallout({
 /** One labelled daily-suggestion sub-block (menu meal, activity, fact, or tip). */
 function DailyTip({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="rounded-none border border-chill-border bg-chill-surface px-3 py-2">
-      <p className="text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
-      <p className="mt-0.5 text-sm text-chill-text">{children}</p>
+    <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2">
+      {/* Shared hard-edge bevel (panel frame register): a chunky 2px light top
+          edge ties each suggestion block into the same chiseled frame grammar. */}
+      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+      <p className="relative text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
+      <p className="relative mt-0.5 text-sm text-chill-text">{children}</p>
     </div>
   );
 }
@@ -123,7 +126,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
       </div>
 
       {open && (
-        <div id="advice-body" className="mt-4 space-y-4">
+        <div id="advice-body" className="mt-4 space-y-4 pixel-reveal">
           {error && (
             <p role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 text-sm text-chill-red">
               {error}
@@ -220,7 +223,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </ul>
                     );
                   })()}
-                  <p className="mt-2 text-sm text-chill-muted">
+                  <p className="mt-2 text-sm text-chill-muted tabular-nums">
                     Jika pola ini berlanjut, akhir bulan ± {formatRupiah(advice.projection.projectedTotal)} · anggaran {formatRupiah(advice.projection.anggaran)}
                     {advice.projection.projectedOver > 0
                       ? ` (lebih ${formatRupiah(advice.projection.projectedOver)})`
