@@ -105,6 +105,15 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
                     .Select(e => e.SourceId!)
                     .ToListAsync(cancellationToken))
                 .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            // Web-deleted ledger rows must never be re-inserted: the importer only
+            // skips rows whose SourceId is already present, so a deletion performed in
+            // the UI would otherwise be silently undone on the next hourly seed.
+            var tombstoned = await db.ExpenseDeletions
+                .Where(d => sourceIds.Contains(d.SourceId))
+                .Select(d => d.SourceId)
+                .ToListAsync(cancellationToken);
+            existing.UnionWith(tombstoned);
         }
 
         var missing = list
@@ -225,6 +234,19 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         if (row is null)
         {
             return false;
+        }
+
+        // Remember a ledger row's SourceId so the importer does not re-insert it on the
+        // next seed. Web-added rows (SourceId "web-...") are never in the ledger so they
+        // never resurrect; recording them is harmless and keeps the rule uniform.
+        if (!string.IsNullOrWhiteSpace(row.SourceId))
+        {
+            var already = await db.ExpenseDeletions
+                .FirstOrDefaultAsync(d => d.SourceId == row.SourceId, cancellationToken);
+            if (already is null)
+            {
+                db.ExpenseDeletions.Add(new ExpenseDeletion { SourceId = row.SourceId });
+            }
         }
 
         db.Expenses.Remove(row);

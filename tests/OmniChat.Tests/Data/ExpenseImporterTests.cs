@@ -102,6 +102,42 @@ public sealed class ExpenseImporterTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Import_doesNotResurrectWebDeletedLedgerRow()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, "2026-10.csv"),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n"
+            + "2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n"
+            + "2026-10-29,08:00,Transport,OVO,50000,zzz111\n");
+        File.WriteAllText(Path.Combine(dir, "target.json"), "{}");
+
+        try
+        {
+            var first = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+            Assert.Equal(2, first.ExpensesInserted);
+
+            // User deletes the "zzz111" ledger row from the web UI.
+            var rows = await _repository.ListAllForMonthAsync("2026-10", CancellationToken.None);
+            var target = rows.Single(r => r.SourceId == "zzz111");
+            Assert.True(await _repository.DeleteAsync(target.Id, CancellationToken.None));
+
+            // The hourly seed runs again with the same ledger (the row still exists there).
+            var second = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+            Assert.Equal(0, second.ExpensesInserted);
+
+            // The deleted row must NOT have come back; the other row is untouched.
+            var remaining = await _repository.ListAllForMonthAsync("2026-10", CancellationToken.None);
+            Assert.DoesNotContain(remaining, r => r.SourceId == "zzz111");
+            Assert.Contains(remaining, r => r.SourceId == "a1b2c3");
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
     public void Dispose()
     {
         _db.Dispose();

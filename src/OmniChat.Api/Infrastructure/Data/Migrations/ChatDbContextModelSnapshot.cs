@@ -108,6 +108,25 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.ToTable("Expenses", (string)null);
                 });
 
+            modelBuilder.Entity("OmniChat.Domain.Entities.ExpenseDeletion", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceId")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceId")
+                        .IsUnique();
+
+                    b.ToTable("ExpenseDeletions", (string)null);
+                });
+
             modelBuilder.Entity("OmniChat.Domain.Entities.ExpenseTarget", b =>
                 {
                     b.Property<long>("Id")

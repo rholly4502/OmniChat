@@ -277,4 +277,46 @@ public sealed class ExpenseRepositoryTests : IDisposable
         var ok = await _repository.DeleteAsync(9999, CancellationToken.None);
         Assert.False(ok);
     }
+
+    [Fact]
+    public async Task DeleteAsync_ledgerRow_isNotReinsertedByImporter()
+    {
+        // A ledger-seeded row (SourceId = CSV id). Deleting it must tombstone the
+        // SourceId so a later seed cannot resurrect it.
+        var created = await _repository.InsertMissingExpensesAsync(
+            [NewExpense(28, "Makan", 20_000, "oct-xyz")], CancellationToken.None);
+        Assert.Equal(1, created);
+
+        var row = (await _repository.ListAllForMonthAsync("2026-10", CancellationToken.None)).Single();
+        var ok = await _repository.DeleteAsync(row.Id, CancellationToken.None);
+        Assert.True(ok);
+        Assert.Null(await _repository.GetByIdAsync(row.Id, CancellationToken.None));
+
+        // The importer runs again with the same ledger row still present.
+        var reinserted = await _repository.InsertMissingExpensesAsync(
+            [NewExpense(28, "Makan", 20_000, "oct-xyz")], CancellationToken.None);
+        Assert.Equal(0, reinserted);
+        Assert.Empty(await _repository.ListAllForMonthAsync("2026-10", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_webRow_isNotReinsertedByImporter()
+    {
+        // Web-added rows (SourceId "web-...") are never in the ledger, so a delete
+        // must also never resurrect them via re-seed.
+        var created = await _repository.AddAsync(NewExpense(28, "Makan", 20_000, "web-abc12345"), CancellationToken.None);
+        Assert.True(await _repository.DeleteAsync(created.Id, CancellationToken.None));
+
+        var reinserted = await _repository.InsertMissingExpensesAsync(
+            [NewExpense(28, "Makan", 20_000, "web-abc12345")], CancellationToken.None);
+        Assert.Equal(0, reinserted);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_rowWithoutSourceId_stillRemoved()
+    {
+        var created = await _repository.AddAsync(NewExpense(28, "Makan", 20_000), CancellationToken.None);
+        Assert.True(await _repository.DeleteAsync(created.Id, CancellationToken.None));
+        Assert.Null(await _repository.GetByIdAsync(created.Id, CancellationToken.None));
+    }
 }
