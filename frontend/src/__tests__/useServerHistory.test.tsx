@@ -493,4 +493,91 @@ describe('useServerHistory', () => {
       byModel: {},
     }));
   });
+
+  it('persists a model change for a stored conversation and updates the row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const updateImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, updateImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    // The active session must be the stored conversation, not the draft.
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.updateActiveConversationSettings('claude-sonnet');
+    });
+
+    expect(updateImpl).toHaveBeenCalledWith(
+      A,
+      { model: 'claude-sonnet' },
+      expect.objectContaining({ apiKey: 'k' }),
+    );
+    expect(ok).toBe(true);
+    expect(result.current.sessions.find((s) => s.id === A)?.model).toBe('claude-sonnet');
+  });
+
+  it('persists mode and model together', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const updateImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, updateImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.updateActiveConversationSettings('claude-sonnet', 'direct');
+    });
+
+    expect(updateImpl).toHaveBeenCalledWith(
+      A,
+      { model: 'claude-sonnet', mode: 'direct' },
+      expect.objectContaining({ apiKey: 'k' }),
+    );
+    expect(ok).toBe(true);
+    const row = result.current.sessions.find((s) => s.id === A);
+    expect(row?.model).toBe('claude-sonnet');
+    expect(row?.mode).toBe('direct');
+  });
+
+  it('returns false for a local draft without calling the API', async () => {
+    const updateImpl = vi.fn();
+    const { result } = renderHook(() => useServerHistory(deps({ updateImpl })));
+    await act(async () => {});
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.updateActiveConversationSettings('claude-sonnet');
+    });
+
+    expect(updateImpl).not.toHaveBeenCalled();
+    expect(ok).toBe(false);
+  });
+
+  it('leaves the row untouched when the server refuses the update', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const updateImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, updateImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.updateActiveConversationSettings('claude-sonnet');
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.sessions.find((s) => s.id === A)?.model).toBe('hermes');
+  });
 });

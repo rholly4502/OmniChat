@@ -244,6 +244,42 @@ public sealed class ConversationsController : ControllerBase
         return applied ? NoContent() : ConversationNotFound(id);
     }
 
+    /// <summary>
+    /// Persists a per-conversation model and/or mode change so resuming the thread
+    /// resumes with the setup it last used, even before the next turn is sent.
+    /// </summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="request">Model and/or mode to persist; null fields are left unchanged.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Settings applied.</response>
+    /// <response code="400">Malformed body (unknown mode).</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPut("{id:guid}/settings")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateSettings(
+        Guid id,
+        [FromBody] UpdateConversationSettingsRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblemObject();
+        }
+
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var updated = await _repository.SetConversationSettingsAsync(
+            id, owner, request.Model, request.Mode, cancellationToken);
+
+        return updated ? NoContent() : ConversationNotFound(id);
+    }
+
     /// <summary>Deletes a conversation and its messages.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>

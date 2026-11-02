@@ -74,6 +74,7 @@ export default function App() {
     deleteSession,
     renameSession,
     pinSession,
+    updateActiveConversationSettings,
     adoptConversation,
     exportSession,
     usageSummary,
@@ -137,10 +138,26 @@ export default function App() {
     }
   }
 
+  /** Persist a per-conversation model/mode change immediately so resuming the
+   * thread keeps it even before the next turn is sent. Drafts (non-server
+   * ids) and mid-stream changes are skipped — the next send persists anyway.
+   */
+  function persistActiveSettings(model?: string, mode?: string) {
+    if (streaming) return;
+    void updateActiveConversationSettings(model, mode);
+  }
+
   function toggleMode() {
     const next = !useAgent;
+    const m = next ? catalog.agent[0].id : catalog.direct[0].id;
     setUseAgent(next);
-    setModel(next ? catalog.agent[0].id : catalog.direct[0].id);
+    setModel(m);
+    persistActiveSettings(m, next ? 'agent' : 'direct');
+  }
+
+  function handleModelChange(next: string) {
+    setModel(next);
+    persistActiveSettings(next, undefined);
   }
 
   /** Server-reported token base for a session, used to seed the live usage counter. */
@@ -257,7 +274,7 @@ export default function App() {
         onToggleMode={toggleMode}
         models={models}
         model={model}
-        onModelChange={setModel}
+        onModelChange={handleModelChange}
         apiKey={apiKey}
         onApiKeyChange={setApiKey}
         onLogout={logout}

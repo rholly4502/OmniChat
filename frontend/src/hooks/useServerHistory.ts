@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
-import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation } from '../historyApi';
+import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
 import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, modeLabel, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
@@ -49,6 +49,8 @@ export interface ServerHistoryOptions {
   renameImpl?: typeof renameConversation;
   pinImpl?: typeof pinConversation;
   /** Injected for tests; default to the real client. */
+  updateImpl?: typeof updateConversationSettings;
+  /** Injected for tests; default to the real client. */
   usageImpl?: typeof getConversationUsage;
 }
 
@@ -68,6 +70,8 @@ export interface ServerHistoryResult {
   renameSession: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin `id`; resolves true when the server applied the state. */
   pinSession: (id: string, pinned: boolean) => Promise<boolean>;
+  /** Persist a model and/or mode change for the active server conversation. */
+  updateActiveConversationSettings: (model?: string, mode?: string) => Promise<boolean>;
   /** Adopt the id the server assigned to the active draft, then refresh the list. */
   adoptConversation: (id: string) => void;
   /** Mirror the in-flight transcript onto the active row, so export sees it. */
@@ -101,7 +105,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -113,10 +117,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, usage: usageImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, usage: usageImpl };
-  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl, usageImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl };
+  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -318,6 +322,38 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     },
     [apiKey],
   );
+  /** Persist a model and/or mode change for the active server conversation. */
+  const updateActiveConversationSettings = useCallback(
+    async (model?: string, mode?: string): Promise<boolean> => {
+      const id = activeRef.current;
+      if (!id || !isServerConversation(id)) return false;
+      const update = impls.current.update ?? updateConversationSettings;
+      try {
+        await update(
+          id,
+          { ...(model ? { model } : {}), ...(mode ? { mode } : {}) },
+          { apiKey: apiKey || undefined },
+        );
+      } catch {
+        // The server still holds the old settings; the row is left untouched.
+        return false;
+      }
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                ...(model ? { model } : {}),
+                ...(mode ? { mode } : {}),
+              }
+            : s,
+        ),
+      );
+      return true;
+    },
+    [apiKey],
+  );
+
   const adoptConversation = useCallback((id: string) => {
     const draftId = activeRef.current;
     if (!draftId || isServerConversation(draftId)) return;
@@ -397,6 +433,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     deleteSession,
     renameSession,
     pinSession,
+    updateActiveConversationSettings,
     adoptConversation,
     updateActiveSessionMessages,
     exportSession,

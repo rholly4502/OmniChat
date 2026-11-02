@@ -410,6 +410,44 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task SetConversationSettings_updates_model_and_mode_for_the_owner()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation());
+
+        var updated = await _repository.SetConversationSettingsAsync(created.Id, "admin", "claude-sonnet", "direct");
+
+        Assert.True(updated);
+        var stored = await _repository.GetConversationAsync(created.Id, "admin");
+        Assert.Equal("claude-sonnet", stored!.Model);
+        Assert.Equal("direct", stored.Mode);
+    }
+
+    [Fact]
+    public async Task SetConversationSettings_partial_update_leaves_null_field_unchanged()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation());
+
+        await _repository.SetConversationSettingsAsync(created.Id, "admin", model: "claude-sonnet");
+
+        var stored = await _repository.GetConversationAsync(created.Id, "admin");
+        Assert.Equal("claude-sonnet", stored!.Model);
+        Assert.Equal("agent", stored.Mode);
+    }
+
+    [Fact]
+    public async Task SetConversationSettings_returns_false_when_unowned()
+    {
+        var created = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        var updated = await _repository.SetConversationSettingsAsync(created.Id, "guest", "claude-sonnet", "direct");
+
+        Assert.False(updated);
+        var stored = await _repository.GetConversationAsync(created.Id, "admin");
+        Assert.Equal("hermes-default", stored!.Model);
+        Assert.Equal("agent", stored.Mode);
+    }
+
+    [Fact]
     public async Task GetUsageSummary_aggregates_tokens_and_groups_by_model()
     {
         var a = await _repository.CreateConversationAsync(NewConversation());

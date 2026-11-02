@@ -8,6 +8,7 @@ import {
   pinConversation,
   renameConversation,
   setMessageFeedback,
+  updateConversationSettings,
 } from '../historyApi';
 import { ApiError } from '../api';
 
@@ -331,5 +332,35 @@ describe('getConversationUsage', () => {
     expect(err).toBeInstanceOf(ApiError);
     expect((err as ApiError).status).toBe(429);
     expect((err as ApiError).retryAfter).toBe('15');
+  });
+});
+
+describe('updateConversationSettings', () => {
+  it('sends a PUT to the settings endpoint with the body', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+    const id = '11111111-1111-1111-1111-111111111111';
+
+    await updateConversationSettings(id, { model: 'claude-sonnet', mode: 'direct' }, { fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/${id}/settings`,
+      expect.objectContaining({
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet', mode: 'direct' }),
+      }),
+    );
+  });
+
+  it('forwards the API key to the settings request', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+    const id = '11111111-1111-1111-1111-111111111111';
+
+    await updateConversationSettings(id, { model: 'hermes-default' }, { apiKey: 'k', fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/${id}/settings`,
+      expect.objectContaining({ headers: expect.objectContaining({ 'X-Api-Key': 'k' }) }),
+    );
   });
 });

@@ -63,6 +63,13 @@ public interface IChatHistoryRepository
     /// Updates the model a conversation will resume with. Returns <c>false</c> when the
     /// conversation does not exist or does not belong to <paramref name="userId"/>.
     /// </summary>
+    Task<bool> SetConversationSettingsAsync(
+        Guid id,
+        string userId,
+        string? model = null,
+        string? mode = null,
+        CancellationToken cancellationToken = default);
+
     Task<bool> SetConversationModelAsync(
         Guid id,
         string userId,

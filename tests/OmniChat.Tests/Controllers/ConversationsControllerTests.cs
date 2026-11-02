@@ -307,6 +307,68 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task UpdateSettings_Returns204_WhenTheSettingsWereApplied()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetConversationSettingsAsync(id, ChatIdentity.AdminUserId, "claude-sonnet", "direct", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.UpdateSettings(
+            id,
+            new UpdateConversationSettingsRequest { Model = "claude-sonnet", Mode = "direct" },
+            CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetConversationSettingsAsync(id, ChatIdentity.AdminUserId, "claude-sonnet", "direct", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateSettings_Returns400_WhenTheModeIsInvalid()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        controller.ModelState.AddModelError(nameof(UpdateConversationSettingsRequest.Mode), "The field Mode must match the regular expression.");
+
+        var result = await controller.UpdateSettings(Guid.CreateVersion7(), new UpdateConversationSettingsRequest { Mode = "bogus" }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.SetConversationSettingsAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateSettings_Returns404_WhenTheConversationIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.SetConversationSettingsAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.UpdateSettings(Guid.CreateVersion7(), new UpdateConversationSettingsRequest { Model = "claude-sonnet" }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task UpdateSettings_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.UpdateSettings(Guid.CreateVersion7(), new UpdateConversationSettingsRequest { Model = "claude-sonnet" }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.SetConversationSettingsAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task List_ForwardsTheSearchTerm()
     {
         var controller = CreateController(ChatAccess.Admin);

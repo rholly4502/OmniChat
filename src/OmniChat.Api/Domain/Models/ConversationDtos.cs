@@ -99,6 +99,22 @@ public sealed class RenameConversationRequest
     public string Title { get; set; } = string.Empty;
 }
 
+/// <summary>Body of <c>PUT /api/conversations/{id}/settings</c>.</summary>
+public sealed class UpdateConversationSettingsRequest
+{
+    /// <summary>
+    /// Model id to persist for the conversation. When null, the model is left as is.
+    /// </summary>
+    [MaxLength(100)]
+    public string? Model { get; set; }
+
+    /// <summary>
+    /// Chat mode to persist: <c>"agent"</c> or <c>"direct"</c>. When null, the mode is left as is.
+    /// </summary>
+    [RegularExpression("^(agent|direct)$")]
+    public string? Mode { get; set; }
+}
+
 /// <summary>Body of <c>PUT /api/conversations/{id}/pin</c>.</summary>
 
 /// <summary>Per-model token subtotals within a {@link ConversationUsageSummary}.</summary>

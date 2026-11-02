@@ -113,6 +113,35 @@ export async function renameConversation(
   );
 }
 
+/** Optional per-conversation settings update: model id and/or chat mode. */
+export interface ConversationSettingsUpdate {
+  /** Model id to persist, e.g. "hermes-default". */
+  model?: string;
+  /** Chat mode to persist: "agent" or "direct". */
+  mode?: string;
+}
+
+/**
+ * Persist a per-conversation model and/or mode change so resuming the thread
+ * resumes with the setup it last used, even before the next turn is sent.
+ * Fields left undefined are unchanged on the server. Resolves on 204.
+ */
+export async function updateConversationSettings(
+  id: string,
+  settings: ConversationSettingsUpdate,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${id}/settings`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(settings),
+    },
+    options,
+  );
+}
+
 /** Toggle a conversation's pin state. Resolves on 204. */
 export async function pinConversation(
   id: string,
