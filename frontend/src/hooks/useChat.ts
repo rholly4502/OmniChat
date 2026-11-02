@@ -211,6 +211,10 @@ export function useChat(options: UseChatOptions): UseChatResult {
       // transcript can show a per-message cost footnote. Distinct from the cumulative
       // `usageRef`, which keeps the header/sidebar total.
       const turnUsage = { promptTokens: 0, completionTokens: 0 };
+      // Model that produced this turn, read from the usage frame. It prices the
+      // per-message footnote with the rate of the model that actually generated the
+      // reply, even when the selector has moved on to another model.
+      let turnModel = '';
 
       try {
         for await (const chunk of stream({
@@ -240,6 +244,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
             recordUsage(chunk.usage);
             turnUsage.promptTokens += chunk.usage.promptTokens;
             turnUsage.completionTokens += chunk.usage.completionTokens;
+            if (chunk.usage.model) turnModel = chunk.usage.model;
           } else if (chunk.messageId) {
             // The backend filed the assistant reply and forwarded its id right before
             // [DONE]. Attach it to the trailing assistant message so like/dislike can
@@ -283,7 +288,11 @@ export function useChat(options: UseChatOptions): UseChatResult {
             const copy = [...prev];
             const last = copy[copy.length - 1];
             if (!last || last.role !== 'assistant') return prev;
-            copy[copy.length - 1] = { ...last, usage: { ...turnUsage } };
+            copy[copy.length - 1] = {
+              ...last,
+              usage: { ...turnUsage },
+              ...(turnModel ? { model: turnModel } : {}),
+            };
             return copy;
           });
         }

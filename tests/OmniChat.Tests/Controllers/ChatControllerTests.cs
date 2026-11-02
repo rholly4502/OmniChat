@@ -354,7 +354,7 @@ public class ChatControllerTests
         var output = await reader.ReadToEndAsync();
 
         // The usage frame is serialised as its own SSE event.
-        Assert.Contains("\"usage\":{\"promptTokens\":10,\"completionTokens\":5}", output);
+        Assert.Contains("\"usage\":{\"promptTokens\":10,\"completionTokens\":5,\"model\":\"test\"}", output);
 
         _turnRecorderMock.Verify(
             r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<CancellationToken>()),

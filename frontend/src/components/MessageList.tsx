@@ -263,7 +263,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       <span className="focus-hidden">OmniChat</span>
                       {m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0) && (
                         <span className="focus-hidden" title={`${formatTokens(m.usage.promptTokens)} in · ${formatTokens(m.usage.completionTokens)} out`}>
-                          · {formatTokens(m.usage.promptTokens + m.usage.completionTokens)} tok ≈ {formatUsd(estimateUsd(m.usage, model))}
+                          · {formatTokens(m.usage.promptTokens + m.usage.completionTokens)} tok ≈ {formatUsd(estimateUsd(m.usage, m.model ?? model))}
                         </span>
                       )}
                     </div>

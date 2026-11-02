@@ -148,7 +148,7 @@ public sealed class ChatController : ControllerBase
                 {
                     promptTokens += u.PromptTokens;
                     completionTokens += u.CompletionTokens;
-                    await WriteEventAsync(new { usage = new { promptTokens = u.PromptTokens, completionTokens = u.CompletionTokens } }, cancellationToken);
+                    await WriteEventAsync(new { usage = new { promptTokens = u.PromptTokens, completionTokens = u.CompletionTokens, model = request.Model } }, cancellationToken);
                     continue;
                 }
 

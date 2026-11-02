@@ -81,6 +81,29 @@ describe('useChat', () => {
     expect(result.current.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
   });
 
+  it('attaches the producing model from the usage frame to the trailing message', async () => {
+    const { result } = setup({ model: 'gpt-4o-mini', streamImpl: streamOf([
+      { content: 'halo', usage: { promptTokens: 10, completionTokens: 5, model: 'claude-sonnet' } },
+    ]) });
+
+    await act(async () => { await result.current.send('hai'); });
+
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.model).toBe('claude-sonnet');
+    expect(last.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+  });
+
+  it('does not attach a model when the usage frame omits it', async () => {
+    const { result } = setup({ streamImpl: streamOf([
+      { content: 'halo', usage: { promptTokens: 10, completionTokens: 5 } },
+    ]) });
+
+    await act(async () => { await result.current.send('hai'); });
+
+    const last = result.current.messages[result.current.messages.length - 1];
+    expect(last.model).toBeUndefined();
+  });
+
   it('does not attach usage when the provider reports none', async () => {
     const { result } = setup({ streamImpl: streamOf([{ content: 'halo' }]) });
 

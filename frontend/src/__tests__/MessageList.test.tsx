@@ -375,6 +375,23 @@ describe('MessageList', () => {
     expect(screen.getByText(/1\.5k tok ≈/)).toBeInTheDocument();
   });
 
+  it('prices the footnote with the model that produced the message, not the selected one', () => {
+    // The message was produced by claude-sonnet (0.003/0.015 per 1K) while the
+    // selector now shows hermes (0.002/0.008). 1000 in + 500 out:
+    //   claude: 0.003 + 0.0075 = 0.0105 -> "$0.01"
+    //   hermes: 0.002 + 0.004   = 0.006  -> "$0.0060"
+    renderList({
+      model: 'hermes',
+      messages: [{
+        role: 'assistant',
+        content: 'halo',
+        model: 'claude-sonnet',
+        usage: { promptTokens: 1000, completionTokens: 500 },
+      }],
+    });
+    expect(screen.getByText(/1\.5k tok ≈ \$0\.01$/)).toBeInTheDocument();
+  });
+
   it('omits the footnote when no usage is present', () => {
     renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
     expect(screen.queryByText(/tok ≈/)).not.toBeInTheDocument();

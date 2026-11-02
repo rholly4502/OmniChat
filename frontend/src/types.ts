@@ -22,6 +22,13 @@ export interface Message {
    * a per-message cost footnote in the transcript without touching the cumulative total.
    */
   usage?: TokenUsage;
+  /**
+   * Model id that produced this assistant turn. Attached from the stream's usage
+   * frame; used to price the per-message cost footnote with the rate of the model
+   * that actually generated the reply, not the model selected at view time (a
+   * conversation may span several models).
+   */
+  model?: string;
 }
 
 export interface ModelOption {

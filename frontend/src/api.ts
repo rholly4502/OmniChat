@@ -28,7 +28,7 @@ export interface StreamChunk {
    * Token usage reported by the upstream on the final chunk. Mutually exclusive
    * with the other keys: it is transport, never assistant text.
    */
-  usage?: TokenUsage;
+  usage?: TokenUsage & { model?: string };
 }
 
 /**
