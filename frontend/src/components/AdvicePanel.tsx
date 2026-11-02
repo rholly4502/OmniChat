@@ -168,7 +168,8 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 </StatusCallout>
               )}
 
-              <div className="rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                 <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
