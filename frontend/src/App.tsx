@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { MessageList } from './components/MessageList';
 import { Composer } from './components/Composer';
 import { MobileTopBar } from './components/MobileTopBar';
+import { ChatHeader } from './components/ChatHeader';
 import { SidebarOverlay } from './components/SidebarOverlay';
 import { useApiKey } from './hooks/useApiKey';
 import { useAuthGate } from './hooks/useAuthGate';
@@ -287,6 +288,12 @@ export default function App() {
           <ExpensesView apiKey={apiKey} />
         ) : (
           <>
+            <ChatHeader
+              useAgent={useAgent}
+              model={model}
+              modelLabel={models.find((m) => m.id === model)?.label}
+              usage={usage}
+            />
             <MessageList
               messages={messages}
               streaming={streaming}
