@@ -240,6 +240,18 @@ export function useChat(options: UseChatOptions): UseChatResult {
             recordUsage(chunk.usage);
             turnUsage.promptTokens += chunk.usage.promptTokens;
             turnUsage.completionTokens += chunk.usage.completionTokens;
+          } else if (chunk.messageId) {
+            // The backend filed the assistant reply and forwarded its id right before
+            // [DONE]. Attach it to the trailing assistant message so like/dislike can
+            // be persisted without a reload.
+            const id = chunk.messageId;
+            setMessages((prev) => {
+              const copy = [...prev];
+              const last = copy[copy.length - 1];
+              if (!last || last.role !== 'assistant') return prev;
+              copy[copy.length - 1] = { ...last, id };
+              return copy;
+            });
           } else if (chunk.error) {
             const detail = chunk.error;
             setMessages((prev) => {

@@ -378,4 +378,115 @@ public class ConversationsControllerTests
             r => r.GetUsageSummaryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task SetFeedback_Returns204_WhenAnAdminSetsUpRating()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, MessageFeedback.Up, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetFeedback(id, messageId, new MessageFeedbackRequest { Feedback = "up" }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, MessageFeedback.Up, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetFeedback_IsCaseInsensitive_AndAcceptsDown()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, MessageFeedback.Down, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        await controller.SetFeedback(id, messageId, new MessageFeedbackRequest { Feedback = "DOWN" }, CancellationToken.None);
+
+        _repository.Verify(
+            r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, MessageFeedback.Down, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetFeedback_Returns204_WhenClearingAnEarlierRating()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetFeedback(id, messageId, new MessageFeedbackRequest { Feedback = null }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetMessageFeedbackAsync(id, messageId, ChatIdentity.AdminUserId, null, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetFeedback_Returns400ProblemJson_ForAnUnknownFeedbackValue()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        var result = await controller.SetFeedback(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            new MessageFeedbackRequest { Feedback = "neutral" },
+            CancellationToken.None);
+
+        var badRequest = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, badRequest.StatusCode);
+        Assert.Contains(ProblemDetailsResponse.ContentType, badRequest.ContentTypes);
+        Assert.IsType<ProblemDetails>(badRequest.Value);
+        _repository.Verify(
+            r => r.SetMessageFeedbackAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<MessageFeedback?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SetFeedback_Returns404_WhenTheMessageIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.SetMessageFeedbackAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<MessageFeedback?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.SetFeedback(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            new MessageFeedbackRequest { Feedback = "up" },
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SetFeedback_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.SetFeedback(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            new MessageFeedbackRequest { Feedback = "up" },
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.SetMessageFeedbackAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<MessageFeedback?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

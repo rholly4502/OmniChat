@@ -380,6 +380,49 @@ public class ChatControllerTests
             Times.Once);
     }
 
+    [Fact]
+    public async Task StreamChat_EmitsMessageIdFrame_BeforeDone_WhenATurnWasRecorded()
+    {
+        var conversationId = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _turnRecorderMock
+            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(messageId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Contains($"\"messageId\":\"{messageId}\"", output);
+        Assert.True(
+            output.IndexOf($"\"messageId\":\"{messageId}\"", StringComparison.Ordinal) <
+            output.IndexOf("data: [DONE]", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task StreamChat_EmitsNoMessageIdFrame_WhenTheTurnProducedNoMessage()
+    {
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _turnRecorderMock
+            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Guid?)null);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        Assert.DoesNotContain("\"messageId\"", ReadBody());
+    }
+
     private static async IAsyncEnumerable<string> ThrowingStream()
     {
         yield return "partial";

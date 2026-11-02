@@ -86,4 +86,17 @@ public interface IChatHistoryRepository
         int promptTokens,
         int completionTokens,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets or clears the caller's rating on one message inside their conversation.
+    /// Returns <c>false</c> when the message does not exist or belongs to another user
+    /// (the same 404-shaped answer as a missing conversation).
+    /// </summary>
+    Task<bool> SetMessageFeedbackAsync(
+        Guid conversationId,
+        Guid messageId,
+        string userId,
+        MessageFeedback? feedback,
+        CancellationToken cancellationToken = default);
 }
+

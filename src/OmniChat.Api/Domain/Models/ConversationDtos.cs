@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Domain.Models;
 
@@ -43,13 +44,13 @@ public sealed record ConversationSummary(
 }
 
 /// <summary>One replayed turn inside <see cref="ConversationDetail"/>.</summary>
-public sealed record ConversationMessage(Guid Id, string Role, string Content, DateTimeOffset CreatedAt)
+public sealed record ConversationMessage(Guid Id, string Role, string Content, DateTimeOffset CreatedAt, MessageFeedback? Feedback)
 {
     public static ConversationMessage From(Message message)
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        return new ConversationMessage(message.Id, message.Role, message.Content, message.CreatedAt);
+        return new ConversationMessage(message.Id, message.Role, message.Content, message.CreatedAt, message.Feedback);
     }
 }
 
@@ -126,4 +127,14 @@ public sealed class PinConversationRequest
 {
     /// <summary>Pin state to apply. Pinned conversations sort to the top of the sidebar.</summary>
     public bool IsPinned { get; set; }
+}
+
+/// <summary>Body of <c>PUT /api/conversations/{id}/messages/{messageId}/feedback</c>.</summary>
+public sealed class MessageFeedbackRequest
+{
+    /// <summary>
+    /// The rating to store: <c>"up"</c>, <c>"down"</c>, or <c>null</c> to clear an
+    /// earlier rating. Any other string is rejected with a 400.
+    /// </summary>
+    public string? Feedback { get; set; }
 }

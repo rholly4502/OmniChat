@@ -75,7 +75,7 @@ public sealed class ChatTurnRecorder(
         }
     }
 
-    public async Task CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, CancellationToken cancellationToken = default)
+    public async Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, CancellationToken cancellationToken = default)
     {
         // The assistant's half of the turn is filed even when it came back blank (an
         // aborted generation), so the reply column is never a silent gap. The usage
@@ -83,10 +83,12 @@ public sealed class ChatTurnRecorder(
         // usage fails, streaming must not be affected.
         try
         {
+            Guid? messageId = null;
             if (!string.IsNullOrWhiteSpace(assistantContent))
             {
-                await repository.AppendMessageAsync(
+                var message = await repository.AppendMessageAsync(
                     conversationId, userId, NewMessage("assistant", assistantContent.Trim()), cancellationToken);
+                messageId = message.Id;
             }
 
             if (promptTokens > 0 || completionTokens > 0)
@@ -94,14 +96,18 @@ public sealed class ChatTurnRecorder(
                 await repository.AddConversationUsageAsync(
                     conversationId, userId, promptTokens, completionTokens, cancellationToken);
             }
+
+            return messageId;
         }
         catch (OperationCanceledException)
         {
             // Aborted stream; the partial reply is dropped rather than written on a dead token.
+            return null;
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Assistant reply could not be recorded for conversation {ConversationId}.", conversationId);
+            return null;
         }
     }
 

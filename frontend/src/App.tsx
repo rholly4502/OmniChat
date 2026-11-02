@@ -14,6 +14,7 @@ import { useModelCatalog } from './hooks/useModelCatalog';
 import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
+import { setMessageFeedback } from './historyApi';
 import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
 import { describeApiError } from './errors';
@@ -119,6 +120,22 @@ export default function App() {
   }, [messages, updateActiveSessionMessages]);
 
   useAutoScroll(messages, scrollRef);
+
+  /**
+   * Persist a rating for a stored turn. Only meaningful for server conversations and
+   * when the message has already been filed (has an id). Returns false on any failure
+   * so the caller can roll the optimistic toggle back.
+   */
+  async function handleSetFeedback(messageId: string, feedback: 'up' | 'down' | null): Promise<boolean> {
+    const sessionId = activeSessionId;
+    if (!sessionId || !isServerConversation(sessionId)) return false;
+    try {
+      await setMessageFeedback(sessionId, messageId, feedback, { apiKey });
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function toggleMode() {
     const next = !useAgent;
@@ -303,6 +320,7 @@ export default function App() {
               scrollRef={scrollRef}
               onRegenerate={regenerate}
               onEditMessage={editAndResend}
+              onSetFeedback={handleSetFeedback}
             />
 
             <Composer

@@ -184,6 +184,28 @@ public sealed class ChatTurnRecorderTests : IDisposable
         Assert.Equal(0, await _db.Conversations.CountAsync());
     }
 
+    [Fact]
+    public async Task CompleteTurn_ReturnsTheStoredAssistantMessageId()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        var messageId = await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!");
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        Assert.NotNull(messageId);
+        Assert.Equal(stored!.Messages[1].Id, messageId);
+    }
+
+    [Fact]
+    public async Task CompleteTurn_ReturnsNull_WhenTheReplyIsBlank()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        var messageId = await _recorder.CompleteTurnAsync(id, Admin, "   ");
+
+        Assert.Null(messageId);
+    }
+
     [Theory]
     [InlineData("", "Percakapan baru")]
     [InlineData("   \n  ", "Percakapan baru")]

@@ -20,6 +20,11 @@ export interface StreamChunk {
    */
   conversationId?: string;
   /**
+   * Backend id of the recorded assistant message. Sent once, immediately before the
+   * end-of-stream marker, so the client can attach feedback to the just-finished turn.
+   */
+  messageId?: string;
+  /**
    * Token usage reported by the upstream on the final chunk. Mutually exclusive
    * with the other keys: it is transport, never assistant text.
    */
@@ -64,6 +69,7 @@ export function parseSseBuffer(buffer: string): { events: StreamChunk[]; rest: s
       if (parsed.error) events.push({ error: parsed.error });
       else if (parsed.status) events.push({ status: parsed.status });
       else if (parsed.conversationId) events.push({ conversationId: parsed.conversationId });
+      else if (parsed.messageId) events.push({ messageId: parsed.messageId });
       else if (parsed.usage) events.push({ usage: parsed.usage });
       else if (parsed.content) events.push({ content: parsed.content });
     } catch {

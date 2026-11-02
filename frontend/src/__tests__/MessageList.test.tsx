@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { createRef } from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MessageList } from '../components/MessageList';
 import type { Message, ModelOption } from '../types';
 
@@ -17,6 +17,7 @@ function renderList(overrides: {
   useAgent?: boolean;
   onRegenerate?: () => void;
   onEditMessage?: (index: number, newContent: string) => void;
+  onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
 } = {}) {
   const scrollRef = createRef<HTMLDivElement>();
   const view = render(
@@ -29,6 +30,7 @@ function renderList(overrides: {
       scrollRef={scrollRef}
       onRegenerate={overrides.onRegenerate}
       onEditMessage={overrides.onEditMessage}
+      onSetFeedback={overrides.onSetFeedback}
     />
   );
   return { ...view, scrollRef };
@@ -318,6 +320,49 @@ describe('MessageList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Tidak suka' }));
     expect(screen.getByRole('button', { name: 'Tidak disukai' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument();
+  });
+
+  it('persists like via onSetFeedback when the message has a server id', async () => {
+    const onSetFeedback = vi.fn().mockResolvedValue(true);
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo' }],
+      onSetFeedback,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    await waitFor(() => expect(onSetFeedback).toHaveBeenCalledWith('m0', 'up'));
+    expect(screen.getByRole('button', { name: 'Disukai' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('rolls the optimistic toggle back when persisting fails', async () => {
+    const onSetFeedback = vi.fn().mockResolvedValue(false);
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo' }],
+      onSetFeedback,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument(),
+    );
+    expect(onSetFeedback).toHaveBeenCalledWith('m0', 'up');
+  });
+
+  it('does not call onSetFeedback for a draft message without an id', () => {
+    const onSetFeedback = vi.fn();
+    renderList({
+      messages: [{ role: 'assistant', content: 'halo' }],
+      onSetFeedback,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    expect(screen.getByRole('button', { name: 'Disukai' })).toHaveAttribute('aria-pressed', 'true');
+    expect(onSetFeedback).not.toHaveBeenCalled();
+  });
+
+  it('reflects a rating already persisted on the server', () => {
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo', feedback: 'down' }],
+    });
+    expect(screen.getByRole('button', { name: 'Tidak disukai' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Suka' })).toHaveAttribute('aria-pressed', 'false');
   });
 
   // ─── per-message cost footnote ──────────────────────────────────

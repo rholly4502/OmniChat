@@ -80,6 +80,13 @@ describe('parseSseBuffer', () => {
     expect(events).toEqual([{ conversationId: '0192f0aa-0000-7000-8000-000000000000' }]);
   });
 
+  it('surfaces a message id frame on its own field', () => {
+    // The backend names the stored assistant message right before [DONE]. It must not
+    // be printed into the transcript, only forwarded as a messageId event.
+    const { events } = parseSseBuffer('data: {"messageId":"0192f0aa-0000-7000-8000-000000000001"}\n\n');
+    expect(events).toEqual([{ messageId: '0192f0aa-0000-7000-8000-000000000001' }]);
+  });
+
   it('surfaces a status frame on its own field', () => {
     // The backend announces phases as {"status":"…"} while the agent works. It must arrive
     // as a status chunk: parsed as content it would be printed into the transcript.

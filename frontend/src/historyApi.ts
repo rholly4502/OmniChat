@@ -131,6 +131,28 @@ export async function pinConversation(
 }
 
 /**
+ * Set or clear a user's rating on one stored turn. Resolves on 204. The
+ * feedback value is "up", "down" or null (clear). Only admin callers succeed;
+ * guests and drafts keep their local-only toggle.
+ */
+export async function setMessageFeedback(
+  conversationId: string,
+  messageId: string,
+  feedback: 'up' | 'down' | null,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${conversationId}/messages/${messageId}/feedback`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback }),
+    },
+    options,
+  );
+}
+
+/**
  * Fetch the aggregate token usage for all of the caller's conversations. An
  * admin sees real totals; a guest gets the all-zero shape, so the audit panel
  * renders the same either way.

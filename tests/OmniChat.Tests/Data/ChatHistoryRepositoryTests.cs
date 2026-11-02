@@ -2,6 +2,7 @@ using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Data;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Tests.Data;
 
@@ -170,6 +171,35 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
 
         Assert.False(await _repository.DeleteConversationAsync(conversation.Id, "guest"));
         Assert.NotNull(await _repository.GetConversationAsync(conversation.Id, "admin"));
+    }
+
+    [Fact]
+    public async Task SetMessageFeedback_records_up_down_and_clear_for_the_owner()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+        var message = await _repository.AppendMessageAsync(conversation.Id, "admin", new Message { Role = "assistant", Content = "jawaban" });
+
+        Assert.True(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", MessageFeedback.Up));
+        var stored = await _repository.GetConversationAsync(conversation.Id, "admin");
+        Assert.Equal(MessageFeedback.Up, stored!.Messages[0].Feedback);
+
+        Assert.True(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", MessageFeedback.Down));
+        stored = await _repository.GetConversationAsync(conversation.Id, "admin");
+        Assert.Equal(MessageFeedback.Down, stored.Messages[0].Feedback);
+
+        Assert.True(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", null));
+        stored = await _repository.GetConversationAsync(conversation.Id, "admin");
+        Assert.Null(stored.Messages[0].Feedback);
+    }
+
+    [Fact]
+    public async Task SetMessageFeedback_returns_false_when_unowned_or_unknown()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation(userId: "guest-1"));
+        var message = await _repository.AppendMessageAsync(conversation.Id, "guest-1", new Message { Role = "assistant", Content = "jawaban" });
+
+        Assert.False(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", MessageFeedback.Up));
+        Assert.False(await _repository.SetMessageFeedbackAsync(conversation.Id, Guid.CreateVersion7(), "guest-1", MessageFeedback.Up));
     }
 
     [Fact]

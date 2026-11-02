@@ -179,6 +179,71 @@ public sealed class ConversationsController : ControllerBase
         return pinned ? NoContent() : ConversationNotFound(id);
     }
 
+    /// <summary>
+    /// Sets or clears the caller's rating on one message of a conversation (audit feedback).
+    /// </summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="messageId">Message id within the conversation.</param>
+    /// <param name="request">Rating to store: "up", "down" or null to clear.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Rating applied.</response>
+    /// <response code="400">Malformed body or an unknown feedback value.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPut("{id:guid}/messages/{messageId:guid}/feedback")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetFeedback(
+        Guid id,
+        Guid messageId,
+        [FromBody] MessageFeedbackRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblemObject();
+        }
+
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        MessageFeedback? feedback;
+        if (request.Feedback is null)
+        {
+            feedback = null;
+        }
+        else
+        {
+            feedback = request.Feedback.ToLowerInvariant() switch
+            {
+                "up" => MessageFeedback.Up,
+                "down" => MessageFeedback.Down,
+                _ => null,
+            };
+
+            if (feedback is null)
+            {
+                return new ObjectResult(new ProblemDetails
+                {
+                    Title = "Validation Failed",
+                    Status = StatusCodes.Status400BadRequest,
+                    Detail = "Feedback must be \"up\", \"down\" or null.",
+                    Instance = HttpContext.Request.Path,
+                })
+                {
+                    StatusCode = StatusCodes.Status400BadRequest,
+                    ContentTypes = { ProblemDetailsResponse.ContentType },
+                };
+            }
+        }
+
+        var applied = await _repository.SetMessageFeedbackAsync(id, messageId, owner, feedback, cancellationToken);
+        return applied ? NoContent() : ConversationNotFound(id);
+    }
+
     /// <summary>Deletes a conversation and its messages.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>

@@ -4,6 +4,13 @@ export interface Message {
   role: Role;
   content: string;
   /**
+   * Server id of this stored turn. Absent on local drafts and on just-streamed turns
+   * until the backend's message-id frame arrives. Used to persist like/dislike feedback.
+   */
+  id?: string;
+  /** Persisted rating for this stored turn ("up" | "down"); undefined when unrated. */
+  feedback?: 'up' | 'down';
+  /**
    * Progress phase reported by the backend while an assistant reply is still being
    * produced. Absent on user turns, on finished replies and when the heartbeat is off.
    */
@@ -99,6 +106,8 @@ export interface ConversationMessage {
   role: Role;
   content: string;
   createdAt: string;
+  /** Persisted rating for this turn ("up" | "down"); undefined when unrated. */
+  feedback?: 'up' | 'down';
 }
 
 /** A stored conversation together with its transcript. */

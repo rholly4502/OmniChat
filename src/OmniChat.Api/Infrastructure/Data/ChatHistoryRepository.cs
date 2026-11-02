@@ -255,6 +255,33 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             byModel);
     }
 
+    public async Task<bool> SetMessageFeedbackAsync(
+        Guid conversationId,
+        Guid messageId,
+        string userId,
+        MessageFeedback? feedback,
+        CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        // One query scopes by both the message id and the owning conversation, so an
+        // unowned message id reads as "not found" — the same 404-shaped answer the rest
+        // of this repository returns for someone else's rows.
+        var message = await db.Messages
+            .Include(m => m.Conversation)
+            .SingleOrDefaultAsync(
+                m => m.Id == messageId && m.ConversationId == conversationId && m.Conversation!.UserId == userId,
+                cancellationToken);
+        if (message is null)
+        {
+            return false;
+        }
+
+        message.Feedback = feedback;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     private static void RequireOwner(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))

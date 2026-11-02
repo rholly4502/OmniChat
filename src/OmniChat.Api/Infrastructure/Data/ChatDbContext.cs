@@ -53,6 +53,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         message.HasKey(m => m.Id);
         message.Property(m => m.Role).IsRequired().HasMaxLength(16);
         message.Property(m => m.Content).IsRequired().HasMaxLength(32_000);
+        // Nullable enum stored as TEXT ("Up"/"Down"/NULL) for readability; a plain
+        // integer would be opaque in a SQLite dump. Null = unrated.
+        message.Property(m => m.Feedback).HasConversion<string>();
         message.Property(m => m.CreatedAt).HasConversion(timestamp);
         message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         message

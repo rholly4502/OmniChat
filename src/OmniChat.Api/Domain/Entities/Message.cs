@@ -1,4 +1,5 @@
 namespace OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 /// <summary>
 /// A single persisted turn within a <see cref="Conversation"/>.
@@ -15,6 +16,9 @@ public class Message
     public string Role { get; set; } = "user";
 
     public string Content { get; set; } = string.Empty;
+
+    /// <summary>User rating of this turn (audit). Null means unrated.</summary>
+    public MessageFeedback? Feedback { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

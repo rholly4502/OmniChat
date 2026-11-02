@@ -207,7 +207,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       const get = impls.current.get ?? getConversation;
       try {
         const detail = await get(id, { apiKey: apiKey || undefined });
-        const messages: Message[] = detail.messages.map((m) => ({ role: m.role, content: m.content }));
+        const messages: Message[] = detail.messages.map((m) => ({ role: m.role, content: m.content, id: m.id, feedback: m.feedback }));
         setSessions((prev) =>
           prev.map((s) =>
             s.id === id

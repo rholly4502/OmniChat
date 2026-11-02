@@ -7,6 +7,7 @@ import {
   listConversations,
   pinConversation,
   renameConversation,
+  setMessageFeedback,
 } from '../historyApi';
 import { ApiError } from '../api';
 
@@ -245,6 +246,35 @@ describe('pinConversation', () => {
     const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
 
     await expect(pinConversation('gone', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('setMessageFeedback', () => {
+  it('PUTs a JSON body to the per-message feedback path', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await setMessageFeedback(SUMMARY.id, 'm0', 'up', { fetchImpl });
+
+    const [path, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(path).toBe(`${CONVERSATIONS_URL}/${SUMMARY.id}/messages/m0/feedback`);
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+    expect(init.body).toBe(JSON.stringify({ feedback: 'up' }));
+  });
+
+  it('serializes a clear (null) rating too', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await setMessageFeedback(SUMMARY.id, 'm0', null, { fetchImpl });
+
+    const [, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(init.body).toBe(JSON.stringify({ feedback: null }));
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
+
+    await expect(setMessageFeedback('gone', 'm0', 'up', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });
 

@@ -5,6 +5,21 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P2 — Persisted message feedback (like/dislike) (backend + frontend)
+
+#### Added
+- `PUT /api/conversations/{id}/messages/{messageId}/feedback` stores a rating
+  (`"up"` / `"down"` / `null` to clear) on one message of a conversation. Owner
+  scoped and admin-only (guests get 404), stored on a new `Message.Feedback`
+  EF column (migration `AddMessageFeedback`). Backend tests 477 → 490.
+- The streaming endpoint now files the assistant reply *before* `[DONE]` and
+  forwards the stored message id as a `messageId` SSE frame, so the client can
+  rate the just-finished answer without a reload.
+- MessageList like/dislike buttons persist via `setMessageFeedback` in admin
+  sessions (optimistic, with rollback on failure); drafts and guests keep the
+  local-only toggle; ratings already stored server-side are reflected on load.
+  Frontend tests 483 → 492.
+
 ### P3 — Chill / night mode palette ("Mode Malam") (frontend)
 
 #### Added

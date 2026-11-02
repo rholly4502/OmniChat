@@ -173,8 +173,8 @@ describe('useServerHistory', () => {
     });
 
     expect(messages).toEqual([
-      { role: 'user', content: 'halo' },
-      { role: 'assistant', content: 'hai' },
+      { role: 'user', content: 'halo', id: 'm0' },
+      { role: 'assistant', content: 'hai', id: 'm1' },
     ]);
     expect(result.current.activeSessionId).toBe(A);
     expect(getImpl).toHaveBeenCalledTimes(1);

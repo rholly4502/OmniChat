@@ -189,6 +189,23 @@ describe('useChat', () => {
     expect(result.current.messages.map((m) => m.content)).toEqual(['hai', 'halo']);
   });
 
+  it('attaches the backend message id to the trailing assistant message', async () => {
+    const { result } = setup({
+      streamImpl: streamOf([
+        { content: 'halo' },
+        { messageId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' },
+      ]),
+    });
+
+    await act(async () => {
+      await result.current.send('hai');
+    });
+
+    // The id lands on the assistant message, not as a separate message.
+    expect(result.current.messages[1].id).toBe('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+    expect(result.current.messages).toHaveLength(2);
+  });
+
   let consoleError: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {

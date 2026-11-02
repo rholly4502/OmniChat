@@ -122,6 +122,10 @@ public sealed class ChatController : ControllerBase
         var promptTokens = 0;
         var completionTokens = 0;
         var reply = new StringBuilder();
+        // Set once the assistant reply has been filed; its id is forwarded before [DONE]
+        // so the client can attach feedback to the just-finished answer without a reload.
+        Guid? completedMessageId = null;
+        var turnCompleted = false;
 
         try
         {
@@ -152,6 +156,20 @@ public sealed class ChatController : ControllerBase
                 await WriteEventAsync(new { content = token }, cancellationToken);
             }
 
+            // File the assistant's half of the turn *before* [DONE] and forward its id, so
+            // the client can rate the just-finished answer immediately.
+            if (conversationId is Guid recorded)
+            {
+                completedMessageId = await _turnRecorder.CompleteTurnAsync(
+                    recorded, userId, reply.ToString(), promptTokens, completionTokens, cancellationToken);
+                turnCompleted = true;
+
+                if (completedMessageId is Guid mid)
+                {
+                    await WriteEventAsync(new { messageId = mid }, cancellationToken);
+                }
+            }
+
             await Response.Body.WriteAsync(Encoding.UTF8.GetBytes("data: [DONE]\n\n"), cancellationToken);
             await Response.Body.FlushAsync(cancellationToken);
         }
@@ -173,9 +191,10 @@ public sealed class ChatController : ControllerBase
         {
             // Runs on success, on failure and on client disconnect, so an interrupted answer is
             // still filed: a turn with a question and no reply would read as lost data in the log.
-            if (conversationId is Guid recorded)
+            // The success path already completed the turn above; only the failure paths land here.
+            if (!turnCompleted && conversationId is Guid awaitingRecord)
             {
-                await _turnRecorder.CompleteTurnAsync(recorded, userId, reply.ToString(), promptTokens, completionTokens, CancellationToken.None);
+                await _turnRecorder.CompleteTurnAsync(awaitingRecord, userId, reply.ToString(), promptTokens, completionTokens, CancellationToken.None);
             }
         }
     }

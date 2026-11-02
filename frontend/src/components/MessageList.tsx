@@ -30,6 +30,12 @@ export interface MessageListProps {
    * Save calls this with the new text.
    */
   onEditMessage?: (index: number, newContent: string) => void;
+  /**
+   * Persist a rating for a stored turn (admin sessions only). Receives the server
+   * message id and the next rating ("up" | "down" | null to clear); resolves true
+   * on success. When absent or when the message has no id, feedback stays local.
+   */
+  onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
 }
 
 /** Small, quiet action button used on message footers. */
@@ -63,7 +69,7 @@ function ActionButton({ label, activeLabel, active, onClick, icon, activeIcon }:
  * Markup and classes are unchanged from the inline JSX it replaces, so the
  * `aria-live` / `aria-busy` contract the app tests assert on is preserved.
  */
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -103,6 +109,17 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   };
 
   const isLastMessage = (i: number) => i === messages.length - 1;
+
+  const toggleFeedback = async (i: number, value: 'up' | 'down') => {
+    const msg = messages[i];
+    const current = feedback[i] ?? msg.feedback;
+    const next = current === value ? undefined : value;
+    setFeedback((f) => ({ ...f, [i]: next }));
+    if (msg.id && onSetFeedback) {
+      const ok = await onSetFeedback(msg.id, next ?? null);
+      if (!ok) setFeedback((f) => ({ ...f, [i]: current }));
+    }
+  };
 
   return (
     <div ref={scrollRef} aria-busy={streaming} aria-live="polite" aria-label="Chat messages"
@@ -228,8 +245,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       <ActionButton
                         label="Suka"
                         activeLabel="Disukai"
-                        active={feedback[i] === 'up'}
-                        onClick={() => setFeedback((f) => ({ ...f, [i]: f[i] === 'up' ? undefined : 'up' }))}
+                        active={(feedback[i] ?? m.feedback) === 'up'}
+                        onClick={() => { void toggleFeedback(i, 'up'); }}
                         icon={
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
                         }
@@ -237,8 +254,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       <ActionButton
                         label="Tidak suka"
                         activeLabel="Tidak disukai"
-                        active={feedback[i] === 'down'}
-                        onClick={() => setFeedback((f) => ({ ...f, [i]: f[i] === 'down' ? undefined : 'down' }))}
+                        active={(feedback[i] ?? m.feedback) === 'down'}
+                        onClick={() => { void toggleFeedback(i, 'down'); }}
                         icon={
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /></svg>
                         }
