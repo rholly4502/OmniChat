@@ -51,12 +51,12 @@ export function HistoryFilters({
           </button>
         )}
       </div>
-      <label className="block">
+      <label className="block relative">
         <span className="text-xs text-chill-muted font-medium">Model</span>
         <select
           value={modelFilter}
           onChange={(e) => onModelFilterChange(e.target.value)}
-          className="w-full bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
+          className="w-full appearance-none pr-9 cursor-pointer bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
           aria-label="Filter model"
         >
           <option value="">Semua model</option>
@@ -66,6 +66,9 @@ export function HistoryFilters({
             </option>
           ))}
         </select>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-chill-muted">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="block">

@@ -85,6 +85,33 @@ function buttonTags(text: string): { attrs: string; line: number }[] {
   return out;
 }
 
+function selectTags(text: string): { attrs: string; line: number }[] {
+  const out: { attrs: string; line: number }[] = [];
+  const re = /<select\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    let i = re.lastIndex;
+    let braceDepth = 0;
+    let quote: string | null = null;
+    for (; i < text.length; i++) {
+      const ch = text[i];
+      if (quote) {
+        if (ch === quote) quote = null;
+        continue;
+      }
+      if (ch === '"' || ch === "'" || ch === '`') {
+        quote = ch;
+        continue;
+      }
+      if (ch === '{') braceDepth++;
+      else if (ch === '}') braceDepth--;
+      else if (ch === '>' && braceDepth === 0) break;
+    }
+    out.push({ attrs: text.slice(m.index, i + 1), line: text.slice(0, m.index).split('\n').length });
+  }
+  return out;
+}
+
 describe('pixel2 chill consistency', () => {
   const files = sourceFiles(SRC);
 
@@ -139,6 +166,18 @@ describe('pixel2 chill consistency', () => {
         const press = classes.some((c) => /^active:translate-y/.test(c));
         if (!touch || !hard || !square || !press) {
           offenders.push(`${file.replace(SRC, 'src')}:${line} button missing [touch=${touch} hard=${hard} square=${square} press=${press}] — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it('every <select> hides the native drop-down arrow (appearance-none + pixel chevron)', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of selectTags(readFileSync(file, 'utf8'))) {
+        if (!attrs.includes('appearance-none')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} select missing appearance-none — ${attrs}`);
         }
       }
     }
