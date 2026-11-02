@@ -342,7 +342,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
             <section aria-label="Tren pengeluaran bulanan" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
               <PanelFrame />
-              <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
                 <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
                 <button
                   type="button"

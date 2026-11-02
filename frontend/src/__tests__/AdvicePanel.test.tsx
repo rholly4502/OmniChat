@@ -126,5 +126,14 @@ describe('AdvicePanel pixel2 chill design', () => {
     // hard chunky 2px top-edge bevel strip is present
     expect(callout?.querySelector('div.absolute')).toBeTruthy();
   });
+
+  it('keeps the header row wrapping on narrow screens (responsive consistency)', () => {
+    const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    const panel = container.querySelector('section[aria-label="Analisa dan Saran"]');
+    const header = panel?.querySelector('h3')?.parentElement;
+    expect(header?.className).toContain('flex-wrap');
+    expect(header?.className).toContain('gap-y-2');
+  });
 });
+
 
