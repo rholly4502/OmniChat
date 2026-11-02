@@ -3,6 +3,7 @@ import { formatRupiah, getExpenseAdvice } from '../expensesApi';
 import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
 import { PixelProgress } from './PixelProgress';
+import { PanelFrame } from './PanelFrame';
 
 /** Props accepted by {@link AdvicePanel}. */
 export interface AdvicePanelProps {
@@ -62,7 +63,8 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
   }
 
   return (
-    <section aria-label="Analisa dan Saran" className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+    <section aria-label="Analisa dan Saran" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+      <PanelFrame />
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Analisa &amp; Saran</h3>
         <button

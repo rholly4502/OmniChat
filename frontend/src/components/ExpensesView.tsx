@@ -14,6 +14,7 @@ import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
 import { AdvicePanel } from './AdvicePanel';
 import { PixelProgress } from './PixelProgress';
+import { PanelFrame } from './PanelFrame';
 import type { ExpenseItem } from '../expensesApi';
 
 /** Props accepted by {@link ExpensesView}. */
@@ -69,9 +70,7 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
   return (
     <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden">
       {/* Hard top-left bevel (pixel meter register): a chunky light edge - no soft gradient. */}
-      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
-      {/* Corner highlight pixel - warm two-tone surface texture (Stardew 2-4 tone rule). */}
-      <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/25" />
+      <PanelFrame />
       <div className="relative flex items-start gap-3">
         <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${
           tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10'
@@ -337,7 +336,8 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
             <AdvicePanel apiKey={apiKey} month={month} />
 
-            <section aria-label="Tren pengeluaran bulanan" className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+            <section aria-label="Tren pengeluaran bulanan" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+              <PanelFrame />
               <div className="flex items-center justify-between gap-3 mb-3">
                 <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
                 <button
@@ -604,8 +604,9 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
   return (
     <section
       aria-label={initial ? 'Edit pengeluaran' : 'Tambah pengeluaran'}
-      className="rounded-none bg-chill-surface border border-chill-accent/40 p-4 pixel-shadow-sm space-y-3"
+      className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-accent/40 p-4 pixel-shadow-sm space-y-3"
     >
+      <PanelFrame />
       <h3 className="text-sm font-semibold text-chill-text pixel-heading">
         {initial ? 'Edit Pengeluaran' : 'Tambah Pengeluaran'}
       </h3>
