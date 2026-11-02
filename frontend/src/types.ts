@@ -69,6 +69,8 @@ export interface ChatSession {
   totalTokens?: number;
   /** Model the conversation last used (undefined for a local draft). */
   model?: string;
+  /** Chat mode the conversation last ran under ("agent" | "direct", undefined for a local draft). */
+  mode?: string;
 }
 
 /** One row of the server-side history list, without message bodies. */

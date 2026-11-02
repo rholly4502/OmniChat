@@ -159,6 +159,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               completionTokens: row.completionTokens,
               totalTokens: row.totalTokens,
               model: row.model,
+              mode: row.mode,
             };
           });
           return sortSessions([...serverRows, ...drafts]);
@@ -219,6 +220,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
                   completionTokens: detail.completionTokens,
                   totalTokens: detail.totalTokens,
                   model: detail.model,
+                  mode: detail.mode,
                 }
               : s,
           ),

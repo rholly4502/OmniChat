@@ -142,8 +142,10 @@ export default function App() {
     // counter with the server's cumulative tokens for that conversation.
     const session = sessions.find((s) => s.id === id);
     loadMessages(loaded, isServerConversation(id) ? id : null, baseUsageFor(session));
-    // Multi-model per chat: resuming a conversation restores the model it last used,
-    // so the header and sidebar reflect that conversation's model, not the global one.
+    // Multi-model per chat: resuming a conversation restores the model (and mode) it
+    // last used, so the header, sidebar and the agent/direct bridge reflect that
+    // conversation's setup, not the global toggle.
+    if (session?.mode) setUseAgent(session.mode === 'agent');
     if (session?.model) setModel(session.model);
   }
 

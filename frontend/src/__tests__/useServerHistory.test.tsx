@@ -5,7 +5,7 @@ import { isServerConversation, useServerHistory } from '../hooks/useServerHistor
 const A = '11111111-1111-1111-1111-111111111111';
 const B = '22222222-2222-2222-2222-222222222222';
 
-function summary(id: string, title: string, updatedAt = '2026-10-25T10:00:00+00:00') {
+function summary(id: string, title: string, updatedAt = '2026-10-25T10:00:00+00:00', over: Partial<{ mode: string; model: string }> = {}) {
   return {
     id,
     title,
@@ -13,6 +13,7 @@ function summary(id: string, title: string, updatedAt = '2026-10-25T10:00:00+00:
     model: 'hermes',
     createdAt: '2026-10-25T09:00:00+00:00',
     updatedAt,
+    ...over,
   };
 }
 
@@ -116,6 +117,19 @@ describe('useServerHistory', () => {
     expect(result.current.sessions.map((s) => s.title)).toEqual(['Deploy', 'SQL', 'Obrolan Baru']);
     // Server rows carry no bodies until selected — the list endpoint has none.
     expect(result.current.sessions[0].messages).toEqual([]);
+    // Mode and model follow the row so resuming can restore both the bridge selector
+    // and the model id.
+    expect(result.current.sessions[0].mode).toBe('agent');
+    expect(result.current.sessions[0].model).toBe('hermes');
+  });
+
+  it('maps a stored conversation mode and model into the row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Direct', '2026-10-25T10:00:00+00:00', { mode: 'direct', model: 'nvidia/nemotron-3.5-lightning:free' })]);
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl })));
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    expect(result.current.sessions[0].mode).toBe('direct');
+    expect(result.current.sessions[0].model).toBe('nvidia/nemotron-3.5-lightning:free');
   });
 
   it('forwards the API key and refetches when it changes', async () => {
@@ -197,6 +211,23 @@ describe('useServerHistory', () => {
     });
 
     expect(result.current.sessions.find((s) => s.id === A)?.model).toBe('claude-sonnet');
+  });
+
+  it('adopts the transcript mode when a conversation is selected', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue({
+      ...detail(A, 'Deploy', ['halo']),
+      mode: 'direct',
+    });
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    expect(result.current.sessions.find((s) => s.id === A)?.mode).toBe('direct');
   });
 
   it('returns null when a transcript cannot be fetched', async () => {
