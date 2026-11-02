@@ -117,9 +117,11 @@ public sealed class ChatService : IChatService
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
             using var reader = new StreamReader(stream);
 
-            // First heartbeat, before the deadline loop: the timeout below is per *read*,
-            // so an upstream that is thinking emits nothing at all for this whole window.
-            await WriteProgressAsync(writer, ct);
+            // The pre-token window is announced as thinking: until the first final-content
+            // delta arrives we cannot claim the answer is being composed, only that the
+            // model is still working. Agent loop steps and model reasoning are this window.
+            var phase = ProgressMessages.Thinking;
+            await WriteProgressAsync(writer, phase, ct);
 
                         var idleTimeout = _streaming.IdleTimeout;
             var progressInterval = _streaming.ProgressInterval;
@@ -156,7 +158,7 @@ public sealed class ChatService : IChatService
                             // Reassure only if nothing arrived since the previous beat.
                             if (Environment.TickCount64 - lastDataTicks >= pi.TotalMilliseconds)
                             {
-                                await WriteProgressAsync(writer, CancellationToken.None);
+                                await WriteProgressAsync(writer, phase, CancellationToken.None);
                             }
                         }
                     }
@@ -218,10 +220,27 @@ public sealed class ChatService : IChatService
                         continue;
                     }
 
-                    var text = TryExtractDeltaContent(data);
-                    if (!string.IsNullOrEmpty(text))
+                    var (deltaText, isReasoning) = TryExtractDeltaContent(data);
+                    if (!string.IsNullOrEmpty(deltaText))
                     {
-                        await writer.WriteAsync(text, ct);
+                        if (isReasoning)
+                        {
+                            // The model is still reasoning. The phase already starts as
+                            // thinking, so this only re-asserts it when content had begun and
+                            // reasoning resumed afterwards.
+                            if (phase != ProgressMessages.Thinking)
+                            {
+                                phase = ProgressMessages.Thinking;
+                                await writer.WriteAsync(ProgressPhase.Encode(phase), ct);
+                            }
+                        }
+                        else
+                        {
+                            // Final content composes the answer; any later silence reports
+                            // "Menyusun jawaban" rather than a pre-token thinking state.
+                            phase = ProgressMessages.Working;
+                        }
+                        await writer.WriteAsync(deltaText, ct);
                     }
                 }
             }
@@ -281,19 +300,19 @@ public sealed class ChatService : IChatService
     /// because the read-side token happens to be cancelled at this instant.
     /// </para>
     /// </remarks>
-    private async Task WriteProgressAsync(ChannelWriter<string> writer, CancellationToken ct)
+    private async Task WriteProgressAsync(ChannelWriter<string> writer, string phase, CancellationToken ct)
     {
         if (_streaming.ProgressInterval is null) return;
 
-        await writer.WriteAsync(ProgressPhase.Encode(ProgressMessages.Working), ct);
+        await writer.WriteAsync(ProgressPhase.Encode(phase), ct);
     }
 
     /// <summary>
-    /// Extracts <c>choices[0].delta.content</c> or reasoning text (<c>reasoning_content</c> / <c>reasoning</c>)
-    /// from one SSE payload.
-    /// Returns <c>null</c> for keep-alives, role-only deltas and malformed JSON.
+    /// Extracts <c>choices[0].delta</c> text from one SSE payload, reporting whether it was
+    /// reasoning (<c>reasoning_content</c> / <c>reasoning</c>) or final <c>content</c>.
     /// </summary>
-    private static string? TryExtractDeltaContent(string data)
+    /// <returns>An empty tuple for keep-alives, role-only deltas and malformed JSON.</returns>
+    private static (string? Text, bool IsReasoning) TryExtractDeltaContent(string data)
     {
         try
         {
@@ -307,7 +326,7 @@ public sealed class ChatService : IChatService
                     contentProp.ValueKind == JsonValueKind.String &&
                     !string.IsNullOrEmpty(contentProp.GetString()))
                 {
-                    return contentProp.GetString();
+                    return (contentProp.GetString(), false);
                 }
 
                 if ((delta.TryGetProperty("reasoning_content", out var reasoningProp) ||
@@ -315,7 +334,7 @@ public sealed class ChatService : IChatService
                     reasoningProp.ValueKind == JsonValueKind.String &&
                     !string.IsNullOrEmpty(reasoningProp.GetString()))
                 {
-                    return reasoningProp.GetString();
+                    return (reasoningProp.GetString(), true);
                 }
             }
         }
@@ -324,7 +343,7 @@ public sealed class ChatService : IChatService
             // Ignore malformed JSON chunks.
         }
 
-        return null;
+        return (null, false);
     }
 
     /// <summary>

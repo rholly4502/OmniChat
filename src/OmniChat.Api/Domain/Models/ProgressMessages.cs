@@ -13,4 +13,7 @@ public static class ProgressMessages
 {
     /// <summary>Sent while the agent loop is running and no token has arrived yet.</summary>
     public const string Working = "Menyusun jawaban";
+
+    /// <summary>Sent while the upstream is still reasoning before any final content has arrived.</summary>
+    public const string Thinking = "Berpikir…";
 }

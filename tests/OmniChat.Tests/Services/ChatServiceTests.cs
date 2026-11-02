@@ -98,8 +98,8 @@ public class ChatServiceTests
         }
 
         // Assert: the head is the heartbeat, then the content tokens parsed from delta.content.
-        Assert.Equal(ProgressFrame, tokens[0]);
-        var content = tokens.Where(token => token != ProgressFrame).ToArray();
+        Assert.Equal(ThinkingFrame, tokens[0]);
+        var content = tokens.Where(token => !token.StartsWith("[status:", StringComparison.Ordinal)).ToArray();
         Assert.Equal(2, content.Length);
         Assert.Equal("Hello", content[0]);
         Assert.Equal(" World", content[1]);
@@ -107,6 +107,9 @@ public class ChatServiceTests
 
     private static readonly string ProgressFrame =
         OmniChat.Domain.Models.ProgressPhase.Encode(OmniChat.Domain.Models.ProgressMessages.Working);
+
+    private static readonly string ThinkingFrame =
+        OmniChat.Domain.Models.ProgressPhase.Encode(OmniChat.Domain.Models.ProgressMessages.Thinking);
 
     [Fact]
     public async Task StreamChatResponseAsync_EmitsProgressFrame_BeforeTheFirstTokenArrives()
@@ -126,8 +129,31 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        Assert.Equal(ProgressFrame, tokens[0]);
+        Assert.Equal(ThinkingFrame, tokens[0]);
         Assert.Contains("Hi", tokens);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_EmitsThinkingPhase_WhileUpstreamIsReasoning()
+    {
+        // A reasoning model streams thinking steps before final content; the pre-token
+        // status must read as "Berpikir…" rather than claiming composition too early.
+        var sseBody = "data: {\"choices\":[{\"delta\":{\"reasoning_content\":\"step one\"}}]}\n\n"
+                    + "data: {\"choices\":[{\"delta\":{\"content\":\"answer\"}}]}\n\ndata: [DONE]\n\n";
+        var service = CreateService(req => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(sseBody, System.Text.Encoding.UTF8, "text/event-stream")
+        });
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Equal(ThinkingFrame, tokens[0]);
+        Assert.Contains("step one", tokens);
+        Assert.Contains("answer", tokens);
     }
 
     [Fact]
@@ -148,8 +174,8 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        Assert.Single(tokens, token => token == ProgressFrame);
-        Assert.Equal([ProgressFrame, "a", "b"], tokens);
+        Assert.Single(tokens, token => token == ThinkingFrame);
+        Assert.Equal([ThinkingFrame, "a", "b"], tokens);
     }
 
     [Fact]
@@ -196,8 +222,8 @@ public class ChatServiceTests
 
         // Token order is preserved: the heartbeat is injected between real tokens, never
         // reordered, and a progress frame is present at the head.
-        Assert.Equal(ProgressFrame, tokens[0]);
-        var contentTokens = tokens.Where(token => token != ProgressFrame).ToArray();
+        Assert.Equal(ThinkingFrame, tokens[0]);
+        var contentTokens = tokens.Where(token => !token.StartsWith("[status:", StringComparison.Ordinal)).ToArray();
         Assert.Equal(["a", "b"], contentTokens);
     }
 
@@ -587,7 +613,7 @@ public class ChatServiceTests
         }
 
         // Assert: only valid chunks parsed, malformed skipped
-        Assert.Equal(ProgressFrame, tokens[0]);
+        Assert.Equal(ThinkingFrame, tokens[0]);
         Assert.Equal(["good", "after"], tokens.Skip(1));
     }
 
@@ -670,7 +696,7 @@ public class ChatServiceTests
         // Assert: the heartbeat still fired (a progress frame appeared, so the reassure
         // path is alive) yet the terminal idle-deadline error is present and terminated
         // promptly (well inside the guard), not after an infinite heartbeat re-arm loop.
-        Assert.Contains(ProgressFrame, tokens);
+        Assert.Contains(ThinkingFrame, tokens);
         Assert.Contains("[Error: The AI provider stopped responding. Please try again.]", tokens);
         Assert.Equal("[Error: The AI provider stopped responding. Please try again.]", tokens[^1]);
         Assert.True(sw.Elapsed < TimeSpan.FromSeconds(8), $"abort took {sw.ElapsedMilliseconds} ms — idle deadline was not honoured");
@@ -723,8 +749,8 @@ public class ChatServiceTests
 
         // Assert: every chunk arrived, in order, with no error token — the deadline was renewed.
         // The single head frame is the start-of-stream heartbeat, not a renewal.
-        Assert.Equal(ProgressFrame, tokens[0]);
-        Assert.Single(tokens, token => token == ProgressFrame);
+        Assert.Equal(ThinkingFrame, tokens[0]);
+        Assert.Single(tokens, token => token == ThinkingFrame);
         var expected = Enumerable.Range(0, chunkCount).Select(i => "tok" + i).ToArray();
         Assert.Equal(expected, tokens.Skip(1));
 

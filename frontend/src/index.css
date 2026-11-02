@@ -295,6 +295,18 @@ body {
 .pixel-scan {
   animation: pixel-scan 1s linear infinite;
 }
+
+/* Pixel think loader: a two-beat ripple used while the model is still reasoning
+   before any final content has arrived. Stepped keyframes switch contrast in
+   hard beats rather than tweening - the same register as the scan loader above.
+   Reduced-motion is handled globally. */
+@keyframes pixel-think {
+  0%, 35% { opacity: 1; }
+  50%, 100% { opacity: 0.22; }
+}
+.pixel-think {
+  animation: pixel-think 1.2s linear infinite;
+}
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 

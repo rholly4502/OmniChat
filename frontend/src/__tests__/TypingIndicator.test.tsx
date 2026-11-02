@@ -40,4 +40,17 @@ describe('TypingIndicator', () => {
     expect(status).toHaveAttribute('aria-label', 'Menyusun jawaban · Hermes (Default)');
     expect(screen.getByText('· Hermes (Default)')).toBeInTheDocument();
   });
+
+  it('renders a thinking status without double-counting the ellipsis', () => {
+    render(<TypingIndicator status="Berpikir…" />);
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-label', 'Berpikir…');
+    expect(screen.getByText('Berpikir…')).toBeInTheDocument();
+  });
+
+  it('switches to the think-loader animation while the model is reasoning', () => {
+    const { container } = render(<TypingIndicator status="Berpikir…" />);
+    expect(container.querySelectorAll('span.pixel-think')).toHaveLength(8);
+    expect(container.querySelector('span.pixel-scan')).toBeNull();
+  });
 });
