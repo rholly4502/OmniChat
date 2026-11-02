@@ -386,6 +386,10 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
                     [
                         new Expense { Tanggal = cur.AddDays(2), Waktu = "12:00", Kategori = "Makan",
                             Keterangan = "cur", Nominal = 30_000, SourceId = "trend-cur" },
+                        // Savings deposits must NOT count toward the spend trend (same
+                        // rule as the summary card); the current-month point stays 30k.
+                        new Expense { Tanggal = cur.AddDays(3), Waktu = "19:00", Kategori = "Nabung",
+                            Keterangan = "save", Nominal = 300_000, SourceId = "trend-save" },
                         new Expense { Tanggal = prev2.AddDays(4), Waktu = "09:00", Kategori = "Transport",
                             Keterangan = "prev2", Nominal = 20_000, SourceId = "trend-prev2" },
                     ], CancellationToken.None);

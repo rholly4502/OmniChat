@@ -181,9 +181,12 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         var (_, toExclusive) = MonthRange(endMonth);
         var start = toExclusive.AddMonths(-count);
 
+        // Savings deposits (kategori "Nabung") are savings, not spending — they must
+        // not count toward the spend trend, matching GetTotalsAsync and the advice
+        // engine (the summary card and the projection both exclude them).
         var rows = await db.Expenses
             .AsNoTracking()
-            .Where(e => e.Tanggal >= start && e.Tanggal < toExclusive)
+            .Where(e => e.Tanggal >= start && e.Tanggal < toExclusive && e.Kategori != "Nabung")
             .GroupBy(e => new { e.Tanggal.Year, e.Tanggal.Month })
             .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(e => e.Nominal) })
             .ToListAsync(cancellationToken);

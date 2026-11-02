@@ -188,6 +188,22 @@ public sealed class ExpenseRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetMonthlyTrend_excludesNabungSavingsFromSpend()
+    {
+        await _repository.InsertMissingExpensesAsync(
+            [
+                NewExpense(2, "Makan", 30_000, "spend"),
+                NewExpense(3, "Nabung", 300_000, "savings"),
+            ], CancellationToken.None);
+
+        var trend = await _repository.GetMonthlyTrendAsync("2026-10", 1, CancellationToken.None);
+
+        // Savings deposits are not spending — only the 30k Makan spend shows.
+        Assert.Single(trend);
+        Assert.Equal(("2026-10", 30_000L), trend[0]);
+    }
+
+    [Fact]
     public async Task GetMonthlyTrend_invalidEndMonth_throws()
     {
         await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() =>
