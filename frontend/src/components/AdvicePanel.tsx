@@ -24,6 +24,12 @@ function analyseDate(month: string): string {
   return `${month}-${String(lastDay).padStart(2, '0')}`;
 }
 
+/** Hard top-edge bevel strip (pixel meter register) for status callouts — matches
+    the StatCard/frame surface grammar: a chunky 2px light edge, no soft gradient. */
+function StatusCalloutTopEdge({ className }: { className: string }) {
+  return <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-[2px] ${className}`} />;
+}
+
 /** The "Analisa & Saran" panel: daily budget check, tips, projection and PC goal. */
 export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
   const [open, setOpen] = useState(false);
@@ -64,7 +70,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           onClick={toggle}
           aria-expanded={open}
           disabled={loading}
-          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] min-w-[148px] justify-center disabled:opacity-50"
         >
           {loading && <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink mr-2 inline-block" aria-hidden="true" />}
           {loading ? 'Menganalisa…' : open ? 'Tutup' : 'Analisa & Saran'}
@@ -89,7 +95,8 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           {advice && !error && (
             <>
               {advice.status === 'no_target' ? (
-                <div className="rounded-none border border-chill-border bg-chill-surface px-3 py-2.5">
+                <div className="relative rounded-none border border-chill-border bg-chill-surface px-3 py-2.5">
+                  <StatusCalloutTopEdge className="bg-chill-elevated" />
                   <p className="text-sm text-chill-muted flex items-start gap-2">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5 text-chill-deepsea">
                       <path d="M12 8v4M12 16h.01" />
@@ -98,7 +105,8 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   </p>
                 </div>
               ) : advice.status === 'over_budget' ? (
-                <div className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2.5">
+                <div className="relative rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2.5">
+                  <StatusCalloutTopEdge className="bg-chill-red/40" />
                   <p className="text-sm font-medium text-chill-red flex items-start gap-2">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
                       <path d="M12 4l9 16H3L12 4ZM12 10v4M12 17h.01" />
@@ -107,7 +115,8 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   </p>
                 </div>
               ) : (
-                <div className="rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2.5">
+                <div className="relative rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2.5">
+                  <StatusCalloutTopEdge className="bg-chill-accent/50" />
                   <p className="text-sm font-medium text-chill-accent flex items-start gap-2">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5">
                       <path d="M4 12l5 5L20 6" />
