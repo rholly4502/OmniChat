@@ -36,6 +36,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** Today's WIB date as YYYY-MM-DD (mirrors the ExpensesView default). */
+function wibTodayTest(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
 describe('ExpensesView', () => {
   it('renders the month picker, summary cards, categories and transactions', async () => {
     vi.stubGlobal('fetch', fetchStub());
@@ -222,6 +228,19 @@ describe('ExpensesView pixel2 chill design', () => {
     expect(String(post[0])).toContain('/api/expenses');
     const body = JSON.parse(String((post[1] as RequestInit).body));
     expect(body).toMatchObject({ tanggal: '2026-10-29', kategori: 'Makan', nominal: 15000 });
+  });
+
+  it('defaults the add form date to today (WIB)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        String(url).includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload)),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    expect(screen.getByLabelText('Tanggal')).toHaveValue(wibTodayTest());
   });
 
   it('accepts an Indonesian thousand-separator in the nominal field', async () => {

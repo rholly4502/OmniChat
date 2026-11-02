@@ -572,8 +572,14 @@ interface ExpenseFormProps {
 }
 
 /** Small inline form to add or edit one expense row (P1-4 / P1-5). */
+/** Today's date in WIB as YYYY-MM-DD (default date for new expense entries). */
+function wibToday(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
 function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormProps) {
-  const [tanggal, setTanggal] = useState(initial?.tanggal ?? '');
+  const [tanggal, setTanggal] = useState(initial?.tanggal ?? wibToday());
   const [waktu, setWaktu] = useState(initial?.waktu ?? '');
   const [kategori, setKategori] = useState(initial?.kategori ?? 'Makan');
   const [keterangan, setKeterangan] = useState(initial?.keterangan ?? '');
