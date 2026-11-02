@@ -462,4 +462,37 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.Single(summary.ByModel);
         Assert.True(summary.ByModel.ContainsKey(""));
     }
+
+    [Fact]
+    public async Task GetUsageSummary_aggregates_message_feedback_across_conversations()
+    {
+        var convA = await _repository.CreateConversationAsync(NewConversation());
+        var convB = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        var a1 = await _repository.AppendMessageAsync(convA.Id, "admin", new Message { Role = "assistant", Content = "satu" });
+        var a2 = await _repository.AppendMessageAsync(convA.Id, "admin", new Message { Role = "assistant", Content = "dua" });
+        var b1 = await _repository.AppendMessageAsync(convB.Id, "admin", new Message { Role = "assistant", Content = "tiga" });
+
+        await _repository.SetMessageFeedbackAsync(convA.Id, a1.Id, "admin", MessageFeedback.Up);
+        await _repository.SetMessageFeedbackAsync(convA.Id, a2.Id, "admin", MessageFeedback.Down);
+        await _repository.SetMessageFeedbackAsync(convB.Id, b1.Id, "admin", MessageFeedback.Up);
+
+        var summary = await _repository.GetUsageSummaryAsync("admin");
+
+        Assert.Equal(2, summary.TotalUpFeedback);
+        Assert.Equal(1, summary.TotalDownFeedback);
+    }
+
+    [Fact]
+    public async Task GetUsageSummary_feedback_excludes_other_users_messages()
+    {
+        var guestConv = await _repository.CreateConversationAsync(NewConversation("guest"));
+        var gm = await _repository.AppendMessageAsync(guestConv.Id, "guest", new Message { Role = "assistant", Content = "milik tamu" });
+        await _repository.SetMessageFeedbackAsync(guestConv.Id, gm.Id, "guest", MessageFeedback.Up);
+
+        var summary = await _repository.GetUsageSummaryAsync("admin");
+
+        Assert.Equal(0, summary.TotalUpFeedback);
+        Assert.Equal(0, summary.TotalDownFeedback);
+    }
 }

@@ -137,7 +137,7 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
-  const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, byModel: {} };
+  const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
   const byModelEntries = Object.entries(usage.byModel);
   const totalUsd = byModelEntries.reduce(
     (acc, [id, u]) => acc + estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id),
@@ -531,6 +531,21 @@ export function Sidebar({
               <span>{usage.conversationCount} percakapan</span>
               <span aria-label={`Perkiraan total biaya ${formatUsd(totalUsd)}`}>≈ {formatUsd(totalUsd)}</span>
             </div>
+            {(usage.totalUpFeedback > 0 || usage.totalDownFeedback > 0) && (
+              <div className="flex items-center justify-between text-xs text-chill-muted">
+                <span className="flex items-center gap-1">Umpan balik pesan</span>
+                <span className="flex items-center gap-2">
+                  <span className="flex items-center gap-0.5" title="Disukai">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
+                    <span className="text-chill-text">{usage.totalUpFeedback}</span>
+                  </span>
+                  <span className="flex items-center gap-0.5" title="Tidak disukai">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /></svg>
+                    <span className="text-chill-text">{usage.totalDownFeedback}</span>
+                  </span>
+                </span>
+              </div>
+            )}
             <div className="space-y-1.5">
               {byModelEntries.map(([id, u]) => (
                 <div key={id} className="flex items-center justify-between gap-2 text-xs">

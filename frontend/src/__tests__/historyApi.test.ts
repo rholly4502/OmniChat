@@ -317,6 +317,8 @@ describe('getConversationUsage', () => {
       totalCompletionTokens: 0,
       totalTokens: 0,
       conversationCount: 0,
+      totalUpFeedback: 0,
+      totalDownFeedback: 0,
       byModel: {},
     });
   });

@@ -345,7 +345,7 @@ public class ConversationsControllerTests
     {
         var controller = CreateController(ChatAccess.Admin);
         var summary = new ConversationUsageSummary(
-            100, 50, 150, 2, new Dictionary<string, ConversationModelUsage>
+            100, 50, 150, 2, 1, 3, new Dictionary<string, ConversationModelUsage>
             {
                 ["hermes-default"] = new(100, 50),
             });

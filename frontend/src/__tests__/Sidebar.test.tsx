@@ -691,6 +691,8 @@ describe('Sidebar usage panel', () => {
     totalCompletionTokens: 500,
     totalTokens: 1600,
     conversationCount: 3,
+    totalUpFeedback: 2,
+    totalDownFeedback: 1,
     byModel: { hermes: { promptTokens: 1100, completionTokens: 500, totalTokens: 1600 } },
   };
 
@@ -710,8 +712,22 @@ describe('Sidebar usage panel', () => {
   });
 
   it('omits the panel when there is no usage to report', () => {
-    renderSidebar({ sessions: [], usageSummary: { totalTokens: 0, conversationCount: 0, totalPromptTokens: 0, totalCompletionTokens: 0, byModel: {} } });
+    renderSidebar({ sessions: [], usageSummary: { totalTokens: 0, conversationCount: 0, totalPromptTokens: 0, totalCompletionTokens: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} } });
 
     expect(screen.queryByText('Penggunaan')).not.toBeInTheDocument();
+  });
+
+  it('renders aggregate like/dislike feedback counts when present', () => {
+    renderSidebar({ sessions: [], usageSummary: { ...USAGE, totalUpFeedback: 5, totalDownFeedback: 2 } });
+
+    expect(screen.getByText('Umpan balik pesan')).toBeInTheDocument();
+    expect(screen.getByTitle('Disukai')).toHaveTextContent('5');
+    expect(screen.getByTitle('Tidak disukai')).toHaveTextContent('2');
+  });
+
+  it('omits the feedback row when no message is rated', () => {
+    renderSidebar({ sessions: [], usageSummary: { ...USAGE, totalUpFeedback: 0, totalDownFeedback: 0 } });
+
+    expect(screen.queryByText('Umpan balik pesan')).not.toBeInTheDocument();
   });
 });

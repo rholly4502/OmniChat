@@ -135,7 +135,7 @@ public sealed class ChatService : IChatService
             //     is reset on every real byte, so a stream that keeps producing is never cut
             //     short.
             using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct, idleCts.Token);
 
             // Arm the idle deadline up front: a silent upstream must abort even if it never
             // sends the first byte. It is re-armed below on every byte read.
@@ -187,6 +187,16 @@ public sealed class ChatService : IChatService
                         _logger.LogWarning(
                             "Upstream {Mode} endpoint at {Endpoint} sent no data for {TimeoutSeconds}s; aborting the stream.",
                             mode, endpoint, _streaming.IdleTimeoutSeconds);
+                        // Stop the heartbeat before reporting the terminal error, so the
+                        // error frame is the last thing the client sees — otherwise a beat
+                        // landing right after the idle deadline appends a stray progress
+                        // frame after it (regression caught by
+                        // StreamChatResponseAsync_SilentUpstreamWithHeartbeat_StillAbortsAfterIdle).
+                        heartbeatCts.Cancel();
+                        if (heartbeatTask is not null)
+                        {
+                            try { await heartbeatTask; } catch (OperationCanceledException) { }
+                        }
                         await writer.WriteAsync(
                             "[Error: The AI provider stopped responding. Please try again.]",
                             CancellationToken.None);

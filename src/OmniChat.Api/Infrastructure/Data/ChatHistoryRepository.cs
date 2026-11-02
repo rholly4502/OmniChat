@@ -247,11 +247,25 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
                     g.Sum(r => r.PromptTokens),
                     g.Sum(r => r.CompletionTokens)));
 
+        // Feedback is stored per message; aggregate up/down counts across every
+        // message of the caller's conversations for the audit overview.
+        var feedbackRows = await db.Messages
+            .AsNoTracking()
+            .Where(m => m.Conversation!.UserId == userId && m.Feedback.HasValue)
+            .GroupBy(m => m.Feedback)
+            .Select(g => new { Feedback = g.Key, Count = g.Count() })
+            .ToListAsync(cancellationToken);
+
+        var totalUp = feedbackRows.Where(r => r.Feedback == MessageFeedback.Up).Sum(r => r.Count);
+        var totalDown = feedbackRows.Where(r => r.Feedback == MessageFeedback.Down).Sum(r => r.Count);
+
         return new ConversationUsageSummary(
             totalPrompt,
             totalCompletion,
             totalPrompt + totalCompletion,
             rows.Count,
+            totalUp,
+            totalDown,
             byModel);
     }
 

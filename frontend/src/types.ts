@@ -127,6 +127,10 @@ export interface ConversationUsageSummary {
   totalCompletionTokens: number;
   totalTokens: number;
   conversationCount: number;
+  /** Total 'up' (like) ratings across all stored messages. */
+  totalUpFeedback: number;
+  /** Total 'down' (dislike) ratings across all stored messages. */
+  totalDownFeedback: number;
   byModel: Record<string, ConversationModelUsage>;
 }
 

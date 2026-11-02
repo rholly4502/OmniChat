@@ -117,10 +117,12 @@ public sealed record ConversationUsageSummary(
     int TotalCompletionTokens,
     int TotalTokens,
     int ConversationCount,
+    int TotalUpFeedback,
+    int TotalDownFeedback,
     IReadOnlyDictionary<string, ConversationModelUsage> ByModel)
 {
     public static ConversationUsageSummary Empty { get; } = new(
-        0, 0, 0, 0, new Dictionary<string, ConversationModelUsage>());
+        0, 0, 0, 0, 0, 0, new Dictionary<string, ConversationModelUsage>());
 }
 
 public sealed class PinConversationRequest

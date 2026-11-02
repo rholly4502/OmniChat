@@ -163,7 +163,7 @@ export async function getConversationUsage(
   const res = await request(`${CONVERSATIONS_URL}/usage`, { method: 'GET' }, options);
   const payload = (await res.json()) as unknown;
   if (!payload || typeof payload !== 'object' || !('totalTokens' in payload)) {
-    return { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, byModel: {} };
+    return { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
   }
   return payload as ConversationUsageSummary;
 }
