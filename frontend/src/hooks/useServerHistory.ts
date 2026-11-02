@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
 import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation } from '../historyApi';
-import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat } from '../conversationExport';
+import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, modeLabel, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
@@ -338,26 +338,46 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   const exportSession = useCallback((session: ChatSession, format: ConversationExportFormat = 'markdown') => {
     const slug = safeFilenameSlug(session.title);
+    // Per-conversation metadata travels with every export, so a downloaded
+    // conversation is a self-contained audit record: which model/mode ran it
+    // and how many tokens it consumed (used for the PDF/CSV/JSON/Markdown
+    // headers, and as the source of the usage block in the text formats).
+    const meta: ConversationExportMeta = {
+      model: session.model,
+      mode: session.mode,
+      promptTokens: session.promptTokens,
+      completionTokens: session.completionTokens,
+    };
     if (format === 'json') {
-      const blob = new Blob([buildConversationJson(session.messages, session.title)], { type: 'application/json;charset=utf-8' });
+      const blob = new Blob([buildConversationJson(session.messages, session.title, meta)], { type: 'application/json;charset=utf-8' });
       downloadBlob(blob, `${slug}.json`);
       return;
     }
     if (format === 'csv') {
       // UTF-8 BOM so Excel renders the CSV as UTF-8 rather than ANSI.
-      const blob = new Blob(['\uFEFF' + buildConversationCsv(session.messages)], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob(['\uFEFF' + buildConversationCsv(session.messages, meta)], { type: 'text/csv;charset=utf-8' });
       downloadBlob(blob, `${slug}.csv`);
       return;
     }
     if (format === 'pdf') {
-      downloadBlob(buildConversationPdf(session.messages, session.title), `${slug}.pdf`);
+      downloadBlob(buildConversationPdf(session.messages, session.title, meta), `${slug}.pdf`);
       return;
     }
+    const headerMeta = [
+      meta.model ? `Model: ${meta.model}` : '',
+      modeLabel(meta.mode),
+    ].filter(Boolean).join(' · ');
+    const usageTotal = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
+    const usageMeta = usageTotal > 0
+      ? `Penggunaan: ${usageTotal} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out)`
+      : '';
     const lines = [
       `# ${session.title}`,
       `*Dibuat: ${new Date(session.createdAt).toLocaleString('id-ID')}*`,
+      headerMeta ? `*${headerMeta}*` : '',
+      usageMeta ? `*${usageMeta}*` : '',
       '',
-    ];
+    ].filter((l) => l !== '');
     for (const msg of session.messages) {
       const roleLabel = msg.role === 'user' ? 'Pengguna' : 'Asisten';
       lines.push(`### ${roleLabel}`, '', msg.content, '');

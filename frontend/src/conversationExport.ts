@@ -4,6 +4,23 @@ import type { Message } from './types';
 /** Export formats offered on a conversation. */
 export type ConversationExportFormat = 'markdown' | 'json' | 'csv' | 'pdf';
 
+/** Per-conversation metadata attached to an export (model, mode, cumulative tokens). */
+export interface ConversationExportMeta {
+  /** Model id the conversation last ran under. */
+  model?: string;
+  /** Chat mode (“agent” | “direct”) the conversation last ran under. */
+  mode?: string;
+  /** Cumulative input tokens billed to the conversation. */
+  promptTokens?: number;
+  /** Cumulative output tokens billed to the conversation. */
+  completionTokens?: number;
+}
+/** Human label for a mode id, for export headers. */
+export function modeLabel(mode?: string): string {
+  return mode === 'agent' ? 'Agent (Hermes)' : mode === 'direct' ? 'Direct (LLM)' : '';
+}
+
+
 /** " labels for the export menu. */
 export const EXPORT_FORMAT_LABELS: Record<ConversationExportFormat, string> = {
   markdown: 'Markdown',
@@ -23,23 +40,39 @@ function csvField(value: string): string {
 }
 
 /** Conversation transcript as RFC 4180 CSV (CRLF, quoted when needed). */
-export function buildConversationCsv(messages: Message[]): string {
+export function buildConversationCsv(messages: Message[], meta: ConversationExportMeta = {}): string {
   const rows: string[][] = [['role', 'content']];
   for (const m of messages) rows.push([m.role, m.content]);
-  return rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
+  const summary: string[][] = [];
+  if (meta.model || meta.mode) summary.push(['model', [meta.model, modeLabel(meta.mode)].filter(Boolean).join(' · ')]);
+  const total = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
+  if (total > 0) {
+    summary.push(['prompt_tokens', String(meta.promptTokens ?? 0)]);
+    summary.push(['completion_tokens', String(meta.completionTokens ?? 0)]);
+    summary.push(['total_tokens', String(total)]);
+  }
+  const body = rows.map((r) => r.map(csvField).join(',')).join('\r\n');
+  if (!summary.length) return body + '\r\n';
+  return body + '\r\n' + summary.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
 }
 
 /** Conversation transcript as a JSON document (role + content only). */
-export function buildConversationJson(messages: Message[], title = 'Percakapan'): string {
-  return JSON.stringify(
-    {
-      title,
-      exportedAt: new Date().toISOString(),
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    },
-    null,
-    2,
-  );
+export function buildConversationJson(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}): string {
+  const doc: Record<string, unknown> = {
+    title,
+    exportedAt: new Date().toISOString(),
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  };
+  if (meta.model) doc.model = meta.model;
+  if (meta.mode) doc.mode = meta.mode;
+  if (meta.promptTokens || meta.completionTokens) {
+    doc.usage = {
+      promptTokens: meta.promptTokens ?? 0,
+      completionTokens: meta.completionTokens ?? 0,
+      totalTokens: (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0),
+    };
+  }
+  return JSON.stringify(doc, null, 2);
 }
 
 /**
@@ -49,7 +82,7 @@ export function buildConversationJson(messages: Message[], title = 'Percakapan')
  * (emoji, rare diacritics) may not render — the structure, role labels and
  * title always do. CSV/json are the lossless exports; PDF is for print/archive.
  */
-export function buildConversationPdf(messages: Message[], title = 'Percakapan'): Blob {
+export function buildConversationPdf(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}): Blob {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -66,7 +99,16 @@ export function buildConversationPdf(messages: Message[], title = 'Percakapan'):
   doc.setFontSize(9);
   doc.setTextColor(120);
   doc.text(`Diekspor ${new Date().toLocaleString('id-ID')}`, margin, y);
-  y += 10;
+  y += 5;
+  const metaLine = [meta.model ? `Model: ${meta.model}` : '', modeLabel(meta.mode)].filter(Boolean).join(' · ');
+  const total = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
+  const usageLine = total > 0 ? `Penggunaan: ${total} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out)` : '';
+  const fullMeta = [metaLine, usageLine].filter(Boolean).join(' · ');
+  if (fullMeta) {
+    doc.text(fullMeta, margin, y);
+    y += 5;
+  }
+  y += 5;
 
   doc.setFontSize(10);
   doc.setTextColor(25);

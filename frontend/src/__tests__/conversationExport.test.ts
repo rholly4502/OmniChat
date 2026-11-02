@@ -28,6 +28,22 @@ describe('buildConversationCsv', () => {
     expect(lines).toHaveLength(3);
   });
 
+  it('appends a metadata summary footer when a model or usage is provided', () => {
+    const csv = buildConversationCsv(MSGS, { model: 'claude-sonnet', mode: 'agent', promptTokens: 10, completionTokens: 5 });
+    const body = csv.trim().split('\r\n');
+    // transcript header + 2 messages = 3 rows, then 4 summary rows
+    expect(body[0]).toBe('role,content');
+    expect(body).toContain('model,claude-sonnet · Agent (Hermes)');
+    expect(body).toContain('prompt_tokens,10');
+    expect(body).toContain('completion_tokens,5');
+    expect(body).toContain('total_tokens,15');
+  });
+
+  it('adds no summary footer when metadata is absent', () => {
+    const csv = buildConversationCsv(MSGS);
+    expect(csv.trim().split('\r\n')).toHaveLength(3);
+  });
+
   it('quotes fields that contain commas, quotes or newlines', () => {
     const csv = buildConversationCsv([{ role: 'user', content: 'a,b' }]);
     expect(csv).toContain('"a,b"');
@@ -45,6 +61,19 @@ describe('buildConversationJson', () => {
       { role: 'user', content: 'halo' },
       { role: 'assistant', content: 'hi' },
     ]);
+  });
+
+  it('embeds model/mode and usage metadata when provided', () => {
+    const doc = JSON.parse(buildConversationJson(MSGS, 'Judul', { model: 'gpt-4o', mode: 'direct', promptTokens: 8, completionTokens: 2 }));
+    expect(doc.model).toBe('gpt-4o');
+    expect(doc.mode).toBe('direct');
+    expect(doc.usage).toEqual({ promptTokens: 8, completionTokens: 2, totalTokens: 10 });
+  });
+
+  it('omits usage metadata when usage is absent', () => {
+    const doc = JSON.parse(buildConversationJson(MSGS, 'Judul', { model: 'hermes' }));
+    expect(doc.model).toBe('hermes');
+    expect(doc.usage).toBeUndefined();
   });
 });
 
