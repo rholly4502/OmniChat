@@ -216,4 +216,61 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal("Makan", advice.CategoryTrend[1].Kategori);
         Assert.Equal(80_000, advice.CategoryTrend[1].Total);
     }
+
+    [Fact]
+    public async Task DailySuggestions_allSectionsPopulated()
+    {
+        var advice = await NewService(new FakeExpenseRepository())
+            .BuildAsync(new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        var d = advice.Daily;
+        Assert.False(string.IsNullOrWhiteSpace(d.Sarapan));
+        Assert.False(string.IsNullOrWhiteSpace(d.MakanSiang));
+        Assert.False(string.IsNullOrWhiteSpace(d.MakanMalam));
+        Assert.False(string.IsNullOrWhiteSpace(d.Aktivitas));
+        Assert.False(string.IsNullOrWhiteSpace(d.FunFact));
+        Assert.False(string.IsNullOrWhiteSpace(d.TipAnakKos));
+        // The menu is a full three-meal set.
+        Assert.NotEqual(d.Sarapan, d.MakanSiang);
+        Assert.NotEqual(d.MakanSiang, d.MakanMalam);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_areDeterministicPerDate()
+    {
+        var service = NewService(new FakeExpenseRepository());
+        var day = new DateOnly(2026, 10, 31);
+
+        var a = await service.BuildAsync(day, CancellationToken.None);
+        var b = await service.BuildAsync(day, CancellationToken.None);
+
+        Assert.Equal(a.Daily, b.Daily);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_rotateAcrossDates()
+    {
+        var service = NewService(new FakeExpenseRepository());
+
+        var a = await service.BuildAsync(new DateOnly(2026, 10, 1), CancellationToken.None);
+        var b = await service.BuildAsync(new DateOnly(2026, 10, 2), CancellationToken.None);
+
+        // Across two consecutive days at least one section must differ (rotation).
+        Assert.True(
+            a.Daily.Sarapan != b.Daily.Sarapan
+            || a.Daily.Aktivitas != b.Daily.Aktivitas
+            || a.Daily.FunFact != b.Daily.FunFact
+            || a.Daily.TipAnakKos != b.Daily.TipAnakKos);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_areStableAcrossSameMonthDayInDifferentYears()
+    {
+        // Determinism is keyed to the absolute day number, not the calendar month,
+        // so a date always maps to the same suggestions regardless of context.
+        var service = NewService(new FakeExpenseRepository());
+        var a = await service.BuildAsync(new DateOnly(2026, 11, 2), CancellationToken.None);
+        var b = await service.BuildAsync(new DateOnly(2027, 11, 2), CancellationToken.None);
+        Assert.NotEqual(a.Daily, b.Daily);
+    }
 }

@@ -20,6 +20,16 @@ public sealed record PcGoal(
     long PotentialSavingPerMonth,
     int? MonthsToReach);
 
+/// <summary>Rotating, deterministic daily suggestions: a frugal/healthy menu set,
+/// an activity, a fun fact, and a kos-saving tip, all keyed to the date.</summary>
+public sealed record DailySuggestions(
+    string Sarapan,
+    string MakanSiang,
+    string MakanMalam,
+    string Aktivitas,
+    string FunFact,
+    string TipAnakKos);
+
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.
 /// </summary>
@@ -33,4 +43,5 @@ public sealed record ExpenseAdvice(
     IReadOnlyList<string> Suggestions,
     IReadOnlyList<CategoryTrendItem> CategoryTrend,
     Projection Projection,
-    PcGoal PcGoal);
+    PcGoal PcGoal,
+    DailySuggestions Daily);

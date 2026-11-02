@@ -996,6 +996,16 @@ public class DeploymentConfigTests
 
         var api = Read("frontend/src/expensesApi.ts");
         Assert.Contains("getExpenseAdvice", api);
+
+        // P1-6 rotating daily suggestions: the backend must expose a date-keyed
+        // suggestion set and both ends must carry it, so the feature cannot
+        // silently regress to budget-tips-only.
+        Assert.Contains("DailySuggestions", service);
+        Assert.Contains("Menus", service);
+        Assert.Contains("Saran Harian", panel);
+        Assert.Contains("DailyTip", panel);
+        Assert.Contains("DailySuggestionsDto", api);
+        Assert.Contains("daily", api);
     }
     [Fact]
     public void ExpensesWriteEndpoints_ExistBackEndAndFrontend()

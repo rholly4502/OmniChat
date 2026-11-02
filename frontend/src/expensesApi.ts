@@ -224,6 +224,20 @@ export interface PcGoalDto {
   monthsToReach: number | null;
 }
 
+/** Rotating daily suggestions from the advice payload (P1-6). */
+export interface DailySuggestionsDto {
+  /** Today's frugal, weight-loss-aligned breakfast. */
+  sarapan: string;
+  makanSiang: string;
+  makanMalam: string;
+  /** Today's recommended free activity. */
+  aktivitas: string;
+  /** A short interesting health/frugality fact. */
+  funFact: string;
+  /** A practical frugal tip for boarding-house life. */
+  tipAnakKos: string;
+}
+
 /** Analisa & Saran report from `GET /api/expenses/advice`. */
 export interface ExpenseAdvice {
   /** YYYY-MM-DD (WIB). */
@@ -238,6 +252,7 @@ export interface ExpenseAdvice {
   categoryTrend: CategoryTrendItem[];
   projection: ProjectionDto;
   pcGoal: PcGoalDto;
+  daily: DailySuggestionsDto;
 }
 
 /** Fetch the daily Analisa & Saran report for a date (YYYY-MM-DD). */

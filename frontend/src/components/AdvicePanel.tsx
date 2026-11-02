@@ -63,6 +63,16 @@ function StatusCallout({
   );
 }
 
+/** One labelled daily-suggestion sub-block (menu meal, activity, fact, or tip). */
+function DailyTip({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="rounded-none border border-chill-border bg-chill-surface px-3 py-2">
+      <p className="text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
+      <p className="mt-0.5 text-sm text-chill-text">{children}</p>
+    </div>
+  );
+}
+
 /** The "Analisa & Saran" panel: daily budget check, tips, projection and PC goal. */
 export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
   const [open, setOpen] = useState(false);
@@ -154,6 +164,16 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   Oke: {formatRupiah(advice.dayTotal)} ≤ anggaran harian {formatRupiah(advice.dailyBudget)}
                 </StatusCallout>
               )}
+
+              <div className="rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
+                <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
+                <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
+                <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
+                <DailyTip label="Makan malam">{advice.daily.makanMalam}</DailyTip>
+                <DailyTip label="Aktivitas">{advice.daily.aktivitas}</DailyTip>
+                <DailyTip label="Tahukah kamu?">{advice.daily.funFact}</DailyTip>
+                <DailyTip label="Tips anak kos">{advice.daily.tipAnakKos}</DailyTip>
+              </div>
 
               {advice.suggestions.length > 0 && (
                 <div>

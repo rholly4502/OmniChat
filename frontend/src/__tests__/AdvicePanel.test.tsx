@@ -31,6 +31,14 @@ const advicePayload = {
     potentialSavingPerMonth: 200000,
     monthsToReach: 44,
   },
+  daily: {
+    sarapan: 'Oatmeal + pisang + teh tawar',
+    makanSiang: 'Nasi, ayam bakar, tumis kangkung, air putih',
+    makanMalam: 'Nasi, telur dadar, sayur bening bayam',
+    aktivitas: 'Jalan kaki 10.000 langkah',
+    funFact: 'Otak butuh ±20% energi tubuh',
+    tipAnakKos: 'Masak sendiri: belanja bahan seminggu sekali',
+  },
 };
 
 afterEach(() => {
@@ -50,6 +58,10 @@ describe('AdvicePanel', () => {
     expect(screen.getByText('Goal: Part PC')).toBeInTheDocument();
     expect(screen.getByText('VGA')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tutup' })).toBeInTheDocument();
+    expect(screen.getByText('Saran Harian · 2026-05-31')).toBeInTheDocument();
+    expect(screen.getByText('Oatmeal + pisang + teh tawar')).toBeInTheDocument();
+    expect(screen.getByText('Tahukah kamu?')).toBeInTheDocument();
+    expect(screen.getByText('Tips anak kos')).toBeInTheDocument();
   });
 
   it('shows a message when no API key is provided', async () => {
@@ -133,6 +145,38 @@ describe('AdvicePanel pixel2 chill design', () => {
     const header = panel?.querySelector('h3')?.parentElement;
     expect(header?.className).toContain('flex-wrap');
     expect(header?.className).toContain('gap-y-2');
+  });
+});
+
+describe('AdvicePanel daily suggestions (P1-6)', () => {
+  it('renders all six rotating daily sections from the payload', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText('Sarapan')).toBeInTheDocument();
+    expect(screen.getByText('Makan siang')).toBeInTheDocument();
+    expect(screen.getByText('Makan malam')).toBeInTheDocument();
+    expect(screen.getByText('Aktivitas')).toBeInTheDocument();
+    expect(screen.getByText('Tahukah kamu?')).toBeInTheDocument();
+    expect(screen.getByText('Tips anak kos')).toBeInTheDocument();
+    expect(screen.getByText('Nasi, ayam bakar, tumis kangkung, air putih')).toBeInTheDocument();
+    expect(screen.getByText('Jalan kaki 10.000 langkah')).toBeInTheDocument();
+    expect(screen.getByText('Otak butuh ±20% energi tubuh')).toBeInTheDocument();
+    expect(screen.getByText('Masak sendiri: belanja bahan seminggu sekali')).toBeInTheDocument();
+  });
+
+  it('keeps the daily block on the chill pixel register (hard edges, pixel heading)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const h = screen.getByText('Saran Harian · 2026-05-31');
+    expect(h.className).toContain('pixel-heading');
+    expect(h.closest('div.rounded-none')).toBeTruthy();
+    expect(container.querySelectorAll('div[class*="border-chill-border"]').length).toBeGreaterThan(0);
   });
 });
 
