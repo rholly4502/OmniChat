@@ -108,19 +108,22 @@ public sealed class ExpenseAdviceService(
     /// </summary>
     private static DailySuggestions Daily(DateOnly date)
     {
-        var idx = date.DayNumber;
-        var (sarapan, siang, malam) = Menus[idx % Menus.Length];
+        var day = date.DayNumber;
+        // Decoupled rotations: each pool advances at its own stride and period, so a
+        // given calendar day stays deterministic while the full card repeats only after
+        // the least common multiple of all pool lengths (~months), not every week.
+        var (sarapan, siang, malam) = Menus[day % Menus.Length];
         return new DailySuggestions(
             sarapan,
             siang,
             malam,
-            Aktivitas[idx % Aktivitas.Length],
-            FunFacts[idx % FunFacts.Length],
-            TipsAnakKos[idx % TipsAnakKos.Length]);
+            Aktivitas[(day * 2 + 1) % Aktivitas.Length],
+            FunFacts[(day * 3 + 2) % FunFacts.Length],
+            TipsAnakKos[(day * 5 + 3) % TipsAnakKos.Length]);
     }
 
     /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day.</summary>
-    private static readonly (string Sarapan, string MakanSiang, string MakanMalam)[] Menus =
+        private static readonly (string Sarapan, string MakanSiang, string MakanMalam)[] Menus =
     [
         ("Oatmeal + pisang + teh tawar",
          "Nasi, ayam bakar, tumis kangkung, air putih",
@@ -143,10 +146,30 @@ public sealed class ExpenseAdviceService(
         ("Bubur putih + telur rebus",
          "Nasi, hati ayam tumis (sedikit minyak), mentimun",
          "Nasi, tempe penyet + lalapan, sayur lodeh"),
+        ("Telur mata sapi + nasi merah (porsi kecil)",
+         "Nasi, ayam pop, sayur katuk",
+         "Nasi, rolade tahu, kuah sayur oyong"),
+        ("Roti tawar gandum + telur orak-arik",
+         "Nasi, udang tumis (sedikit), tumis tauge",
+         "Nasi, pindang tongkol, sambal + lalapan"),
+        ("Singkong/ubi rebus + teh tawar",
+         "Nasi, telur kecap, sop jagung wortel",
+         "Nasi, ayam ungkep tanpa kulit, tumis kacang panjang"),
+        ("Apel + yoghurt polos tanpa gula",
+         "Nasi, tempe mendoan (tanpa tepung berlebih), sayur bening",
+         "Nasi, bandeng presto, lalapan + sambal"),
+        ("Kentang rebus + telur rebus",
+         "Nasi, ayam rica-rica (minyak sedikit), mentimun",
+         "Nasi, tahu tektek, sayur asem"),
+        ("Bubur putih + abon ayam",
+         "Nasi, sawi cah telur, perkedel tahu",
+         "Nasi, ikan cakalang suwir, tumis labu siam"),
+        ("Omelet sayur + roti gandum",
+         "Nasi, sop ayam bening, tempe goreng tepung tipis",
+         "Nasi, semur daging (porsi kecil), tumis buncis"),
     ];
-
     /// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
-    private static readonly string[] Aktivitas =
+        private static readonly string[] Aktivitas =
     [
         "Jalan kaki 10.000 langkah — bagi pagi & sore biar tidak terasa berat.",
         "Stretching 10 menit + push-up 3 set ×10 di kamar kos.",
@@ -155,10 +178,11 @@ public sealed class ExpenseAdviceService(
         "Jalan cepat 30 menit keliling komplek sambil dengar podcast.",
         "Naik-turun tangga ±10 menit — kalau kos bertingkat, gratis & bakar kalori.",
         "Yoga sederhana 15 menit di kamar (child pose, downward dog, cat-cow).",
+        "Bersepeda santai 30 menit keliling sekitar kos — sekalian eksplorasi warung hemat.",
+        "Senam ringan 15 menit (jumping jack + high knees) di kamar kos.",
     ];
-
     /// <summary>Short interesting facts (health/frugality/brain), rotated by day.</summary>
-    private static readonly string[] FunFacts =
+        private static readonly string[] FunFacts =
     [
         "Otak butuh ±20% energi tubuh — sarapan sehat bantu fokus seharian.",
         "Minum segelas air putih sebelum makan bisa bantu mengontrol porsi.",
@@ -167,10 +191,12 @@ public sealed class ExpenseAdviceService(
         "Masak sendiri hemat ±40% dibanding jajan, sekaligus lebih sehat.",
         "Reward manis cuma memberi dopamin singkat — pilih hadiah non-makanan.",
         "Protein (tempe/tahu/ayam) bantu rasa kenyang lebih lama — sertakan di tiap makan.",
+        "Kunyah perlahan: otak butuh ±20 menit menerima sinyal kenyang — makan lebih pelan berarti lebih sedikit kalori.",
+        "Cahaya biru gadget di malam hari mengganggu hormon tidur (melatonin) — matikan layar ±30 menit sebelum tidur.",
+        "Sayur warna-warni punya antioksidan berbeda — makin beragam warna piring, makin beragam nutrisi.",
     ];
-
     /// <summary>Practical frugal tips for boarding-house life, rotated by day.</summary>
-    private static readonly string[] TipsAnakKos =
+        private static readonly string[] TipsAnakKos =
     [
         "Masak sendiri: belanja bahan seminggu sekali biar hemat & tidak impulsif.",
         "Stok frozen food (sayur beku, tempe, nugget) — masak cepat pas malas.",
@@ -179,8 +205,12 @@ public sealed class ExpenseAdviceService(
         "Belanja ke pasar/toko dekat kos — hindari biaya antar online yang mahal.",
         "Bikin bekal dari makanan kos yang agak lebih — kurangi jajan di luar.",
         "Masak dalam porsi besar lalu simpan dingin — hangatkan ulang untuk 2–3 kali makan.",
+        "Buat daftar belanja di HP sebelum berangkat — cegah barang impulsif masuk keranjang.",
+        "Bandingkan harga antar-warung/minimarket untuk kebutuhan rutin (telur, galon, sabun).",
+        "Diskusi & bagi tagihan listrik/air dengan teman sekos kalau memungkinkan — transparan sejak awal.",
+        "Manfaatkan cashback/point saat top-up atau belanja online — tapi jangan tergoda belanja ekstra demi reward.",
+        "Catat pengeluaran harian tiap malam — sadar pos mana yang bocor sebelum bulan berakhir.",
     ];
-
     /// <summary>Fixed, health-and-money aligned tips shown when the day is over budget.</summary>
     private static List<string> Tips() =>
     [

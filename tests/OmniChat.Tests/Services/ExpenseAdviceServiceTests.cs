@@ -294,4 +294,45 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(7, dailies.Select(d => d.FunFact).Distinct().Count());
         Assert.Equal(7, dailies.Select(d => d.TipAnakKos).Distinct().Count());
     }
+
+    [Fact]
+    public async Task DailySuggestions_expandedPools_AllEntriesAppearAcrossAWindow()
+    {
+        // P1-6 variety: pools were expanded (menus 14, activities 9, facts 10,
+        // tips 12) and decoupled. Over 30 consecutive days every entry of each
+        // pool must surface, pinning both the pool sizes and the coprime strides.
+        var service = NewService(new FakeExpenseRepository());
+        var anchor = new DateOnly(2026, 10, 1);
+        var sarapan = new HashSet<string>();
+        var aktivitas = new HashSet<string>();
+        var facts = new HashSet<string>();
+        var tips = new HashSet<string>();
+        for (var i = 0; i < 30; i++)
+        {
+            var d = await service.BuildAsync(anchor.AddDays(i), CancellationToken.None);
+            sarapan.Add(d.Daily.Sarapan);
+            aktivitas.Add(d.Daily.Aktivitas);
+            facts.Add(d.Daily.FunFact);
+            tips.Add(d.Daily.TipAnakKos);
+        }
+        Assert.Equal(14, sarapan.Count);
+        Assert.Equal(9, aktivitas.Count);
+        Assert.Equal(10, facts.Count);
+        Assert.Equal(12, tips.Count);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_decoupledRotation_MenuRepeatsButActivityChanges()
+    {
+        // The rotation strides are per-pool, so the menu set cycles on its own 14-day
+        // period while activities advance independently — a menu may repeat without a
+        // boringly identical card, which is the whole point of "biar gak bosan".
+        var service = NewService(new FakeExpenseRepository());
+        var day = new DateOnly(2026, 10, 1);
+        var a = await service.BuildAsync(day, CancellationToken.None);
+        var b = await service.BuildAsync(day.AddDays(14), CancellationToken.None);
+
+        Assert.Equal(a.Daily.Sarapan, b.Daily.Sarapan);        // same menu set (period 14)
+        Assert.NotEqual(a.Daily.Aktivitas, b.Daily.Aktivitas); // but a different activity
+    }
 }
