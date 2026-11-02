@@ -501,4 +501,37 @@ describe('ExpensesView pixel2 chill design', () => {
     // The grid-aligned pixel diamond replaces the old rotated square.
     expect(container.querySelector('svg rect')).not.toBeNull();
   });
+
+  it('filters transactions by category', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Filter kategori'), { target: { value: 'Makan' } });
+    expect(screen.getByText('Warteg')).toBeInTheDocument();
+    expect(screen.queryByText('Kopi')).not.toBeInTheDocument();
+  });
+
+  it('filters transactions by text search', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Cari transaksi'), { target: { value: 'kopi' } });
+    expect(screen.getByText('Kopi')).toBeInTheDocument();
+    expect(screen.queryByText('Warteg')).not.toBeInTheDocument();
+  });
+
+  it('shows a no-match state and reset restores all transactions', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Cari transaksi'), { target: { value: 'zzz' } });
+    expect(screen.getByText('Tidak ada transaksi yang cocok dengan filter.')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset filter' }));
+    expect(screen.getByText('Warteg')).toBeInTheDocument();
+    expect(screen.getByText('Kopi')).toBeInTheDocument();
+  });
 });

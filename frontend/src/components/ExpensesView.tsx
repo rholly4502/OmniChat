@@ -114,6 +114,8 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [query, setQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
 
   async function handleExport(format: 'csv' | 'pdf') {
     if (!apiKey) {
@@ -205,6 +207,21 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   }
 
   const hasData = (summary !== null && summary.total > 0) || items.length > 0;
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredItems = items.filter((item) => {
+    if (categoryFilter && item.kategori !== categoryFilter) return false;
+    if (!normalizedQuery) return true;
+    return (
+      item.keterangan.toLowerCase().includes(normalizedQuery) ||
+      item.kategori.toLowerCase().includes(normalizedQuery) ||
+      item.tanggal.includes(normalizedQuery) ||
+      (item.waktu ?? '').toLowerCase().includes(normalizedQuery)
+    );
+  });
+  const clearFilters = () => {
+    setQuery('');
+    setCategoryFilter('');
+  };
   const showSummary = summary !== null;
 
   return (
@@ -373,15 +390,59 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               )}
             </section>
 
-            <section aria-label="Daftar transaksi">
-              <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-3 pixel-heading">
-                Transaksi ({total})
-              </h3>
+                        <section aria-label="Daftar transaksi">
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
+                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">
+                  Transaksi ({total})
+                </h3>
+                {(query || categoryFilter) && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                  >
+                    Reset filter
+                  </button>
+                )}
+              </div>
+
+              {items.length > 0 && (
+                <div className="mb-3 flex flex-col sm:flex-row gap-2">
+                  <label className="flex-1 min-w-0 relative">
+                    <span className="sr-only">Cari transaksi</span>
+                    <input
+                      type="search"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Cari transaksi…"
+                      className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
+                    />
+                  </label>
+                  <label className="sm:w-52 relative">
+                    <span className="sr-only">Filter kategori</span>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value)}
+                      className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
+                    >
+                      <option value="">Semua kategori</option>
+                      {CATEGORY_ORDER.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+
               {items.length === 0 ? (
                 <p className="text-sm text-chill-muted">Belum ada transaksi.</p>
+              ) : filteredItems.length === 0 ? (
+                <div className="rounded-none border border-chill-border bg-chill-surface px-4 py-3 text-sm text-chill-muted">
+                  Tidak ada transaksi yang cocok dengan filter.
+                </div>
               ) : (
                 <ul className="space-y-2">
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <TransactionRow
                       key={item.id}
                       item={item}
