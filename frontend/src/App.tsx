@@ -87,10 +87,16 @@ export default function App() {
     updateMaxTokens,
     updateNightMode,
     updateFocusMode,
+    resetPersona,
   } = useSettings();
 
   const catalog = useModelCatalog(apiKey);
   const models = effectiveUseAgent ? catalog.agent : catalog.direct;
+  // History spans both modes, so the filter dropdown must offer every model a
+  // conversation could have run on — not just the active mode's catalog.
+  const historyModels = [...catalog.agent, ...catalog.direct].filter(
+    (m, i, arr) => arr.findIndex((x) => x.id === m.id) === i,
+  );
 
   const {
     messages,
@@ -274,6 +280,7 @@ export default function App() {
         useAgent={useAgent}
         onToggleMode={toggleMode}
         models={models}
+        historyModels={historyModels}
         model={model}
         onModelChange={handleModelChange}
         apiKey={apiKey}
@@ -299,6 +306,7 @@ export default function App() {
         usageSummary={usageSummary}
         settings={settings}
         onSystemPromptChange={updateSystemPrompt}
+        onResetPersona={resetPersona}
         onTemperatureChange={updateTemperature}
         onMaxTokensChange={updateMaxTokens}
         nightMode={settings.nightMode}

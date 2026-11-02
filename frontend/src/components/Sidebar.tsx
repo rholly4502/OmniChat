@@ -22,6 +22,12 @@ export interface SidebarProps {
   onToggleMode: () => void;
   /** Catalog for the active mode. */
   models: ModelOption[];
+  /**
+   * Model list for the history filter dropdown. Defaults to `models`; used to
+   * offer every model a conversation could have run on (agent + direct), not
+   * just the active mode's catalog.
+   */
+  historyModels?: ModelOption[];
   /** Selected model id. */
   model: string;
   /** Model selection handler. */
@@ -70,6 +76,8 @@ export interface SidebarProps {
   settings?: ChatSettings;
   /** System prompt change handler. */
   onSystemPromptChange?: (prompt: string) => void;
+  /** Reset the persona/sampling params to defaults. */
+  onResetPersona?: () => void;
   /** Temperature change handler. */
   onTemperatureChange?: (temp: number) => void;
   /** Max tokens change handler. */
@@ -104,6 +112,7 @@ export function Sidebar({
   models,
   model,
   onModelChange,
+  historyModels,
   apiKey,
   onApiKeyChange,
   onLogout,
@@ -126,6 +135,7 @@ export function Sidebar({
   onExportSession,
   settings,
   onSystemPromptChange,
+  onResetPersona,
   onTemperatureChange,
   onMaxTokensChange,
   nightMode = false,
@@ -284,7 +294,7 @@ export function Sidebar({
             />
           </div>
           <HistoryFilters
-            models={models}
+            models={historyModels ?? models}
             modelFilter={modelFilter}
             onModelFilterChange={onModelFilterChange ?? (() => {})}
             dateFrom={dateFrom}
@@ -756,6 +766,15 @@ export function Sidebar({
                 className="w-full accent-chill-accent cursor-pointer"
               />
             </div>
+            {onResetPersona && (
+              <button
+                type="button"
+                onClick={onResetPersona}
+                className="w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              >
+                Reset parameter
+              </button>
+            )}
           </div>
         </details>
       )}

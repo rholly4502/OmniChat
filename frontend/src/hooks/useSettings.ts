@@ -60,6 +60,16 @@ export function useSettings() {
     setSettings(DEFAULT_SETTINGS);
   };
 
+  /** Reset only the persona/sampling params; night/focus modes stay as-is. */
+  const resetPersona = () => {
+    setSettings((prev) => ({
+      ...prev,
+      systemPrompt: DEFAULT_SETTINGS.systemPrompt,
+      temperature: DEFAULT_SETTINGS.temperature,
+      maxTokens: DEFAULT_SETTINGS.maxTokens,
+    }));
+  };
+
   return {
     settings,
     updateSystemPrompt,
@@ -68,5 +78,6 @@ export function useSettings() {
     updateNightMode,
     updateFocusMode,
     resetSettings,
+    resetPersona,
   };
 }

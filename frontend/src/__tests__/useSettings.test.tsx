@@ -52,6 +52,25 @@ describe('useSettings', () => {
     expect(result.current.settings.temperature).toBe(0.7);
   });
 
+  it('resetPersona resets only persona params, preserving night/focus modes', () => {
+    const { result } = renderHook(() => useSettings());
+    act(() => {
+      result.current.updateSystemPrompt('Custom');
+      result.current.updateTemperature(0.2);
+      result.current.updateMaxTokens(4096);
+      result.current.updateNightMode(true);
+      result.current.updateFocusMode(true);
+    });
+    act(() => {
+      result.current.resetPersona();
+    });
+    expect(result.current.settings.systemPrompt).toBe('');
+    expect(result.current.settings.temperature).toBe(0.7);
+    expect(result.current.settings.maxTokens).toBe(2048);
+    expect(result.current.settings.nightMode).toBe(true);
+    expect(result.current.settings.focusMode).toBe(true);
+  });
+
   it('defaults night mode to off', () => {
     const { result } = renderHook(() => useSettings());
     expect(result.current.settings.nightMode).toBe(false);

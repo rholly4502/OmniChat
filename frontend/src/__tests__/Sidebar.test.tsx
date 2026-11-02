@@ -732,6 +732,45 @@ describe('Sidebar usage panel', () => {
   });
 });
 
+describe('Sidebar history model filter (cross-mode)', () => {
+  it('offers every history model when historyModels is provided, even off-mode ones', () => {
+    const agentModels = [{ id: 'hermes', label: 'Hermes (Default)' }];
+    const directModels = [{ id: 'llama', label: 'Llama (Direct)' }];
+    renderSidebar({
+      models: agentModels,
+      historyModels: [...agentModels, ...directModels],
+      onSearchChange: vi.fn(),
+      search: '',
+      sessions: [],
+    });
+    // The model *selector* still only offers the active (agent) catalog.
+    const selector = document.getElementById('model-select') as HTMLSelectElement;
+    expect(selector.textContent).not.toContain('Llama (Direct)');
+    // But the history filter dropdown offers both modes.
+    const filter = screen.getByLabelText('Filter model');
+    expect(filter.textContent).toContain('Llama (Direct)');
+    expect(filter.textContent).toContain('Hermes (Default)');
+  });
+});
+
+describe('Sidebar reset parameter', () => {
+  it('renders a Reset parameter button when wired and forwards it', () => {
+    const onResetPersona = vi.fn();
+    renderSidebar({
+      settings: { systemPrompt: 'x', temperature: 0.5, maxTokens: 1024 },
+      onResetPersona,
+    });
+    const btn = screen.getByRole('button', { name: 'Reset parameter' });
+    fireEvent.click(btn);
+    expect(onResetPersona).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render Reset parameter when unwired', () => {
+    renderSidebar({ settings: { systemPrompt: '', temperature: 0.7, maxTokens: 2048 } });
+    expect(screen.queryByRole('button', { name: 'Reset parameter' })).not.toBeInTheDocument();
+  });
+});
+
 describe('Sidebar focus mode toggle', () => {
   it('renders a Mode Fokus toggle when wired and forwards state', () => {
     const onFocusModeChange = vi.fn();
