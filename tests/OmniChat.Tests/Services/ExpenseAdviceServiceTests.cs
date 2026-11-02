@@ -273,4 +273,25 @@ public sealed class ExpenseAdviceServiceTests
         var b = await service.BuildAsync(new DateOnly(2027, 11, 2), CancellationToken.None);
         Assert.NotEqual(a.Daily, b.Daily);
     }
+
+    [Fact]
+    public async Task DailySuggestions_fullWeekIsAllDistinct()
+    {
+        // P1-6 variety: pool size is 7, so a full week (Mon-Sun) shows seven
+        // distinct menus, activities, facts and tips — no repeat for a week.
+        var service = NewService(new FakeExpenseRepository());
+        var dailies = new List<DailySuggestions>();
+        for (var i = 0; i < 7; i++)
+        {
+            var advice = await service.BuildAsync(new DateOnly(2026, 10, 1 + i), CancellationToken.None);
+            dailies.Add(advice.Daily);
+        }
+
+        Assert.Equal(7, dailies.Select(d => d.Sarapan).Distinct().Count());
+        Assert.Equal(7, dailies.Select(d => d.MakanSiang).Distinct().Count());
+        Assert.Equal(7, dailies.Select(d => d.MakanMalam).Distinct().Count());
+        Assert.Equal(7, dailies.Select(d => d.Aktivitas).Distinct().Count());
+        Assert.Equal(7, dailies.Select(d => d.FunFact).Distinct().Count());
+        Assert.Equal(7, dailies.Select(d => d.TipAnakKos).Distinct().Count());
+    }
 }

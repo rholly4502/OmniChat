@@ -137,6 +137,12 @@ public sealed class ExpenseAdviceService(
         ("Bubur kacang hijau (tanpa gula berlebih)",
          "Nasi, ayam geprek (skip tepung berlebih), wortel rebus",
          "Nasi, oncom goreng, sup ayam"),
+        ("Roti gandum + selai kacang (tanpa gula tambahan)",
+         "Nasi, ikan tongkol suwir, tumis brokoli wortel",
+         "Nasi, tahu kukus + sambal terasi, sayur bayam"),
+        ("Bubur putih + telur rebus",
+         "Nasi, hati ayam tumis (sedikit minyak), mentimun",
+         "Nasi, tempe penyet + lalapan, sayur lodeh"),
     ];
 
     /// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
@@ -147,6 +153,8 @@ public sealed class ExpenseAdviceService(
         "Lompat tali 15 menit — murah dan cepat membakar kalori.",
         "Bodyweight: squat + plank + mountain climber 3 ronde.",
         "Jalan cepat 30 menit keliling komplek sambil dengar podcast.",
+        "Naik-turun tangga ±10 menit — kalau kos bertingkat, gratis & bakar kalori.",
+        "Yoga sederhana 15 menit di kamar (child pose, downward dog, cat-cow).",
     ];
 
     /// <summary>Short interesting facts (health/frugality/brain), rotated by day.</summary>
@@ -158,6 +166,7 @@ public sealed class ExpenseAdviceService(
         "Tidur 7–8 jam membantu proses pembakaran lemak dan menjaga mood.",
         "Masak sendiri hemat ±40% dibanding jajan, sekaligus lebih sehat.",
         "Reward manis cuma memberi dopamin singkat — pilih hadiah non-makanan.",
+        "Protein (tempe/tahu/ayam) bantu rasa kenyang lebih lama — sertakan di tiap makan.",
     ];
 
     /// <summary>Practical frugal tips for boarding-house life, rotated by day.</summary>
@@ -169,6 +178,7 @@ public sealed class ExpenseAdviceService(
         "Bawa botol minum isi ulang — hemat & kurangi jajan minuman manis.",
         "Belanja ke pasar/toko dekat kos — hindari biaya antar online yang mahal.",
         "Bikin bekal dari makanan kos yang agak lebih — kurangi jajan di luar.",
+        "Masak dalam porsi besar lalu simpan dingin — hangatkan ulang untuk 2–3 kali makan.",
     ];
 
     /// <summary>Fixed, health-and-money aligned tips shown when the day is over budget.</summary>
