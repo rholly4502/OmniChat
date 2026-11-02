@@ -98,5 +98,20 @@ describe('AdvicePanel pixel2 chill design', () => {
     expect(sprout.querySelector('svg[aria-hidden]')).toBeTruthy();
     expect(sprout.querySelector('svg')?.getAttribute('class')).toContain('text-chill-sage');
   });
+
+  it('wires the disclosure toggle to the body (aria-controls) and renders trend rows as pixel segmented bars', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const toggle = screen.getByRole('button', { name: 'Tutup' });
+    expect(toggle.getAttribute('aria-controls')).toBe('advice-body');
+
+    const body = container.querySelector('#advice-body');
+    expect(body).toBeTruthy();
+    const bars = body!.querySelectorAll('div[class*="gap-[3px]"]');
+    expect(bars.length).toBeGreaterThanOrEqual(2);
+  });
 });
 

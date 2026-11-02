@@ -71,6 +71,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           type="button"
           onClick={toggle}
           aria-expanded={open}
+          aria-controls="advice-body"
           disabled={loading}
           className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] min-w-[148px] justify-center disabled:opacity-50"
         >
@@ -80,7 +81,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
       </div>
 
       {open && (
-        <div className="mt-4 space-y-4">
+        <div id="advice-body" className="mt-4 space-y-4">
           {error && (
             <p role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 text-sm text-chill-red">
               {error}
@@ -155,14 +156,24 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     </span>
                     <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pola pengeluaran bulan ini</h4>
                   </div>
-                  <ul className="space-y-1">
-                    {advice.categoryTrend.slice(0, 4).map((c) => (
-                      <li key={c.kategori} className="flex items-center justify-between text-sm">
-                        <span className="text-chill-text">{c.kategori}</span>
-                        <span className="tabular-nums text-chill-muted">{formatRupiah(c.total)}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  {(() => {
+                    const trendMax = Math.max(1, ...advice.categoryTrend.map((c) => c.total));
+                    return (
+                      <ul className="space-y-1.5">
+                        {advice.categoryTrend.slice(0, 4).map((c) => (
+                          <li key={c.kategori} className="text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-chill-text">{c.kategori}</span>
+                              <span className="tabular-nums text-chill-muted">{formatRupiah(c.total)}</span>
+                            </div>
+                            <div className="mt-1">
+                              <PixelProgress percent={(c.total / trendMax) * 100} />
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                   <p className="mt-2 text-sm text-chill-muted">
                     Jika pola ini berlanjut, akhir bulan ± {formatRupiah(advice.projection.projectedTotal)} · anggaran {formatRupiah(advice.projection.anggaran)}
                     {advice.projection.projectedOver > 0
