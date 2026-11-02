@@ -12,6 +12,7 @@ import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
+import { DailySpendChart } from './DailySpendChart';
 import { AdvicePanel } from './AdvicePanel';
 import { PixelProgress } from './PixelProgress';
 import { PanelFrame } from './PanelFrame';
@@ -377,6 +378,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               ) : (
                 <ExpenseTrendChart points={trend.points} />
               )}
+            </section>
+
+            <section aria-label="Pengeluaran per hari" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+              <PanelFrame />
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
+                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
+              </div>
+              <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} />
             </section>
 
             <HeaderDivider />

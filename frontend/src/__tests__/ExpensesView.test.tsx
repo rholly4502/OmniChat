@@ -144,7 +144,6 @@ describe('ExpensesView', () => {
   });
 });
 
-
 describe('ExpensesView pixel2 chill design', () => {
   it('uses square, hard-shadow control styling on the header actions and pixel heading', async () => {
     vi.stubGlobal('fetch', fetchStub());
@@ -533,5 +532,17 @@ describe('ExpensesView pixel2 chill design', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reset filter' }));
     expect(screen.getByText('Warteg')).toBeInTheDocument();
     expect(screen.getByText('Kopi')).toBeInTheDocument();
+  });
+});
+
+describe('ExpensesView per-day spend chart integration', () => {
+  it('renders the per-day spend chart section with the daily-budget reference', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const { container } = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    const section = container.querySelector('section[aria-label="Pengeluaran per hari"]');
+    expect(section).toBeTruthy();
+    expect(section!.querySelector('[aria-label="Pengeluaran per hari"]')).toBeTruthy();
+    expect(screen.getByText(/Garis putus-putus/)).toBeInTheDocument();
   });
 });
