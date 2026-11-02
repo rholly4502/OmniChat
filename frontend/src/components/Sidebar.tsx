@@ -179,7 +179,7 @@ export function Sidebar({
         fixed md:static inset-y-0 left-0 z-50
         w-[85vw] max-w-[18rem] border-r border-chill-border px-4 flex flex-col gap-4 overflow-y-auto overscroll-y-contain
         bg-chill-bg
-        transform transition-transform duration-300 ease-in-out will-change-transform
+        transform transition-transform duration-300 [transition-timing-function:steps(5,jump-none)] will-change-transform
         ${open ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
       `}
@@ -521,7 +521,7 @@ export function Sidebar({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="text-xs text-chill-accent font-mono">{formatTokens(usage.totalTokens)} token</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted transition-transform duration-150 group-open:rotate-180">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] group-open:rotate-180">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </span>
@@ -662,7 +662,7 @@ export function Sidebar({
             </span>
             <span className="flex items-center gap-1.5">
               <span className="text-xs text-chill-accent font-mono">T: {settings.temperature}</span>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted transition-transform duration-150 group-open:rotate-180">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] group-open:rotate-180">
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </span>

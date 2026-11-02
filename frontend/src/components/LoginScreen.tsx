@@ -46,7 +46,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
               a sprout (sage) over calm waves (deep sea), revealed gently on hover.
               Pure decoration — aria-hidden, rect-only, never interactive, so it
               cannot affect usability or the a11y tree. */}
-          <div aria-hidden="true" className="mt-3.5 flex items-center justify-center gap-4 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 select-none">
+          <div aria-hidden="true" className="mt-3.5 flex items-center justify-center gap-4 opacity-0 pixel-step-fade group-hover:opacity-100 group-focus-within:opacity-100 select-none">
             <svg width="26" height="12" viewBox="0 0 26 12" fill="none" aria-hidden="true" className="text-chill-deepsea shrink-0">
               <rect x="1" y="5" width="4" height="2" fill="currentColor" />
               <rect x="1" y="8" width="4" height="2" fill="currentColor" opacity="0.65" />

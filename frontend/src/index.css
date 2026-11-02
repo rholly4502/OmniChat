@@ -252,6 +252,20 @@ body {
   transition-timing-function: steps(2, jump-none);
 }
 
+/* Any control that transitions but does not carry an explicit .pixel-shadow
+   (sidebar nav items, message-list/toolbar buttons) still snaps its hover
+   colour in hard beats instead of tweening. Class rules (.pixel-shadow /
+   arbitrary steps() utilities) win on specificity, so explicit stepping on
+   the drawer/chevron is unaffected. Reduced-motion handled globally. */
+button,
+a,
+select,
+input,
+summary,
+[role='button'] {
+  transition-timing-function: steps(2, jump-none);
+}
+
 /* Headings / brand in a terminal-ish monospace for the pixel vibe. */
 .pixel-heading {
   font-family: 'Courier New', ui-monospace, SFMono-Regular, Menlo, monospace;

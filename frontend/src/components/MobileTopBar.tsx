@@ -49,7 +49,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
             so it never affects layout, usability or the a11y tree. */}
         <svg width="16" height="10" viewBox="0 0 16 10" fill="none"
           aria-hidden="true"
-          className="text-chill-deepsea shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          className="text-chill-deepsea shrink-0 opacity-0 pixel-step-fade group-hover:opacity-100 group-focus-within:opacity-100">
           <rect x="1" y="4" width="3" height="2" fill="currentColor" />
           <rect x="4" y="2" width="5" height="6" fill="currentColor" />
           <rect x="9" y="3" width="4" height="4" fill="currentColor" opacity="0.85" />
@@ -99,7 +99,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
             so it never affects layout, usability or the a11y tree. */}
         <svg width="16" height="10" viewBox="0 0 16 10" fill="none"
           aria-hidden="true"
-          className="text-chill-deepsea shrink-0 opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+          className="text-chill-deepsea shrink-0 opacity-0 pixel-step-fade group-hover:opacity-100 group-focus-within:opacity-100">
           <rect x="1" y="4" width="3" height="2" fill="currentColor" />
           <rect x="4" y="2" width="5" height="6" fill="currentColor" />
           <rect x="9" y="3" width="4" height="4" fill="currentColor" opacity="0.85" />

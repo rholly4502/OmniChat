@@ -167,7 +167,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                 <rect x="5" y="6" width="7" height="3" fill="currentColor" opacity="0.45" />
               </svg>
             </div>
-            <span className="mt-1.5 text-xs text-chill-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 select-none">
+            <span className="mt-1.5 text-xs text-chill-muted opacity-0 pixel-step-fade group-hover:opacity-100 group-focus-within:opacity-100 select-none">
               A calm pixel farm vibe
             </span>
           </div>
