@@ -438,3 +438,9 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .focus-mode .pixel-grid { display: none; }
 .focus-mode .chat-header-bar { display: none; }
 .focus-mode .focus-hidden { display: none; }
+
+/* Fade-in for the mobile sidebar overlay (no hard pop when it appears). */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

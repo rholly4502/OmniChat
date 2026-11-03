@@ -197,7 +197,7 @@ export function Sidebar({
         fixed md:static inset-y-0 left-0 z-50
         w-[85vw] max-w-[18rem] border-r border-chill-border px-4 flex flex-col gap-4 overflow-y-auto overscroll-y-contain
         bg-chill-bg
-        transform transition-transform duration-300 [transition-timing-function:steps(5,jump-none)] will-change-transform
+        transform transition-transform duration-300 ease-out will-change-transform
         ${open ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0
       `}
