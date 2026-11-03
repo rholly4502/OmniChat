@@ -211,7 +211,32 @@ public sealed class ExpenseAdviceServiceTests
         // = 124.000 < 520.000 → potential 396.000/month.
         Assert.Equal(124_000, advice.Projection.ProjectedTotal);
         Assert.Equal(396_000, pc.PotentialSavingPerMonth);
-        Assert.Equal(22, pc.MonthsToReach);
+        // Months-to-goal is computed from what is still missing (remaining), not
+        // the full 8.7jt total — 7.7jt / 396.000 = 19.44 → ceil 20 months.
+        // (Regression guard: the old code divided the full total, reporting 22 and
+        // overstating the time left once savings had been collected.)
+        Assert.Equal(20, pc.MonthsToReach);
+    }
+
+    [Fact]
+    public async Task PcGoal_GoalFullyCollectedReportsZeroMonthsLeft()
+    {
+        // When the collected savings already cover the goal, the remaining is 0,
+        // so the months-to-goal must be 0 (not a positive from-scratch horizon).
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000 },
+        };
+        // 8.7jt target is fully collected by a single Nabung deposit (savings, not spend).
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 1), "Nabung", 8_700_000, "full"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 1), CancellationToken.None);
+
+        var pc = advice.PcGoal;
+        Assert.Equal(8_700_000, pc.TotalNeeded);
+        Assert.Equal(8_700_000, pc.NabungSoFar);
+        Assert.Equal(0, pc.Remaining);
+        Assert.Equal(0, pc.MonthsToReach);
     }
 
     [Fact]

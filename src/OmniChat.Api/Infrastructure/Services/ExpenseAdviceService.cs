@@ -74,8 +74,12 @@ public sealed class ExpenseAdviceService(
             ? Math.Min(100, Math.Round(nabungSoFar / (double)totalNeeded * 100, 1))
             : 0;
         var potentialSavingPerMonth = Math.Max(0, anggaran - projectedTotal);
+        // Months-to-goal must be computed from what is still missing (remaining),
+        // not the full total — a goal that is partially collected takes fewer
+        // months, and showing the from-scratch horizon would overstate the time
+        // left and undercut the savings motivation the panel is there to give.
         int? monthsToReach = potentialSavingPerMonth > 0
-            ? (int)Math.Ceiling(totalNeeded / (double)potentialSavingPerMonth)
+            ? (int)Math.Ceiling(remaining / (double)potentialSavingPerMonth)
             : null;
 
         return new ExpenseAdvice(
