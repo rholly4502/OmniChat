@@ -338,6 +338,8 @@ export default function App() {
               model={model}
               modelLabel={models.find((m) => m.id === model)?.label}
               usage={usage}
+              models={models}
+              onModelChange={handleModelChange}
             />
             <MessageList
               messages={messages}

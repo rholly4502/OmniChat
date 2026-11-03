@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { ChatHeader } from '../components/ChatHeader';
 import type { TokenUsage } from '../types';
 
@@ -46,5 +46,34 @@ describe('ChatHeader focus-mode hook', () => {
   it('carries the chat-header-bar class so focus mode can hide it', () => {
     const { container } = renderHeader();
     expect(container.firstChild as HTMLElement).toHaveClass('chat-header-bar');
+  });
+});
+
+describe('ChatHeader model switcher', () => {
+  const catalog = [
+    { id: 'claude-sonnet', label: 'Claude Sonnet' },
+    { id: 'gpt-4o', label: 'GPT-4o' },
+  ];
+
+  it('renders a select with the catalog when a change handler is provided', () => {
+    const onChange = () => {};
+    renderHeader({ models: catalog, onModelChange: onChange });
+    const select = screen.getByLabelText('Ganti model') as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe('claude-sonnet');
+    expect(screen.getByRole('option', { name: 'GPT-4o' })).toBeInTheDocument();
+  });
+
+  it('calls onModelChange with the selected model id', () => {
+    const onChange = vi.fn();
+    renderHeader({ models: catalog, onModelChange: onChange });
+    fireEvent.change(screen.getByLabelText('Ganti model'), { target: { value: 'gpt-4o' } });
+    expect(onChange).toHaveBeenCalledWith('gpt-4o');
+  });
+
+  it('falls back to a static label when no change handler is given', () => {
+    renderHeader({ models: catalog });
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+    expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
   });
 });

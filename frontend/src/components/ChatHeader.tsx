@@ -1,6 +1,6 @@
 import { BotIcon, BoltIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
-import type { TokenUsage } from '../types';
+import type { ModelOption, TokenUsage } from '../types';
 
 export interface ChatHeaderProps {
   /** Agent (Hermes bridge) vs Direct (LLM) mode. */
@@ -11,6 +11,14 @@ export interface ChatHeaderProps {
   modelLabel?: string;
   /** Cumulative token usage for the active conversation (server base + live). */
   usage?: TokenUsage;
+  /**
+   * Catalog for the active mode, used to render a quick per-conversation model
+   * switcher in the header. Optional: when omitted (or when no handler is given)
+   * the model is shown as a static label instead of a select.
+   */
+  models?: ModelOption[];
+  /** Per-conversation model change handler (persists for the active thread). */
+  onModelChange?: (id: string) => void;
 }
 
 /**
@@ -19,7 +27,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange }: ChatHeaderProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -28,7 +36,25 @@ export function ChatHeader({ useAgent, model, modelLabel, usage }: ChatHeaderPro
       <span className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text select-none">
         {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
         {useAgent ? 'Agent' : 'Direct'}
-        {modelLabel ? <span className="text-chill-accent font-medium">{modelLabel}</span> : null}
+        {onModelChange && models && models.length > 0 ? (
+          <span className="relative inline-flex items-center">
+            <select
+              value={model}
+              onChange={(e) => onModelChange(e.target.value)}
+              aria-label="Ganti model"
+              className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none"
+            >
+              {models.map((m) => (
+                <option key={m.id} value={m.id}>{m.label}</option>
+              ))}
+            </select>
+            <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-chill-accent">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </span>
+        ) : modelLabel ? (
+          <span className="text-chill-accent font-medium">{modelLabel}</span>
+        ) : null}
       </span>
       {(tokenLabel || estimate) && (
         <span
