@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
 import { HistoryFilters } from './HistoryFilters';
+import { ChatStatsDialog } from './ChatStatsDialog';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ChatSession, ChatSettings, ConversationUsageSummary, ModelOption } from '../types';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
@@ -152,6 +153,7 @@ export function Sidebar({
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const [statsOpen, setStatsOpen] = useState(false);
   const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
   const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
   const byModelEntries = Object.entries(usage.byModel);
@@ -536,6 +538,7 @@ export function Sidebar({
 
       {/* Usage / audit overview — cumulative tokens and estimated cost across every stored conversation */}
       {byModelEntries.length > 0 && (
+        <>
         <details className="group space-y-2 bg-chill-surface/70 border border-chill-border rounded-none p-2.5">
           <summary className="list-none text-sm font-semibold text-chill-text cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
             <span className="flex items-center gap-1.5">
@@ -579,6 +582,17 @@ export function Sidebar({
             </div>
           </div>
         </details>
+        <button
+          type="button"
+          onClick={() => setStatsOpen(true)}
+          aria-label="Buka statistik chat"
+          className="w-full mt-2 inline-flex items-center justify-center gap-1.5 min-h-[44px] bg-chill-surface text-sm font-medium text-chill-text border border-chill-border hover:border-chill-accent active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition pixel-shadow-sm"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M3 3v18h18" /><rect x="7" y="12" width="3" height="6" /><rect x="12" y="8" width="3" height="10" /><rect x="17" y="4" width="3" height="14" /></svg>
+          Statistik Chat
+        </button>
+        <ChatStatsDialog open={statsOpen} onClose={() => setStatsOpen(false)} usage={usage} modelOptions={historyModels ?? models} />
+        </>
       )}
 
       {/* Mode Toggle */}
