@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   formatRupiah,
   exportExpensesCsv,
@@ -118,6 +118,15 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // When the edit form opens (mobile), scroll it into view so the save/cancel
+  // buttons are visible without requiring the user to scroll back up.
+  useEffect(() => {
+    if (showForm && editingItem) {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showForm, editingItem]);
 
   async function handleExport(format: 'csv' | 'pdf') {
     if (!apiKey) {
@@ -304,6 +313,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           </div>
         )}
         {showForm && (
+          <div ref={formRef}>
           <ExpenseForm
             initial={editingItem}
             saving={saving}
@@ -315,6 +325,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               setFormError(null);
             }}
           />
+          </div>
         )}
         {error && (
           <div

@@ -5,6 +5,12 @@ import { currentMonthKey } from '../hooks/useExpenses';
 import { remainingDailyBudget } from '../expenseBudget';
 import { formatRupiah } from '../expensesApi';
 
+// jsdom does not implement scrollIntoView; stub it so the edit-form
+// auto-scroll effect can run harmlessly in tests.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}
+
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 }
