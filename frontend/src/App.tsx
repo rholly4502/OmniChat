@@ -252,6 +252,7 @@ export default function App() {
             model={model}
             useAgent={false}
             scrollRef={scrollRef}
+            conversationKey="guest"
             onRegenerate={regenerate}
             onEditMessage={editAndResend}
             onSelectSuggestion={handleSelectSuggestion}
@@ -356,6 +357,7 @@ export default function App() {
               model={model}
               useAgent={useAgent}
               scrollRef={scrollRef}
+              conversationKey={activeSessionId}
               onRegenerate={regenerate}
               onEditMessage={editAndResend}
               onSetFeedback={handleSetFeedback}

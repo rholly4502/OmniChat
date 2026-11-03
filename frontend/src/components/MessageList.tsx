@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react';
+import { useState, useEffect, useRef, type RefObject } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
@@ -49,6 +49,13 @@ export interface MessageListProps {
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
   /** Insert a quick-start suggestion into the composer (empty state only). */
   onSelectSuggestion?: (prompt: string) => void;
+  /**
+   * Stable identity of the conversation being shown. When it changes the local
+   * per-message UI state (feedback, copy/edit affordances, edit draft) resets,
+   * so a rating or in-progress edit never leaks onto a different conversation's
+   * message at the same index.
+   */
+  conversationKey?: string;
 }
 
 /** Small, quiet action button used on message footers. */
@@ -105,13 +112,30 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   };
 }
 
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onSelectSuggestion }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onSelectSuggestion, conversationKey }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   /** Resolved label of the model currently selected, for the typing indicator. */
   const activeModelLabel = models.find((m) => m.id === model)?.label;
+
+  /**
+   * The transient UI state below is keyed by message *index*, so it must be
+   * scoped to the conversation that is currently shown. Without this reset, a
+   * like/dislike or an open edit in one conversation would leak onto a different
+   * conversation's message at the same index.
+   */
+  const prevConversationKey = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (prevConversationKey.current !== conversationKey) {
+      prevConversationKey.current = conversationKey;
+      setFeedback({});
+      setCopiedIndex(null);
+      setEditingIndex(null);
+      setDraft('');
+    }
+  }, [conversationKey]);
 
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard?.writeText(text).then(() => {

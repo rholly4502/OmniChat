@@ -19,6 +19,7 @@ function renderList(overrides: {
   onEditMessage?: (index: number, newContent: string) => void;
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
   onSelectSuggestion?: (prompt: string) => void;
+  conversationKey?: string;
 } = {}) {
   const scrollRef = createRef<HTMLDivElement>();
   const view = render(
@@ -33,6 +34,7 @@ function renderList(overrides: {
       onEditMessage={overrides.onEditMessage}
       onSetFeedback={overrides.onSetFeedback}
       onSelectSuggestion={overrides.onSelectSuggestion}
+      conversationKey={overrides.conversationKey}
     />
   );
   return { ...view, scrollRef };
@@ -535,4 +537,60 @@ describe('MessageList timestamps', () => {
     });
     expect(container.querySelector('[aria-label^="Dikirim"]')).toBeNull();
   });
+  it('does not leak feedback or edit state across conversation switches', () => {
+    const onSetFeedback = vi.fn().mockResolvedValue(true);
+    const view = renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo' }],
+      onSetFeedback,
+      conversationKey: 'conv-A',
+    });
+    // Like the assistant reply in conversation A.
+    fireEvent.click(screen.getByRole('button', { name: 'Suka' }));
+    expect(screen.getByRole('button', { name: 'Disukai' })).toHaveAttribute('aria-pressed', 'true');
+
+    // Switch to a different conversation sharing the same message index. The
+    // transient feedback must NOT carry over — the new message is unrated.
+    view.rerender(
+      <MessageList
+        messages={[{ id: 'm1', role: 'assistant', content: 'halo lain' }]}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={view.scrollRef}
+        onSetFeedback={onSetFeedback}
+        conversationKey="conv-B"
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Suka' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByRole('button', { name: 'Disukai' })).not.toBeInTheDocument();
+    expect(onSetFeedback).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps in-progress edit state only within the same conversation', () => {
+    const onEditMessage = vi.fn();
+    const view = renderList({
+      messages: [{ role: 'user', content: 'teks asli' }],
+      onEditMessage,
+      conversationKey: 'conv-A',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    expect(screen.getByRole('textbox', { name: 'Edit pesan' })).toBeInTheDocument();
+
+    // Switching conversations closes the editor even though index 0 is a user turn.
+    view.rerender(
+      <MessageList
+        messages={[{ role: 'user', content: 'teks lain' }]}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={view.scrollRef}
+        onEditMessage={onEditMessage}
+        conversationKey="conv-B"
+      />
+    );
+    expect(screen.queryByRole('textbox', { name: 'Edit pesan' })).not.toBeInTheDocument();
+  });
+
 });
