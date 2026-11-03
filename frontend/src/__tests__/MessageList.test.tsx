@@ -412,6 +412,54 @@ describe('MessageList', () => {
     expect(writeText).toHaveBeenCalledWith(JSON.stringify({ role: 'assistant', content: 'halo' }, null, 2));
   });
 
+  it('includes model, usage, cost and feedback in the JSON copy when present', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({
+      model: 'hermes',
+      messages: [{
+        role: 'assistant',
+        content: 'halo',
+        id: 'm1',
+        model: 'claude-sonnet',
+        feedback: 'up',
+        usage: { promptTokens: 1000, completionTokens: 500 },
+      }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    const written = JSON.parse(writeText.mock.calls[0][0]);
+    expect(written).toMatchObject({
+      role: 'assistant',
+      content: 'halo',
+      id: 'm1',
+      model: 'claude-sonnet',
+      feedback: 'up',
+      usage: { promptTokens: 1000, completionTokens: 500 },
+    });
+    expect(typeof written.estimatedCostUsd).toBe('number');
+    expect(written.estimatedCostUsd).toBeGreaterThan(0);
+  });
+
+  it('falls back to the selected model when pricing usage without an owning model', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({
+      model: 'hermes',
+      messages: [{
+        role: 'assistant',
+        content: 'halo',
+        usage: { promptTokens: 10, completionTokens: 5 },
+      }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    const written = JSON.parse(writeText.mock.calls[0][0]);
+    expect(written.model).toBeUndefined();
+    expect(written.usage).toEqual({ promptTokens: 10, completionTokens: 5 });
+    expect(written.estimatedCostUsd).toBeGreaterThan(0);
+  });
+
   it('shows a transient copied confirmation for JSON', async () => {
     navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
     renderList({ messages: [{ role: 'assistant', content: 'halo' }] });

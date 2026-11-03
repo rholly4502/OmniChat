@@ -69,6 +69,29 @@ function ActionButton({ label, activeLabel, active, onClick, icon, activeIcon }:
  * Markup and classes are unchanged from the inline JSX it replaces, so the
  * `aria-live` / `aria-busy` contract the app tests assert on is preserved.
  */
+/**
+ * Build a complete, machine-readable record of one turn for the "Salin sebagai
+ * JSON" action. It includes the metadata the UI already tracks the model that
+ * produced the reply, its token usage and estimated cost, a stored rating and
+ * the server message id, whenever they are present — so the copy is a faithful
+ * export of what the user sees in the footnote, not just bare content.
+ */
+function messageJsonRecord(m: Message, fallbackModel: string): unknown {
+  return {
+    role: m.role,
+    content: m.content,
+    ...(m.id ? { id: m.id } : {}),
+    ...(m.model ? { model: m.model } : {}),
+    ...(m.feedback ? { feedback: m.feedback } : {}),
+    ...(m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0)
+      ? {
+          usage: m.usage,
+          estimatedCostUsd: estimateUsd(m.usage, m.model ?? fallbackModel),
+        }
+      : {}),
+  };
+}
+
 export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
@@ -281,7 +304,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         label="Salin sebagai JSON"
                         activeLabel="JSON tersalin"
                         active={copiedIndex === i}
-                        onClick={() => handleCopy(JSON.stringify({ role: m.role, content: m.content }, null, 2), i)}
+                        onClick={() => handleCopy(JSON.stringify(messageJsonRecord(m, model), null, 2), i)}
                         icon={
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
                         }
