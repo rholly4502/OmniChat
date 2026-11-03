@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { ExpensesView } from '../components/ExpensesView';
+import { currentMonthKey } from '../hooks/useExpenses';
+import { remainingDailyBudget } from '../expenseBudget';
+import { formatRupiah } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -593,5 +596,47 @@ describe('ExpensesView monthly savings progress', () => {
     render(<ExpensesView apiKey="secret" />);
     await waitFor(() => expect(screen.getByText('Belum ada transaksi.')).toBeInTheDocument());
     expect(screen.queryByText('Tabungan bulan ini')).not.toBeInTheDocument();
+  });
+});
+
+describe('ExpensesView remaining-daily-budget projection', () => {
+  const liveMonth = currentMonthKey();
+
+  it('shows the remaining daily budget for the live month', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary')
+          ? jsonResponse({
+              month: liveMonth,
+              total: 220000,
+              perKategori: { Makan: 150000, Lain: 70000 },
+              targetNabung: 467000,
+              anggaran: 500000,
+              sisaAnggaran: 280000,
+            })
+          : jsonResponse(pagePayload),
+      ),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Sisa per hari')).toBeInTheDocument());
+    const r = remainingDailyBudget(liveMonth, 280000)!;
+    const expected = `±${formatRupiah(r.dailyAllowance)} · ${r.daysLeft} hari tersisa`.replace(/\s/g, ' ');
+    const line = screen.getByText(/hari tersisa/).textContent!.replace(/\s/g, ' ');
+    expect(line).toContain(expected);
+  });
+
+  it('hides the projection when no budget is set', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary')
+          ? jsonResponse({ month: liveMonth, total: 220000, perKategori: { Makan: 220000 }, targetNabung: null, anggaran: null, sisaAnggaran: null })
+          : jsonResponse(pagePayload),
+      ),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    expect(screen.queryByText('Sisa per hari')).not.toBeInTheDocument();
   });
 });

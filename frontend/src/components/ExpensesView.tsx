@@ -11,6 +11,7 @@ import {
 import { ApiError } from '../api';
 import { useExpenses } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
+import { remainingDailyBudget } from '../expenseBudget';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
 import { DailySpendChart } from './DailySpendChart';
 import { AdvicePanel } from './AdvicePanel';
@@ -217,6 +218,12 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     savingsTarget !== null && savingsTarget > 0
       ? Math.min(100, Math.round((savingsThisMonth / savingsTarget) * 100))
       : 0;
+  // Forward-looking budget projection: what can still be spent per day for the
+  // rest of the live month (only meaningful when viewing the current month).
+  const remBudget =
+    summary?.anggaran != null && summary.anggaran > 0
+      ? remainingDailyBudget(month, summary.sisaAnggaran ?? 0)
+      : null;
   const normalizedQuery = query.trim().toLowerCase();
   const filteredItems = items.filter((item) => {
     if (categoryFilter && item.kategori !== categoryFilter) return false;
@@ -359,6 +366,24 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 percent={(summary!.total / summary!.anggaran!) * 100}
                 tone={summary!.total > summary!.anggaran! ? 'red' : 'accent'}
               />
+            )}
+
+            {remBudget && (
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-chill-text">Sisa per hari</span>
+                  {remBudget.sisa >= 0 ? (
+                    <span className="tabular-nums text-chill-muted">
+                      ±{formatRupiah(remBudget.dailyAllowance)} · {remBudget.daysLeft} hari tersisa
+                    </span>
+                  ) : (
+                    <span className="tabular-nums text-chill-red">
+                      perlu hemat {formatRupiah(-remBudget.dailyAllowance)}/hari · {remBudget.daysLeft} hari
+                    </span>
+                  )}
+                </div>
+              </div>
             )}
 
             {summary!.catatan ? (
