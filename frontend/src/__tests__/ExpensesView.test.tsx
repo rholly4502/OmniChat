@@ -546,3 +546,52 @@ describe('ExpensesView per-day spend chart integration', () => {
     expect(screen.getByText(/Garis putus-putus/)).toBeInTheDocument();
   });
 });
+
+describe('ExpensesView monthly savings progress', () => {
+  it('shows the savings-vs-target block when a target is set', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    expect(screen.getByText('Tabungan bulan ini')).toBeInTheDocument();
+    const block = screen.getByText('Tabungan bulan ini').closest('.rounded-none') as HTMLElement;
+    expect(block).toBeTruthy();
+    // summaryPayload has targetNabung 467000 and no Nabung deposits -> Rp 0.
+    expect(block.textContent!.replace(/\s/g, ' ')).toContain('Rp 0 dari Rp 467.000');
+  });
+
+  it('renders the actual deposit amount against the target', async () => {
+    const savingsPayload = {
+      month: '2026-10',
+      total: 20000,
+      perKategori: { Makan: 12000, Lain: 8000, Nabung: 200000 },
+      targetNabung: 467000,
+      anggaran: 520000,
+      sisaAnggaran: 500000,
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary') ? jsonResponse(savingsPayload) : jsonResponse(pagePayload)),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const block = screen.getByText('Tabungan bulan ini').closest('.rounded-none') as HTMLElement;
+    expect(block.textContent!.replace(/\s/g, ' ')).toContain('Rp 200.000 dari Rp 467.000');
+  });
+
+  it('hides the savings block when no target is set', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary')
+          ? jsonResponse({ month: '2026-10', total: 0, perKategori: {}, targetNabung: null, anggaran: null, sisaAnggaran: null })
+          : jsonResponse({ month: '2026-10', page: 1, pageSize: 200, total: 0, items: [] }),
+      ),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Belum ada transaksi.')).toBeInTheDocument());
+    expect(screen.queryByText('Tabungan bulan ini')).not.toBeInTheDocument();
+  });
+});

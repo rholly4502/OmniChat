@@ -208,6 +208,15 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   }
 
   const hasData = (summary !== null && summary.total > 0) || items.length > 0;
+  // This month's savings deposits (kategori "Nabung") vs the month's target —
+  // shown as a progress meter so the savings goal is visible at a glance
+  // alongside the budget cards (the backend already excludes Nabung from spend).
+  const savingsThisMonth = summary?.perKategori?.['Nabung'] ?? 0;
+  const savingsTarget = summary?.targetNabung ?? null;
+  const savingsPercent =
+    savingsTarget !== null && savingsTarget > 0
+      ? Math.min(100, Math.round((savingsThisMonth / savingsTarget) * 100))
+      : 0;
   const normalizedQuery = query.trim().toLowerCase();
   const filteredItems = items.filter((item) => {
     if (categoryFilter && item.kategori !== categoryFilter) return false;
@@ -355,6 +364,23 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             {summary!.catatan ? (
               <p className="text-xs text-chill-muted">{summary!.catatan}</p>
             ) : null}
+
+            {savingsTarget !== null && savingsTarget > 0 && (
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
+                {/* Shared hard 2px top-edge bevel (panel frame register) — chunky light
+                    edge, no soft gradient; mirrors StatCard/AdvicePanel frames. */}
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div className="flex items-center justify-between gap-3 text-sm">
+                  <span className="text-chill-text">Tabungan bulan ini</span>
+                  <span className="tabular-nums text-chill-muted">
+                    {formatRupiah(savingsThisMonth)} dari {formatRupiah(savingsTarget)}
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  <PixelProgress percent={savingsPercent} />
+                </div>
+              </div>
+            )}
 
             <AdvicePanel apiKey={apiKey} month={month} />
 
