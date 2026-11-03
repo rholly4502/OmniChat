@@ -24,7 +24,7 @@ function dailyBudgetFor(anggaran: number | null, dim: number): number | null {
 
 /**
  * Intra-month spending chart: one bar per day of the viewed month, scaled to the
- * busiest day, with a dashed reference line at the daily budget (when a monthly
+ * busiest day, with a stepped pixel-dash reference line at the daily budget (when a monthly
  * budget is set). Savings deposits (kategori "Nabung") are excluded to match the
  * backend's day-total semantics.
  */
@@ -68,8 +68,13 @@ export function DailySpendChart({ items, month, anggaran }: Props) {
         {budget !== null && (
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 z-10 border-t-2 border-dashed border-chill-accent/50"
-            style={{ bottom: `${(budget / chartMax) * 100}%` }}
+            className="absolute inset-x-0 z-10 h-[2px]"
+            style={{
+              bottom: `${(budget / chartMax) * 100}%`,
+              backgroundImage:
+                'repeating-linear-gradient(90deg, var(--color-chill-accent) 0 6px, transparent 6px 12px)',
+              opacity: 0.5,
+            }}
           />
         )}
         <div className="absolute inset-0 flex items-end gap-px px-1">

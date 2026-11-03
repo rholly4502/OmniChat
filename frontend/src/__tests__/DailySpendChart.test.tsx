@@ -79,10 +79,15 @@ describe('DailySpendChart', () => {
   });
 
   it('renders a dashed budget reference line only when a budget is set', () => {
-    const { rerender } = render(
+    const { container, rerender } = render(
       <DailySpendChart items={[item('2026-11-02', 10000)]} month="2026-11" anggaran={3900000} />,
     );
     expect(screen.getByText(/Garis putus-putus/)).toBeInTheDocument();
+    // pixel2 register: the reference line must be a stepped square dash (no
+    // smooth anti-aliased browser `border-dashed`), so it snaps in hard beats.
+    const line = container.querySelector('[style*="repeating-linear-gradient"]')!;
+    expect(line.getAttribute('style')).toContain('repeating-linear-gradient');
+    expect(line.className).not.toContain('border-dashed');
 
     rerender(<DailySpendChart items={[item('2026-11-02', 10000)]} month="2026-11" anggaran={null} />);
     expect(screen.queryByText(/Garis putus-putus/)).not.toBeInTheDocument();
