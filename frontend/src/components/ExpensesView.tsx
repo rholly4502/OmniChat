@@ -267,7 +267,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('csv')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
         </button>
@@ -275,7 +275,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('pdf')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
@@ -286,7 +286,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             setShowForm((v) => !v);
             setFormError(null);
           }}
-          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
+          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
         >
           {showForm && !editingItem ? 'Batal' : 'Tambah'}
         </button>
@@ -325,7 +325,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <button
               type="button"
               onClick={reload}
-              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/20 active:translate-y-[2px] active:shadow-none pixel-shadow-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/20 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
             >
               Coba lagi
             </button>
@@ -424,7 +424,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   type="button"
                   onClick={trend.reload}
                   disabled={trend.loading}
-                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
                 >
                   {trend.loading ? 'Memuat…' : 'Segarkan'}
                 </button>
@@ -473,7 +473,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   <button
                     type="button"
                     onClick={clearFilters}
-                    className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                    className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
                   >
                     Reset filter
                   </button>
@@ -659,7 +659,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
           onClick={onEdit}
           disabled={busy}
           aria-label={`Edit ${item.keterangan || item.kategori}`}
-          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
             <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 7.5l4 4" />
@@ -671,7 +671,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
             onClick={() => setConfirming(true)}
             disabled={busy}
             aria-label={`Hapus ${item.keterangan || item.kategori}`}
-            className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+            className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
               <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
@@ -684,7 +684,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
               onClick={onDelete}
               disabled={busy}
               aria-label={`Yakin hapus ${item.keterangan || item.kategori}`}
-              className="rounded-none border border-chill-red/70 bg-chill-red/20 w-11 h-11 inline-flex items-center justify-center text-chill-red text-xs font-semibold transition hover:bg-chill-red/30 active:bg-chill-red/40 active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
+              className="rounded-none border border-chill-red/70 bg-chill-red/20 w-11 h-11 inline-flex items-center justify-center text-chill-red text-xs font-semibold transition hover:bg-chill-red/30 active:bg-chill-red/40 hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50"
             >
               Yakin?
             </button>
@@ -693,7 +693,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
               onClick={() => setConfirming(false)}
               disabled={busy}
               aria-label="Batal hapus"
-              className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-text hover:border-chill-accent/50 active:bg-chill-elevated active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+              className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-text hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
                 <path d="M6 6l12 12M18 6L6 18" />
@@ -830,7 +830,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
           type="button"
           onClick={submit}
           disabled={saving}
-          className="rounded-none border border-chill-accent/60 bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50"
+          className="rounded-none border border-chill-accent/60 bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50"
         >
           {saving ? 'Menyimpan…' : initial ? 'Simpan Perubahan' : 'Simpan'}
         </button>
@@ -838,7 +838,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
           type="button"
           onClick={onCancel}
           disabled={saving}
-          className="rounded-none border border-chill-border px-4 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
+          className="rounded-none border border-chill-border px-4 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50"
         >
           Batal
         </button>
