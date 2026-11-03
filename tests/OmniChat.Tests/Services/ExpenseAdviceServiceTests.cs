@@ -257,6 +257,25 @@ public sealed class ExpenseAdviceServiceTests
     }
 
     [Fact]
+    public async Task CategoryTrend_excludesNabungSavingsFromSpendPattern()
+    {
+        // Savings (kategori "Nabung") are not spending: even the largest deposit must
+        // never appear in the spending-pattern trend (same rule as summary/trend/projection).
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 28), "Nabung", 1_000_000, "save"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 28), "Makan", 30_000, "a"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 28), CancellationToken.None);
+
+        Assert.DoesNotContain(advice.CategoryTrend, c => c.Kategori == "Nabung");
+        Assert.Single(advice.CategoryTrend);
+        Assert.Equal("Makan", advice.CategoryTrend[0].Kategori);
+    }
+
+    [Fact]
     public async Task DailySuggestions_allSectionsPopulated()
     {
         var advice = await NewService(new FakeExpenseRepository())

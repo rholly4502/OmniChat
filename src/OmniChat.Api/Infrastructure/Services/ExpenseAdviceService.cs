@@ -52,6 +52,7 @@ public sealed class ExpenseAdviceService(
             .GroupBy(r => r.Kategori)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Nominal));
         var categoryTrend = perKategori
+            .Where(kv => kv.Key != "Nabung")
             .OrderByDescending(kv => kv.Value)
             .Select(kv => new CategoryTrendItem(kv.Key, kv.Value))
             .ToList();
