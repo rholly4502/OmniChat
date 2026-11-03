@@ -404,6 +404,34 @@ public class DeploymentConfigTests
         Assert.Contains("usage?: TokenUsage", frontendTypes);
     }
 
+    [Fact]
+    public void PerMessageUsage_PersistsToAndSurvivesReload()
+    {
+        // Tahap 3 cost/status deepening (persistence seam): the Message entity and the
+        // ConversationMessage DTO carry per-message token totals and the producing model,
+        // the recorder stamps them onto the assistant message, and the frontend maps them
+        // back when a stored transcript is loaded — so a resumed conversation keeps its
+        // per-message cost footnote (it previously lost it on reload).
+        var message = Read("src/OmniChat.Api/Domain/Entities/Message.cs");
+        var dtos = Read("src/OmniChat.Api/Domain/Models/ConversationDtos.cs");
+        var recorder = Read("src/OmniChat.Api/Infrastructure/Data/ChatTurnRecorder.cs");
+        var serverHistory = Read("frontend/src/hooks/useServerHistory.ts");
+        var frontendTypes = Read("frontend/src/types.ts");
+
+        Assert.Contains("PromptTokens", message);
+        Assert.Contains("CompletionTokens", message);
+        Assert.Contains("string? Model", message);
+        Assert.Contains("PromptTokens", dtos);
+        Assert.Contains("CompletionTokens", dtos);
+        Assert.Contains("string? Model", dtos);
+        Assert.Contains("NewMessage", recorder);
+        Assert.Contains("PromptTokens = promptTokens", recorder);
+        Assert.Contains("Model = model", recorder);
+        Assert.Contains("promptTokens", serverHistory);
+        Assert.Contains("completionTokens", serverHistory);
+        Assert.Contains("promptTokens?: number", frontendTypes);
+    }
+
     // ── Milestone 15: ProblemDetails standardization ──
 
     [Fact]

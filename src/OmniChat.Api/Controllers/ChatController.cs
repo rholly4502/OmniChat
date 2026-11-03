@@ -161,7 +161,7 @@ public sealed class ChatController : ControllerBase
             if (conversationId is Guid recorded)
             {
                 completedMessageId = await _turnRecorder.CompleteTurnAsync(
-                    recorded, userId, reply.ToString(), promptTokens, completionTokens, cancellationToken);
+                    recorded, userId, reply.ToString(), promptTokens, completionTokens, request.Model, cancellationToken);
                 turnCompleted = true;
 
                 if (completedMessageId is Guid mid)
@@ -194,7 +194,7 @@ public sealed class ChatController : ControllerBase
             // The success path already completed the turn above; only the failure paths land here.
             if (!turnCompleted && conversationId is Guid awaitingRecord)
             {
-                await _turnRecorder.CompleteTurnAsync(awaitingRecord, userId, reply.ToString(), promptTokens, completionTokens, CancellationToken.None);
+                await _turnRecorder.CompleteTurnAsync(awaitingRecord, userId, reply.ToString(), promptTokens, completionTokens, request.Model, CancellationToken.None);
             }
         }
     }

@@ -20,5 +20,19 @@ public class Message
     /// <summary>User rating of this turn (audit). Null means unrated.</summary>
     public MessageFeedback? Feedback { get; set; }
 
+    /// <summary>Input tokens billed to this specific assistant turn (from the stream's usage frame).</summary>
+    public int PromptTokens { get; set; }
+
+    /// <summary>Output tokens billed to this specific assistant turn (from the stream's usage frame).</summary>
+    public int CompletionTokens { get; set; }
+
+    /// <summary>
+    /// Model id that produced this assistant turn. Persisted alongside the per-message usage so
+    /// a reloaded conversation can still price the per-message cost footnote with the model that
+    /// actually generated the reply (a conversation may span several models). Null on user turns
+    /// and on replies whose provider never reported a model.
+    /// </summary>
+    public string? Model { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

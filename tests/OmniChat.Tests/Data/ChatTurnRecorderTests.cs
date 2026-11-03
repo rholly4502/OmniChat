@@ -197,6 +197,39 @@ public sealed class ChatTurnRecorderTests : IDisposable
     }
 
     [Fact]
+    public async Task CompleteTurn_PersistsPerMessageUsageAndModel_OnTheAssistantMessage()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        var messageId = await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!", 100, 25, "claude-sonnet");
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        Assert.NotNull(messageId);
+        var assistant = stored!.Messages.Single(m => m.Role == "assistant");
+        Assert.Equal(100, assistant.PromptTokens);
+        Assert.Equal(25, assistant.CompletionTokens);
+        Assert.Equal("claude-sonnet", assistant.Model);
+        // The user turn carries no usage (it never had a usage frame).
+        var user = stored.Messages.Single(m => m.Role == "user");
+        Assert.Equal(0, user.PromptTokens);
+        Assert.Null(user.Model);
+    }
+
+    [Fact]
+    public async Task CompleteTurn_LeavesPerMessageUsageZero_WhenNoneReported()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!");
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        var assistant = stored!.Messages.Single(m => m.Role == "assistant");
+        Assert.Equal(0, assistant.PromptTokens);
+        Assert.Equal(0, assistant.CompletionTokens);
+        Assert.Null(assistant.Model);
+    }
+
+    [Fact]
     public async Task CompleteTurn_ReturnsNull_WhenTheReplyIsBlank()
     {
         var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;

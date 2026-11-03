@@ -292,7 +292,7 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello World", 0, 0, It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello World", 0, 0, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -311,7 +311,7 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 0, 0, It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 0, 0, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -330,7 +330,7 @@ public class ChatControllerTests
         await _controller.StreamChat(NewRequest(), CancellationToken.None);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "partial", 0, 0, It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "partial", 0, 0, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -357,7 +357,7 @@ public class ChatControllerTests
         Assert.Contains("\"usage\":{\"promptTokens\":10,\"completionTokens\":5,\"model\":\"test\"}", output);
 
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -376,7 +376,7 @@ public class ChatControllerTests
 
         // If the usage frame leaked into the reply, the recorded turn would contain it.
         _turnRecorderMock.Verify(
-            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<CancellationToken>()),
+            r => r.CompleteTurnAsync(conversationId, "admin", "Hello", 10, 5, It.IsAny<string?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -389,7 +389,7 @@ public class ChatControllerTests
             .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversationId);
         _turnRecorderMock
-            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(messageId);
         _chatServiceMock
             .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
@@ -412,7 +412,7 @@ public class ChatControllerTests
             .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(conversationId);
         _turnRecorderMock
-            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.CompleteTurnAsync(conversationId, It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Guid?)null);
         _chatServiceMock
             .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))

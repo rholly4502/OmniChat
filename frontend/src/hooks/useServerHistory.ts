@@ -213,7 +213,18 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       const get = impls.current.get ?? getConversation;
       try {
         const detail = await get(id, { apiKey: apiKey || undefined });
-        const messages: Message[] = detail.messages.map((m) => ({ role: m.role, content: m.content, id: m.id, feedback: m.feedback }));
+        const messages: Message[] = detail.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          id: m.id,
+          feedback: m.feedback,
+          // Reloaded turns carry their persisted usage/model, so a resumed conversation
+          // keeps its per-message cost footnote instead of losing it in the reload.
+          usage: m.promptTokens || m.completionTokens
+            ? { promptTokens: m.promptTokens ?? 0, completionTokens: m.completionTokens ?? 0 }
+            : undefined,
+          model: m.model,
+        }));
         setSessions((prev) =>
           prev.map((s) =>
             s.id === id

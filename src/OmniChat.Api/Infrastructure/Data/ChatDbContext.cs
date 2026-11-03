@@ -59,6 +59,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         // Nullable enum stored as TEXT ("Up"/"Down"/NULL) for readability; a plain
         // integer would be opaque in a SQLite dump. Null = unrated.
         message.Property(m => m.Feedback).HasConversion<string>();
+        message.Property(m => m.PromptTokens).HasDefaultValue(0);
+        message.Property(m => m.CompletionTokens).HasDefaultValue(0);
+        message.Property(m => m.Model).HasMaxLength(100);
         message.Property(m => m.CreatedAt).HasConversion(timestamp);
         message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         message

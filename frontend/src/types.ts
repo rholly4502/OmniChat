@@ -117,6 +117,12 @@ export interface ConversationMessage {
   createdAt: string;
   /** Persisted rating for this turn ("up" | "down"); undefined when unrated. */
   feedback?: 'up' | 'down';
+  /** Input tokens billed to this assistant turn (from the stream's usage frame). */
+  promptTokens?: number;
+  /** Output tokens billed to this assistant turn (from the stream's usage frame). */
+  completionTokens?: number;
+  /** Model id that produced this assistant turn, persisted for the cost footnote. */
+  model?: string;
 }
 
 /** A stored conversation together with its transcript. */

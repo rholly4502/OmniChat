@@ -49,6 +49,7 @@ Web UI dengan 2 mode:
 - ✅ API reference documentation (endpoints, curl examples, request/response schemas, SSE format, RFC 7807 error table)
 - ✅ Frontend component tests (Vitest + @testing-library/react + jsdom — **323 tests** across 29 files: components, hooks, SSE client, history client, error mapping)
 - ✅ Chat history persistence (SQLite via EF Core, `Persistence__ConnectionString`) — every streamed turn is filed under a conversation id, including a partial reply when the stream was cut short
+- ✅ Per-message cost persistence — each assistant turn stores its own token usage and producing model, so a resumed conversation keeps its per-message token/cost footnote (it no longer disappears on reload)
 - ✅ Chat history read API (`GET`/`PATCH`/`DELETE /api/conversations`) with an admin/guest split — guests' turns are stored for audit but never listed back
 - ✅ Configurable rate limiting (`RateLimit__TokenLimit` / `RateLimit__ReplenishmentPeriodSeconds`)
 - ✅ Upstream idle timeout (`Streaming__IdleTimeoutSeconds`) — a silent gateway is aborted instead of hanging the stream

@@ -104,6 +104,35 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task Get_SurfacesPerMessageUsageAndModel_InTheTranscript()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var conversation = Conversation(
+            "costly",
+            Turn("assistant", "hello", minuteOffset: 1),
+            Turn("user", "hi", minuteOffset: 2));
+        conversation.Messages[0].PromptTokens = 80;
+        conversation.Messages[0].CompletionTokens = 20;
+        conversation.Messages[0].Model = "claude-sonnet";
+
+        _repository
+            .Setup(r => r.GetConversationAsync(conversation.Id, ChatIdentity.AdminUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversation);
+
+        var result = await controller.Get(conversation.Id, CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var detail = Assert.IsType<ConversationDetail>(ok.Value);
+        var assistant = detail.Messages.Single(m => m.Role == "assistant");
+        Assert.Equal(80, assistant.PromptTokens);
+        Assert.Equal(20, assistant.CompletionTokens);
+        Assert.Equal("claude-sonnet", assistant.Model);
+        var user = detail.Messages.Single(m => m.Role == "user");
+        Assert.Equal(0, user.PromptTokens);
+        Assert.Null(user.Model);
+    }
+
+    [Fact]
     public async Task Get_ReturnsTheTranscriptOldestFirst_ForAnAdminCaller()
     {
         var controller = CreateController(ChatAccess.Admin);

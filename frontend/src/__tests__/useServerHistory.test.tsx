@@ -25,6 +25,9 @@ function detail(id: string, title: string, contents: string[]) {
       role: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
       content,
       createdAt: '2026-10-25T09:00:00+00:00',
+      promptTokens: i % 2 === 1 ? 12 : undefined,
+      completionTokens: i % 2 === 1 ? 8 : undefined,
+      model: i % 2 === 1 ? 'hermes-default' : undefined,
     })),
   };
 }
@@ -174,7 +177,13 @@ describe('useServerHistory', () => {
 
     expect(messages).toEqual([
       { role: 'user', content: 'halo', id: 'm0' },
-      { role: 'assistant', content: 'hai', id: 'm1' },
+      {
+        role: 'assistant',
+        content: 'hai',
+        id: 'm1',
+        usage: { promptTokens: 12, completionTokens: 8 },
+        model: 'hermes-default',
+      },
     ]);
     expect(result.current.activeSessionId).toBe(A);
     expect(getImpl).toHaveBeenCalledTimes(1);
@@ -185,6 +194,27 @@ describe('useServerHistory', () => {
     });
     // Re-selecting uses the cached transcript; no second round trip.
     expect(getImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('loads persisted per-message usage/model so resumed footnotes survive', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let messages: unknown;
+    await act(async () => {
+      messages = await result.current.selectSession(A);
+    });
+
+    const list = messages as Array<Record<string, unknown>>;
+    const assistant = list[1];
+    expect(assistant.usage).toEqual({ promptTokens: 12, completionTokens: 8 });
+    expect(assistant.model).toBe('hermes-default');
+    // User turns never carry usage.
+    expect(list[0].usage).toBeUndefined();
+    expect(list[0].model).toBeUndefined();
   });
 
   it('carries the stored model into sidebar rows', async () => {

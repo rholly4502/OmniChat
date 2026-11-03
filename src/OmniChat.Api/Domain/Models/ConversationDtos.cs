@@ -44,13 +44,29 @@ public sealed record ConversationSummary(
 }
 
 /// <summary>One replayed turn inside <see cref="ConversationDetail"/>.</summary>
-public sealed record ConversationMessage(Guid Id, string Role, string Content, DateTimeOffset CreatedAt, MessageFeedback? Feedback)
+public sealed record ConversationMessage(
+    Guid Id,
+    string Role,
+    string Content,
+    DateTimeOffset CreatedAt,
+    MessageFeedback? Feedback,
+    int PromptTokens,
+    int CompletionTokens,
+    string? Model)
 {
     public static ConversationMessage From(Message message)
     {
         ArgumentNullException.ThrowIfNull(message);
 
-        return new ConversationMessage(message.Id, message.Role, message.Content, message.CreatedAt, message.Feedback);
+        return new ConversationMessage(
+            message.Id,
+            message.Role,
+            message.Content,
+            message.CreatedAt,
+            message.Feedback,
+            message.PromptTokens,
+            message.CompletionTokens,
+            message.Model);
     }
 }
 

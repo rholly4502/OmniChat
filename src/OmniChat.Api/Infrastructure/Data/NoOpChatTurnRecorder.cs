@@ -16,6 +16,6 @@ public sealed class NoOpChatTurnRecorder : IChatTurnRecorder
     public Task<Guid?> StartTurnAsync(ChatTurn turn, CancellationToken cancellationToken = default) =>
         Task.FromResult<Guid?>(null);
 
-    public Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, CancellationToken cancellationToken = default) =>
+    public Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, string? model = null, CancellationToken cancellationToken = default) =>
         Task.FromResult<Guid?>(null);
 }
