@@ -112,7 +112,14 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
     <section aria-label="Analisa dan Saran" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
       <PanelFrame />
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-        <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading min-w-0">Analisa &amp; Saran</h3>
+        <span className="inline-flex items-center gap-1.5 min-w-0">
+          <span title="Pixel2 chill vibes — Dave the Diver & Stardew accents" className="inline-flex shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-deepsea">
+              <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />
+            </svg>
+          </span>
+          <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Analisa &amp; Saran</h3>
+        </span>
         <button
           type="button"
           onClick={toggle}
