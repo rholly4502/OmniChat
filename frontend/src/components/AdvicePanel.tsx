@@ -70,6 +70,7 @@ function DailyTip({ label, children }: { label: string; children: ReactNode }) {
       {/* Shared hard-edge bevel (panel frame register): a chunky 2px light top
           edge ties each suggestion block into the same chiseled frame grammar. */}
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+      <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
       <p className="relative text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
       <p className="relative mt-0.5 text-sm text-chill-text">{children}</p>
     </div>
@@ -242,6 +243,11 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </svg>
                     </span>
                     <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Goal: Part PC</h4>
+                    <span title="Stardew Valley: a golden star for your savings goal" className="inline-flex">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-accent">
+                        <path d="M12 3l2.2 4.4 4.8.7-3.5 3.4.8 4.8L12 14.2 7.7 16.3l.8-4.8-3.5-3.4 4.8-.7z" />
+                      </svg>
+                    </span>
                   </div>
                 <ul className="space-y-1 mb-2">
                   {advice.pcGoal.parts.map((part) => (
