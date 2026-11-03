@@ -199,7 +199,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       }
       outgoingMessages.push(...history.map((m) => ({ role: m.role, content: m.content })));
 
-      setMessages([...history, { role: 'assistant', content: '' }]);
+      setMessages([...history, { role: 'assistant', content: '', createdAt: Date.now() }]);
       setStreaming(true);
 
       const ctrl = new AbortController();
@@ -265,6 +265,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
               copy[copy.length - 1] = clearPhase({
                 role: 'assistant',
                 content: last.content ? `${last.content}\n\n⚠️ ${detail}` : `⚠️ ${detail}`,
+                createdAt: last.createdAt,
               });
               return copy;
             });
@@ -277,6 +278,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
                 role: 'assistant',
                 content: previous.content + piece,
                 status: previous.status,
+                createdAt: previous.createdAt,
               });
               return copy;
             });
@@ -301,7 +303,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
           const detail = describeError(e);
           setMessages((prev) => [
             ...prev.slice(0, -1),
-            { role: 'assistant', content: `⚠️ ${detail}` },
+            { role: 'assistant', content: `⚠️ ${detail}`, createdAt: Date.now() },
           ]);
           return;
         }
@@ -310,7 +312,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
           console.error('[OmniChat] Fetch error:', e);
           setMessages((prev) => [
             ...prev.slice(0, -1),
-            { role: 'assistant', content: `⚠️ Koneksi ke backend gagal: ${errMsg}` },
+            { role: 'assistant', content: `⚠️ Koneksi ke backend gagal: ${errMsg}`, createdAt: Date.now() },
           ]);
         } else {
           setMessages((prev) => {
@@ -333,7 +335,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
   const send = useCallback(
     async (content: string) => {
       if (!content.trim() || streaming) return;
-      await runTurn([...messages, { role: 'user', content }]);
+      await runTurn([...messages, { role: 'user', content, createdAt: Date.now() }]);
     },
     [messages, streaming, runTurn]
   );
@@ -374,7 +376,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
         }
       }
       if (dropped.promptTokens > 0 || dropped.completionTokens > 0) subtractUsage(dropped);
-      await runTurn([...messages.slice(0, index), { role: 'user', content: newContent }]);
+      await runTurn([...messages.slice(0, index), { role: 'user', content: newContent, createdAt: Date.now() }]);
     },
     [messages, streaming, runTurn, subtractUsage]
   );

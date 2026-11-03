@@ -218,6 +218,9 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
           content: m.content,
           id: m.id,
           feedback: m.feedback,
+          // Reloaded turns keep the server's real createdAt (epoch ms), so a
+          // resumed conversation shows when each message was actually sent.
+          createdAt: Date.parse(m.createdAt) || undefined,
           // Reloaded turns carry their persisted usage/model, so a resumed conversation
           // keeps its per-message cost footnote instead of losing it in the reload.
           usage: m.promptTokens || m.completionTokens

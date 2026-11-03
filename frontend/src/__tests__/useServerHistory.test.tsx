@@ -175,16 +175,17 @@ describe('useServerHistory', () => {
       messages = await result.current.selectSession(A);
     });
 
-    expect(messages).toEqual([
-      { role: 'user', content: 'halo', id: 'm0' },
-      {
-        role: 'assistant',
-        content: 'hai',
-        id: 'm1',
-        usage: { promptTokens: 12, completionTokens: 8 },
-        model: 'hermes-default',
-      },
-    ]);
+    const list = messages as Array<Record<string, unknown>>;
+    expect(list).toHaveLength(2);
+    expect(list[0]).toMatchObject({ role: 'user', content: 'halo', id: 'm0' });
+    expect(list[1]).toMatchObject({
+      role: 'assistant',
+      content: 'hai',
+      id: 'm1',
+      usage: { promptTokens: 12, completionTokens: 8 },
+      model: 'hermes-default',
+    });
+    expect(list[0].createdAt).toBe(Date.parse('2026-10-25T09:00:00+00:00'));
     expect(result.current.activeSessionId).toBe(A);
     expect(getImpl).toHaveBeenCalledTimes(1);
 
@@ -215,6 +216,24 @@ describe('useServerHistory', () => {
     // User turns never carry usage.
     expect(list[0].usage).toBeUndefined();
     expect(list[0].model).toBeUndefined();
+  });
+
+  it('maps the server createdAt onto reloaded messages so live timestamps survive', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let messages: unknown;
+    await act(async () => {
+      messages = await result.current.selectSession(A);
+    });
+
+    const list = messages as Array<Record<string, unknown>>;
+    // '2026-10-25T09:00:00+00:00' as epoch ms.
+    expect(list[0].createdAt).toBe(Date.parse('2026-10-25T09:00:00+00:00'));
+    expect(list[1].createdAt).toBe(Date.parse('2026-10-25T09:00:00+00:00'));
   });
 
   it('carries the stored model into sidebar rows', async () => {

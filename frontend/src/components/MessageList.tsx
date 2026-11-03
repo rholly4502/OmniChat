@@ -7,6 +7,16 @@ import type { Message, ModelOption } from '../types';
 import { chatSuggestions } from '../suggestions';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 
+/** Format an epoch-ms message timestamp as a compact, localized clock time. */
+function formatMessageTime(ts?: number): string {
+  if (!ts || !Number.isFinite(ts)) return '';
+  const d = new Date(ts);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? time : `${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${time}`;
+}
+
 /** Props accepted by {@link MessageList}. */
 export interface MessageListProps {
   /** Conversation so far; the last entry streams in place. */
@@ -283,6 +293,11 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                   </div>
                   <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-between text-xs text-chill-muted select-none">
                     <div className="flex items-center gap-0.5">
+                      {m.createdAt && (
+                        <span className="focus-hidden" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
+                          {formatMessageTime(m.createdAt)}
+                        </span>
+                      )}
                       <ActionButton
                         label="Suka"
                         activeLabel="Disukai"
@@ -345,6 +360,11 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
               ) : (
                 <div>
                   <span className="whitespace-pre-wrap">{m.content}</span>
+                  {m.createdAt && (
+                    <div className="mt-1 text-xs text-chill-muted select-none" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
+                      {formatMessageTime(m.createdAt)}
+                    </div>
+                  )}
                   {onEditMessage && (
                     <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-end text-xs text-chill-muted select-none">
                       <ActionButton

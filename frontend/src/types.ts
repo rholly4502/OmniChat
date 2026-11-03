@@ -29,6 +29,13 @@ export interface Message {
    * conversation may span several models).
    */
   model?: string;
+  /**
+   * Client-rendered timestamp (epoch ms) of when this turn was created.
+   * Stamped locally when the turn is sent, and replaced by the server's
+   * `createdAt` when the conversation is reloaded from history. Absent on
+   * messages that predate the field or that never left the browser.
+   */
+  createdAt?: number;
 }
 
 export interface ModelOption {

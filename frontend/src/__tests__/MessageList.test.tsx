@@ -513,3 +513,26 @@ describe('MessageList quick-start suggestions', () => {
     expect(onSelectSuggestion).toHaveBeenCalledWith(expect.stringContaining('microservices'));
   });
 });
+
+describe('MessageList timestamps', () => {
+  it('shows a localized time for a message with createdAt', () => {
+    const ts = Date.parse('2026-11-03T07:05:00+00:00');
+    const { container } = renderList({
+      messages: [
+        { role: 'user', content: 'hai', createdAt: ts },
+        { role: 'assistant', content: 'halo', createdAt: ts },
+      ],
+    });
+    const stamps = [...container.querySelectorAll('[aria-label^="Dikirim"]')];
+    expect(stamps).toHaveLength(2);
+    expect(stamps[0].textContent).toBeTruthy();
+    expect(stamps[1].textContent).toBeTruthy();
+  });
+
+  it('renders no timestamp when createdAt is absent', () => {
+    const { container } = renderList({
+      messages: [{ role: 'user', content: 'hai' }],
+    });
+    expect(container.querySelector('[aria-label^="Dikirim"]')).toBeNull();
+  });
+});

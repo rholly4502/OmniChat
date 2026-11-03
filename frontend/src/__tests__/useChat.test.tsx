@@ -256,7 +256,8 @@ describe('useChat', () => {
       await Promise.resolve();
     });
 
-    expect(result.current.messages[0]).toEqual({ role: 'user', content: 'Hello' });
+    expect(result.current.messages[0]).toMatchObject({ role: 'user', content: 'Hello' });
+    expect(result.current.messages[0].createdAt).toEqual(expect.any(Number));
     expect(result.current.messages[1].role).toBe('assistant');
 
     await act(async () => {
@@ -369,7 +370,9 @@ describe('useChat', () => {
     });
 
     // Only the user turn survives — no empty assistant bubble left behind.
-    expect(result.current.messages).toEqual([{ role: 'user', content: 'Hi' }]);
+    expect(result.current.messages).toHaveLength(1);
+    expect(result.current.messages[0]).toMatchObject({ role: 'user', content: 'Hi' });
+    expect(result.current.messages[0].createdAt).toEqual(expect.any(Number));
   });
 
   it('ignores a send while one is already streaming', async () => {
@@ -498,7 +501,8 @@ describe('useChat', () => {
       await result.current.send('Hi');
     });
 
-    expect(result.current.messages[1]).toEqual({ role: 'assistant', content: 'done' });
+    expect(result.current.messages[1]).toMatchObject({ role: 'assistant', content: 'done' });
+    expect(result.current.messages[1].createdAt).toEqual(expect.any(Number));
   });
 
   it('clears the phase when the reply fails', async () => {
@@ -510,10 +514,11 @@ describe('useChat', () => {
       await result.current.send('Hi');
     });
 
-    expect(result.current.messages[1]).toEqual({
+    expect(result.current.messages[1]).toMatchObject({
       role: 'assistant',
       content: '⚠️ LOCALIZED(401)',
     });
+    expect(result.current.messages[1].createdAt).toEqual(expect.any(Number));
   });
 
   it('does not treat a status frame as content to display', async () => {
