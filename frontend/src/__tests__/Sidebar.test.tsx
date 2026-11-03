@@ -317,6 +317,38 @@ describe('Sidebar', () => {
     expect(screen.queryByText('Hapus sesi ini?')).not.toBeInTheDocument();
   });
 
+  it('shows an estimated cost on a session row when the model and usage are known', () => {
+    renderSidebar({
+      sessions: [{
+        id: 's1', title: 'Deploy', messages: [],
+        createdAt: 1, updatedAt: 1,
+        model: 'claude-sonnet',
+        promptTokens: 4000, completionTokens: 1000, totalTokens: 5000,
+      }],
+      activeSessionId: 's1',
+    });
+
+    // claude-sonnet: 4 * 0.003 + 1 * 0.015 = 0.027 -> $0.03
+    expect(screen.getByLabelText('5k token, perkiraan biaya $0.03')).toBeInTheDocument();
+    expect(screen.getByText(/5k/)).toBeInTheDocument();
+    expect(screen.getByText(/≈\$0\.03/)).toBeInTheDocument();
+  });
+
+  it('omits the cost from a session row when no model is recorded', () => {
+    renderSidebar({
+      sessions: [{
+        id: 's1', title: 'Deploy', messages: [],
+        createdAt: 1, updatedAt: 1,
+        promptTokens: 1000, completionTokens: 1000, totalTokens: 2000,
+      }],
+      activeSessionId: 's1',
+    });
+
+    // No model → no rate → show only the token count, never a bare cost.
+    expect(screen.getByLabelText('2k token')).toBeInTheDocument();
+    expect(screen.queryByText(/≈/)).not.toBeInTheDocument();
+  });
+
   it('keeps every sidebar label at or above the 12px legibility floor', () => {
     const { container } = renderSidebar({
       sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],

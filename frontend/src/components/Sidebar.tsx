@@ -407,14 +407,21 @@ export function Sidebar({
                     className="flex items-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   >
                     <span className="truncate flex-1 pr-1.5">{s.title}</span>
-                    {typeof s.totalTokens === 'number' && s.totalTokens > 0 && (
-                      <span
-                        className="shrink-0 text-xs leading-none text-chill-muted"
-                        aria-label={`${formatTokens(s.totalTokens)} token`}
-                      >
-                        <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {formatTokens(s.totalTokens)}
-                      </span>
-                    )}
+                    {typeof s.totalTokens === 'number' && s.totalTokens > 0 && (() => {
+                      const total = s.totalTokens ?? 0;
+                      const cost = s.model
+                        ? formatUsd(estimateUsd({ promptTokens: s.promptTokens ?? 0, completionTokens: s.completionTokens ?? 0 }, s.model))
+                        : '';
+                      return (
+                        <span
+                          className="shrink-0 text-xs leading-none text-chill-muted"
+                          aria-label={`${formatTokens(total)} token${cost ? `, perkiraan biaya ${cost}` : ''}`}
+                        >
+                          <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {formatTokens(total)}
+                          {cost ? ` · ≈${cost}` : ''}
+                        </span>
+                      );
+                    })()}
                   </button>
                   )}
                   <div className="flex items-center gap-0.5 opacity-100 md:opacity-70 md:group-hover:opacity-100 md:group-focus-within:opacity-100">
