@@ -42,7 +42,16 @@ export function DailySpendChart({ items, month, anggaran }: Props) {
   const spent = dayTotals.reduce((a, b) => a + b, 0);
 
   if (spent === 0) {
-    return <p className="text-sm text-chill-muted">Belum ada pengeluaran harian yang tercatat.</p>;
+    // Barren-state register: a faint pixel bar-columns icon so the empty line
+    // reads as part of the page's empty-state grammar, not stark text.
+    return (
+      <div className="flex items-center gap-2 text-sm text-chill-muted">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 text-chill-accent">
+          <path d="M5 19v-5M12 19V9M19 19v-9" />
+        </svg>
+        <span>Belum ada pengeluaran harian yang tercatat.</span>
+      </div>
+    );
   }
 
   const budget = dailyBudgetFor(anggaran, dim);

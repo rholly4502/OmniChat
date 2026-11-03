@@ -14,8 +14,10 @@ describe('shortMonth', () => {
 
 describe('ExpenseTrendChart', () => {
   it('shows an empty message when there are no points', () => {
-    render(<ExpenseTrendChart points={[]} />);
+    const { container } = render(<ExpenseTrendChart points={[]} />);
     expect(screen.getByText('Belum ada data tren.')).toBeInTheDocument();
+    // pixel2 empty-state register: the barren line carries a decorative ornament.
+    expect(container.querySelector('svg')).not.toBeNull();
   });
 
   it('renders a bar per point with month labels', () => {

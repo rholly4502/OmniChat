@@ -17,7 +17,7 @@ function barsOf(container: HTMLElement) {
 
 describe('DailySpendChart', () => {
   it('shows an empty message when the month has no spend (savings deposits excluded)', () => {
-    render(
+    const { container } = render(
       <DailySpendChart
         items={[item('2026-11-05', 500000, 'Nabung')]}
         month="2026-11"
@@ -25,6 +25,8 @@ describe('DailySpendChart', () => {
       />,
     );
     expect(screen.getByText('Belum ada pengeluaran harian yang tercatat.')).toBeInTheDocument();
+    // pixel2 empty-state register: the barren line carries a decorative ornament.
+    expect(container.querySelector('svg')).not.toBeNull();
   });
 
   it('aggregates spend per day and excludes savings deposits', () => {
