@@ -19,6 +19,8 @@ export interface ChatHeaderProps {
   models?: ModelOption[];
   /** Per-conversation model change handler (persists for the active thread). */
   onModelChange?: (id: string) => void;
+  /** Opens the chat audit/stats dialog (desktop has no sidebar path to it). */
+  onOpenStats?: () => void;
 }
 
 /**
@@ -27,7 +29,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats }: ChatHeaderProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -56,16 +58,29 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
           <span className="text-chill-accent font-medium">{modelLabel}</span>
         ) : null}
       </span>
-      {(tokenLabel || estimate) && (
-        <span
-          className="inline-flex items-center gap-1 ml-auto text-xs text-chill-muted select-none"
-          aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}
-        >
-          <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span>
-          {tokenLabel}
-          {estimate ? ` · ≈${estimate}` : ''}
-        </span>
-      )}
+      <div className="ml-auto inline-flex items-center gap-2">
+        {(tokenLabel || estimate) && (
+          <span
+            className="inline-flex items-center gap-1 text-xs text-chill-muted select-none"
+            aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}
+          >
+            <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span>
+            {tokenLabel}
+            {estimate ? ` · ≈${estimate}` : ''}
+          </span>
+        )}
+        {onOpenStats && (
+          <button
+            type="button"
+            onClick={onOpenStats}
+            aria-label="Buka statistik chat"
+            title="Statistik chat"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M3 3v18h18" /><rect x="7" y="12" width="3" height="6" /><rect x="12" y="8" width="3" height="10" /><rect x="17" y="4" width="3" height="14" /></svg>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
