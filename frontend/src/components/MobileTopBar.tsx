@@ -1,7 +1,7 @@
 import type { RefObject } from 'react';
 import { BotIcon, BoltIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
-import type { TokenUsage } from '../types';
+import type { ModelOption, TokenUsage } from '../types';
 
 /** Props accepted by {@link MobileTopBar}. */
 export interface MobileTopBarProps {
@@ -23,6 +23,14 @@ export interface MobileTopBarProps {
   model?: string;
   /** Human-readable label of the active model, shown beside the mode badge. */
   modelLabel?: string;
+  /**
+   * Catalog for the active mode, used to render a compact inline per-conversation
+   * model switcher (mobile parity with ChatHeader's desktop switcher). When omitted
+   * (or when no handler is given) the model is shown as a static label instead.
+   */
+  models?: ModelOption[];
+  /** Per-conversation model change handler (persists for the active thread). */
+  onModelChange?: (id: string) => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
   activeView?: 'chat' | 'expenses';
 }
@@ -34,7 +42,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, activeView }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -111,7 +119,25 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">
             {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
             {useAgent ? 'Agent' : 'Direct'}
-            {modelLabel ? <span className="text-chill-accent font-medium">{modelLabel}</span> : null}
+            {onModelChange && models && models.length > 0 ? (
+              <span className="relative inline-flex items-center">
+                <select
+                  value={model}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  aria-label="Ganti model"
+                  className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none"
+                >
+                  {models.map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+                <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-chill-accent">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            ) : modelLabel ? (
+              <span className="text-chill-accent font-medium">{modelLabel}</span>
+            ) : null}
           </span>
           {(tokenLabel || estimate) && (
             <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>

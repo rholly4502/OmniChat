@@ -138,4 +138,52 @@ describe('MobileTopBar', () => {
     renderBar();
     expect(screen.queryByText(/Hermes|DeepSeek/)).not.toBeInTheDocument();
   });
+
+  it('renders a compact model switcher when a catalog and change handler are supplied', () => {
+    const onChange = vi.fn();
+    const catalog = [
+      { id: 'hermes-default', label: 'Hermes Default' },
+      { id: 'claude-sonnet', label: 'Claude Sonnet' },
+    ];
+    renderBar({ models: catalog, onModelChange: onChange });
+    const select = screen.getByLabelText('Ganti model') as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe('hermes-default');
+    expect(screen.getByRole('option', { name: 'Claude Sonnet' })).toBeInTheDocument();
+  });
+
+  it('fires onModelChange when the mobile switcher selects a model', () => {
+    const onChange = vi.fn();
+    const catalog = [
+      { id: 'hermes-default', label: 'Hermes Default' },
+      { id: 'claude-sonnet', label: 'Claude Sonnet' },
+    ];
+    renderBar({ models: catalog, onModelChange: onChange, model: 'hermes-default' });
+    fireEvent.change(screen.getByLabelText('Ganti model'), { target: { value: 'claude-sonnet' } });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith('claude-sonnet');
+  });
+
+  it('falls back to the static model label when no switcher handler is provided', () => {
+    renderBar({ model: 'hermes-default', modelLabel: 'Hermes Default', models: [{ id: 'hermes-default', label: 'Hermes Default' }] });
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+    expect(screen.getByText('Hermes Default')).toBeInTheDocument();
+  });
+
+  it('renders the model switcher as a 44px touch target', () => {
+    const onChange = vi.fn();
+    const catalog = [{ id: 'hermes-default', label: 'Hermes Default' }];
+    renderBar({ models: catalog, onModelChange: onChange });
+    const select = screen.getByLabelText('Ganti model');
+    expect(select.className).toContain('min-h-[44px]');
+    expect(select.className).toContain('text-base');
+  });
+
+  it('guest variant never shows the model switcher', () => {
+    const onChange = vi.fn();
+    const catalog = [{ id: 'hermes-default', label: 'Hermes Default' }];
+    renderBar({ isGuest: true, models: catalog, onModelChange: onChange });
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Keluar')).toBeInTheDocument();
+  });
 });

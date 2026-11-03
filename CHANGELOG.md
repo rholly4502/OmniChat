@@ -5,6 +5,17 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P3 — Mobile per-conversation model switcher in the top bar (frontend)
+
+#### Added
+- The mobile top bar (`MobileTopBar`) now renders a compact inline model switcher
+  next to the mode badge when a catalog and change handler are provided, giving
+  phones the same per-conversation model switching the desktop `ChatHeader` has,
+  without opening the sidebar drawer. Falls back to the static model label when
+  the handler is absent; the guest variant never shows it. App.tsx wires the
+  active-mode catalog and `handleModelChange` into the admin mobile bar so the
+  switch persists per conversation. Frontend tests 585 → 590.
+
 ### P2 — Persisted message feedback (like/dislike) (backend + frontend)
 
 #### Added

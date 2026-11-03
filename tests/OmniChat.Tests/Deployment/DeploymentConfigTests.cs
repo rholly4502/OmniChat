@@ -872,7 +872,7 @@ public class DeploymentConfigTests
         var readme = Read("README.md");
         var features = ExtractTopLevelSection(readme, "## Fitur");
 
-        Assert.Contains("**323 tests**", features);
+        Assert.Contains("**590 tests**", features);
         // The old claim ("23 tests") is a substring of the current count, so target
         // the historical phrasing instead of a bare number. A regression to the stale
         // "23 tests" claim would not carry the "**" emphasis and is caught here.

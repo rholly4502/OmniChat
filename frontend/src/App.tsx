@@ -332,6 +332,8 @@ export default function App() {
           usage={usage}
           model={model}
           modelLabel={models.find((m) => m.id === model)?.label}
+          models={models}
+          onModelChange={handleModelChange}
           activeView={activeView}
         />
 
