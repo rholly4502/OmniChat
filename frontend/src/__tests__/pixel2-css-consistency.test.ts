@@ -56,4 +56,10 @@ describe('pixel2 css consistency', () => {
     expect(block).toContain('repeating-conic-gradient');
     expect(block).toContain('background-size');
   });
+
+  it('keeps the stepped square dash token (pixel-dash-line)', () => {
+    const block = CSS.match(/\.pixel-dash-line\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(block).toContain('repeating-linear-gradient');
+    expect(block).not.toContain('border-dashed');
+  });
 });

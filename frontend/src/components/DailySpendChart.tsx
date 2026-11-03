@@ -68,13 +68,8 @@ export function DailySpendChart({ items, month, anggaran }: Props) {
         {budget !== null && (
           <div
             aria-hidden="true"
-            className="absolute inset-x-0 z-10 h-[2px]"
-            style={{
-              bottom: `${(budget / chartMax) * 100}%`,
-              backgroundImage:
-                'repeating-linear-gradient(90deg, var(--color-chill-accent) 0 6px, transparent 6px 12px)',
-              opacity: 0.65,
-            }}
+            className="absolute inset-x-0 z-10 h-[2px] pixel-dash-line"
+            style={{ bottom: `${(budget / chartMax) * 100}%` }}
           />
         )}
         <div className="absolute inset-0 flex items-end gap-px px-1">

@@ -352,7 +352,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
         {showSummary && (
           <>
-            <section aria-label="Ringkasan bulanan" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <section aria-label="Ringkasan bulanan" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <StatCard label="Total Pengeluaran" value={formatRupiah(summary!.total)} icon="Lain" tone="accent" />
               <StatCard
                 label="Anggaran"
@@ -420,7 +420,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
             <AdvicePanel apiKey={apiKey} month={month} />
 
-            <section aria-label="Tren pengeluaran bulanan" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+            <section aria-label="Tren pengeluaran bulanan" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow pixel-reveal">
               <PanelFrame />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 min-w-0">
@@ -449,7 +449,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               )}
             </section>
 
-            <section aria-label="Pengeluaran per hari" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
+            <section aria-label="Pengeluaran per hari" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow pixel-reveal">
               <PanelFrame />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 min-w-0">
