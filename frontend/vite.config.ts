@@ -35,5 +35,9 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test-setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
+    // Slow CI/sandbox runners exceed the 5s default on render-heavy jsdom
+    // tests (ExpensesView/AdvicePanel/LoginScreen). Give them headroom;
+    // real hangs still fail far past this.
+    testTimeout: 20000,
   },
 })
