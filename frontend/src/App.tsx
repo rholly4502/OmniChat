@@ -226,6 +226,11 @@ export default function App() {
     await sendMessage(text);
   }
 
+  /** Prefill the composer with a quick-start suggestion (empty state). */
+  function handleSelectSuggestion(prompt: string) {
+    setInput(prompt);
+  }
+
   // A valid credential is the front door of the workspace: without one there is
   // nothing meaningful to render, so lock the whole surface behind the login form.
   if (locked) {
@@ -249,6 +254,7 @@ export default function App() {
             scrollRef={scrollRef}
             onRegenerate={regenerate}
             onEditMessage={editAndResend}
+            onSelectSuggestion={handleSelectSuggestion}
           />
           <Composer
             input={input}
@@ -351,6 +357,7 @@ export default function App() {
               onRegenerate={regenerate}
               onEditMessage={editAndResend}
               onSetFeedback={handleSetFeedback}
+              onSelectSuggestion={handleSelectSuggestion}
             />
 
             <Composer

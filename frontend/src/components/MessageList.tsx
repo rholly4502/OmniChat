@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
 import { TypingIndicator } from './TypingIndicator';
 import type { Message, ModelOption } from '../types';
+import { chatSuggestions } from '../suggestions';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 
 /** Props accepted by {@link MessageList}. */
@@ -36,6 +37,8 @@ export interface MessageListProps {
    * on success. When absent or when the message has no id, feedback stays local.
    */
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
+  /** Insert a quick-start suggestion into the composer (empty state only). */
+  onSelectSuggestion?: (prompt: string) => void;
 }
 
 /** Small, quiet action button used on message footers. */
@@ -92,7 +95,7 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   };
 }
 
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onSelectSuggestion }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -194,6 +197,21 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
               A calm pixel farm vibe
             </span>
           </div>
+          {onSelectSuggestion && (
+            <div className="flex flex-wrap justify-center gap-2 max-w-md" role="group" aria-label="Mulai cepat">
+              {chatSuggestions(useAgent).map((sg) => (
+                <button
+                  key={sg.id}
+                  type="button"
+                  onClick={() => onSelectSuggestion(sg.prompt)}
+                  className="rounded-none border-2 border-chill-border bg-chill-surface px-3 py-2 text-xs text-chill-text hover:border-chill-accent hover:text-chill-accent active:bg-chill-elevated transition min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  data-testid={`suggestion-${sg.id}`}
+                >
+                  {sg.label}
+                </button>
+              ))}
+            </div>
+          )}
           <div className="text-chill-muted text-sm text-center">
             Mulai chat — mode {useAgent ? 'Agent (Hermes)' : 'Direct (LLM)'} ·{' '}
             {models.find((m) => m.id === model)?.label}

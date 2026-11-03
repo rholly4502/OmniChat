@@ -18,6 +18,7 @@ function renderList(overrides: {
   onRegenerate?: () => void;
   onEditMessage?: (index: number, newContent: string) => void;
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
+  onSelectSuggestion?: (prompt: string) => void;
 } = {}) {
   const scrollRef = createRef<HTMLDivElement>();
   const view = render(
@@ -31,6 +32,7 @@ function renderList(overrides: {
       onRegenerate={overrides.onRegenerate}
       onEditMessage={overrides.onEditMessage}
       onSetFeedback={overrides.onSetFeedback}
+      onSelectSuggestion={overrides.onSelectSuggestion}
     />
   );
   return { ...view, scrollRef };
@@ -479,5 +481,35 @@ describe('MessageList focus-mode hooks', () => {
     const { container } = renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
     const hiddenText = [...container.querySelectorAll('span.focus-hidden')].map((el) => el.textContent);
     expect(hiddenText).toContain('OmniChat');
+  });
+});
+
+describe('MessageList quick-start suggestions', () => {
+  it('renders agent-mode suggestion chips in the empty state', () => {
+    renderList({ useAgent: true, onSelectSuggestion: vi.fn() });
+    const group = screen.getByRole('group', { name: 'Mulai cepat' });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByTestId('suggestion-agent-architecture')).toBeInTheDocument();
+    expect(screen.queryByTestId('suggestion-direct-cleanarch')).not.toBeInTheDocument();
+  });
+
+  it('renders direct-mode suggestions when useAgent is false', () => {
+    renderList({ useAgent: false, onSelectSuggestion: vi.fn() });
+    expect(screen.getByTestId('suggestion-direct-cleanarch')).toBeInTheDocument();
+    expect(screen.queryByTestId('suggestion-agent-architecture')).not.toBeInTheDocument();
+  });
+
+  it('does not render suggestions when no handler is provided', () => {
+    renderList({ useAgent: true });
+    // renderList omits onSelectSuggestion by default
+    expect(screen.queryByRole('group', { name: 'Mulai cepat' })).not.toBeInTheDocument();
+  });
+
+  it('inserts the chosen prompt into the composer via the callback', () => {
+    const onSelectSuggestion = vi.fn();
+    renderList({ useAgent: true, onSelectSuggestion });
+    fireEvent.click(screen.getByTestId('suggestion-agent-architecture'));
+    expect(onSelectSuggestion).toHaveBeenCalledTimes(1);
+    expect(onSelectSuggestion).toHaveBeenCalledWith(expect.stringContaining('microservices'));
   });
 });
