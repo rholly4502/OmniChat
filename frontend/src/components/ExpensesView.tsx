@@ -279,7 +279,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             setShowForm((v) => !v);
             setFormError(null);
           }}
-          className="relative shrink-0 rounded-none bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
+          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
         >
           {showForm && !editingItem ? 'Batal' : 'Tambah'}
         </button>
@@ -387,7 +387,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <section aria-label="Tren pengeluaran bulanan" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
               <PanelFrame />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
-                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
+                <span className="inline-flex items-center gap-1.5 min-w-0">
+                  <span title="Stardew Valley: watch your spending trend grow 🌱" className="inline-flex shrink-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-sage">
+                      <path d="M12 21V10M12 10l4-4M12 10l-4-4M12 15l-3-3M12 15l3-3" />
+                    </svg>
+                  </span>
+                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
+                </span>
                 <button
                   type="button"
                   onClick={trend.reload}
@@ -409,7 +416,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <section aria-label="Pengeluaran per hari" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow">
               <PanelFrame />
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
-                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
+                <span className="inline-flex items-center gap-1.5 min-w-0">
+                  <span title="Dave the Diver: dive into today's depths 🐠" className="inline-flex shrink-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-deepsea">
+                      <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />
+                    </svg>
+                  </span>
+                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
+                </span>
               </div>
               <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} />
             </section>
@@ -791,7 +805,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
           type="button"
           onClick={submit}
           disabled={saving}
-          className="rounded-none bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50"
+          className="rounded-none border border-chill-accent/60 bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50"
         >
           {saving ? 'Menyimpan…' : initial ? 'Simpan Perubahan' : 'Simpan'}
         </button>

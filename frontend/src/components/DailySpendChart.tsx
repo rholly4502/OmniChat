@@ -73,7 +73,7 @@ export function DailySpendChart({ items, month, anggaran }: Props) {
               bottom: `${(budget / chartMax) * 100}%`,
               backgroundImage:
                 'repeating-linear-gradient(90deg, var(--color-chill-accent) 0 6px, transparent 6px 12px)',
-              opacity: 0.5,
+              opacity: 0.65,
             }}
           />
         )}
