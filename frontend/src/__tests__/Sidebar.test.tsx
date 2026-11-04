@@ -823,3 +823,24 @@ describe('Sidebar focus mode toggle', () => {
     expect(screen.getByRole('checkbox', { name: 'Mode fokus' })).toBeChecked();
   });
 });
+
+describe('Sidebar chill mode toggle', () => {
+  it('renders a Chill Mode toggle when wired and forwards state', () => {
+    const onChillModeChange = vi.fn();
+    renderSidebar({ chillMode: false, onChillModeChange });
+    const cb = screen.getByRole('checkbox', { name: 'Chill Mode' });
+    expect(cb).not.toBeChecked();
+    fireEvent.click(cb);
+    expect(onChillModeChange).toHaveBeenCalledWith(true);
+  });
+
+  it('does not render the Chill Mode toggle when unwired', () => {
+    renderSidebar({});
+    expect(screen.queryByRole('checkbox', { name: 'Chill Mode' })).not.toBeInTheDocument();
+  });
+
+  it('reflects an enabled chill mode', () => {
+    renderSidebar({ chillMode: true, onChillModeChange: vi.fn() });
+    expect(screen.getByRole('checkbox', { name: 'Chill Mode' })).toBeChecked();
+  });
+});

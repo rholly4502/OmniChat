@@ -21,7 +21,7 @@ import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
 import { describeApiError } from './errors';
 import type { TokenUsage } from './types';
-import { DEFAULT_MODEL } from './constants';
+import { DEFAULT_MODEL, CHILL_SYSTEM_PROMPT } from './constants';
 
 // Re-exported for backwards compatibility (tests import it from './App').
 export { CodeBlock };
@@ -91,8 +91,16 @@ export default function App() {
     updateMaxTokens,
     updateNightMode,
     updateFocusMode,
+    updateChillMode,
     resetPersona,
   } = useSettings();
+
+  // Chill Mode prepends a relaxed persona prompt ahead of the user's own system
+  // prompt (if any). Composed here, at the composition root, so the chat hook
+  // keeps receiving a single plain `systemPrompt` string.
+  const effectiveSystemPrompt = settings.chillMode
+    ? [CHILL_SYSTEM_PROMPT, settings.systemPrompt].filter(Boolean).join('\n\n')
+    : settings.systemPrompt;
 
   const catalog = useModelCatalog(apiKey);
   const models = effectiveUseAgent ? catalog.agent : catalog.direct;
@@ -116,7 +124,7 @@ export default function App() {
     model,
     useHermesBridge: effectiveUseAgent,
     apiKey,
-    systemPrompt: settings.systemPrompt,
+    systemPrompt: effectiveSystemPrompt,
     temperature: settings.temperature,
     maxTokens: settings.maxTokens,
     describeError: describeApiError,
@@ -248,7 +256,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} chillMode={settings.chillMode} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -324,6 +332,8 @@ export default function App() {
         onNightModeChange={updateNightMode}
         focusMode={settings.focusMode}
         onFocusModeChange={updateFocusMode}
+        chillMode={settings.chillMode}
+        onChillModeChange={updateChillMode}
         activeView={activeView}
         onSelectView={setActiveView}
       />
@@ -339,6 +349,7 @@ export default function App() {
           modelLabel={models.find((m) => m.id === model)?.label}
           models={models}
           onModelChange={handleModelChange}
+          chillMode={settings.chillMode}
           activeView={activeView}
         />
 
@@ -355,6 +366,7 @@ export default function App() {
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}
               onOpenAudit={() => setAuditOpen(true)}
+              chillMode={settings.chillMode}
             />
             <MessageList
               messages={messages}

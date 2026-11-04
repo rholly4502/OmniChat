@@ -60,6 +60,7 @@ describe('useSettings', () => {
       result.current.updateMaxTokens(4096);
       result.current.updateNightMode(true);
       result.current.updateFocusMode(true);
+      result.current.updateChillMode(true);
     });
     act(() => {
       result.current.resetPersona();
@@ -69,6 +70,7 @@ describe('useSettings', () => {
     expect(result.current.settings.maxTokens).toBe(2048);
     expect(result.current.settings.nightMode).toBe(true);
     expect(result.current.settings.focusMode).toBe(true);
+    expect(result.current.settings.chillMode).toBe(false);
   });
 
   it('defaults night mode to off', () => {
@@ -101,5 +103,21 @@ describe('useSettings', () => {
     expect(result.current.settings.focusMode).toBe(true);
     const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
     expect(stored.focusMode).toBe(true);
+  });
+
+  it('defaults chill mode to off', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.chillMode).toBe(false);
+  });
+
+  it('updates chill mode and persists to localStorage', () => {
+    const { result } = renderHook(() => useSettings());
+    expect(result.current.settings.chillMode).toBe(false);
+    act(() => {
+      result.current.updateChillMode(true);
+    });
+    expect(result.current.settings.chillMode).toBe(true);
+    const stored = JSON.parse(localStorage.getItem('omnichat_settings_v1') || '{}');
+    expect(stored.chillMode).toBe(true);
   });
 });

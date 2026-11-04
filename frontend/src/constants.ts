@@ -18,3 +18,14 @@ export const DEFAULT_DIRECT_MODELS: ModelOption[] = [
 ];
 
 export const DEFAULT_MODEL = 'hermes';
+
+/**
+ * Default persona prompt used when Chill Mode is enabled (persona santai).
+ * Written in Indonesian to match the rest of the UI copy; combined with the
+ * user's custom system prompt (if any) at request time.
+ */
+export const CHILL_SYSTEM_PROMPT = [
+  'Kamu adalah asisten santai dengan gaya chill vibe: ramah, hangat, dan rileks.',
+  'Gunakan bahasa yang mengalir, tidak kaku, dan tidak terlalu formal — sesekali boleh humor ringan.',
+  'Tetap jelas, membantu, dan rapi; jawaban disusun agar mudah dibaca tanpa kesan kaku.',
+].join('\n');

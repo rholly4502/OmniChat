@@ -1,5 +1,5 @@
 import type { RefObject } from 'react';
-import { BotIcon, BoltIcon } from './Icons';
+import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ModelOption, TokenUsage } from '../types';
 
@@ -31,6 +31,8 @@ export interface MobileTopBarProps {
   models?: ModelOption[];
   /** Per-conversation model change handler (persists for the active thread). */
   onModelChange?: (id: string) => void;
+  /** Chill Mode active: show a subtle chillChill" tag by the mode badge. */
+  chillMode?: boolean;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
   activeView?: 'chat' | 'expenses';
 }
@@ -42,7 +44,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -67,6 +69,12 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
           <BoltIcon size={14} /> Guest · Direct{modelLabel ? ` · ${modelLabel}` : ''}
         </span>
+        {chillMode && (
+          <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-accent font-medium select-none" aria-label="Chill Mode aktif">
+            <ChillIcon size={12} />
+            Chill
+          </span>
+        )}
         {(tokenLabel || estimate) && (
           <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
             <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
@@ -139,6 +147,12 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               <span className="text-chill-accent font-medium">{modelLabel}</span>
             ) : null}
           </span>
+          {chillMode && (
+            <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-surface px-1.5 py-0.5 text-xs text-chill-accent font-medium select-none" aria-label="Chill Mode aktif">
+              <ChillIcon size={12} />
+              Chill
+            </span>
+          )}
           {(tokenLabel || estimate) && (
             <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
               <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}

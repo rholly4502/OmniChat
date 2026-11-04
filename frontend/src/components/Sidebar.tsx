@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
-import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from './Icons';
+import { BotIcon, BoltIcon, ChillIcon, LockIcon, UnlockIcon } from './Icons';
 import { HistoryFilters } from './HistoryFilters';
 import { ChatStatsDialog } from './ChatStatsDialog';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
@@ -91,6 +91,10 @@ export interface SidebarProps {
   focusMode?: boolean;
   /** Toggle focus mode. */
   onFocusModeChange?: (enabled: boolean) => void;
+  /** Chill Mode: a relaxed, informal persona preset (persona santai). */
+  chillMode?: boolean;
+  /** Toggle Chill Mode. */
+  onChillModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
   activeView?: 'chat' | 'expenses';
   /** Switch the active top-level view. */
@@ -143,6 +147,8 @@ export function Sidebar({
   onNightModeChange,
   focusMode = false,
   onFocusModeChange,
+  chillMode = false,
+  onChillModeChange,
   activeView = 'chat',
   onSelectView = () => {},
   usageSummary,
@@ -656,6 +662,28 @@ export function Sidebar({
                 Mode Fokus
               </div>
               <div className="text-xs text-chill-muted">Sembunyikan hiasan & telemetri</div>
+            </div>
+          </label>
+        </div>
+      )}
+
+      {/* Chill Mode toggle */}
+      {typeof onChillModeChange === 'function' && (
+        <div className="space-y-2">
+          <label className="flex items-center gap-3 cursor-pointer bg-chill-surface p-3 border border-chill-border hover:border-chill-accent active:border-chill-accent active:translate-y-[2px] active:shadow-none transition pixel-shadow-sm">
+            <input
+              type="checkbox"
+              checked={chillMode}
+              onChange={() => onChillModeChange(!chillMode)}
+              aria-label="Chill Mode"
+              className="h-4 w-4 pixel-checkbox"
+            />
+            <div>
+              <div className="text-sm font-semibold flex items-center gap-1.5">
+                <ChillIcon size={14} />
+                Chill Mode
+              </div>
+              <div className="text-xs text-chill-muted">Persona santai untuk suasana rileks</div>
             </div>
           </label>
         </div>

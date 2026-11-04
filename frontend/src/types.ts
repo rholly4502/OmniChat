@@ -58,6 +58,8 @@ export interface ChatSettings {
   nightMode: boolean;
   /** Focus mode: hides decorative/telemetry chrome for a minimal calm surface. */
   focusMode: boolean;
+  /** Chill Mode: a relaxed, informal persona preset (persona santai). */
+  chillMode: boolean;
 }
 
 /** Token usage reported by the upstream via the streaming endpoint. */

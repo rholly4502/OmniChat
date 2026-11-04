@@ -9,6 +9,7 @@ const DEFAULT_SETTINGS: ChatSettings = {
   maxTokens: 2048,
   nightMode: false,
   focusMode: false,
+  chillMode: false,
 };
 
 export function useSettings() {
@@ -56,6 +57,10 @@ export function useSettings() {
     setSettings((prev) => ({ ...prev, focusMode }));
   };
 
+  const updateChillMode = (chillMode: boolean) => {
+    setSettings((prev) => ({ ...prev, chillMode }));
+  };
+
   const resetSettings = () => {
     setSettings(DEFAULT_SETTINGS);
   };
@@ -67,6 +72,7 @@ export function useSettings() {
       systemPrompt: DEFAULT_SETTINGS.systemPrompt,
       temperature: DEFAULT_SETTINGS.temperature,
       maxTokens: DEFAULT_SETTINGS.maxTokens,
+      chillMode: DEFAULT_SETTINGS.chillMode,
     }));
   };
 
@@ -77,6 +83,7 @@ export function useSettings() {
     updateMaxTokens,
     updateNightMode,
     updateFocusMode,
+    updateChillMode,
     resetSettings,
     resetPersona,
   };

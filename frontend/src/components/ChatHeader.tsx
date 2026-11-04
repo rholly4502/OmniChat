@@ -1,4 +1,4 @@
-import { BotIcon, BoltIcon } from './Icons';
+import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ModelOption, TokenUsage } from '../types';
 
@@ -26,6 +26,8 @@ export interface ChatHeaderProps {
    * the active thread). Optional; when omitted no audit button is rendered.
    */
   onOpenAudit?: () => void;
+  /** Chill Mode active: show a subtle contraChill" pill beside the mode badge. */
+  chillMode?: boolean;
 }
 
 /**
@@ -34,7 +36,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode }: ChatHeaderProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
   const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -63,6 +65,15 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
           <span className="text-chill-accent font-medium">{modelLabel}</span>
         ) : null}
       </span>
+      {chillMode && (
+        <span
+          className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-surface px-2 py-1 text-xs text-chill-accent font-medium select-none"
+          aria-label="Chill Mode aktif"
+        >
+          <ChillIcon size={12} />
+          Chill
+        </span>
+      )}
       <div className="ml-auto inline-flex items-center gap-2">
         {(tokenLabel || estimate) && (
           <span
