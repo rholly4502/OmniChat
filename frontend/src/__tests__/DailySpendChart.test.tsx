@@ -94,3 +94,35 @@ describe('DailySpendChart', () => {
     expect(screen.queryByText(/Garis putus-putus/)).not.toBeInTheDocument();
   });
 });
+
+describe('DailySpendChart partial-month target (Hari)', () => {
+  it('prorates the daily-budget reference to the active-day count', () => {
+    // October is a partial month: anggaran 520.000 over 4 declared days -> daily
+    // budget 130.000. A 50k spend is under that, so it must NOT be flagged red
+    // (under the old full-calendar 520k/31≈16.774 logic it would have been).
+    const { container } = render(
+      <DailySpendChart
+        items={[item('2026-10-28', 50000)]}
+        month="2026-10"
+        anggaran={520000}
+        hari={4}
+      />,
+    );
+    const bars = barsOf(container);
+    expect(bars).toHaveLength(1);
+    expect(bars[0].className).toContain('bg-chill-accent');
+    expect(bars[0].className).not.toContain('bg-chill-red');
+  });
+
+  it('flags a spend over the prorated daily budget in the red register', () => {
+    const { container } = render(
+      <DailySpendChart
+        items={[item('2026-10-28', 150000)]}
+        month="2026-10"
+        anggaran={520000}
+        hari={4}
+      />,
+    );
+    expect(barsOf(container)[0].className).toContain('bg-chill-red/70');
+  });
+});

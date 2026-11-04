@@ -82,6 +82,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
             perKategori,
             targetNabung = target?.TargetNabung,
             anggaran = target?.Anggaran,
+    hari = target?.Hari,
             sisaAnggaran = target is null ? (long?)null : target.Anggaran - total,
             catatan = target?.Catatan,
         });

@@ -7,6 +7,8 @@ interface Props {
   month: string;
   /** Monthly budget for the viewed month (null when unset). */
   anggaran: number | null;
+  /** Active day count for a partial-month target (null/omitted = full month). */
+  hari?: number | null;
 }
 
 /** Days in `month` (YYYY-MM). Uses the JS Date rollover: day 0 of the month that
@@ -17,9 +19,11 @@ function daysInMonth(month: string): number {
 }
 
 /** Mirror of the backend's daily budget (ExpenseAdviceService): anggaran divided by
-    days-in-month, rounded to at least 1. Null when no budget is set. */
-function dailyBudgetFor(anggaran: number | null, dim: number): number | null {
-  return anggaran && anggaran > 0 ? Math.max(1, Math.round(anggaran / dim)) : null;
+    the effective day count, rounded to at least 1. A partial-month target declares
+    its active days (Hari); otherwise the calendar month length is used. Null when
+    no budget is set. */
+function dailyBudgetFor(anggaran: number | null, days: number): number | null {
+  return anggaran && anggaran > 0 ? Math.max(1, Math.round(anggaran / days)) : null;
 }
 
 /**
@@ -28,7 +32,7 @@ function dailyBudgetFor(anggaran: number | null, dim: number): number | null {
  * budget is set). Savings deposits (kategori "Nabung") are excluded to match the
  * backend's day-total semantics.
  */
-export function DailySpendChart({ items, month, anggaran }: Props) {
+export function DailySpendChart({ items, month, anggaran, hari }: Props) {
   const dim = daysInMonth(month);
 
   const byDay = new Map<number, number>();
@@ -54,7 +58,8 @@ export function DailySpendChart({ items, month, anggaran }: Props) {
     );
   }
 
-  const budget = dailyBudgetFor(anggaran, dim);
+  const effectiveDays = hari && hari > 0 ? hari : dim;
+  const budget = dailyBudgetFor(anggaran, effectiveDays);
   const chartMax = Math.max(...dayTotals, budget ?? 0, 1);
 
   return (

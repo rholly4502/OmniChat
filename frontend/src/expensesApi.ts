@@ -43,6 +43,8 @@ export interface ExpenseSummary {
   targetNabung: number | null;
   anggaran: number | null;
   sisaAnggaran: number | null;
+  /** Active day count for partial-month targets (null = full month). */
+  hari?: number | null;
   catatan?: string | null;
 }
 

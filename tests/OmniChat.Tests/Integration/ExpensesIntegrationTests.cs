@@ -127,7 +127,7 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
                             Keterangan = "c", Nominal = 15_000, SourceId = "a1b2c5" },
                     ], CancellationToken.None);
                 await repository.UpsertTargetAsync(
-                    new ExpenseTarget { Month = "2026-10", TargetNabung = 467_000, Anggaran = 520_000 },
+                    new ExpenseTarget { Month = "2026-10", TargetNabung = 467_000, Anggaran = 520_000, Hari = 4 },
                     CancellationToken.None);
             });
 
@@ -142,6 +142,9 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
             Assert.Equal(467_000, root.GetProperty("targetNabung").GetInt64());
             Assert.Equal(520_000, root.GetProperty("anggaran").GetInt64());
             Assert.Equal(475_000, root.GetProperty("sisaAnggaran").GetInt64());
+            // Partial-month target declares its active-day count; the API must expose it
+            // so the frontend chart can prorate its daily-budget reference line.
+            Assert.Equal(4, root.GetProperty("hari").GetInt32());
         }
         finally { File.Delete(db); }
     }

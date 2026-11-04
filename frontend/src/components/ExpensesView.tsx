@@ -433,7 +433,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
                 </span>
               </div>
-              <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} />
+              <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} hari={summary.hari ?? undefined} />
             </section>
 
             <HeaderDivider />
