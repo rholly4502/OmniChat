@@ -59,4 +59,12 @@ describe('pixel2 easter eggs + canvas texture', () => {
     expect(a).toContain('text-chill-deepsea');
     expect(a).toContain('pixel-shine');    // golden-star shine sweep
   });
+
+  it('AdvicePanel toggle keeps a stepped pixel chevron (disclosure affordance)', () => {
+    const a = F('components/AdvicePanel.tsx');
+    expect(a).toContain('polyline points="6 9 12 15 18 9"'); // square chevron glyph
+    expect(a).toContain('rotate-180');                        // points down when open
+    expect(a).toContain('[transition-timing-function:steps(2,jump-none)]'); // stepped, not tweened
+    expect(a).toContain('aria-hidden="true"');               // decorative only
+  });
 });
