@@ -45,12 +45,13 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
       {/* Hard top-left bevel (pixel meter register): a chunky light edge - no soft gradient. */}
       <PanelFrame />
       <div className="relative flex items-start gap-3">
-        <div className={`shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${
+        <div className={`relative shrink-0 w-9 h-9 rounded-none border flex items-center justify-center ${
           tone === 'red' ? 'text-chill-red border-chill-red/40 bg-chill-red/10'
           : tone === 'emerald' ? 'text-chill-sage border-chill-sage/40 bg-chill-sage/10'
           : 'text-chill-accent border-chill-accent/40 bg-chill-accent/10'
         }`}>
           <CategoryIcon kategori={icon} className="w-5 h-5" />
+          <span aria-hidden="true" className="absolute right-0 bottom-0 h-1 w-1 bg-black/25" />
         </div>
         <div className="min-w-0">
           <p className="text-xs text-chill-muted font-medium">{label}</p>

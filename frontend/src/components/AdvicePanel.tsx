@@ -56,6 +56,7 @@ function StatusCallout({
   return (
     <div className={`relative rounded-none border px-3 py-2.5 ${box}`}>
       <StatusCalloutTopEdge className={edge} />
+      <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-[2px] ${edge}`} />
       <p className={`text-sm flex items-start gap-2 ${weight}`}>
         {icon}
         <span>{children}</span>
@@ -72,6 +73,7 @@ function DailyTip({ label, children }: { label: string; children: ReactNode }) {
           edge ties each suggestion block into the same chiseled frame grammar. */}
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
       <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
       <p className="relative text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
       <p className="relative mt-0.5 text-sm text-chill-text">{children}</p>
     </div>
@@ -180,6 +182,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
                 <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
