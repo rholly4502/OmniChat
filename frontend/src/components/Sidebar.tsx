@@ -6,6 +6,8 @@ import { ChatStatsDialog } from './ChatStatsDialog';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ChatSession, ChatSettings, ConversationUsageSummary, ModelOption } from '../types';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
+import { BackendStatus } from './BackendStatus';
+import type { ApiStatus } from '../hooks/useApiHealth';
 
 /** Props accepted by {@link Sidebar}. */
 export interface SidebarProps {
@@ -103,6 +105,8 @@ export interface SidebarProps {
   usageSummary?: ConversationUsageSummary;
   /** Open the per-conversation audit dialog (message-level token/cost table). */
   onOpenAudit?: () => void;
+  /** Backend reachability, shown as a quiet note at the sidebar foot. */
+  backendStatus?: ApiStatus;
 }
 
 /**
@@ -155,6 +159,7 @@ export function Sidebar({
   onSelectView = () => {},
   usageSummary,
   onOpenAudit,
+  backendStatus = 'checking',
 }: SidebarProps) {
   // Two-step delete: tapping the bin only arms the row; the session is removed
   // when the user confirms. A 44px bin sits next to the session label, so a
@@ -856,6 +861,7 @@ export function Sidebar({
         </svg>
         Clear chat
       </button>
+      <BackendStatus status={backendStatus} />
     </aside>
   );
 }

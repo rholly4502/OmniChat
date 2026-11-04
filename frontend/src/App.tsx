@@ -13,6 +13,7 @@ import { useApiKey } from './hooks/useApiKey';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
+import { useApiHealth } from './hooks/useApiHealth';
 import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
@@ -103,6 +104,7 @@ export default function App() {
     : settings.systemPrompt;
 
   const catalog = useModelCatalog(apiKey);
+  const backendStatus = useApiHealth();
   const models = effectiveUseAgent ? catalog.agent : catalog.direct;
   // History spans both modes, so the filter dropdown must offer every model a
   // conversation could have run on — not just the active mode's catalog.
@@ -337,6 +339,7 @@ export default function App() {
         onChillModeChange={updateChillMode}
         activeView={activeView}
         onSelectView={setActiveView}
+        backendStatus={backendStatus}
       />
 
       <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
