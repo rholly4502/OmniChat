@@ -1273,5 +1273,21 @@ public class DeploymentConfigTests
         return markdown[start..nextHeading];
     }
 
+    /// <summary>
+    /// The deploy workflow must assert that the production API actually enforces
+    /// credentials. A 200 from /api/models means Security__ApiKey is unset on the
+    /// VPS .env and the entire API (including the paid Hermes gateway) is open.
+    /// This guard pins that check so it cannot be silently dropped.
+    /// </summary>
+    [Fact]
+    public void DeployWorkflow_AssertsAuthEnforcement_OnPublicApi()
+    {
+        var deploy = Read(".github/workflows/deploy.yml");
+        Assert.Contains("Auth enforcement check", deploy, StringComparison.Ordinal);
+        Assert.Contains("/api/models", deploy, StringComparison.Ordinal);
+        Assert.Contains("401", deploy, StringComparison.Ordinal);
+        Assert.Contains("WARNING", deploy, StringComparison.Ordinal);
+    }
+
 
 }

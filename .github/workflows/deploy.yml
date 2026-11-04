@@ -114,4 +114,19 @@ jobs:
               sleep 2
             done
 
+                        
+            # Security invariant: the API must require credentials in production. A 200 on
+            # /api/models means Security__ApiKey is unset on the VPS .env and the whole API is
+            # open (anyone can reach the paid Hermes gateway). This is a loud WARNING, not a
+            # hard failure: it must not block unrelated deploys, but it must be impossible to
+            # miss. Restore the key in /opt/OmniChat/.env and redeploy to clear it.
+            echo "=== Auth enforcement check ==="
+            AUTH_CODE="$(curl -s -o /dev/null -w '%{http_code}' https://rhol-ai.tech/api/models || echo 000)"
+            if [ "$AUTH_CODE" = "401" ]; then
+              echo "OK: /api/models requires credentials (401) — API key enforced."
+            else
+              echo "!!! WARNING: /api/models answered $AUTH_CODE (expected 401) — the API is OPEN."
+              echo "!!! Security__ApiKey appears unset on the VPS .env. Restore it and redeploy."
+            fi
+
             echo "=== Deploy complete: $DEPLOYED_SHA ==="
