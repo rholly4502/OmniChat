@@ -126,3 +126,27 @@ describe('DailySpendChart partial-month target (Hari)', () => {
     expect(barsOf(container)[0].className).toContain('bg-chill-red/70');
   });
 });
+
+describe('DailySpendChart day-axis', () => {
+  it('renders sparse day tick labels aligned to the column grid', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-11-02', 20000)]} month="2026-11" anggaran={3900000} />,
+    );
+    const labels = [...container.querySelectorAll('[data-testid="day-axis"] span')]
+      .map((s) => s.textContent)
+      .filter(Boolean);
+    // November has 30 days -> ticks every 5 (plus day 1): 1,5,10,15,20,25,30
+    expect(labels).toEqual(['1', '5', '10', '15', '20', '25', '30']);
+  });
+
+  it('omits non-tick days and never drops the last day', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-02-14', 20000)]} month="2026-02" anggaran={null} />,
+    );
+    // February 2026 has 28 days -> 1,5,10,15,20,25,28
+    const labels = [...container.querySelectorAll('[data-testid="day-axis"] span')]
+      .map((s) => s.textContent)
+      .filter(Boolean);
+    expect(labels).toEqual(['1', '5', '10', '15', '20', '25', '28']);
+  });
+});

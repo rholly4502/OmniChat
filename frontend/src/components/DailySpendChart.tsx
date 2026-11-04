@@ -103,6 +103,21 @@ export function DailySpendChart({ items, month, anggaran, hari }: Props) {
           })}
         </div>
       </div>
+      {/* Day-axis: sparse pixel tick labels aligned to the same column grid — the
+          chart is readable without hovering (the 12px floor is kept). */}
+      <div aria-hidden="true" data-testid="day-axis" className="mt-1 flex gap-px px-1 select-none">
+        {dayTotals.map((_, i) => {
+          const day = i + 1;
+          const show = day === 1 || day % 5 === 0 || day === dim;
+          return (
+            <div key={day} className="flex-1 min-w-0 text-center">
+              {show ? (
+                <span className="text-xs leading-none text-chill-muted/75 tabular-nums">{day}</span>
+              ) : null}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
