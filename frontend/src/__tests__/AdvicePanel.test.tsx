@@ -181,3 +181,22 @@ describe('AdvicePanel daily suggestions (P1-6)', () => {
 });
 
 
+
+describe('AdvicePanel category-trend icons (shared categoryIcons)', () => {
+  it('renders a pixel category icon beside every trend row', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    // Every trend row ("Pola pengeluaran") now carries the shared pixel glyph
+    // beside its category name — same icon language as the expenses page.
+    const rows = [...container.querySelectorAll('li')].filter((li) =>
+      li.textContent?.includes('Belanja') || li.textContent?.includes('Makan'),
+    );
+    expect(rows.length).toBeGreaterThanOrEqual(2);
+    for (const row of rows) {
+      expect(row.querySelector('svg[aria-hidden]')).toBeTruthy();
+    }
+  });
+});

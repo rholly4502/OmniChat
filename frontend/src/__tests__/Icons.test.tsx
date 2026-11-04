@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@testing-library/react";
-import { BotIcon, BoltIcon, LockIcon, UnlockIcon } from "../components/Icons";
+import { BotIcon, BoltIcon, ChillIcon, LockIcon, UnlockIcon } from "../components/Icons";
 
 describe("icons", () => {
   it("renders all icons as decorative SVGs hidden from assistive technology", () => {
@@ -30,5 +30,15 @@ describe("icons", () => {
     expect(bot).toHaveAttribute("height", "20");
     expect(bolt).toHaveAttribute("width", "18");
     expect(bolt).toHaveAttribute("height", "18");
+  });
+
+  it("renders ChillIcon as a decorative crisp-edged SVG with 14px default", () => {
+    render(<ChillIcon />);
+    const icon = document.querySelector("svg");
+    expect(icon).toHaveAttribute("aria-hidden", "true");
+    expect(icon).toHaveAttribute("viewBox", "0 0 24 24");
+    expect(icon).toHaveAttribute("width", "14");
+    expect(icon).toHaveAttribute("height", "14");
+    expect(icon).toHaveAttribute("shape-rendering", "crispEdges");
   });
 });

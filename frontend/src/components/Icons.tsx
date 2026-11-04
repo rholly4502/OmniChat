@@ -36,3 +36,14 @@ export function UnlockIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+
+
+/** Chill Mode sun glyph (relaxed persona). Shared so the Sidebar toggle and the
+    ChatHeader/MobileTopBar mode pills render one identical mark. */
+export function ChillIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true">
+      <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-6.36-1.42 1.42M7.06 16.94l-1.42 1.42M18.36 18.36l-1.42-1.42M7.06 7.06 5.64 5.64M12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8Z" />
+    </svg>
+  );
+}

@@ -12,7 +12,7 @@ export interface SidebarOverlayProps {
 export function SidebarOverlay({ onClose }: SidebarOverlayProps) {
   return (
     <div
-      className="fixed inset-0 bg-chill-bg/60 z-40 md:hidden animate-[fadeIn_0.25s_ease-out]"
+      className="fixed inset-0 bg-chill-bg/60 z-40 md:hidden pixel-overlay-fade"
       onClick={onClose}
       aria-hidden="true"
     />

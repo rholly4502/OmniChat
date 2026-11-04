@@ -452,8 +452,13 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .focus-mode .chat-header-bar { display: none; }
 .focus-mode .focus-hidden { display: none; }
 
-/* Fade-in for the mobile sidebar overlay (no hard pop when it appears). */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+/* Pixel overlay fade (mobile sidebar scrim): a hard stepped opacity snap (2
+   beats) instead of a smooth ease-out tween, matching the pixel transition
+   language. Reduced-motion falls back to the global media block. */
+@keyframes pixel-overlay-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.pixel-overlay-fade {
+  animation: pixel-overlay-fade 160ms steps(2, jump-none) both;
 }

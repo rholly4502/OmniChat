@@ -4,6 +4,7 @@ import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
 import { PixelProgress } from './PixelProgress';
 import { PanelFrame } from './PanelFrame';
+import { CategoryIcon } from './categoryIcons';
 
 /** Props accepted by {@link AdvicePanel}. */
 export interface AdvicePanelProps {
@@ -178,6 +179,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
 
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
+                <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
@@ -220,9 +222,12 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       <ul className="space-y-1.5">
                         {advice.categoryTrend.slice(0, 4).map((c) => (
                           <li key={c.kategori} className="text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-chill-text">{c.kategori}</span>
-                              <span className="tabular-nums text-chill-muted">{formatRupiah(c.total)}</span>
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="inline-flex items-center gap-1.5 min-w-0 text-chill-text">
+                                <CategoryIcon kategori={c.kategori} className="w-3.5 h-3.5 shrink-0" />
+                                <span className="truncate">{c.kategori}</span>
+                              </span>
+                              <span className="tabular-nums text-chill-muted shrink-0">{formatRupiah(c.total)}</span>
                             </div>
                             <div className="mt-1">
                               <PixelProgress percent={(c.total / trendMax) * 100} />
