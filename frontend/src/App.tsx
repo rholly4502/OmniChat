@@ -323,6 +323,7 @@ export default function App() {
         onPinSession={handlePinSession}
         onExportSession={exportSession}
         usageSummary={usageSummary}
+        onOpenAudit={() => setAuditOpen(true)}
         settings={settings}
         onSystemPromptChange={updateSystemPrompt}
         onResetPersona={resetPersona}

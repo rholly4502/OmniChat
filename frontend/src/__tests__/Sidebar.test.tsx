@@ -844,3 +844,30 @@ describe('Sidebar chill mode toggle', () => {
     expect(screen.getByRole('checkbox', { name: 'Chill Mode' })).toBeChecked();
   });
 });
+
+describe('Sidebar audit entry (mobile-accessible)', () => {
+  it('renders an Audit button when wired and forwards the click', () => {
+    const onOpenAudit = vi.fn();
+    renderSidebar({ onOpenAudit });
+    const btn = screen.getByRole('button', { name: /Audit percakapan/i });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(onOpenAudit).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render the Audit button when unwired', () => {
+    renderSidebar();
+    expect(screen.queryByRole('button', { name: /Audit percakapan/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps the Audit button at the 44px touch floor with a focus ring and pixel surface', () => {
+    renderSidebar({ onOpenAudit: vi.fn() });
+    const btn = screen.getByRole('button', { name: /Audit percakapan/i });
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('focus-visible:ring-2');
+    expect(btn.className).toContain('focus-visible:ring-chill-accent/60');
+    expect(btn.className).toContain('pixel-shadow-sm');
+    expect(btn.className).toContain('rounded-none');
+    expect(btn.className).toContain('bg-chill-surface');
+  });
+});

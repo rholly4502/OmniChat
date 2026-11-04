@@ -101,6 +101,8 @@ export interface SidebarProps {
   onSelectView?: (view: 'chat' | 'expenses') => void;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary?: ConversationUsageSummary;
+  /** Open the per-conversation audit dialog (message-level token/cost table). */
+  onOpenAudit?: () => void;
 }
 
 /**
@@ -152,6 +154,7 @@ export function Sidebar({
   activeView = 'chat',
   onSelectView = () => {},
   usageSummary,
+  onOpenAudit,
 }: SidebarProps) {
   // Two-step delete: tapping the bin only arms the row; the session is removed
   // when the user confirms. A 44px bin sits next to the session label, so a
@@ -540,6 +543,19 @@ export function Sidebar({
             })}
           </div>
         </div>
+      )}
+
+      {/* Audit: per-message token/cost table for the active thread (mobile-accessible via the drawer). */}
+      {onOpenAudit && (
+        <button
+          type="button"
+          onClick={onOpenAudit}
+          aria-label="Audit percakapan"
+          className="w-full inline-flex items-center justify-center gap-1.5 min-h-[44px] rounded-none bg-chill-surface text-sm font-medium text-chill-text border border-chill-border hover:border-chill-accent hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition pixel-shadow-sm"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><rect x="4" y="4" width="16" height="16" /><line x1="8" y1="9" x2="16" y2="9" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="17" x2="13" y2="17" /></svg>
+          Audit Percakapan
+        </button>
       )}
 
       {/* Usage / audit overview — cumulative tokens and estimated cost across every stored conversation */}
