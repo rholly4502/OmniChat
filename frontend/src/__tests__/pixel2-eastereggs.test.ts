@@ -43,11 +43,20 @@ describe('pixel2 easter eggs + canvas texture', () => {
     expect(v).toContain('Dave the Diver');
   });
 
+  it('ExpensesView empty states carry the shared pixel glyph stamp', () => {
+    const v = F('components/ExpensesView.tsx');
+    expect(v).toContain('Belum ada transaksi.');
+    expect(v).toContain('Tidak ada transaksi yang cocok dengan filter.');
+    expect(v).toContain('M4 9h16M4 13h16M4 17h10'); // transactions-empty ledger
+    expect(v).toContain('M15 15l4 4');               // filter no-match search lens
+  });
+
   it('AdvicePanel keeps both easter-egg families (sage sprout, deep-sea bubble)', () => {
     const a = F('components/AdvicePanel.tsx');
     expect(a).toContain('Stardew Valley'); // sage sprout tooltip
     expect(a).toContain('Dave the Diver'); // deep-sea bubble tooltip
     expect(a).toContain('text-chill-sage');
     expect(a).toContain('text-chill-deepsea');
+    expect(a).toContain('pixel-shine');    // golden-star shine sweep
   });
 });

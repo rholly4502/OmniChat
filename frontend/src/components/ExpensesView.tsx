@@ -494,10 +494,20 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               )}
 
               {items.length === 0 ? (
-                <p className="text-sm text-chill-muted">Belum ada transaksi.</p>
+                <p className="flex items-center gap-2 text-sm text-chill-muted">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 text-chill-accent">
+                    <rect x="4" y="5" width="16" height="14" />
+                    <path d="M4 9h16M4 13h16M4 17h10" />
+                  </svg>
+                  <span>Belum ada transaksi.</span>
+                </p>
               ) : filteredItems.length === 0 ? (
-                <div className="rounded-none border border-chill-border bg-chill-surface px-4 py-3 text-sm text-chill-muted">
-                  Tidak ada transaksi yang cocok dengan filter.
+                <div className="rounded-none border border-chill-border bg-chill-surface px-4 py-3 text-sm text-chill-muted flex items-center gap-2">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 text-chill-accent">
+                    <rect x="5" y="5" width="12" height="12" />
+                    <path d="M15 15l4 4" />
+                  </svg>
+                  <span>Tidak ada transaksi yang cocok dengan filter.</span>
                 </div>
               ) : (
                 <ul className="space-y-2">

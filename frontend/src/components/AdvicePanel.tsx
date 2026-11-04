@@ -255,10 +255,11 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </svg>
                     </span>
                     <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Goal: Part PC</h4>
-                    <span title="Stardew Valley: a golden star for your savings goal" className="inline-flex">
+                    <span title="Stardew Valley: a golden star for your savings goal" className="inline-flex relative">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-accent">
                         <path d="M12 3l2.2 4.4 4.8.7-3.5 3.4.8 4.8L12 14.2 7.7 16.3l.8-4.8-3.5-3.4 4.8-.7z" />
                       </svg>
+                      <span aria-hidden="true" className="absolute right-0 top-0 h-[2px] w-[2px] bg-white/80 pixel-shine" />
                     </span>
                   </div>
                 <ul className="space-y-1 mb-2">

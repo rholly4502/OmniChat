@@ -333,6 +333,17 @@ summary,
 .pixel-reveal {
   animation: pixel-reveal 200ms steps(3, jump-none) both;
 }
+/* Stepped shine sweep for the savings-goal gold star (Pixeli: a shine sweep on
+   a coin/bar is the one decoration worth frames). Hard on/off beats — the same
+   register as pixel-blink; uses the chill accent, no gradient/blur. Reduced-
+   motion falls back to the global media block (duration ~0 → it settles). */
+@keyframes pixel-shine {
+  0%, 55% { opacity: 0; }
+  70% { opacity: 1; }
+  85%, 100% { opacity: 0; }
+}
+.pixel-shine { animation: pixel-shine 3.4s linear infinite; }
+
 /* For decorative bitmap assets if any are added later. */
 .pixel-art { image-rendering: pixelated; }
 
