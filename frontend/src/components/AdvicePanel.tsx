@@ -74,7 +74,7 @@ function DailyTip({ label, children }: { label: string; children: ReactNode }) {
       <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
       <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
       <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
-      <p className="relative text-xs font-medium uppercase tracking-wide text-chill-deepsea">{label}</p>
+      <p className="relative text-xs font-medium uppercase tracking-wide text-chill-accent">{label}</p>
       <p className="relative mt-0.5 text-sm text-chill-text">{children}</p>
     </div>
   );
@@ -254,6 +254,18 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </ul>
                     );
                   })()}
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between gap-3 mb-1">
+                      <span className="text-xs font-medium text-chill-muted">Proyeksi akhir bulan</span>
+                      <span className="text-xs tabular-nums text-chill-accent">
+                        {formatRupiah(advice.projection.projectedTotal)} / {formatRupiah(advice.projection.anggaran)}
+                      </span>
+                    </div>
+                    <PixelProgress
+                      percent={(advice.projection.projectedTotal / Math.max(1, advice.projection.anggaran)) * 100}
+                      tone={advice.projection.projectedOver > 0 ? 'red' : 'accent'}
+                    />
+                  </div>
                   <p className="mt-2 text-sm text-chill-muted tabular-nums">
                     Jika pola ini berlanjut, akhir bulan ± {formatRupiah(advice.projection.projectedTotal)} · anggaran {formatRupiah(advice.projection.anggaran)}
                     {advice.projection.projectedOver > 0

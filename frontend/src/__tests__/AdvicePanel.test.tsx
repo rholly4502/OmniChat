@@ -200,3 +200,21 @@ describe('AdvicePanel category-trend icons (shared categoryIcons)', () => {
     }
   });
 });
+
+describe('AdvicePanel projection meter (Design Loop)', () => {
+  it('renders the pixel projection gauge and keeps the segmented meter register', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText('Proyeksi akhir bulan')).toBeInTheDocument();
+    // Projected total rendered via the shared rupiah formatter.
+    expect(screen.getByText(/Rp 320\.000 \/ Rp 520\.000/)).toBeInTheDocument();
+
+    // Trend rows (2) + projection meter = a segmented pixel bar per metric.
+    const bars = document.querySelectorAll('div[class*="gap-[3px]"]');
+    expect(bars.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
