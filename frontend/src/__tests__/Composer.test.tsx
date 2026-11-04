@@ -118,3 +118,23 @@ describe('Composer', () => {
     expect(screen.getByText('Kirim').className).toContain('min-h-[44px]');
   });
 });
+
+describe('Composer keyboard shortcuts', () => {
+  it('sends on Ctrl+Enter', () => {
+    const props = renderComposer({ input: 'Halo' });
+    fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'Enter', ctrlKey: true });
+    expect(props.onSend).toHaveBeenCalledTimes(1);
+  });
+
+  it('sends on Cmd+Enter (meta)', () => {
+    const props = renderComposer({ input: 'Halo' });
+    fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'Enter', metaKey: true });
+    expect(props.onSend).toHaveBeenCalledTimes(1);
+  });
+
+  it('still treats Shift+Enter as a newline (no ctrl/meta)', () => {
+    const props = renderComposer({ input: 'Halo' });
+    fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'Enter', shiftKey: true });
+    expect(props.onSend).not.toHaveBeenCalled();
+  });
+});

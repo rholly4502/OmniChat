@@ -6,6 +6,7 @@ import { TypingIndicator } from './TypingIndicator';
 import type { Message, ModelOption } from '../types';
 import { chatSuggestions } from '../suggestions';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import { STICK_THRESHOLD_PX } from '../hooks/useAutoScroll';
 
 /** Format an epoch-ms message timestamp as a compact, localized clock time. */
 function formatMessageTime(ts?: number): string {
@@ -137,6 +138,39 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     }
   }, [conversationKey]);
 
+  // --- Jump-to-bottom affordance -------------------------------------------
+  // Track whether the reader has scrolled away from the bottom of the
+  // transcript; while they have, a floating down-arrow button offers a quick
+  // way back. A hidden button is a no-op, so it costs nothing when not shown.
+  const [awayFromBottom, setAwayFromBottom] = useState(false);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const update = () => {
+      const far = el.scrollHeight - el.scrollTop - el.clientHeight > STICK_THRESHOLD_PX;
+      setAwayFromBottom(far && el.scrollHeight > el.clientHeight);
+    };
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    return () => el.removeEventListener('scroll', update);
+  }, [scrollRef]);
+
+  // Re-evaluate after messages grow so a long blocked response or a restored
+  // session flips the toggle correctly even without an intervening user scroll.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const far = el.scrollHeight - el.scrollTop - el.clientHeight > STICK_THRESHOLD_PX;
+    setAwayFromBottom(far && el.scrollHeight > el.clientHeight);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, scrollRef]);
+
+  const jumpToBottom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+  };
+
   const handleCopy = (text: string, index: number) => {
     navigator.clipboard?.writeText(text).then(() => {
       setCopiedIndex(index);
@@ -183,7 +217,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
 
   return (
     <div ref={scrollRef} aria-busy={streaming} aria-live="polite" aria-label="Chat messages"
-      className="flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
+      className="relative flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
       {messages.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center gap-3 px-4 text-center">
           {/* Decorative pixel-art terminal ornament (chill palette, hard-edged).
@@ -406,6 +440,17 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           )}
         </div>
       ))}
+      {awayFromBottom && messages.length > 0 && (
+        <button
+          type="button"
+          onClick={jumpToBottom}
+          aria-label="Lompat ke bawah"
+          title="Lompat ke bawah"
+          className="absolute bottom-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-accent pixel-shadow hover:bg-chill-accent hover:text-chill-on-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+        </button>
+      )}
     </div>
   );
 }

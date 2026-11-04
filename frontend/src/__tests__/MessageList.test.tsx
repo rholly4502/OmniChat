@@ -594,3 +594,47 @@ describe('MessageList timestamps', () => {
   });
 
 });
+
+describe('MessageList jump-to-bottom affordance', () => {
+  const msgs = (): Message[] => [
+    { role: 'user', content: 'Apa itu?' },
+    { role: 'assistant', content: 'Jawaban panjang'.repeat(40) },
+  ];
+
+  function setScrollMetrics(el: HTMLElement, height: number, client: number, top: number) {
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: height });
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: client });
+    Object.defineProperty(el, 'scrollTop', { configurable: true, value: top });
+  }
+
+  it('is hidden on first paint (no scroll offset)', () => {
+    renderList({ messages: msgs() });
+    expect(screen.queryByRole('button', { name: 'Lompat ke bawah' })).not.toBeInTheDocument();
+  });
+
+  it('appears when the reader scrolls away from the bottom', () => {
+    const { scrollRef } = renderList({ messages: msgs() });
+    const el = scrollRef.current!;
+    setScrollMetrics(el, 1000, 200, 100); // far from bottom => show
+    fireEvent.scroll(el);
+    expect(screen.getByRole('button', { name: 'Lompat ke bawah' })).toBeInTheDocument();
+  });
+
+  it('stays hidden when tall content is pinned at the bottom', () => {
+    const { scrollRef } = renderList({ messages: msgs() });
+    const el = scrollRef.current!;
+    setScrollMetrics(el, 1000, 200, 800); // at/near bottom => hide
+    fireEvent.scroll(el);
+    expect(screen.queryByRole('button', { name: 'Lompat ke bawah' })).not.toBeInTheDocument();
+  });
+
+  it('jumps to the bottom when clicked', () => {
+    const { scrollRef } = renderList({ messages: msgs() });
+    const el = scrollRef.current!;
+    setScrollMetrics(el, 1000, 200, 100);
+    fireEvent.scroll(el);
+    const scrollSpy = vi.spyOn(el, 'scrollTo').mockImplementation(() => {});
+    fireEvent.click(screen.getByRole('button', { name: 'Lompat ke bawah' }));
+    expect(scrollSpy).toHaveBeenCalledWith({ top: 1000, behavior: 'auto' });
+  });
+});
