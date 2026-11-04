@@ -260,4 +260,28 @@ public sealed class ExpenseImporterTests : IDisposable
         await Assert.ThrowsAsync<DirectoryNotFoundException>(
             () => _importer.ImportDirectoryAsync("/nonexistent/ledger", CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Import_reads_partial_month_day_count()
+    {
+        var dir = WriteLedger(
+            Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N")),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n",
+            """{"2026-10": {"target_nabung": 467000, "anggaran": 520000, "hari": 4}}""");
+
+        try
+        {
+            var result = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            Assert.Equal(1, result.ExpensesInserted);
+
+            var target = await _repository.GetTargetAsync("2026-10", CancellationToken.None);
+            Assert.NotNull(target);
+            Assert.Equal(4, target!.Hari);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 }

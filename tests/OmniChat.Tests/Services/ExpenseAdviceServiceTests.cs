@@ -418,4 +418,24 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(a.Daily.Sarapan, b.Daily.Sarapan);        // same menu set (period 14)
         Assert.NotEqual(a.Daily.Aktivitas, b.Daily.Aktivitas); // but a different activity
     }
+
+    [Fact]
+    public async Task PartialMonthTarget_usesActiveDaysForDailyBudget()
+    {
+        // A prorated partial month (e.g. October 2026, only 4 active days) declares its
+        // active day count (Hari). Budget 520k over 4 days = 130k/day, so a realistic
+        // 56k spend is within budget — NOT falsely over like the old full-31-day split.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000, Hari = 4 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Makan", 56_000, "a"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        Assert.Equal(130_000, advice.DailyBudget);
+        Assert.Equal("oke", advice.Status);
+        Assert.Equal(0, advice.OverBy);
+        Assert.Empty(advice.Suggestions);
+    }
 }

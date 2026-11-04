@@ -140,6 +140,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("Hari")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Month")
                         .IsRequired()
                         .HasMaxLength(7)

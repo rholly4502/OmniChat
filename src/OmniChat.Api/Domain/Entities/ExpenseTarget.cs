@@ -18,6 +18,11 @@ public class ExpenseTarget
     /// <summary>Monthly spending cap (excluding saving), in rupiah.</summary>
     public long Anggaran { get; set; }
 
+    /// <summary>Optional number of active (spending) days in the month — prorates the
+    /// daily budget for partial months (e.g. a month that starts mid-calendar-month).
+    /// Null means the calendar day count.</summary>
+    public int? Hari { get; set; }
+
     /// <summary>Optional note explaining how the numbers were derived.</summary>
     public string? Catatan { get; set; }
 }

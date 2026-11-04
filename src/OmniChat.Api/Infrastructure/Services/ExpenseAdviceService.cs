@@ -27,7 +27,11 @@ public sealed class ExpenseAdviceService(
         var total = rows.Where(r => r.Kategori != "Nabung").Sum(r => r.Nominal);
 
         var anggaran = target?.Anggaran ?? 0;
-        var dailyBudget = anggaran > 0 ? Math.Max(1, (long)Math.Round(anggaran / (double)daysInMonth)) : 0;
+        // A partial-month target can declare its active day count (Hari); otherwise the
+        // calendar month length is used. Prorating over the wrong (full) count would make
+        // each day's allowance too small and falsely flag a realistic spend as over budget.
+        var effectiveDays = target?.Hari is > 0 ? target.Hari.Value : daysInMonth;
+        var dailyBudget = anggaran > 0 ? Math.Max(1, (long)Math.Round(anggaran / (double)effectiveDays)) : 0;
 
         string status;
         long overBy = 0;

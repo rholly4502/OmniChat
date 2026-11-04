@@ -153,6 +153,9 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
                     case "catatan":
                         target.Catatan = field.Value.GetString();
                         break;
+                    case "hari":
+                        target.Hari = field.Value.GetInt32();
+                        break;
                 }
             }
 
