@@ -7,6 +7,7 @@ import { Composer } from './components/Composer';
 import { MobileTopBar } from './components/MobileTopBar';
 import { ChatHeader } from './components/ChatHeader';
 import { ChatStatsDialog } from './components/ChatStatsDialog';
+import { ConversationAuditDialog } from './components/ConversationAuditDialog';
 import { SidebarOverlay } from './components/SidebarOverlay';
 import { useApiKey } from './hooks/useApiKey';
 import { useAuthGate } from './hooks/useAuthGate';
@@ -38,6 +39,7 @@ export default function App() {
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [activeView, setActiveView] = useState<'chat' | 'expenses'>('chat');
   const [statsOpen, setStatsOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
   const [historyModelFilter, setHistoryModelFilter] = useState('');
   const [historyDateFrom, setHistoryDateFrom] = useState('');
@@ -352,6 +354,7 @@ export default function App() {
               models={models}
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}
+              onOpenAudit={() => setAuditOpen(true)}
             />
             <MessageList
               messages={messages}
@@ -378,6 +381,12 @@ export default function App() {
               open={statsOpen}
               onClose={() => setStatsOpen(false)}
               usage={usageSummary}
+              modelOptions={historyModels}
+            />
+            <ConversationAuditDialog
+              open={auditOpen}
+              onClose={() => setAuditOpen(false)}
+              session={activeSession}
               modelOptions={historyModels}
             />
           </>
