@@ -195,4 +195,15 @@ describe('pixel2 chill consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('weekly spend breakdown keeps the shared meter/chip register (solid accent current-week chip + hard top bevel)', () => {
+    const w = readFileSync(resolve(SRC, 'components/WeeklySpendBreakdown.tsx'), 'utf8');
+    // Current-week chip uses the same solid-accent register as the active segment chips.
+    expect(w).toContain('text-chill-bg');
+    expect(w).toContain('bg-chill-accent');
+    expect(w).toContain('border-chill-accent');
+    // Filled bars carry the shared hard 2px top bevel (matches daily/trend bars).
+    expect(w).toContain('relative h-full');
+    expect(w).toContain('bg-white/15');
+  });
 });

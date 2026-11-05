@@ -61,7 +61,7 @@ export function WeeklySpendBreakdown({ items, month, today }: Props) {
               <span className="tabular-nums">{fmtRange(w.start, w.end)}</span>
               <span className="inline-flex items-center gap-2">
                 {current && (
-                  <span className="text-xs leading-none uppercase tracking-wide pixel-heading text-chill-accent border border-chill-accent/50 px-1.5 py-0.5">
+                  <span className="text-xs leading-none uppercase tracking-wide pixel-heading text-chill-bg bg-chill-accent border border-chill-accent px-1.5 py-0.5">
                     Minggu ini
                   </span>
                 )}
@@ -70,9 +70,12 @@ export function WeeklySpendBreakdown({ items, month, today }: Props) {
             </div>
             <div className="mt-1 h-[6px] bg-chill-border/40 border border-chill-border/50" aria-hidden="true">
               <div
-                className={`h-full ${current ? 'bg-chill-accent' : 'bg-chill-accent/50'}`}
+                className={`relative h-full ${current ? 'bg-chill-accent' : 'bg-chill-accent/50'}`}
                 style={{ width: `${Math.round((w.total / maxTotal) * 100)}%` }}
-              />
+              >
+                {/* Hard top-left bevel (pixel meter register) — matches the daily/trend bars. */}
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-white/15" />
+              </div>
             </div>
           </li>
         );
