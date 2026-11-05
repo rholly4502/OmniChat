@@ -225,7 +225,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
               {advice.categoryTrend.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-2">
-                    {/* Easter egg: deep-sea bubble (Dave the Diver) — decorative, decorative-hidden */}
+                    {/* Easter egg: deep-sea bubble (Dave the Diver) — decorative, aria-hidden */}
                     <span title="Dave the Diver: dive the monthly trend 🐠" className="inline-flex">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-deepsea">
                         <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />

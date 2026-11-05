@@ -65,13 +65,13 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
 function HeaderDivider() {
   return (
     <div aria-hidden="true" className="my-6 flex items-center gap-3">
-      <div className="h-px flex-1 bg-chill-border" />
+      <div className="h-[2px] flex-1 bg-chill-border" />
       <svg viewBox="0 0 16 16" fill="none" aria-hidden="true" className="h-3 w-3 text-chill-accent shrink-0">
         <rect x="7" y="2" width="2" height="2" fill="currentColor" />
         <rect x="5" y="5" width="6" height="6" fill="currentColor" />
         <rect x="7" y="10" width="2" height="2" fill="currentColor" />
       </svg>
-      <div className="h-px flex-1 bg-chill-border" />
+      <div className="h-[2px] flex-1 bg-chill-border" />
     </div>
   );
 }
@@ -395,6 +395,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             {remBudget && (
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-chill-text">Sisa per hari</span>
                   {remBudget.sisa >= 0 ? (
@@ -419,6 +420,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 {/* Shared hard 2px top-edge bevel (panel frame register) — chunky light
                     edge, no soft gradient; mirrors StatCard/AdvicePanel frames. */}
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-chill-text">Tabungan bulan ini</span>
                   <span className="tabular-nums text-chill-muted">
