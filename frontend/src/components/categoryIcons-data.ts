@@ -16,4 +16,5 @@ export const CATEGORY_ICONS: Record<string, string> = {
   Hiburan: 'M6 4l12 8-12 8V4Z',
   Nabung: 'M4 6h16v12H4V6ZM6 9h.1M6 15h.1M10 12h4',
   Lain: 'M12 3l3 3-3 3M9 6h6M12 15l3 3-3 3M9 18h6',
+  Gaji: 'M12 4a8 8 0 1 0 0 16 8 8 0 0 0 0-16ZM8 12h8',
 };

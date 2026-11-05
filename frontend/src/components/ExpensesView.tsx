@@ -362,7 +362,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 />
                 <StatCard label="Total Pemasukan" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Tagihan" />
                 <StatCard label="Total Pengeluaran" value={sisa ? formatRupiah(sisa.totalPengeluaran) : '—'} icon="Lain" tone="accent" />
-                <StatCard label="Dari Gaji" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Kesehatan" />
+                <StatCard label="Dari Gaji" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Gaji" />
               </section>
             ) : (
               <section aria-label="Ringkasan bulanan" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -413,7 +413,11 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             )}
 
             {summary!.catatan ? (
-              <p className="text-xs text-chill-muted">{summary!.catatan}</p>
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <p className="text-xs text-chill-muted">{summary!.catatan}</p>
+              </div>
             ) : null}
 
             {savingsTarget !== null && savingsTarget > 0 && (
