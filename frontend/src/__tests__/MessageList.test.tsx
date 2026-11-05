@@ -638,3 +638,95 @@ describe('MessageList jump-to-bottom affordance', () => {
     expect(scrollSpy).toHaveBeenCalledWith({ top: 1000, behavior: 'auto' });
   });
 });
+
+describe('MessageList in-transcript search', () => {
+  const msgset = (): Message[] => [
+    { role: 'user', content: 'bagaimana cara hemat token?' },
+    { role: 'assistant', content: 'Token hemat dengan ringkas.' },
+    { role: 'user', content: 'cara lain selain token?' },
+  ];
+
+  const openSearch = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Cari di percakapan' }));
+  };
+
+  it('reveals the search toolbar from the floating toggle', () => {
+    renderList({ messages: msgset() });
+    openSearch();
+    expect(screen.getByRole('search')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+  });
+
+  it('highlights literal matches inside user bubbles and reports the total count', () => {
+    const { container } = renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    // "token" appears in both user turns; assistant markdown is not injected with inline marks
+    expect(container.querySelectorAll('mark').length).toBe(2);
+    expect(screen.getByText('3 cocok')).toBeInTheDocument();
+  });
+
+  it('shows a no-match state and disables navigation', () => {
+    renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'zzz' } });
+    expect(screen.getByText('Tidak ada yang cocok')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sebelumnya' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Berikutnya' })).toBeDisabled();
+  });
+
+  it('steps through matching messages with prev/next and marks the active row', () => {
+    // jsdom lacks Element.prototype.scrollIntoView; the component guards it with
+    // an optional call, so we only assert the active-row transition here.
+    renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    const activeIndex = () => {
+      const rows = [...screen.getByLabelText('Chat messages').querySelectorAll('[data-msg-index]')];
+      const active = rows.filter((r) => r.getAttribute('data-active') === 'true');
+      return active.map((r) => Number(r.getAttribute('data-msg-index')));
+    };
+    expect(activeIndex()).toEqual([0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Berikutnya' }));
+    expect(activeIndex()).toEqual([1]);
+    fireEvent.click(screen.getByRole('button', { name: 'Sebelumnya' }));
+    expect(activeIndex()).toEqual([0]);
+  });
+
+  it('closes the toolbar and clears highlights', () => {
+    const { container } = renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    expect(container.querySelectorAll('mark').length).toBe(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup pencarian' }));
+    expect(screen.queryByRole('search')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('mark').length).toBe(0);
+  });
+
+  it('keeps assistant markdown intact while searching', () => {
+    renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'ringkas' } });
+    // the assistant reply still renders through markdown unmodified (no injected <mark>)
+    expect(screen.getByText(/Token hemat/)).toBeInTheDocument();
+  });
+
+  it('resets search state when the conversation key changes', async () => {
+    const { rerender } = renderList({ messages: msgset(), conversationKey: 'conv-A' });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    expect(screen.getByRole('search')).toBeInTheDocument();
+    rerender(
+      <MessageList
+        messages={msgset()}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={createRef<HTMLDivElement>()}
+        conversationKey="conv-B"
+      />,
+    );
+    await waitFor(() => expect(screen.queryByRole('search')).not.toBeInTheDocument());
+  });
+});

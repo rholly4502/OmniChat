@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
@@ -16,6 +16,32 @@ function formatMessageTime(ts?: number): string {
   const sameDay = d.toDateString() === today.toDateString();
   const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   return sameDay ? time : `${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${time}`;
+}
+
+/** Escape regex metacharacters so a user query is matched literally. */
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Split a message body into plain and matching segments for a case-insensitive
+ * literal query. Used to inline-highlight matches inside user bubbles (plain
+ * text) without touching markdown parsing for assistant replies.
+ */
+function splitSegments(text: string, query: string): { text: string; match: boolean }[] {
+  if (!query.trim()) return [{ text, match: false }];
+  const re = new RegExp(escapeRegExp(query.trim()), 'gi');
+  const out: { text: string; match: boolean }[] = [];
+  let last = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    if (m.index > last) out.push({ text: text.slice(last, m.index), match: false });
+    out.push({ text: m[0], match: true });
+    last = m.index + m[0].length;
+    if (m[0].length === 0) re.lastIndex++;
+  }
+  if (last < text.length) out.push({ text: text.slice(last), match: false });
+  return out;
 }
 
 /** Props accepted by {@link MessageList}. */
@@ -121,6 +147,47 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   /** Resolved label of the model currently selected, for the typing indicator. */
   const activeModelLabel = models.find((m) => m.id === model)?.label;
 
+  // --- In-transcript search -------------------------------------------------
+  // Self-contained local state: the search toolbar highlights matches inside
+  // user bubbles and lets the reader step through every matching message. It
+  // is reset together with the other transient per-conversation UI state.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  const matchRefs = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return { rows: [] as { mi: number; count: number }[], total: 0 };
+    const rows: { mi: number; count: number }[] = [];
+    let total = 0;
+    messages.forEach((msg, mi) => {
+      const c = (msg.content.toLowerCase().match(new RegExp(escapeRegExp(q), 'g')) || []).length;
+      if (c > 0) { rows.push({ mi, count: c }); total += c; }
+    });
+    return { rows, total };
+  }, [messages, query]);
+
+  const totalMatches = matchRefs.total;
+  const activeRowMi = matchRefs.rows.length > 0
+    ? matchRefs.rows[Math.min(activeIdx, matchRefs.rows.length - 1)].mi
+    : -1;
+
+  const openSearch = () => { setSearchOpen(true); setActiveIdx(0); };
+  const closeSearch = () => { setSearchOpen(false); setQuery(''); setActiveIdx(0); };
+  const applyQuery = (value: string) => { setQuery(value); setActiveIdx(0); };
+  const goPrev = () => setActiveIdx((a) => (a <= 0 ? matchRefs.rows.length - 1 : a - 1));
+  const goNext = () => setActiveIdx((a) => (a >= matchRefs.rows.length - 1 ? 0 : a + 1));
+
+  function scrollToRow(mi: number) {
+    const el = scrollRef.current?.querySelector<HTMLElement>(`[data-msg-index="${mi}"]`);
+    el?.scrollIntoView?.({ block: 'nearest', behavior: 'auto' });
+  }
+
+  useEffect(() => {
+    if (searchOpen && query.trim() && activeRowMi >= 0) scrollToRow(activeRowMi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIdx, searchOpen]);
+
   /**
    * The transient UI state below is keyed by message *index*, so it must be
    * scoped to the conversation that is currently shown. Without this reset, a
@@ -135,6 +202,9 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setCopiedIndex(null);
       setEditingIndex(null);
       setDraft('');
+      setSearchOpen(false);
+      setQuery('');
+      setActiveIdx(0);
     }
   }, [conversationKey]);
 
@@ -218,6 +288,52 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   return (
     <div ref={scrollRef} aria-busy={streaming} aria-live="polite" aria-label="Chat messages"
       className="relative flex-1 overflow-y-auto overscroll-y-contain p-3 md:p-6 space-y-3 md:space-y-4">
+      {searchOpen && (
+        <div role="search" className="sticky top-0 z-20 -mx-3 md:-mx-6 px-3 md:px-6 py-2 bg-chill-bg border-b border-chill-border flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true" className="text-chill-muted shrink-0"><rect x="4" y="4" width="12" height="12" /><line x1="14" y1="14" x2="20" y2="20" /></svg>
+          <input
+            value={query}
+            onChange={(e) => applyQuery(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') closeSearch(); }}
+            placeholder="Cari di percakapan…"
+            aria-label="Cari pesan"
+            autoFocus
+            className="min-w-0 flex-1 bg-transparent text-base md:text-sm text-chill-text placeholder:text-chill-muted outline-none"
+          />
+          <span className="text-xs text-chill-muted select-none whitespace-nowrap" aria-live="polite" aria-label="Jumlah hasil pencarian">
+            {query.trim() ? (totalMatches > 0 ? `${totalMatches} cocok` : 'Tidak ada yang cocok') : ''}
+          </span>
+          <button
+            type="button"
+            onClick={goPrev}
+            disabled={totalMatches === 0}
+            aria-label="Sebelumnya"
+            title="Sebelumnya"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={totalMatches === 0}
+            aria-label="Berikutnya"
+            title="Berikutnya"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+          <button
+            type="button"
+            onClick={closeSearch}
+            aria-label="Tutup pencarian"
+            title="Tutup pencarian"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+      )}
       {messages.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center gap-3 px-4 text-center">
           {/* Decorative pixel-art terminal ornament (chill palette, hard-edged).
@@ -289,7 +405,9 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       {messages.map((m, i) => (
         <div
           key={i}
-          className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          data-msg-index={i}
+          data-active={searchOpen && i === activeRowMi ? 'true' : undefined}
+          className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}${searchOpen && i === activeRowMi ? ' outline outline-2 outline-chill-accent' : ''}`}
         >
           {m.role === 'user' && editingIndex === i ? (
             /* Inline edit mode for a user turn. */
@@ -417,7 +535,17 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                 </div>
               ) : (
                 <div>
-                  <span className="whitespace-pre-wrap">{m.content}</span>
+                  <span className="whitespace-pre-wrap">
+                    {query.trim()
+                      ? splitSegments(m.content, query).map((seg, k) =>
+                          seg.match ? (
+                            <mark key={k} className="bg-chill-bg text-chill-accent px-0.5 box-decoration-clone">{seg.text}</mark>
+                          ) : (
+                            seg.text
+                          ),
+                        )
+                      : m.content}
+                  </span>
                   {m.createdAt && (
                     <div className="mt-1 text-xs text-chill-muted select-none" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
                       {formatMessageTime(m.createdAt)}
@@ -449,6 +577,17 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           className="absolute bottom-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-accent pixel-shadow hover:bg-chill-accent hover:text-chill-on-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+        </button>
+      )}
+      {!searchOpen && (
+        <button
+          type="button"
+          onClick={openSearch}
+          aria-label="Cari di percakapan"
+          title="Cari di percakapan"
+          className="absolute top-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-muted hover:text-chill-accent hover:bg-chill-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="4" y="4" width="12" height="12" /><line x1="14" y1="14" x2="20" y2="20" /></svg>
         </button>
       )}
     </div>
