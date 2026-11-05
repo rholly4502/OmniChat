@@ -26,21 +26,31 @@ jobs:
           # so /commits/$SHA/status always returns pending with zero entries. Poll the
           # check-runs API instead and require every CI check (everything except this
           # Deploy job) to have completed successfully.
-          for i in $(seq 1 60); do
-            READOUT="$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs --jq '
+          #
+          # Robustness: the gh api call is guarded so a transient API/CLI error logs a
+          # warning and keeps polling instead of killing the step via `set -e`. Fail-fast
+          # only applies once we have actually seen CI checks (N > 0) and they ALL
+          # completed with a non-success conclusion — a zero-check window (checks not yet
+          # registered, e.g. the CI jobs are still spinning up) must simply keep waiting.
+          for i in $(seq 1 90); do
+            if ! READOUT="$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs --jq '
               [.check_runs[] | select(.name != "Deploy to VPS")] as $ci |
               "\($ci | length) \($ci | map(select(.status == "completed")) | length) \($ci | map(select(.conclusion == "success")) | length)"
-            ' 2>/dev/null)"
+            ' 2>&1)"; then
+              echo "warning: gh api check-runs failed (attempt $i/90); retrying..."
+              sleep 10
+              continue
+            fi
             set -- $READOUT
             N="${1:-0}"
             DONE="${2:-0}"
             OK="${3:-0}"
-            echo "CI check runs: $OK/$N passed, $DONE completed (attempt $i/60)"
+            echo "CI check runs: $OK/$N passed, $DONE completed (attempt $i/90)"
             if [ "$N" -gt 0 ] && [ "$OK" -eq "$N" ]; then
               echo "OK: CI passed for $SHA"
               exit 0
             fi
-            if [ "$DONE" -ge "$N" ] && [ "$OK" -ne "$N" ]; then
+            if [ "$N" -gt 0 ] && [ "$DONE" -ge "$N" ] && [ "$OK" -ne "$N" ]; then
               echo "ERROR: CI checks failed for $SHA — deploy blocked."
               exit 1
             fi
