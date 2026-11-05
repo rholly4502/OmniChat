@@ -375,6 +375,7 @@ export default function App() {
               onOpenStats={() => setStatsOpen(true)}
               onOpenAudit={() => setAuditOpen(true)}
               onCopyTranscript={() => { if (activeSession) void copyTranscript(activeSession); }}
+              onExport={(fmt) => { if (activeSession) exportSession(activeSession, fmt); }}
               chillMode={settings.chillMode}
             />
             <MessageList

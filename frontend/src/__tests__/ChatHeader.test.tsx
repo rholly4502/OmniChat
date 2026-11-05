@@ -103,3 +103,41 @@ describe('ChatHeader model switcher', () => {
     expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
   });
 });
+
+describe('ChatHeader export menu', () => {
+  it('renders an export button only when an onExport handler is given', () => {
+    renderHeader({ onExport: vi.fn() });
+    expect(screen.getByRole('button', { name: 'Ekspor percakapan' })).toBeInTheDocument();
+  });
+
+  it('omits the export button when no handler is given', () => {
+    renderHeader();
+    expect(screen.queryByRole('button', { name: 'Ekspor percakapan' })).not.toBeInTheDocument();
+  });
+
+  it('lists every export format when the menu is opened', () => {
+    renderHeader({ onExport: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor percakapan' }));
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    for (const label of ['Markdown', 'JSON', 'CSV', 'PDF']) {
+      expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument();
+    }
+  });
+
+  it('calls onExport with the chosen format and closes the menu', () => {
+    const onExport = vi.fn();
+    renderHeader({ onExport });
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor percakapan' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }));
+    expect(onExport).toHaveBeenCalledTimes(1);
+    expect(onExport).toHaveBeenCalledWith('csv');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('closes the menu on Escape', () => {
+    renderHeader({ onExport: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor percakapan' }));
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+});
