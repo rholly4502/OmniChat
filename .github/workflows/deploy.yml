@@ -1,5 +1,9 @@
 name: Deploy
 
+permissions:
+  contents: read
+  checks: read
+
 on:
   push:
     branches: [main]
@@ -11,6 +15,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Wait for CI to pass (gate deploy on green)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          SHA="${{ github.sha }}"
+          echo "Waiting for CI on $SHA ..."
+          for i in $(seq 1 60); do
+            STATE="$(gh api repos/${{ github.repository }}/commits/$SHA/status --jq '.state' 2>/dev/null || echo pending)"
+            case "$STATE" in
+              success)
+                echo "OK: CI passed for $SHA"
+                exit 0
+                ;;
+              failure|error)
+                echo "ERROR: CI is $STATE for $SHA — deploy blocked."
+                exit 1
+                ;;
+              *) echo "CI state: $STATE (attempt $i/60)"; sleep 10 ;;
+            esac
+          done
+          echo "ERROR: timed out waiting for CI."
+          exit 1
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -125,8 +153,9 @@ jobs:
             if [ "$AUTH_CODE" = "401" ]; then
               echo "OK: /api/models requires credentials (401) — API key enforced."
             else
-              echo "!!! WARNING: /api/models answered $AUTH_CODE (expected 401) — the API is OPEN."
-              echo "!!! Security__ApiKey appears unset on the VPS .env. Restore it and redeploy."
+              echo "ERROR: /api/models answered $AUTH_CODE (expected 401) — the API is OPEN."
+              echo "ERROR: Security__ApiKey appears unset on the VPS .env. Restore it and redeploy."
+              exit 1
             fi
 
             echo "=== Deploy complete: $DEPLOYED_SHA ==="
