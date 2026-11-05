@@ -19,6 +19,12 @@ export interface MobileTopBarProps {
   onLogout?: () => void;
   /** Cumulative token usage for the active conversation (server base + live). */
   usage?: TokenUsage;
+  /**
+   * Estimated completion tokens streamed so far in the in-flight turn. When > 0
+   * it is added to the mobile live readout, so the cost estimate ticks as the
+   * reply streams instead of appearing only when the turn's usage frame lands.
+   */
+  streamingEstimate?: number;
   /** Active model id, used for the cost estimate. */
   model?: string;
   /** Human-readable label of the active model, shown beside the mode badge. */
@@ -44,9 +50,9 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode }: MobileTopBarProps) {
-  const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
-  const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, streamingEstimate = 0 }: MobileTopBarProps) {
+  const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
+  const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
   if (isGuest) {
     return (
@@ -133,7 +139,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
                   value={model}
                   onChange={(e) => onModelChange(e.target.value)}
                   aria-label="Ganti model"
-                  className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none"
+                  className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none [color-scheme:dark]"
                 >
                   {models.map((m) => (
                     <option key={m.id} value={m.id}>{m.label}</option>

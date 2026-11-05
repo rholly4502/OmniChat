@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { Message, TokenUsage } from '../types';
 import { streamChat, ApiError, type StreamChunk, type StreamChatOptions } from '../api';
+import { estimateTokens } from '../tokenCost';
 
 /**
  * Drops a progress phase from a message.
@@ -81,6 +82,13 @@ export interface UseChatResult {
   /** Cumulative token usage for the current thread (server base + live frames). */
   usage: TokenUsage;
   /**
+   * Estimated completion tokens streamed so far in the in-flight turn. 0 when
+   * idle. This is a live, approximate ticker for the header cost readout — the
+   * authoritative count arrives with the turn's usage frame, so this number is
+   * additive telemetry only (never persisted).
+   */
+  streamingEstimate: number;
+  /**
    * Replace current messages with a loaded session.
    *
    * Pass the conversation id when the session came from the server, so the next
@@ -121,6 +129,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
   const [messages, setMessages] = useState<Message[]>(initialMessages ?? []);
   const [streaming, setStreaming] = useState(false);
   const [usage, setUsage] = useState<TokenUsage>({ promptTokens: 0, completionTokens: 0 });
+  const [streamingEstimate, setStreamingEstimate] = useState(0);
   /** Imperative mirror of `usage` so onUsage can fire outside a state updater. */
   const usageRef = useRef<TokenUsage>({ promptTokens: 0, completionTokens: 0 });
   const recordUsage = useCallback(
@@ -164,6 +173,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
     usageRef.current = { promptTokens: 0, completionTokens: 0 };
     setUsage({ promptTokens: 0, completionTokens: 0 });
     setMessages([]);
+    setStreamingEstimate(0);
   }, []);
 
   const loadMessages = useCallback((newMessages: Message[], conversationId: string | null = null, initialUsage?: TokenUsage) => {
@@ -172,6 +182,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
     usageRef.current = { promptTokens: base.promptTokens, completionTokens: base.completionTokens };
     setUsage(usageRef.current);
     setMessages(newMessages);
+    setStreamingEstimate(0);
   }, []);
 
   const stop = useCallback(() => {
@@ -201,6 +212,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
 
       setMessages([...history, { role: 'assistant', content: '', createdAt: Date.now() }]);
       setStreaming(true);
+      setStreamingEstimate(0);
 
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -271,6 +283,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
             });
           } else if (chunk.content) {
             const piece = chunk.content;
+            setStreamingEstimate((n) => n + estimateTokens(piece));
             setMessages((prev) => {
               const copy = [...prev];
               const previous = copy[copy.length - 1];
@@ -326,6 +339,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       } finally {
         setStreaming(false);
         abortRef.current = null;
+        setStreamingEstimate(0);
       }
     },
     [streaming, systemPrompt, model, useHermesBridge, apiKey, temperature,
@@ -381,5 +395,5 @@ export function useChat(options: UseChatOptions): UseChatResult {
     [messages, streaming, runTurn, subtractUsage]
   );
 
-  return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages, usage };
+  return { messages, streaming, send, regenerate, editAndResend, stop, clear, loadMessages, usage, streamingEstimate };
 }

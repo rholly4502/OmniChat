@@ -27,6 +27,17 @@ export function estimateUsd(usage: TokenUsage, model: string): number {
   return (usage.promptTokens / 1000) * rate.input + (usage.completionTokens / 1000) * rate.output;
 }
 
+/**
+ * Rough estimate of the number of tokens in `text`, used only for the live
+ * streaming counter while a reply is still being generated (the authoritative
+ * count arrives later with the turn's usage frame). Assumes ~4 chars per token,
+ * which is a serviceable approximation for the mixed EN/ID chat content; min 1
+ * so any non-empty frame advances the ticker.
+ */
+export function estimateTokens(text: string): number {
+  return Math.max(1, Math.round(text.length / 4));
+}
+
 /** Compact human count: "850", "1.2k", "12k". */
 export function formatTokens(n: number): string {
   if (Number.isFinite(n) && n >= 1000) {

@@ -12,6 +12,12 @@ export interface ChatHeaderProps {
   /** Cumulative token usage for the active conversation (server base + live). */
   usage?: TokenUsage;
   /**
+   * Estimated completion tokens streamed so far in the in-flight turn. When > 0
+   * it is added to the live readout so the cost estimate ticks as the reply
+   * streams, instead of only appearing when the turn's usage frame lands.
+   */
+  streamingEstimate?: number;
+  /**
    * Catalog for the active mode, used to render a quick per-conversation model
    * switcher in the header. Optional: when omitted (or when no handler is given)
    * the model is shown as a static label instead of a select.
@@ -36,9 +42,9 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode }: ChatHeaderProps) {
-  const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0);
-  const estimate = total > 0 && model ? formatUsd(estimateUsd(usage!, model)) : '';
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, streamingEstimate = 0 }: ChatHeaderProps) {
+  const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
+  const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
   return (
     <div className="chat-header-bar hidden md:flex items-center gap-3 px-4 py-2 border-b border-chill-border bg-chill-bg">
@@ -51,7 +57,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
               value={model}
               onChange={(e) => onModelChange(e.target.value)}
               aria-label="Ganti model"
-              className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none"
+              className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none [color-scheme:dark]"
             >
               {models.map((m) => (
                 <option key={m.id} value={m.id}>{m.label}</option>

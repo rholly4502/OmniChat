@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  estimateTokens,
   estimateUsd,
   formatTokens,
   formatUsd,
@@ -40,5 +41,12 @@ describe('formatUsd', () => {
     expect(formatUsd(0)).toBe('$0');
     expect(formatUsd(0.0034)).toBe('$0.0034');
     expect(formatUsd(0.42)).toBe('$0.42');
+  });
+
+  it('estimates tokens from text length with a minimum of 1', () => {
+    expect(estimateTokens('')).toBe(1);
+    expect(estimateTokens('a')).toBe(1);
+    expect(estimateTokens('0123456789')).toBe(3); // round(10/4) = 3
+    expect(estimateTokens('x'.repeat(40))).toBe(10);
   });
 });

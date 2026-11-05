@@ -122,6 +122,7 @@ export default function App() {
     regenerate,
     editAndResend,
     usage,
+    streamingEstimate,
   } = useChat({
     model,
     useHermesBridge: effectiveUseAgent,
@@ -258,7 +259,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} chillMode={settings.chillMode} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} chillMode={settings.chillMode} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -349,6 +350,7 @@ export default function App() {
           useAgent={useAgent}
           menuButtonRef={menuButtonRef}
           usage={usage}
+          streamingEstimate={streamingEstimate}
           model={model}
           modelLabel={models.find((m) => m.id === model)?.label}
           models={models}
@@ -366,6 +368,7 @@ export default function App() {
               model={model}
               modelLabel={models.find((m) => m.id === model)?.label}
               usage={usage}
+              streamingEstimate={streamingEstimate}
               models={models}
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}

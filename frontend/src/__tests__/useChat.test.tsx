@@ -886,6 +886,29 @@ describe('useChat', () => {
   });
 });
 
+describe('useChat live streaming estimate', () => {
+  it('grows while content streams and resets to 0 when the turn completes', async () => {
+    const { result } = setup({ streamImpl: streamOf([{ content: '0123456789' }]) });
+    await act(async () => { await result.current.send('hai'); });
+    // streamOf yields then closes normally -> finally resets estimate to 0.
+    expect(result.current.streamingEstimate).toBe(0);
+  });
+
+  it('is non-zero mid-stream and resets after abort', async () => {
+    const { result } = setup({ streamImpl: streamUntilAbort() });
+    let pending: Promise<void>;
+    await act(async () => {
+      pending = result.current.send('first');
+      await Promise.resolve();
+    });
+    // 'partial' (7 chars) -> estimateTokens = max(1, round(7/4)) = 2
+    expect(result.current.streamingEstimate).toBeGreaterThan(0);
+    act(() => result.current.stop());
+    await act(async () => { await pending; });
+    expect(result.current.streamingEstimate).toBe(0);
+  });
+});
+
 /** Aborts before yielding anything, so `send` leaves no partial reply. */
 function streamUntilAbortAbortOnly() {
   return (options: StreamChatOptions): AsyncGenerator<StreamChunk> =>

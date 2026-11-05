@@ -40,6 +40,18 @@ describe('ChatHeader', () => {
     expect(screen.queryByText(/token/)).not.toBeInTheDocument();
     expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
   });
+
+  it('adds the live streaming estimate to the token/cost readout', () => {
+    // base 4000+1000 = 5k; estimate adds 500 -> 5.5k ~ $0.0299
+    renderHeader({ streamingEstimate: 500 });
+    expect(screen.getByText(/5\.5k token/)).toBeInTheDocument();
+    expect(screen.getByText(/\$0\.03/)).toBeInTheDocument();
+  });
+
+  it('ignores a zero streaming estimate', () => {
+    renderHeader({ streamingEstimate: 0 });
+    expect(screen.getByText(/5k token/)).toBeInTheDocument();
+  });
 });
 
 describe('ChatHeader focus-mode hook', () => {
