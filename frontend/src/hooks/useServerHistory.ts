@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
 import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
-import { buildConversationCsv, buildConversationJson, buildConversationPdf, downloadBlob, safeFilenameSlug, modeLabel, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
+import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
 export const NEW_SESSION_TITLE = 'Obrolan Baru';
@@ -78,6 +78,8 @@ export interface ServerHistoryResult {
   updateActiveSessionMessages: (messages: Message[]) => void;
   /** Download the session in the requested format (default Markdown). */
   exportSession: (session: ChatSession, format?: ConversationExportFormat) => void;
+  /** Copy the conversation's Markdown transcript to the clipboard (resolves when written). */
+  copyTranscript: (session: ChatSession) => Promise<void>;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary: ConversationUsageSummary;
 }
@@ -415,27 +417,22 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       downloadBlob(buildConversationPdf(session.messages, session.title, meta), `${slug}.pdf`);
       return;
     }
-    const headerMeta = [
-      meta.model ? `Model: ${meta.model}` : '',
-      modeLabel(meta.mode),
-    ].filter(Boolean).join(' · ');
-    const usageTotal = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
-    const usageMeta = usageTotal > 0
-      ? `Penggunaan: ${usageTotal} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out)`
-      : '';
-    const lines = [
-      `# ${session.title}`,
-      `*Dibuat: ${new Date(session.createdAt).toLocaleString('id-ID')}*`,
-      headerMeta ? `*${headerMeta}*` : '',
-      usageMeta ? `*${usageMeta}*` : '',
-      '',
-    ].filter((l) => l !== '');
-    for (const msg of session.messages) {
-      const roleLabel = msg.role === 'user' ? 'Pengguna' : 'Asisten';
-      lines.push(`### ${roleLabel}`, '', msg.content, '');
-    }
-    const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' });
+    const md = buildConversationMarkdown(session.messages, session.title, meta, session.createdAt);
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
     downloadBlob(blob, `${slug}.md`);
+
+  }, []);
+
+  const copyTranscript = useCallback((session: ChatSession) => {
+    const meta: ConversationExportMeta = {
+      model: session.model,
+      mode: session.mode,
+      promptTokens: session.promptTokens,
+      completionTokens: session.completionTokens,
+    };
+    return navigator.clipboard.writeText(
+      buildConversationMarkdown(session.messages, session.title, meta, session.createdAt),
+    );
   }, []);
 
   return {
@@ -451,6 +448,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     adoptConversation,
     updateActiveSessionMessages,
     exportSession,
+    copyTranscript,
     usageSummary,
   };
 }

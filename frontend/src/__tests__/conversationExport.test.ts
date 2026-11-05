@@ -3,6 +3,7 @@ import {
   safeFilenameSlug,
   buildConversationCsv,
   buildConversationJson,
+  buildConversationMarkdown,
   buildConversationPdf,
   downloadBlob,
 } from '../conversationExport';
@@ -112,5 +113,28 @@ describe('downloadBlob', () => {
     expect(createURL).toHaveBeenCalledTimes(1);
     expect(clicks).toEqual(['click']);
     expect(revoke).toHaveBeenCalledWith('blob:mock');
+  });
+});
+
+describe('buildConversationMarkdown', () => {
+  it('renders a title header with role sections', () => {
+    const md = buildConversationMarkdown(MSGS, 'Judul');
+    expect(md).toContain('# Judul');
+    expect(md).toContain('### Pengguna');
+    expect(md).toContain('halo');
+    expect(md).toContain('### Asisten');
+    expect(md).toContain('hi');
+  });
+
+  it('includes model/mode and usage metadata when provided', () => {
+    const md = buildConversationMarkdown(
+      MSGS,
+      'Judul',
+      { model: 'claude-sonnet', mode: 'agent', promptTokens: 10, completionTokens: 5 },
+      Date.parse('2026-10-25T09:00:00Z'),
+    );
+    expect(md).toContain('Model: claude-sonnet');
+    expect(md).toContain('Agent (Hermes)');
+    expect(md).toContain('Penggunaan: 15 token (10 in / 5 out)');
   });
 });

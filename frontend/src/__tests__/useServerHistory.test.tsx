@@ -629,4 +629,30 @@ describe('useServerHistory', () => {
     expect(ok).toBe(false);
     expect(result.current.sessions.find((s) => s.id === A)?.model).toBe('hermes');
   });
+
+  it('copyTranscript writes the conversation Markdown to the clipboard', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    const writeSpy = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeSpy;
+
+    await act(async () => {
+      await result.current.copyTranscript(result.current.activeSession!);
+    });
+
+    expect(writeSpy).toHaveBeenCalledTimes(1);
+    const md = writeSpy.mock.calls[0][0] as string;
+    expect(md).toContain('# Deploy');
+    expect(md).toContain('### Pengguna');
+    expect(md).toContain('halo');
+    expect(md).toContain('### Asisten');
+    expect(md).toContain('hai');
+  });
 });
+

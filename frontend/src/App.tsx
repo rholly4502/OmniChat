@@ -82,6 +82,7 @@ export default function App() {
     updateActiveConversationSettings,
     adoptConversation,
     exportSession,
+    copyTranscript,
     usageSummary,
   } = useServerHistory({ apiKey, search: historySearch, modelFilter: historyModelFilter, dateFrom: historyDateFrom, dateTo: historyDateTo });
 
@@ -373,6 +374,7 @@ export default function App() {
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}
               onOpenAudit={() => setAuditOpen(true)}
+              onCopyTranscript={() => { if (activeSession) void copyTranscript(activeSession); }}
               chillMode={settings.chillMode}
             />
             <MessageList

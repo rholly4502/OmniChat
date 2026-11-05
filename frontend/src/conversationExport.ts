@@ -76,6 +76,29 @@ export function buildConversationJson(messages: Message[], title = 'Percakapan',
 }
 
 /**
+ * Conversation transcript as Markdown (the plain-text format). Shared by the
+ * download path and copy-to-clipboard, so both always render identically.
+ * Header carries the model/mode and cumulative token usage when known.
+ */
+export function buildConversationMarkdown(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}, createdAt?: number): string {
+  const headerMeta = [meta.model ? `Model: ${meta.model}` : '', modeLabel(meta.mode)].filter(Boolean).join(' · ');
+  const total = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
+  const usageMeta = total > 0 ? `Penggunaan: ${total} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out)` : '';
+  const lines = [
+    `# ${title}`,
+    `*Dibuat: ${createdAt ? new Date(createdAt).toLocaleString('id-ID') : new Date().toLocaleString('id-ID')}*`,
+    headerMeta ? `*${headerMeta}*` : '',
+    usageMeta ? `*${usageMeta}*` : '',
+    '',
+  ].filter((l) => l !== '');
+  for (const msg of messages) {
+    const roleLabel = msg.role === 'user' ? 'Pengguna' : 'Asisten';
+    lines.push(`### ${roleLabel}`, '', msg.content, '');
+  }
+  return lines.join('\n');
+}
+
+/**
  * Conversation transcript as a paginated A4 PDF.
  *
  * Uses jsPDF's built-in Helvetica (WinAnsi), so extended non-Latin-1 glyphs

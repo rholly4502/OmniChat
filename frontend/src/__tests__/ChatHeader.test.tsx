@@ -52,6 +52,20 @@ describe('ChatHeader', () => {
     renderHeader({ streamingEstimate: 0 });
     expect(screen.getByText(/5k token/)).toBeInTheDocument();
   });
+
+  it('renders a copy-transcript button and fires onCopyTranscript when given', () => {
+    const onCopyTranscript = vi.fn();
+    renderHeader({ onCopyTranscript });
+    const btn = screen.getByRole('button', { name: 'Salin percakapan' });
+    fireEvent.click(btn);
+    expect(onCopyTranscript).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Percakapan tersalin' })).toBeInTheDocument();
+  });
+
+  it('omits the copy button when no handler is given', () => {
+    renderHeader();
+    expect(screen.queryByRole('button', { name: 'Salin percakapan' })).not.toBeInTheDocument();
+  });
 });
 
 describe('ChatHeader focus-mode hook', () => {

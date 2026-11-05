@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ModelOption, TokenUsage } from '../types';
@@ -25,6 +26,11 @@ export interface ChatHeaderProps {
   models?: ModelOption[];
   /** Per-conversation model change handler (persists for the active thread). */
   onModelChange?: (id: string) => void;
+  /**
+   * Copy the whole active-conversation transcript (Markdown) to the clipboard.
+   * Optional; the button is hidden when no handler is given.
+   */
+  onCopyTranscript?: () => void;
   /** Opens the chat audit/stats dialog (desktop has no sidebar path to it). */
   onOpenStats?: () => void;
   /**
@@ -42,7 +48,8 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, streamingEstimate = 0 }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, streamingEstimate = 0 }: ChatHeaderProps) {
+  const [copied, setCopied] = useState(false);
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -91,11 +98,26 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
             {estimate ? ` · ≈${estimate}` : ''}
           </span>
         )}
+        {onCopyTranscript && (
+          <button
+            type="button"
+            onClick={() => { setCopied(true); onCopyTranscript(); window.setTimeout(() => setCopied(false), 2000); }}
+            aria-label={copied ? 'Percakapan tersalin' : 'Salin percakapan'}
+            title={copied ? 'Percakapan tersalin' : 'Salin percakapan'}
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
+          >
+            {copied ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            )}
+          </button>
+        )}
         {onOpenAudit && (
           <button
             type="button"
             onClick={onOpenAudit}
-            aria-label="Audit percakapan"
+            aria-label="Audit percakapan" 
             title="Audit percakapan"
             className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
           >
