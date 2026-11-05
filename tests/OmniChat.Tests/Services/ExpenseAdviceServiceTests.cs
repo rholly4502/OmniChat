@@ -445,4 +445,26 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(0, advice.OverBy);
         Assert.Empty(advice.Suggestions);
     }
+
+    [Fact]
+    public async Task Projection_excludesCommittedTagihanBillsFromRunRate()
+    {
+        // A lumpy recurring bill (kos rent, Tagihan) paid once early inflates the naive
+        // daily run-rate: 1.4jt over 5 days would extrapolate to ~8.4jt. The projection
+        // must treat committed bills as a fixed block and only extrapolate the variable
+        // discretionary (Makan etc.) rate, so the month lands near 1.9jt.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "sewa"));
+        for (var i = 1; i <= 5; i++)
+            repo.Rows.Add(Row(new DateOnly(2026, 11, i), "Makan", 20_000, $"m{i}"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 5), CancellationToken.None);
+
+        // total = 1.4jt; fixed Tagihan = 1.3jt; discretionary 100k/5 = 20k/day -> 600k/mo.
+        Assert.Equal(1_900_000, advice.Projection.ProjectedTotal);
+        Assert.Equal(0, advice.Projection.ProjectedOver);
+    }
 }

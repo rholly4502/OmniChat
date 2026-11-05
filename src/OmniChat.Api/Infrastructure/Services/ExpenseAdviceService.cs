@@ -62,8 +62,15 @@ public sealed class ExpenseAdviceService(
             .ToList();
 
         var daysElapsed = date.Day;
+        // Committed recurring bills (Tagihan, e.g. kos rent) are paid as one lump;
+        // feeding them through the daily run-rate would project a lumpy month far
+        // above its real total. So project the remainder from the discretionary
+        // daily rate on top of what is already committed/spent. For months with no
+        // Tagihan rows this reduces exactly to the old run-rate extrapolation.
+        var fixedCommitted = rows.Where(r => r.Kategori == "Tagihan").Sum(r => r.Nominal);
+        var discretionary = total - fixedCommitted;
         var projectedTotal = daysElapsed > 0
-            ? (long)Math.Round(total / (double)daysElapsed * daysInMonth)
+            ? fixedCommitted + (long)Math.Round(discretionary / (double)daysElapsed * daysInMonth)
             : 0;
         var projectedOver = anggaran > 0 ? Math.Max(0, projectedTotal - anggaran) : 0;
 
