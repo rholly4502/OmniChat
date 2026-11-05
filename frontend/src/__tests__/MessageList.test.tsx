@@ -97,7 +97,7 @@ describe('MessageList', () => {
         { role: 'assistant', content: 'halo' },
       ],
     });
-    const rows = [...container.querySelectorAll('div.flex')];
+    const rows = [...container.querySelectorAll('[data-msg-index]')];
     expect(rows[0].className).toContain('justify-end');
     expect(rows[1].className).toContain('justify-start');
   });
@@ -467,6 +467,46 @@ describe('MessageList', () => {
   it('shows a transient copied confirmation for JSON', async () => {
     navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
     renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
+  });
+});
+
+describe('MessageList user-message copy actions', () => {
+  it('copies a user message as JSON', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({ messages: [{ role: 'user', content: 'hai saya nanya sesuatu' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith(JSON.stringify({ role: 'user', content: 'hai saya nanya sesuatu' }, null, 2));
+  });
+
+  it('includes the server id when present but never model/usage/cost for a user turn', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({
+      model: 'hermes',
+      messages: [{ id: 'u1', role: 'user', content: 'hai' }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    const written = JSON.parse(writeText.mock.calls[0][0]);
+    expect(written).toEqual({ role: 'user', content: 'hai', id: 'u1' });
+  });
+
+  it('copies a user message as plain text', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({ messages: [{ role: 'user', content: 'teks apa adanya' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin pesan' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith('teks apa adanya');
+  });
+
+  it('shows a transient copied confirmation for a user message', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({ messages: [{ role: 'user', content: 'hai' }] });
     fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
     expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
   });

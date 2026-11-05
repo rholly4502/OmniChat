@@ -558,22 +558,47 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         )
                       : m.content}
                   </span>
-                  {m.createdAt && (
-                    <div className="mt-1 text-xs text-chill-muted select-none" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
-                      {formatMessageTime(m.createdAt)}
+                  <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-between text-xs text-chill-muted select-none">
+                      <div className="flex items-center gap-0.5">
+                        {m.createdAt && (
+                          <span className="focus-hidden" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
+                            {formatMessageTime(m.createdAt)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        {onEditMessage && (
+                          <ActionButton
+                            label="Edit pesan"
+                            onClick={() => startEdit(i)}
+                            icon={
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                            }
+                          />
+                        )}
+                        <ActionButton
+                          label="Salin sebagai JSON"
+                          activeLabel="JSON tersalin"
+                          active={copiedIndex === i}
+                          onClick={() => handleCopy(JSON.stringify(messageJsonRecord(m, model), null, 2), i)}
+                          icon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
+                          }
+                        />
+                        <ActionButton
+                          label="Salin pesan"
+                          activeLabel="Pesan tersalin"
+                          active={copiedIndex === i}
+                          onClick={() => handleCopy(m.content, i)}
+                          icon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                          }
+                          activeIcon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                          }
+                        />
+                      </div>
                     </div>
-                  )}
-                  {onEditMessage && (
-                    <div className="mt-2 pt-1.5 border-t border-chill-border flex items-center justify-end text-xs text-chill-muted select-none">
-                      <ActionButton
-                        label="Edit pesan"
-                        onClick={() => startEdit(i)}
-                        icon={
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-                        }
-                      />
-                    </div>
-                  )}
                 </div>
               )}
             </div>
