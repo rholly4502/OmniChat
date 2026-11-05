@@ -22,19 +22,29 @@ jobs:
           set -euo pipefail
           SHA="${{ github.sha }}"
           echo "Waiting for CI on $SHA ..."
+          # The CI workflow reports through *check runs*, not legacy commit statuses,
+          # so /commits/$SHA/status always returns pending with zero entries. Poll the
+          # check-runs API instead and require every CI check (everything except this
+          # Deploy job) to have completed successfully.
           for i in $(seq 1 60); do
-            STATE="$(gh api repos/${{ github.repository }}/commits/$SHA/status --jq '.state' 2>/dev/null || echo pending)"
-            case "$STATE" in
-              success)
-                echo "OK: CI passed for $SHA"
-                exit 0
-                ;;
-              failure|error)
-                echo "ERROR: CI is $STATE for $SHA — deploy blocked."
-                exit 1
-                ;;
-              *) echo "CI state: $STATE (attempt $i/60)"; sleep 10 ;;
-            esac
+            READOUT="$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs --jq '
+              [.check_runs[] | select(.name != "Deploy to VPS")] as $ci |
+              "\($ci | length) \($ci | map(select(.status == "completed")) | length) \($ci | map(select(.conclusion == "success")) | length)"
+            ' 2>/dev/null)"
+            set -- $READOUT
+            N="${1:-0}"
+            DONE="${2:-0}"
+            OK="${3:-0}"
+            echo "CI check runs: $OK/$N passed, $DONE completed (attempt $i/60)"
+            if [ "$N" -gt 0 ] && [ "$OK" -eq "$N" ]; then
+              echo "OK: CI passed for $SHA"
+              exit 0
+            fi
+            if [ "$DONE" -ge "$N" ] && [ "$OK" -ne "$N" ]; then
+              echo "ERROR: CI checks failed for $SHA — deploy blocked."
+              exit 1
+            fi
+            sleep 10
           done
           echo "ERROR: timed out waiting for CI."
           exit 1
