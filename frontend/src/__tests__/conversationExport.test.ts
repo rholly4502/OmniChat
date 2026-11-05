@@ -138,3 +138,11 @@ describe('buildConversationMarkdown', () => {
     expect(md).toContain('Penggunaan: 15 token (10 in / 5 out)');
   });
 });
+
+describe('buildConversationCsv BOM', () => {
+  it('prefixes the document with a UTF-8 byte-order mark', () => {
+    const csv = buildConversationCsv(MSGS);
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv.slice(1)).toContain('role,content');
+  });
+});

@@ -29,6 +29,14 @@ export const EXPORT_FORMAT_LABELS: Record<ConversationExportFormat, string> = {
   pdf: 'PDF',
 };
 
+/**
+ * UTF-8 byte-order mark. Prepended to the CSV document so spreadsheet apps
+ * (Excel, LibreOffice) detect the encoding correctly and render the Indonesian
+ * chat text without mojibake. The BOM is stripped by String.prototype.trim(),
+ * so existing consumers that trim before parsing are unaffected.
+ */
+const CSV_BOM = '\uFEFF';
+
 /** Sanitizes a conversation title into a safe filename slug. */
 export function safeFilenameSlug(title: string): string {
   return title.replace(/[/\\?%*:|"<>]/g, '_');
@@ -52,8 +60,8 @@ export function buildConversationCsv(messages: Message[], meta: ConversationExpo
     summary.push(['total_tokens', String(total)]);
   }
   const body = rows.map((r) => r.map(csvField).join(',')).join('\r\n');
-  if (!summary.length) return body + '\r\n';
-  return body + '\r\n' + summary.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
+  if (!summary.length) return CSV_BOM + body + '\r\n';
+  return CSV_BOM + body + '\r\n' + summary.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
 }
 
 /** Conversation transcript as a JSON document (role + content only). */
