@@ -197,6 +197,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
+                <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
                 <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
                 {advice.daily.biaya && (
                   <p className="text-xs text-chill-muted tabular-nums">
