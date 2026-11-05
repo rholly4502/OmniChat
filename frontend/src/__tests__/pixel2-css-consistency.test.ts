@@ -69,3 +69,10 @@ describe('pixel2 css consistency', () => {
     expect(block).toContain('var(--color-chill-on-accent)');
   });
 });
+describe('pixel2 focus-mode page grid', () => {
+  it('focus mode also quiets the expenses full-canvas checkerboard (pixel-grid-page)', () => {
+    const rules = CLEAN.split('\n').filter((l) => l.includes('.focus-mode') && l.includes('display: none'));
+    expect(rules.join('\n')).toContain('.focus-mode .pixel-grid { display: none; }');
+    expect(rules.join('\n')).toContain('.focus-mode .pixel-grid-page { display: none; }');
+  });
+});

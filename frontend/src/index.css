@@ -483,6 +483,7 @@ input[type='time']::-webkit-calendar-picker-indicator {
    contrast are unaffected. Reduced-motion already handled globally.
    ========================================================================== */
 .focus-mode .pixel-grid { display: none; }
+.focus-mode .pixel-grid-page { display: none; }
 .focus-mode .chat-header-bar { display: none; }
 .focus-mode .focus-hidden { display: none; }
 
