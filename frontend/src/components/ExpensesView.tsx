@@ -397,6 +397,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-chill-text">Sisa per hari</span>
                   {remBudget.sisa >= 0 ? (
@@ -416,6 +417,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
                 <p className="text-xs text-chill-muted">{summary!.catatan}</p>
               </div>
             ) : null}
@@ -426,6 +428,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                     edge, no soft gradient; mirrors StatCard/AdvicePanel frames. */}
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span className="text-chill-text">Tabungan bulan ini</span>
                   <span className="tabular-nums text-chill-muted">

@@ -139,6 +139,25 @@ describe('AdvicePanel pixel2 chill design', () => {
     expect(callout?.querySelector('div.absolute')).toBeTruthy();
   });
 
+  it('frames the end-of-month projection as a tone-aware callout (glance budget)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText('Proyeksi akhir bulan')).toBeInTheDocument();
+    const frame = screen.getByText('Proyeksi akhir bulan').closest('div.relative') as HTMLElement;
+    // the projection now sits in a framed sub-block on the shared hard-edge bevel grammar
+    expect(frame.className).toContain('rounded-none');
+    expect(frame.className).toContain('border-chill-border');
+    expect(frame.querySelectorAll('div.absolute').length).toBeGreaterThanOrEqual(3);
+    // the headline total is emphasised and tone-aware (accent when not over budget)
+    const emphasized = [...frame.querySelectorAll('span')].find((s) => s.className.includes('text-sm font-semibold'));
+    expect(emphasized).toBeTruthy();
+    expect(emphasized!.className).toContain('text-chill-accent');
+    expect(emphasized!.textContent!.replace(/\s/g, ' ')).toContain('320.000');
+  });
+
   it('keeps the header row wrapping on narrow screens (responsive consistency)', () => {
     const { container } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
     const panel = container.querySelector('section[aria-label="Analisa dan Saran"]');
@@ -209,8 +228,12 @@ describe('AdvicePanel projection meter (Design Loop)', () => {
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
     expect(screen.getByText('Proyeksi akhir bulan')).toBeInTheDocument();
-    // Projected total rendered via the shared rupiah formatter.
-    expect(screen.getByText(/Rp 320\.000 \/ Rp 520\.000/)).toBeInTheDocument();
+    // Projected total rendered via the shared rupiah formatter, now inside the
+    // framed headline-number callout (total + "/ anggaran" split across two spans).
+    const proj = screen.getByText('Proyeksi akhir bulan').closest('div.relative') as HTMLElement;
+    const normalized = proj.textContent!.replace(/\s/g, ' ');
+    expect(normalized).toContain('Rp 320.000');
+    expect(normalized).toContain('/ Rp 520.000');
 
     // Trend rows (2) + projection meter = a segmented pixel bar per metric.
     const bars = document.querySelectorAll('div[class*="gap-[3px]"]');
