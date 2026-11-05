@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { isServerConversation, useServerHistory } from '../hooks/useServerHistory';
+import { isServerConversation, useServerHistory, EMPTY_USAGE } from '../hooks/useServerHistory';
 
 const A = '11111111-1111-1111-1111-111111111111';
 const B = '22222222-2222-2222-2222-222222222222';
@@ -635,6 +635,10 @@ describe('useServerHistory', () => {
     const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
     const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
 
+    // The history list loads on a debounced timer, so wait for the server row
+    // to land before selecting it (activeSession then resolves to it).
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
     await act(async () => {
       await result.current.selectSession(A);
     });
@@ -653,6 +657,36 @@ describe('useServerHistory', () => {
     expect(md).toContain('halo');
     expect(md).toContain('### Asisten');
     expect(md).toContain('hai');
+  });
+
+  it('debounces rapid search changes into a single list call', async () => {
+    vi.useFakeTimers();
+    try {
+      const listImpl = vi.fn().mockResolvedValue([]);
+      const usageImpl = vi.fn().mockResolvedValue(EMPTY_USAGE);
+      const { rerender } = renderHook(
+        ({ search }) => useServerHistory(deps({ listImpl, usageImpl, search, listDebounceMs: 500 })),
+        { initialProps: { search: 'a' } },
+      );
+
+      // The initial fetch fires once the debounce window closes.
+      await act(async () => { vi.advanceTimersByTime(500); });
+      expect(listImpl).toHaveBeenCalledTimes(1);
+
+      // Three rapid keystrokes share one debounce window — no extra fetches yet.
+      rerender({ search: 'ab' });
+      rerender({ search: 'abc' });
+      rerender({ search: 'abcd' });
+      await act(async () => { vi.advanceTimersByTime(200); });
+      expect(listImpl).toHaveBeenCalledTimes(1);
+
+      // Once the window closes, exactly one fetch runs for the final term.
+      await act(async () => { vi.advanceTimersByTime(400); });
+      expect(listImpl).toHaveBeenCalledTimes(2);
+      expect(listImpl.mock.calls[1][2]).toBe('abcd');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

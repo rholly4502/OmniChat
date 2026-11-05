@@ -42,6 +42,8 @@ export interface ServerHistoryOptions {
   dateFrom?: string;
   /** Inclusive end date (ISO `yyyy-MM-dd`) for the updated-at window. */
   dateTo?: string;
+  /** Debounce (ms) for automatic history-list refetches (search/filter changes). */
+  listDebounceMs?: number;
   /** Injected for tests; default to the real client. */
   listImpl?: typeof listConversations;
   getImpl?: typeof getConversation;
@@ -107,7 +109,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -144,7 +146,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     const list = impls.current.list ?? listConversations;
     const ctrl = new AbortController();
     let cancelled = false;
-
+    // Debounce the history-list fetch: typing in the search box (or nudging the
+    // model/date filters) resets a short timer instead of firing a server
+    // round-trip per keystroke; the fetch runs once the input settles.
+    const timer = window.setTimeout(() => {
     list({ apiKey: apiKey || undefined, signal: ctrl.signal }, 50, search, {
       model: modelFilter,
       from: dateFrom,
@@ -178,12 +183,14 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
         // Guest (401) and offline both mean "no history to show". The draft must
         // survive, so the failure is swallowed rather than rendered.
       });
+    }, listDebounceMs);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       ctrl.abort();
     };
-  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken]);
+  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken, listDebounceMs]);
 
   // Aggregate usage is global (not affected by search/filter), so it refetches
   // only when the key changes or the server names a draft.
