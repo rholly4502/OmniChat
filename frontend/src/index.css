@@ -370,6 +370,20 @@ summary,
   image-rendering: pixelated;
 }
 
+/* Full-canvas checkerboard for scrollable pages (expenses): extends the same
+   pixel-grid register to a container's own background so the texture runs the
+   whole scroll height, not just the viewport overlay. Baked-in low alpha
+   (color-mix on the warm accent) means it can sit directly on a page
+   background without dimming its children — one hard-edged register, no blur. */
+.pixel-grid-page {
+  background-image: repeating-conic-gradient(
+    from 0deg,
+    color-mix(in srgb, var(--color-chill-accent) 5%, transparent) 0deg 90deg,
+    transparent 90deg 180deg
+  );
+  background-size: 8px 8px;
+}
+
 /* Stepped pixel dash for reference lines (daily-budget line in the daily
    spend chart): a square, hard-edged dash that snaps in beats instead of the
    browser's anti-aliased `border-dashed`. Same register as the pixel-grid

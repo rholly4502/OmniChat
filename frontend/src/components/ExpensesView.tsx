@@ -225,7 +225,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [allTime, setAllTime] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain text-chill-text">
+    <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain text-chill-text pixel-grid-page">
       <header className="shrink-0 px-4 pt-3 pb-2 border-b border-chill-border flex items-center justify-between gap-3 flex-wrap relative overflow-hidden">
         <div className="relative flex items-center gap-1.5">
           <h2 className="text-base font-semibold text-chill-text pixel-heading">Pengeluaran</h2>

@@ -67,4 +67,16 @@ describe('pixel2 easter eggs + canvas texture', () => {
     expect(a).toContain('[transition-timing-function:steps(2,jump-none)]'); // stepped, not tweened
     expect(a).toContain('aria-hidden="true"');               // decorative only
   });
+
+  it('ExpensesView carries the full-canvas checkerboard page texture', () => {
+    const v = F('components/ExpensesView.tsx');
+    expect(v).toContain('pixel-grid-page'); // full scroll-height canvas, not a viewport-only patch
+  });
+
+  it('the expenses page texture is the checkerboard register, not a blur', () => {
+    const css = F('index.css');
+    const block = css.match(/\.pixel-grid-page\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(block).toContain('repeating-conic-gradient');
+    expect(block).not.toContain('blur');
+  });
 });
