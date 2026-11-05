@@ -79,14 +79,16 @@ public class ChatEndpointIntegrationTests : IClassFixture<WebApplicationFactory<
         var validBody = """{"model":"test","messages":[{"role":"user","content":"hello"}],"useHermesBridge":true}""";
         var content = new StringContent(validBody, Encoding.UTF8, "application/json");
 
-        // Act — read the full SSE stream
+        // Act — read the full SSE stream, with a hard timeout so a hung
+        // server (no [DONE]/no EOF) fails the test instead of hanging forever.
         var response = await _client.PostAsync("/api/chat/stream", content);
-        var responseStream = await response.Content.ReadAsStreamAsync();
+        using var readCts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        var responseStream = await response.Content.ReadAsStreamAsync(readCts.Token);
         using var reader = new StreamReader(responseStream);
 
         var lines = new List<string>();
         string? line;
-        while ((line = await reader.ReadLineAsync()) != null)
+        while ((line = await reader.ReadLineAsync(readCts.Token)) != null)
         {
             lines.Add(line);
         }

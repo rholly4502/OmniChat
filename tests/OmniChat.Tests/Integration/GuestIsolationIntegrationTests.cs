@@ -62,7 +62,9 @@ public class GuestIsolationIntegrationTests : IClassFixture<WebApplicationFactor
         var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
         // Consume the SSE body first (drives the provider call), then assert on the calls.
-        await response.Content.ReadAsStringAsync();
+        // Hard timeout guards against a stream that never terminates.
+        using var cts1 = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await response.Content.ReadAsStringAsync(cts1.Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("text/event-stream", response.Content.Headers.ContentType?.MediaType);
@@ -93,7 +95,8 @@ public class GuestIsolationIntegrationTests : IClassFixture<WebApplicationFactor
 
         // Consume the SSE body first: the provider call happens lazily as the stream is
         // read, so the recording handler is only populated once the body has been consumed.
-        await response.Content.ReadAsStringAsync();
+        using var cts2 = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        await response.Content.ReadAsStringAsync(cts2.Token);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains(rec.Handler.Calls, c => c.Url.StartsWith(HermesStub, StringComparison.Ordinal));
