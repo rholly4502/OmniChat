@@ -60,7 +60,9 @@ describe('ExpensesView', () => {
     expect(screen.getByLabelText('Bulan pengeluaran')).toBeInTheDocument();
 
     await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
-    expect(screen.getByText('Rp 20.000')).toBeInTheDocument();
+    // The monthly total also appears as that week's row in the weekly breakdown,
+    // so the amount can legitimately render more than once.
+    expect(screen.getAllByText('Rp 20.000').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Target Nabung')).toBeInTheDocument();
     expect(screen.getByText('Warteg')).toBeInTheDocument();
     expect(screen.getAllByText('Makan').length).toBeGreaterThan(0);

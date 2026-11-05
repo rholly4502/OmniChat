@@ -14,6 +14,7 @@ import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { remainingDailyBudget } from '../expenseBudget';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
 import { DailySpendChart } from './DailySpendChart';
+import { WeeklySpendBreakdown } from './WeeklySpendBreakdown';
 import { AdvicePanel } from './AdvicePanel';
 import { PixelProgress } from './PixelProgress';
 import { PanelFrame } from './PanelFrame';
@@ -477,6 +478,21 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 </span>
               </div>
               <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} hari={summary.hari ?? undefined} />
+            </section>
+
+            <section aria-label="Pengeluaran per minggu" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow pixel-reveal">
+              <PanelFrame />
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 min-w-0">
+                  <span title="Rangkuman mingguan (Senin–Sabtu) 🗓️" className="inline-flex shrink-0">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-3.5 h-3.5 text-chill-accent">
+                      <path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
+                    </svg>
+                  </span>
+                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Minggu</h3>
+                </span>
+              </div>
+              <WeeklySpendBreakdown items={items} month={month} />
             </section>
 
             <HeaderDivider />
