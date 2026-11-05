@@ -185,11 +185,11 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
 
         Assert.True(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", MessageFeedback.Down));
         stored = await _repository.GetConversationAsync(conversation.Id, "admin");
-        Assert.Equal(MessageFeedback.Down, stored.Messages[0].Feedback);
+        Assert.Equal(MessageFeedback.Down, stored!.Messages[0].Feedback);
 
         Assert.True(await _repository.SetMessageFeedbackAsync(conversation.Id, message.Id, "admin", null));
         stored = await _repository.GetConversationAsync(conversation.Id, "admin");
-        Assert.Null(stored.Messages[0].Feedback);
+        Assert.Null(stored!.Messages[0].Feedback);
     }
 
     [Fact]
