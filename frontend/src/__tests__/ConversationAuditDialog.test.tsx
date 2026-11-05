@@ -48,7 +48,7 @@ describe('ConversationAuditDialog', () => {
   it('renders the title, meta (model label, mode, count) and role labels', () => {
     renderOpen();
     expect(screen.getByRole('dialog', { name: 'Audit percakapan Deploy' })).toBeInTheDocument();
-    expect(screen.getByText('Claude Sonnet')).toBeInTheDocument(); // resolved via modelOptions
+    expect(screen.getAllByText('Claude Sonnet').length).toBeGreaterThanOrEqual(1); // resolved via modelOptions (header + per-model row)
     expect(screen.getByText('Agent (Hermes)')).toBeInTheDocument();
     expect(screen.getByText('4 pesan')).toBeInTheDocument();
     expect(screen.getAllByText('Pengguna').length).toBeGreaterThanOrEqual(2);
@@ -97,5 +97,54 @@ describe('ConversationAuditDialog', () => {
   it('shows an empty-state message for a conversation without messages', () => {
     renderOpen(vi.fn(), { ...SESSION, messages: [] });
     expect(screen.getByText('Belum ada pesan dalam percakapan ini.')).toBeInTheDocument();
+  });
+
+  it('renders a per-model breakdown when a conversation spans several models', () => {
+    const multiModel: ChatSession = {
+      ...SESSION,
+      model: 'claude-sonnet',
+      messages: [
+        {
+          role: 'assistant',
+          content: 'Satu',
+          usage: { promptTokens: 10, completionTokens: 20 },
+          model: 'claude-sonnet',
+          createdAt: 1,
+        },
+        {
+          role: 'assistant',
+          content: 'Dua',
+          usage: { promptTokens: 2, completionTokens: 4 },
+          model: 'claude-haiku',
+          createdAt: 2,
+        },
+      ],
+    };
+    renderOpen(vi.fn(), multiModel);
+    expect(screen.getByText('Rincian per model')).toBeInTheDocument();
+    // claude-sonnet appears in the meta header AND the per-model row
+    expect(screen.getAllByText('Claude Sonnet').length).toBeGreaterThanOrEqual(2);
+    // unknown model resolved to its raw id label
+    expect(screen.getByText('claude-haiku')).toBeInTheDocument();
+    // per-row totals: 10+20=30 and 2+4=6
+    const onT = screen.getAllByText('30');
+    expect(onT.length).toBeGreaterThanOrEqual(1);
+    const sixT = screen.getAllByText('6');
+    expect(sixT.length).toBeGreaterThanOrEqual(1);
+    // footer totals: prompt 12, completion 24
+    expect(screen.getAllByText('12').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('24').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('omits the per-model section when no message carries usage', () => {
+    const noUsage: ChatSession = {
+      ...SESSION,
+      messages: [
+        { role: 'user', content: 'Tanpa usage', createdAt: 1 },
+        { role: 'assistant', content: 'Juga tanpa usage', createdAt: 2 },
+      ],
+    };
+    renderOpen(vi.fn(), noUsage);
+    expect(screen.queryByText('Rincian per model')).not.toBeInTheDocument();
   });
 });

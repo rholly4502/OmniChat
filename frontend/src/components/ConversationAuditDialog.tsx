@@ -93,6 +93,20 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
     (sum, m) => sum + (m.usage ? estimateUsd(m.usage, m.model ?? session.model ?? '') : 0),
     0,
   );
+  // Per-model subtotals across the conversation's turns, so a multi-model
+  // thread shows exactly what each model contributed (mirrors the global
+  // stats dialog's per-model table).
+  const byModel = new Map<string, { promptTokens: number; completionTokens: number }>();
+  for (const m of msgs) {
+    if (!m.usage) continue;
+    const mid = m.model ?? session.model ?? '';
+    if (!mid) continue;
+    const cur = byModel.get(mid) ?? { promptTokens: 0, completionTokens: 0 };
+    cur.promptTokens += m.usage.promptTokens ?? 0;
+    cur.completionTokens += m.usage.completionTokens ?? 0;
+    byModel.set(mid, cur);
+  }
+  const byModelEntries = Array.from(byModel.entries());
   const modelId = session.model;
   const modeText = session.mode === 'agent' ? 'Agent (Hermes)' : session.mode === 'direct' ? 'Direct (LLM)' : '';
 
@@ -191,6 +205,40 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                 </tr>
               </tfoot>
             </table>
+
+            {byModelEntries.length > 0 && (
+              <div className="mt-3 border-t border-chill-border pt-2">
+                <div className="text-xs text-chill-muted font-medium mb-1.5">Rincian per model</div>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="text-left text-chill-muted">
+                      <th className="font-medium py-1 pr-2">Model</th>
+                      <th className="font-medium py-1 pr-2 text-right">Input</th>
+                      <th className="font-medium py-1 pr-2 text-right">Output</th>
+                      <th className="font-medium py-1 pr-2 text-right">Total</th>
+                      <th className="font-medium py-1 text-right">Biaya</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {byModelEntries.map(([mid, u]) => {
+                      const perUsd = estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, mid);
+                      const perTokens = u.promptTokens + u.completionTokens;
+                      return (
+                        <tr key={mid} className="border-t border-chill-border">
+                          <td className="py-1.5 pr-2">
+                            <div className="text-chill-text font-medium truncate max-w-[140px]" title={mid}>{labelFor(mid, modelOptions)}</div>
+                          </td>
+                          <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{formatTokens(u.promptTokens)}</td>
+                          <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{formatTokens(u.completionTokens)}</td>
+                          <td className="py-1.5 pr-2 text-right text-chill-text font-mono">{formatTokens(perTokens)}</td>
+                          <td className="py-1.5 text-right text-chill-accent font-mono">≈{formatUsd(perUsd)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>
