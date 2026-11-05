@@ -730,3 +730,29 @@ describe('MessageList in-transcript search', () => {
     await waitFor(() => expect(screen.queryByRole('search')).not.toBeInTheDocument());
   });
 });
+describe('MessageList per-message model attribution', () => {
+  it('shows the model that produced an assistant reply in its footer', () => {
+    renderList({
+      model: 'hermes',
+      messages: [{ role: 'assistant', content: 'halo', model: 'other' }],
+    });
+    expect(screen.getByLabelText('Model: Other Model')).toBeInTheDocument();
+  });
+
+  it('falls back to the raw id when the producing model is not in the catalog', () => {
+    renderList({
+      messages: [{ role: 'assistant', content: 'halo', model: 'unknown-xyz' }],
+    });
+    expect(screen.getByLabelText('Model: unknown-xyz')).toBeInTheDocument();
+  });
+
+  it('omits the attribution on user turns and replies without a model', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'hai', model: 'other' },
+        { role: 'assistant', content: 'halo' },
+      ],
+    });
+    expect(screen.queryByLabelText(/^Model:/)).not.toBeInTheDocument();
+  });
+});

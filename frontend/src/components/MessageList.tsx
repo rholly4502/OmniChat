@@ -146,6 +146,9 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const [draft, setDraft] = useState('');
   /** Resolved label of the model currently selected, for the typing indicator. */
   const activeModelLabel = models.find((m) => m.id === model)?.label;
+  /** Resolves a model id to its label; falls back to the raw id when unknown. */
+  const modelName = (id?: string): string | null =>
+    !id ? null : models.find((m) => m.id === id)?.label ?? id;
 
   // --- In-transcript search -------------------------------------------------
   // Self-contained local state: the search toolbar highlights matches inside
@@ -493,6 +496,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         }
                       />
                       <span className="focus-hidden">OmniChat</span>
+                      {m.role === 'assistant' && m.model && (
+                        <span
+                          className="focus-hidden"
+                          title={`Model: ${modelName(m.model)}`}
+                          aria-label={`Model: ${modelName(m.model)}`}
+                        >
+                          · {modelName(m.model)}
+                        </span>
+                      )}
                       {m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0) && (
                         <span className="focus-hidden" title={`${formatTokens(m.usage.promptTokens)} in · ${formatTokens(m.usage.completionTokens)} out`}>
                           · {formatTokens(m.usage.promptTokens + m.usage.completionTokens)} tok ≈ {formatUsd(estimateUsd(m.usage, m.model ?? model))}
