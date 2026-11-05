@@ -252,6 +252,8 @@ export interface DailySuggestionsDto {
   sarapan: string;
   makanSiang: string;
   makanMalam: string;
+  /** Estimated total cost for today's three-meal set (frugal kos range). */
+  biaya: string;
   /** Today's recommended free activity. */
   aktivitas: string;
   /** A short interesting health/frugality fact. */

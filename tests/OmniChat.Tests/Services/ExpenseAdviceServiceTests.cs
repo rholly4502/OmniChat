@@ -320,6 +320,7 @@ public sealed class ExpenseAdviceServiceTests
         Assert.False(string.IsNullOrWhiteSpace(d.Aktivitas));
         Assert.False(string.IsNullOrWhiteSpace(d.FunFact));
         Assert.False(string.IsNullOrWhiteSpace(d.TipAnakKos));
+        Assert.False(string.IsNullOrWhiteSpace(d.Biaya));
         // The menu is a full three-meal set.
         Assert.NotEqual(d.Sarapan, d.MakanSiang);
         Assert.NotEqual(d.MakanSiang, d.MakanMalam);
@@ -466,5 +467,28 @@ public sealed class ExpenseAdviceServiceTests
         // total = 1.4jt; fixed Tagihan = 1.3jt; discretionary 100k/5 = 20k/day -> 600k/mo.
         Assert.Equal(1_900_000, advice.Projection.ProjectedTotal);
         Assert.Equal(0, advice.Projection.ProjectedOver);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_menuCostEstimatePresentForEveryMenuSet()
+    {
+        // P1-6 "hemat" intent: every menu set carries a frugal daily-cost estimate so the
+        // user can compare a day's plan against the daily budget. Distinct menus may share a
+        // realistic cost range, so the invariant is not uniqueness — it is that all 14 menus
+        // surface within the window and that each estimate travels deterministically with its
+        // menu set (same menu -> same cost).
+        var service = NewService(new FakeExpenseRepository());
+        var anchor = new DateOnly(2026, 10, 1);
+        var byMenu = new Dictionary<string, string>();
+        for (var i = 0; i < 30; i++)
+        {
+            var advice = await service.BuildAsync(anchor.AddDays(i), CancellationToken.None);
+            Assert.False(string.IsNullOrWhiteSpace(advice.Daily.Biaya));
+            if (byMenu.TryGetValue(advice.Daily.Sarapan, out var known))
+                Assert.Equal(known, advice.Daily.Biaya);
+            else
+                byMenu[advice.Daily.Sarapan] = advice.Daily.Biaya;
+        }
+        Assert.Equal(14, byMenu.Count); // all 14 menus were visited and carry an estimate
     }
 }

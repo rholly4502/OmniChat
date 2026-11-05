@@ -35,6 +35,7 @@ const advicePayload = {
     sarapan: 'Oatmeal + pisang + teh tawar',
     makanSiang: 'Nasi, ayam bakar, tumis kangkung, air putih',
     makanMalam: 'Nasi, telur dadar, sayur bening bayam',
+    biaya: '±Rp25–30k',
     aktivitas: 'Jalan kaki 10.000 langkah',
     funFact: 'Otak butuh ±20% energi tubuh',
     tipAnakKos: 'Masak sendiri: belanja bahan seminggu sekali',
@@ -184,6 +185,9 @@ describe('AdvicePanel daily suggestions (P1-6)', () => {
     expect(screen.getByText('Jalan kaki 10.000 langkah')).toBeInTheDocument();
     expect(screen.getByText('Otak butuh ±20% energi tubuh')).toBeInTheDocument();
     expect(screen.getByText('Masak sendiri: belanja bahan seminggu sekali')).toBeInTheDocument();
+    const costLine = screen.getByText(/Estimasi biaya menu hari ini/);
+    expect(costLine.textContent).toContain('±Rp25–30k');
+    expect(costLine.textContent?.replace(/\s/g, ' ')).toContain('16.774'); // formatRupiah emits NBSP between 'Rp' and the amount
   });
 
   it('keeps the daily block on the chill pixel register (hard edges, pixel heading)', async () => {

@@ -198,6 +198,12 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
                 <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Saran Harian · {advice.date}</h4>
+                {advice.daily.biaya && (
+                  <p className="text-xs text-chill-muted tabular-nums">
+                    Estimasi biaya menu hari ini: <span className="font-medium text-chill-text">{advice.daily.biaya}</span>
+                    {advice.dailyBudget > 0 ? ` · anggaran harian ${formatRupiah(advice.dailyBudget)}` : ''}
+                  </p>
+                )}
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
                 <DailyTip label="Makan malam">{advice.daily.makanMalam}</DailyTip>

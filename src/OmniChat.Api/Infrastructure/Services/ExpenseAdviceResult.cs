@@ -26,6 +26,7 @@ public sealed record DailySuggestions(
     string Sarapan,
     string MakanSiang,
     string MakanMalam,
+    string Biaya,
     string Aktivitas,
     string FunFact,
     string TipAnakKos);

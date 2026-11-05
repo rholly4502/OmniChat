@@ -131,63 +131,78 @@ public sealed class ExpenseAdviceService(
         // Decoupled rotations: each pool advances at its own stride and period, so a
         // given calendar day stays deterministic while the full card repeats only after
         // the least common multiple of all pool lengths (~months), not every week.
-        var (sarapan, siang, malam) = Menus[day % Menus.Length];
+        var (sarapan, siang, malam, biaya) = Menus[day % Menus.Length];
         return new DailySuggestions(
             sarapan,
             siang,
             malam,
+            biaya,
             Aktivitas[(day * 2 + 1) % Aktivitas.Length],
             FunFacts[(day * 3 + 2) % FunFacts.Length],
             TipsAnakKos[(day * 5 + 3) % TipsAnakKos.Length]);
     }
 
     /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day.</summary>
-        private static readonly (string Sarapan, string MakanSiang, string MakanMalam)[] Menus =
+                private static readonly (string Sarapan, string MakanSiang, string MakanMalam, string Biaya)[] Menus =
     [
         ("Oatmeal + pisang + teh tawar",
          "Nasi, ayam bakar, tumis kangkung, air putih",
-         "Nasi, telur dadar, sayur bening bayam"),
+         "Nasi, telur dadar, sayur bening bayam",
+         "±Rp25–30k"),
         ("Bubur ayam (minta tanpa minyak berlebih)",
          "Nasi, tempe orek, sop sayuran",
-         "Nasi, ikan kembung pepes, lalapan"),
+         "Nasi, ikan kembung pepes, lalapan",
+         "±Rp28–35k"),
         ("Telur rebus + roti gandum",
          "Nasi, tahu bacem, capcay",
-         "Nasi, ayam suwir, sayur asem"),
+         "Nasi, ayam suwir, sayur asem",
+         "±Rp27–33k"),
         ("Pisang + susu/teh tawar",
          "Nasi, sayur lodeh, telur balado rencah",
-         "Nasi, lele goreng, sambal + timun"),
+         "Nasi, lele goreng, sambal + timun",
+         "±Rp30–38k"),
         ("Bubur kacang hijau (tanpa gula berlebih)",
          "Nasi, ayam geprek (skip tepung berlebih), wortel rebus",
-         "Nasi, oncom goreng, sup ayam"),
+         "Nasi, oncom goreng, sup ayam",
+         "±Rp30–37k"),
         ("Roti gandum + selai kacang (tanpa gula tambahan)",
          "Nasi, ikan tongkol suwir, tumis brokoli wortel",
-         "Nasi, tahu kukus + sambal terasi, sayur bayam"),
+         "Nasi, tahu kukus + sambal terasi, sayur bayam",
+         "±Rp29–36k"),
         ("Bubur putih + telur rebus",
          "Nasi, hati ayam tumis (sedikit minyak), mentimun",
-         "Nasi, tempe penyet + lalapan, sayur lodeh"),
+         "Nasi, tempe penyet + lalapan, sayur lodeh",
+         "±Rp26–32k"),
         ("Telur mata sapi + nasi merah (porsi kecil)",
          "Nasi, ayam pop, sayur katuk",
-         "Nasi, rolade tahu, kuah sayur oyong"),
+         "Nasi, rolade tahu, kuah sayur oyong",
+         "±Rp28–35k"),
         ("Roti tawar gandum + telur orak-arik",
          "Nasi, udang tumis (sedikit), tumis tauge",
-         "Nasi, pindang tongkol, sambal + lalapan"),
+         "Nasi, pindang tongkol, sambal + lalapan",
+         "±Rp32–40k"),
         ("Singkong/ubi rebus + teh tawar",
          "Nasi, telur kecap, sop jagung wortel",
-         "Nasi, ayam ungkep tanpa kulit, tumis kacang panjang"),
+         "Nasi, ayam ungkep tanpa kulit, tumis kacang panjang",
+         "±Rp25–31k"),
         ("Apel + yoghurt polos tanpa gula",
          "Nasi, tempe mendoan (tanpa tepung berlebih), sayur bening",
-         "Nasi, bandeng presto, lalapan + sambal"),
+         "Nasi, bandeng presto, lalapan + sambal",
+         "±Rp30–38k"),
         ("Kentang rebus + telur rebus",
          "Nasi, ayam rica-rica (minyak sedikit), mentimun",
-         "Nasi, tahu tektek, sayur asem"),
+         "Nasi, tahu tektek, sayur asem",
+         "±Rp28–35k"),
         ("Bubur putih + abon ayam",
          "Nasi, sawi cah telur, perkedel tahu",
-         "Nasi, ikan cakalang suwir, tumis labu siam"),
+         "Nasi, ikan cakalang suwir, tumis labu siam",
+         "±Rp29–36k"),
         ("Omelet sayur + roti gandum",
          "Nasi, sop ayam bening, tempe goreng tepung tipis",
-         "Nasi, semur daging (porsi kecil), tumis buncis"),
+         "Nasi, semur daging (porsi kecil), tumis buncis",
+         "±Rp33–42k"),
     ];
-    /// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
+/// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
         private static readonly string[] Aktivitas =
     [
         "Jalan kaki 10.000 langkah — bagi pagi & sore biar tidak terasa berat.",
