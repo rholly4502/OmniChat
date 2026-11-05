@@ -24,6 +24,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     /// <summary>Ledger SourceIds deleted via the web UI, so the importer never re-inserts them.</summary>
     public DbSet<ExpenseDeletion> ExpenseDeletions => Set<ExpenseDeletion>();
 
+    /// <summary>Income/pemasukan ledger rows (separate from expenses, never counted as spend).</summary>
+    public DbSet<Income> Incomes => Set<Income>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // SQLite has no native DateTimeOffset type and rejects it in ORDER BY, which is
@@ -98,5 +101,13 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         expenseDeletion.Property(d => d.SourceId).IsRequired().HasMaxLength(64);
         // One tombstone per ledger row; same key as the importer's dedup index.
         expenseDeletion.HasIndex(d => d.SourceId).IsUnique();
+
+        var income = modelBuilder.Entity<Income>();
+        income.ToTable("Incomes");
+        income.HasKey(i => i.Id);
+        income.Property(i => i.Tanggal);
+        income.Property(i => i.Keterangan).IsRequired().HasMaxLength(500);
+        income.Property(i => i.Nominal);
+        income.HasIndex(i => i.SourceId);
     }
 }

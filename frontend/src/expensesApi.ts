@@ -148,6 +148,24 @@ export async function getExpenseSummary(
   return (await res.json()) as ExpenseSummary;
 }
 
+/** All-time cash-on-hand from `GET /api/expenses/sisa`. */
+export interface ExpenseSisa {
+  /** Total income (pemasukan) across all months. */
+  totalPemasukan: number;
+  /** Total spending across all months (income rows are excluded). */
+  totalPengeluaran: number;
+  /** Remaining cash = totalPemasukan - totalPengeluaran. */
+  sisaUang: number;
+}
+
+/** Fetch all-time remaining cash (gaji minus total pengeluaran). */
+export async function getExpenseSisa(
+  options: ExpensesRequestOptions = {},
+): Promise<ExpenseSisa> {
+  const res = await request(`${EXPENSES_URL}/sisa`, options);
+  return (await res.json()) as ExpenseSisa;
+}
+
 /** Download the monthly expense report as CSV bytes (RFC 4180, UTF-8 with BOM). */
 export async function exportExpensesCsv(
   month: string,

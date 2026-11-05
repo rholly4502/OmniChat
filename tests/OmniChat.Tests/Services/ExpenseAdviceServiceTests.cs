@@ -82,6 +82,13 @@ public sealed class ExpenseAdviceServiceTests
             var removed = Rows.RemoveAll(r => r.Id == id);
             return Task.FromResult(removed > 0);
         }
+
+        public Task<long> GetTotalPemasukanAsync(CancellationToken ct) => Task.FromResult(0L);
+
+        public Task<long> GetTotalPengeluaranAllAsync(CancellationToken ct) => Task.FromResult(0L);
+
+        public Task<int> InsertMissingIncomesAsync(IEnumerable<Income> incomes, CancellationToken ct) =>
+            Task.FromResult(0);
     }
 
     private static (DateOnly From, DateOnly ToExclusive) MonthRangeForTests(string month)

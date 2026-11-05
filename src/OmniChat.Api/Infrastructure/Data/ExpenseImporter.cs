@@ -40,11 +40,14 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
         var skipped = new List<string>();
         var expenses = new List<Expense>();
 
+        var incomes = new List<Income>();
         foreach (var csvPath in Directory.EnumerateFiles(directoryPath, "*.csv").OrderBy(p => p))
         {
-            // Pemasukan (income) is a separate ledger and must never be counted as an expense.
+            // Pemasukan (income) is a separate ledger: seed it into Incomes (never counted
+            // as an expense), and keep it out of the expense list.
             if (string.Equals(Path.GetFileName(csvPath), IncomeFileName, StringComparison.OrdinalIgnoreCase))
             {
+                incomes.AddRange(ReadIncomeCsv(csvPath, skipped));
                 continue;
             }
 
@@ -57,11 +60,12 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
         var incomePath = Path.Combine(directoryPath, IncomeFileName);
         if (File.Exists(incomePath))
         {
-            var incomeSourceIds = ReadCsv(incomePath, skipped).Select(e => e.SourceId).Where(id => id is not null);
+            var incomeSourceIds = ReadIncomeCsv(incomePath, skipped).Select(e => e.SourceId).Where(id => id is not null);
             await repository.DeleteBySourceIdsAsync(incomeSourceIds!, cancellationToken);
         }
 
         var inserted = await repository.InsertMissingExpensesAsync(expenses, cancellationToken);
+        await repository.InsertMissingIncomesAsync(incomes, cancellationToken);
 
         var targetsUpserted = 0;
         var targetPath = Path.Combine(directoryPath, TargetFileName);
@@ -71,6 +75,23 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
         }
 
         return new ExpenseImportResult(inserted, targetsUpserted, skipped);
+    }
+
+    private static IEnumerable<Income> ReadIncomeCsv(string path, List<string> skipped)
+    {
+        // The income ledger uses the exact same 6-column layout as expenses
+        // (tanggal,waktu,kategori,keterangan,nominal,id), so reuse the battle-tested
+        // parser and map the result onto Income.
+        foreach (var expense in ReadCsv(path, skipped))
+        {
+            yield return new Income
+            {
+                Tanggal = expense.Tanggal,
+                Keterangan = expense.Keterangan,
+                Nominal = expense.Nominal,
+                SourceId = expense.SourceId,
+            };
+        }
     }
 
     private static IEnumerable<Expense> ReadCsv(string path, List<string> skipped)

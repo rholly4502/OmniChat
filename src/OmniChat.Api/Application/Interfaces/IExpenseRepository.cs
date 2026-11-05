@@ -30,6 +30,15 @@ public interface IExpenseRepository
     /// <summary>Budget/saving target for <paramref name="month"/>, or null when unset.</summary>
     Task<ExpenseTarget?> GetTargetAsync(string month, CancellationToken cancellationToken);
 
+    /// <summary>Total income (pemasukan) summed across all ledger months.</summary>
+    Task<long> GetTotalPemasukanAsync(CancellationToken cancellationToken);
+
+    /// <summary>Total spend (all categories except Nabung) summed across all ledger months.</summary>
+    Task<long> GetTotalPengeluaranAllAsync(CancellationToken cancellationToken);
+
+    /// <summary>Inserts income rows whose non-empty <see cref="Income.SourceId"/> is not already present.</summary>
+    Task<int> InsertMissingIncomesAsync(IEnumerable<Income> incomes, CancellationToken cancellationToken);
+
     /// <summary>
     /// Inserts rows whose non-empty <see cref="Expense.SourceId"/> is not already present
     /// (idempotent seeding). Returns how many rows were inserted.

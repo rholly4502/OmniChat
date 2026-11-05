@@ -159,11 +159,43 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.ToTable("ExpenseTargets", (string)null);
                 });
 
+            modelBuilder.Entity("OmniChat.Domain.Entities.Income", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Keterangan")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<long>("Nominal")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Tanggal")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceId");
+
+                    b.ToTable("Incomes", (string)null);
+                });
+
             modelBuilder.Entity("OmniChat.Domain.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
+
+                    b.Property<int>("CompletionTokens")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -176,17 +208,12 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("CompletionTokens")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER")
-                        .HasDefaultValue(0);
-
                     b.Property<string>("Feedback")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Model")
-                        .HasColumnType("TEXT")
-                        .HasMaxLength(100);
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("PromptTokens")
                         .ValueGeneratedOnAdd()

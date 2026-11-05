@@ -89,6 +89,56 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             .AsNoTracking()
             .FirstOrDefaultAsync(t => t.Month == month, cancellationToken);
 
+    public async Task<long> GetTotalPemasukanAsync(CancellationToken cancellationToken) =>
+        await db.Incomes
+            .AsNoTracking()
+            .SumAsync(i => (long?)i.Nominal, cancellationToken) ?? 0;
+
+    public async Task<long> GetTotalPengeluaranAllAsync(CancellationToken cancellationToken) =>
+        await db.Expenses
+            .AsNoTracking()
+            .Where(e => e.Kategori != "Nabung")
+            .SumAsync(e => (long?)e.Nominal, cancellationToken) ?? 0;
+
+    public async Task<int> InsertMissingIncomesAsync(
+        IEnumerable<Income> incomes, CancellationToken cancellationToken)
+    {
+        var list = incomes.ToList();
+        if (list.Count == 0)
+        {
+            return 0;
+        }
+
+        var sourceIds = list
+            .Where(i => !string.IsNullOrWhiteSpace(i.SourceId))
+            .Select(i => i.SourceId!.Trim())
+            .Distinct()
+            .ToList();
+
+        var existing = new HashSet<string>();
+        if (sourceIds.Count > 0)
+        {
+            existing = (await db.Incomes
+                    .Where(i => i.SourceId != null && sourceIds.Contains(i.SourceId))
+                    .Select(i => i.SourceId!)
+                    .ToListAsync(cancellationToken))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var missing = list
+            .Where(i => string.IsNullOrWhiteSpace(i.SourceId) ||
+                        !existing.Contains(i.SourceId!.Trim()))
+            .ToList();
+
+        if (missing.Count == 0)
+        {
+            return 0;
+        }
+
+        db.Incomes.AddRange(missing);
+        return await db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<int> InsertMissingExpensesAsync(
         IEnumerable<Expense> expenses, CancellationToken cancellationToken)
     {

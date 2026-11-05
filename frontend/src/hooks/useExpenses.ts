@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { getExpenseSummary, listExpenses, type ExpenseItem, type ExpenseSummary } from '../expensesApi';
+import { getExpenseSummary, getExpenseSisa, listExpenses, type ExpenseItem, type ExpenseSisa, type ExpenseSummary } from '../expensesApi';
 
 /** Wall-clock now in WIB (UTC+7). */
 function wibNow(): Date {
@@ -19,6 +19,7 @@ export interface UseExpensesResult {
   month: string;
   setMonth: (month: string) => void;
   summary: ExpenseSummary | null;
+  sisa: ExpenseSisa | null;
   items: ExpenseItem[];
   total: number;
   loading: boolean;
@@ -33,6 +34,7 @@ export interface UseExpensesResult {
 export function useExpenses(apiKey?: string): UseExpensesResult {
   const [month, setMonth] = useState(currentMonthKey);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
+  const [sisa, setSisa] = useState<ExpenseSisa | null>(null);
   const [items, setItems] = useState<ExpenseItem[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -48,8 +50,9 @@ export function useExpenses(apiKey?: string): UseExpensesResult {
       setLoading(true);
       setError(null);
       try {
-        const [summaryResult, firstPage] = await Promise.all([
+        const [summaryResult, sisaResult, firstPage] = await Promise.all([
           getExpenseSummary(month, options),
+          getExpenseSisa(options),
           listExpenses(month, options, 1),
         ]);
 
@@ -64,6 +67,7 @@ export function useExpenses(apiKey?: string): UseExpensesResult {
 
         if (cancelled) return;
         setSummary(summaryResult);
+        setSisa(sisaResult);
         setItems(collected);
         setTotal(firstPage.total);
       } catch (err) {
@@ -83,5 +87,5 @@ export function useExpenses(apiKey?: string): UseExpensesResult {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  return { month, setMonth, summary, items, total, loading, error, reload };
+  return { month, setMonth, summary, sisa, items, total, loading, error, reload };
 }

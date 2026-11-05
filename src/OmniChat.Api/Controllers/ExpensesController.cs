@@ -123,6 +123,24 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         return Ok(new { month, targetNabung = target.TargetNabung, anggaran = target.Anggaran, catatan = target.Catatan });
     }
 
+    /// <summary>Cash-on-hand: total income (pemasukan) minus total spend, across all months.</summary>
+    /// <response code="200">All-time income, spend, and remaining cash.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("sisa")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Sisa(CancellationToken cancellationToken = default)
+    {
+        var totalPemasukan = await repository.GetTotalPemasukanAsync(cancellationToken);
+        var totalPengeluaran = await repository.GetTotalPengeluaranAllAsync(cancellationToken);
+        return Ok(new
+        {
+            totalPemasukan,
+            totalPengeluaran,
+            sisaUang = totalPemasukan - totalPengeluaran,
+        });
+    }
+
     private static bool TryMonth(string month, out DateOnly parsed) =>
         DateOnly.TryParseExact(month, "yyyy-MM", out parsed);
 

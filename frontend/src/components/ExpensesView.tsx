@@ -78,7 +78,7 @@ function HeaderDivider() {
 
 /** The Pengeluaran page: month picker, summary cards, per-category totals, transactions. */
 export function ExpensesView({ apiKey }: ExpensesViewProps) {
-  const { month, setMonth, summary, items, total, loading, error, reload } = useExpenses(apiKey);
+  const { month, setMonth, summary, sisa, items, total, loading, error, reload } = useExpenses(apiKey);
   const trend = useExpenseTrend(apiKey);
 
   const [exporting, setExporting] = useState(false);
@@ -221,6 +221,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     setCategoryFilter('');
   };
   const showSummary = summary !== null;
+  const [allTime, setAllTime] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain text-chill-text">
@@ -324,25 +325,65 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
         {showSummary && (
           <>
-            <section aria-label="Ringkasan bulanan" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="Total Pengeluaran" value={formatRupiah(summary!.total)} icon="Lain" tone="accent" />
-              <StatCard
-                label="Anggaran"
-                value={summary!.anggaran !== null ? formatRupiah(summary!.anggaran!) : '—'}
-                icon="Tagihan"
-              />
-              <StatCard
-                label="Sisa Anggaran"
-                value={summary!.sisaAnggaran !== null ? formatRupiah(summary!.sisaAnggaran!) : '—'}
-                icon="Nabung"
-                tone={summary!.sisaAnggaran !== null && summary!.sisaAnggaran < 0 ? 'red' : 'emerald'}
-              />
-              <StatCard
-                label="Target Nabung"
-                value={summary!.targetNabung !== null ? formatRupiah(summary!.targetNabung!) : '—'}
-                icon="Kesehatan"
-              />
-            </section>
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-chill-muted">Sisa Uang</span>
+              <div className="inline-flex rounded-none border border-chill-border overflow-hidden" role="group" aria-label="Rentang waktu sisa uang">
+                <button
+                  type="button"
+                  onClick={() => setAllTime(false)}
+                  aria-pressed={!allTime}
+                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                    !allTime ? 'bg-chill-accent text-chill-bg' : 'bg-chill-surface text-chill-muted hover:bg-chill-elevated'
+                  }`}
+                >
+                  Bulan Ini
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllTime(true)}
+                  aria-pressed={allTime}
+                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                    allTime ? 'bg-chill-accent text-chill-bg' : 'bg-chill-surface text-chill-muted hover:bg-chill-elevated'
+                  }`}
+                >
+                  Semua Waktu
+                </button>
+              </div>
+            </div>
+
+            {allTime ? (
+              <section aria-label="Ringkasan semua waktu" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                  label="Sisa Uang"
+                  value={sisa ? formatRupiah(sisa.sisaUang) : '—'}
+                  icon="Nabung"
+                  tone={sisa && sisa.sisaUang < 0 ? 'red' : 'emerald'}
+                />
+                <StatCard label="Total Pemasukan" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Tagihan" />
+                <StatCard label="Total Pengeluaran" value={sisa ? formatRupiah(sisa.totalPengeluaran) : '—'} icon="Lain" tone="accent" />
+                <StatCard label="Dari Gaji" value="7.4 jt" icon="Kesehatan" />
+              </section>
+            ) : (
+              <section aria-label="Ringkasan bulanan" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard label="Total Pengeluaran" value={formatRupiah(summary!.total)} icon="Lain" tone="accent" />
+                <StatCard
+                  label="Anggaran"
+                  value={summary!.anggaran !== null ? formatRupiah(summary!.anggaran!) : '—'}
+                  icon="Tagihan"
+                />
+                <StatCard
+                  label="Sisa Anggaran"
+                  value={summary!.sisaAnggaran !== null ? formatRupiah(summary!.sisaAnggaran!) : '—'}
+                  icon="Nabung"
+                  tone={summary!.sisaAnggaran !== null && summary!.sisaAnggaran < 0 ? 'red' : 'emerald'}
+                />
+                <StatCard
+                  label="Target Nabung"
+                  value={summary!.targetNabung !== null ? formatRupiah(summary!.targetNabung!) : '—'}
+                  icon="Kesehatan"
+                />
+              </section>
+            )}
 
             {summary!.anggaran !== null && summary!.anggaran > 0 && (
               <PixelProgress
