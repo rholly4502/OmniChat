@@ -648,3 +648,38 @@ describe('ExpensesView remaining-daily-budget projection', () => {
     expect(screen.queryByText('Sisa per hari')).not.toBeInTheDocument();
   });
 });
+
+describe('ExpensesView all-time sisa cards', () => {
+  const sisaPayload = {
+    totalPemasukan: 7400000,
+    totalPengeluaran: 372000,
+    sisaUang: 7028000,
+  };
+
+  it('renders the "Dari Gaji" card from the live /sisa total, not a hardcoded literal', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary')
+          ? jsonResponse(summaryPayload)
+          : url.includes('/sisa')
+            ? jsonResponse(sisaPayload)
+            : jsonResponse(pagePayload),
+      ),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Semua Waktu' }));
+    await waitFor(() => expect(screen.getByText('Total Pemasukan')).toBeInTheDocument());
+
+    // The card value must be the API-derived rupiah (Rp 7.400.000), proving the
+    // card now reads from the ledger instead of a drifting hardcoded "7.4 jt".
+    expect(screen.getByText('Dari Gaji')).toBeInTheDocument();
+    // formatRupiah emits a non-breaking space (U+00A0) between "Rp" and the
+    // amount, so match on normalized whitespace (see expenses pitfall).
+    // Both "Total Pemasukan" and "Dari Gaji" cards now read the same live value.
+    expect(screen.getAllByText((_, el) => el?.textContent?.replace(/\s/g, ' ') === formatRupiah(sisaPayload.totalPemasukan).replace(/\s/g, ' ')).length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText('7.4 jt')).not.toBeInTheDocument();
+  });
+});
