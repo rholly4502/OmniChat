@@ -235,6 +235,15 @@ body {
   background-color: var(--color-chill-bg);
 }
 
+/* Text-selection highlight: the browser default is a cold blue that breaks the
+   warm palette on every surface. Re-dye selection in the chill register — a
+   warm accent tint with dark on-accent text for WCAG AA (~8:1). Night mode
+   redefines the same tokens, so this dims with the rest of the app. */
+::selection {
+  background-color: var(--color-chill-accent);
+  color: var(--color-chill-on-accent);
+}
+
 /* Retro pixel edges: hard offset shadows with zero blur give a chunky,
    chiseled border instead of a soft gradient shadow. */
 .pixel-shadow  { box-shadow: 3px 3px 0 0 rgb(0 0 0 / 0.45); }

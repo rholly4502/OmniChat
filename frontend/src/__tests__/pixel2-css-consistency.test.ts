@@ -62,4 +62,10 @@ describe('pixel2 css consistency', () => {
     expect(block).toContain('repeating-linear-gradient');
     expect(block).not.toContain('border-dashed');
   });
+
+  it('styles text selection in the warm chill register (no default cold blue)', () => {
+    const block = CLEAN.match(/::selection\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(block).toContain('var(--color-chill-accent)');
+    expect(block).toContain('var(--color-chill-on-accent)');
+  });
 });

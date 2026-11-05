@@ -41,7 +41,7 @@ export function ExpenseTrendChart({ points }: Props) {
                 >
                   {/* Hard top-left bevel (pixel meter register): a chunky light
                       edge like the resource bars — no soft gradient. */}
-                  <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-accent-hover/80" />
+                  <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-white/15" />
                 </div>
               ) : (
                 <div className="w-full max-w-[26px] bg-chill-border/40 border border-chill-border/40" style={{ height: '6px' }} />
