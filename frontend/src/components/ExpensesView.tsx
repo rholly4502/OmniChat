@@ -332,7 +332,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   type="button"
                   onClick={() => setAllTime(false)}
                   aria-pressed={!allTime}
-                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] rounded-none pixel-shadow-sm active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                     !allTime ? 'bg-chill-accent text-chill-bg' : 'bg-chill-surface text-chill-muted hover:bg-chill-elevated'
                   }`}
                 >
@@ -342,7 +342,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   type="button"
                   onClick={() => setAllTime(true)}
                   aria-pressed={allTime}
-                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                  className={`px-3 py-1.5 text-xs font-medium transition min-h-[44px] rounded-none pixel-shadow-sm active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                     allTime ? 'bg-chill-accent text-chill-bg' : 'bg-chill-surface text-chill-muted hover:bg-chill-elevated'
                   }`}
                 >

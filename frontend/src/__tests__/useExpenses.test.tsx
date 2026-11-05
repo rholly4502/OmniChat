@@ -15,6 +15,12 @@ const summaryPayload = {
   sisaAnggaran: 500000,
 };
 
+const sisaPayload = {
+  totalPemasukan: 7400000,
+  totalPengeluaran: 20000,
+  sisaUang: 7380000,
+};
+
 const pagePayload = {
   month: '2026-10',
   page: 1,
@@ -24,7 +30,7 @@ const pagePayload = {
 };
 
 function fetchStub(routes: Record<string, unknown>) {
-  return vi.fn(async (url: string) => {
+  return vi.fn(async (url: string, _init?: RequestInit) => {
     for (const [part, body] of Object.entries(routes)) {
       if (url.includes(part)) return jsonResponse(body);
     }
@@ -44,7 +50,7 @@ describe('currentMonthKey', () => {
 
 describe('useExpenses', () => {
   it('loads the summary and transactions for the current month', async () => {
-    const stub = fetchStub({ '/summary': summaryPayload, '/api/expenses?month': pagePayload });
+    const stub = fetchStub({ '/summary': summaryPayload, '/sisa': sisaPayload, '/api/expenses?month': pagePayload });
     vi.stubGlobal('fetch', stub);
 
     const { result } = renderHook(() => useExpenses('secret'));
@@ -54,8 +60,9 @@ describe('useExpenses', () => {
     expect(result.current.items).toHaveLength(1);
     expect(result.current.total).toBe(1);
     expect(result.current.summary!.targetNabung).toBe(467000);
-    // both the summary and the list endpoints got the API key
-    expect(stub.mock.calls.every(([url]) => url.includes('month='))).toBe(true);
+    // every endpoint got the API key header (summary, sisa, and list)
+    const headers = (stub.mock.calls as [string, RequestInit?][]).map(([, init]) => init?.headers);
+    expect(headers.every((h) => (h as Record<string, string>)?.['X-Api-Key'] === 'secret')).toBe(true);
   });
 
   it('fetches every page until total rows are collected', async () => {
@@ -63,6 +70,7 @@ describe('useExpenses', () => {
     let listCalls = 0;
     const stub = vi.fn((url: string) => {
       if (url.includes('/summary')) return jsonResponse(summaryPayload);
+      if (url.includes('/sisa')) return jsonResponse(sisaPayload);
       listCalls++;
       const items = listCalls === 1 ? [pagePayload.items[0], { ...pagePayload.items[0], id: 3 }] : [pagePayload.items[0]];
       return jsonResponse({ ...pagePayload, total: 3, items });
@@ -84,7 +92,7 @@ describe('useExpenses', () => {
   });
 
   it('refetches when the month changes', async () => {
-    const stub = fetchStub({ '/summary': summaryPayload, '/api/expenses?month': pagePayload });
+    const stub = fetchStub({ '/summary': summaryPayload, '/sisa': sisaPayload, '/api/expenses?month': pagePayload });
     vi.stubGlobal('fetch', stub);
 
     const { result } = renderHook(() => useExpenses('secret'));
