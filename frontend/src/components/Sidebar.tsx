@@ -717,7 +717,7 @@ export function Sidebar({
           <select
             value={model}
             onChange={(e) => onModelChange(e.target.value)}
-            className="w-full appearance-none bg-chill-surface border border-chill-border px-3 py-3 pr-9 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] cursor-pointer hover:border-chill-accent/60 transition-colors pixel-shadow-sm"
+            className="w-full appearance-none bg-chill-surface border border-chill-border px-3 py-3 pr-9 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] cursor-pointer hover:border-chill-accent/60 transition-colors pixel-shadow-sm [color-scheme:dark]"
             id="model-select"
           >
             {models.map((m) => (

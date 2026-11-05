@@ -480,7 +480,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
+                      className="w-full appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
                     >
                       <option value="">Semua kategori</option>
                       {CATEGORY_ORDER.map((c) => (

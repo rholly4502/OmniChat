@@ -183,4 +183,16 @@ describe('pixel2 chill consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('every <select> renders its native dropdown in the dark register (color-scheme)', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of selectTags(readFileSync(file, 'utf8'))) {
+        if (!attrs.includes('[color-scheme:dark]')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} select missing [color-scheme:dark] — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
