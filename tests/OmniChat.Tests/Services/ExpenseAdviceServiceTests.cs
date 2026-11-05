@@ -52,8 +52,8 @@ public sealed class ExpenseAdviceServiceTests
 
         public Task<int> DeleteBySourceIdsAsync(IEnumerable<string> sourceIds, CancellationToken ct) => Task.FromResult(0);
 
-        public Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(string endMonth, int months, CancellationToken ct) =>
-            Task.FromResult((IReadOnlyList<(string, long)>)[]);
+        public Task<IReadOnlyList<(string Month, long Total, IReadOnlyDictionary<string, long> ByCategory)>> GetMonthlyTrendAsync(string endMonth, int months, CancellationToken ct) =>
+            Task.FromResult((IReadOnlyList<(string, long, IReadOnlyDictionary<string, long>)>)[]);
 
         public Task<Expense?> GetByIdAsync(long id, CancellationToken ct) =>
             Task.FromResult(Rows.FirstOrDefault(r => r.Id == id));

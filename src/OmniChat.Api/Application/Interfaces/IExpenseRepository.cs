@@ -60,7 +60,7 @@ public interface IExpenseRepository
     /// <paramref name="endMonth"/> (YYYY-MM, inclusive). Chronological order, missing
     /// months zero-filled. Used by the trend chart.
     /// </summary>
-    Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(
+    Task<IReadOnlyList<(string Month, long Total, IReadOnlyDictionary<string, long> ByCategory)>> GetMonthlyTrendAsync(
         string endMonth, int months, CancellationToken cancellationToken);
 
     /// <summary>Fetches a single expense row by its surrogate primary key.</summary>

@@ -233,7 +233,7 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         await db.SaveChangesAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<(string Month, long Total)>> GetMonthlyTrendAsync(
+    public async Task<IReadOnlyList<(string Month, long Total, IReadOnlyDictionary<string, long> ByCategory)>> GetMonthlyTrendAsync(
         string endMonth, int months, CancellationToken cancellationToken)
     {
         var count = Math.Clamp(months, 1, 24);
@@ -246,16 +246,18 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
         var rows = await db.Expenses
             .AsNoTracking()
             .Where(e => e.Tanggal >= start && e.Tanggal < toExclusive && e.Kategori != "Nabung")
-            .GroupBy(e => new { e.Tanggal.Year, e.Tanggal.Month })
-            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(e => e.Nominal) })
+            .GroupBy(e => new { e.Tanggal.Year, e.Tanggal.Month, e.Kategori })
+            .Select(g => new { g.Key.Year, g.Key.Month, g.Key.Kategori, Total = g.Sum(e => e.Nominal) })
             .ToListAsync(cancellationToken);
 
-        var totals = rows.ToDictionary(r => (r.Year, r.Month), r => r.Total);
-        var result = new List<(string, long)>(count);
+        var result = new List<(string, long, IReadOnlyDictionary<string, long>)>(count);
         for (var i = 0; i < count; i++)
         {
             var m = start.AddMonths(i);
-            result.Add((m.ToString("yyyy-MM"), totals.GetValueOrDefault((m.Year, m.Month))));
+            var byCategory = new Dictionary<string, long>();
+            foreach (var r in rows.Where(r => r.Year == m.Year && r.Month == m.Month))
+                byCategory[r.Kategori] = r.Total;
+            result.Add((m.ToString("yyyy-MM"), byCategory.Values.Sum(), byCategory));
         }
 
         return result;

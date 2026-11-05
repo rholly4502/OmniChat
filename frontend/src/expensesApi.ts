@@ -190,6 +190,8 @@ export interface ExpenseTrendPoint {
   month: string;
   /** Total spend for that month (zero-filled for empty months). */
   total: number;
+  /** Per-category spend breakdown for that month (Nabung excluded), largest first. */
+  categories?: { kategori: string; total: number }[];
 }
 
 /** Envelope from `GET /api/expenses/trend`. */

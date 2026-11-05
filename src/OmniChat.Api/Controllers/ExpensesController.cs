@@ -252,7 +252,15 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         return Ok(new
         {
             months,
-            points = points.Select(p => new { p.Month, p.Total }).ToList(),
+            points = points.Select(p => new
+            {
+                p.Month,
+                p.Total,
+                Categories = p.ByCategory
+                    .OrderByDescending(kv => kv.Value)
+                    .Select(kv => new { Kategori = kv.Key, Total = kv.Value })
+                    .ToList(),
+            }).ToList(),
         });
     }
 

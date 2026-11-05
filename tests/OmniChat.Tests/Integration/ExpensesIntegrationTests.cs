@@ -407,10 +407,19 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
             Assert.Equal(3, points.GetArrayLength());
             Assert.Equal(prev2.ToString("yyyy-MM"), points[0].GetProperty("month").GetString());
             Assert.Equal(20_000, points[0].GetProperty("total").GetInt64());
+            var cat0 = points[0].GetProperty("categories");
+            Assert.Equal(1, cat0.GetArrayLength());
+            Assert.Equal("Transport", cat0[0].GetProperty("kategori").GetString());
+            Assert.Equal(20_000, cat0[0].GetProperty("total").GetInt64());
             Assert.Equal(prev1.ToString("yyyy-MM"), points[1].GetProperty("month").GetString());
             Assert.Equal(0, points[1].GetProperty("total").GetInt64());
+            Assert.Equal(0, points[1].GetProperty("categories").GetArrayLength());
             Assert.Equal(cur.ToString("yyyy-MM"), points[2].GetProperty("month").GetString());
             Assert.Equal(30_000, points[2].GetProperty("total").GetInt64());
+            var cat2 = points[2].GetProperty("categories");
+            Assert.Equal(1, cat2.GetArrayLength());
+            Assert.Equal("Makan", cat2[0].GetProperty("kategori").GetString());
+            Assert.Equal(30_000, cat2[0].GetProperty("total").GetInt64());
         }
         finally { File.Delete(db); }
     }

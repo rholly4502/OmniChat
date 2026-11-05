@@ -34,3 +34,39 @@ describe('ExpenseTrendChart', () => {
     expect(container.querySelector('div[title]')!.querySelector('[aria-hidden="true"]')).not.toBeNull();
   });
 });
+
+describe('ExpenseTrendChart stacked categories', () => {
+  it('renders one segment per category and a legend', () => {
+    const points: ExpenseTrendPoint[] = [
+      {
+        month: '2026-10',
+        total: 90000,
+        categories: [
+          { kategori: 'Makan', total: 60000 },
+          { kategori: 'Transport', total: 30000 },
+        ],
+      },
+    ];
+    const { container } = render(<ExpenseTrendChart points={points} />);
+    // two stacked segments carry per-category titles
+    const segs = container.querySelectorAll('div[title]');
+    expect(segs).toHaveLength(2);
+    // ascending order: smallest segment first (top), largest at the base
+    expect(segs[0].getAttribute('title')).toContain('Transport');
+    expect(segs[0].getAttribute('title')).toContain('30.000');
+    expect(segs[1].getAttribute('title')).toContain('Makan');
+    expect(segs[1].getAttribute('title')).toContain('60.000');
+    // legend lists both categories
+    expect(screen.getByText('Makan')).toBeInTheDocument();
+    expect(screen.getByText('Transport')).toBeInTheDocument();
+  });
+
+  it('renders no legend when no point carries category data', () => {
+    const points: ExpenseTrendPoint[] = [{ month: '2026-10', total: 90000 }];
+    render(<ExpenseTrendChart points={points} />);
+    // solid-bar fallback path (no segments, no legend)
+    const segs = document.body.querySelectorAll('div[title]');
+    expect(segs).toHaveLength(1);
+    expect(screen.queryByText('Makan')).not.toBeInTheDocument();
+  });
+});

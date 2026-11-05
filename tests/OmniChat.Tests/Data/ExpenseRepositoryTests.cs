@@ -182,9 +182,15 @@ public sealed class ExpenseRepositoryTests : IDisposable
         var trend = await _repository.GetMonthlyTrendAsync("2026-10", 3, CancellationToken.None);
 
         Assert.Equal(3, trend.Count);
-        Assert.Equal(("2026-08", 20_000L), trend[0]);
-        Assert.Equal(("2026-09", 0L), trend[1]);
-        Assert.Equal(("2026-10", 30_000L), trend[2]);
+        Assert.Equal("2026-08", trend[0].Month);
+        Assert.Equal(20_000L, trend[0].Total);
+        Assert.Equal(new Dictionary<string, long> { ["Transport"] = 20_000L }, trend[0].ByCategory);
+        Assert.Equal("2026-09", trend[1].Month);
+        Assert.Equal(0L, trend[1].Total);
+        Assert.Empty(trend[1].ByCategory);
+        Assert.Equal("2026-10", trend[2].Month);
+        Assert.Equal(30_000L, trend[2].Total);
+        Assert.Equal(new Dictionary<string, long> { ["Makan"] = 30_000L }, trend[2].ByCategory);
     }
 
     [Fact]
@@ -200,7 +206,9 @@ public sealed class ExpenseRepositoryTests : IDisposable
 
         // Savings deposits are not spending — only the 30k Makan spend shows.
         Assert.Single(trend);
-        Assert.Equal(("2026-10", 30_000L), trend[0]);
+        Assert.Equal("2026-10", trend[0].Month);
+        Assert.Equal(30_000L, trend[0].Total);
+        Assert.Equal(new Dictionary<string, long> { ["Makan"] = 30_000L }, trend[0].ByCategory);
     }
 
     [Fact]
