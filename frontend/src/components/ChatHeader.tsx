@@ -79,6 +79,16 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
     };
   }, [exportOpen]);
 
+  // Only render the inline model switcher when the active model is actually one
+  // of the catalog options. When a conversation was last run on a model that is
+  // not in the current catalog (e.g. the server's model list changed), a
+  // controlled select whose value matches no option would render a misleading
+  // selection — fall back to the static label instead.
+  // When no model is selected yet (undefined) or the model is present in the
+  // catalog, the switcher is safe to render. It is suppressed only when a
+  // concrete model id is missing from the catalog (stale saved model).
+  const modelInCatalog = !model || Boolean(models?.some((m) => m.id === model));
+
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -87,7 +97,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
       <span className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text select-none">
         {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
         {useAgent ? 'Agent' : 'Direct'}
-        {onModelChange && models && models.length > 0 ? (
+        {onModelChange && models && models.length > 0 && modelInCatalog ? (
           <span className="relative inline-flex items-center">
             <select
               value={model}

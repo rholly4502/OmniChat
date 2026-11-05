@@ -102,6 +102,15 @@ describe('ChatHeader model switcher', () => {
     expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
     expect(screen.getByText('Claude Sonnet')).toBeInTheDocument();
   });
+
+  it('falls back to a static label when the active model is not in the catalog', () => {
+    const onChange = vi.fn();
+    // The active model 'gpt-4o' is not in `catalog` (only claude-sonnet + gpt-4o
+    // are), so the switcher must not render a select whose value matches no option.
+    renderHeader({ model: 'some-removed-model', modelLabel: 'Model dihapus', models: catalog, onModelChange: onChange });
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+    expect(screen.getByText('Model dihapus')).toBeInTheDocument();
+  });
 });
 
 describe('ChatHeader export menu', () => {

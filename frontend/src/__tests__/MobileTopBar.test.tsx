@@ -186,4 +186,12 @@ describe('MobileTopBar', () => {
     expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Keluar')).toBeInTheDocument();
   });
+
+  it('falls back to the static label when the active model is not in the catalog', () => {
+    const onChange = vi.fn();
+    const catalog = [{ id: 'hermes-default', label: 'Hermes Default' }];
+    renderBar({ model: 'removed-model', modelLabel: 'Model lama', models: catalog, onModelChange: onChange });
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+    expect(screen.getByText('Model lama')).toBeInTheDocument();
+  });
 });

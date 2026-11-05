@@ -133,7 +133,9 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">
             {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
             {useAgent ? 'Agent' : 'Direct'}
-            {onModelChange && models && models.length > 0 ? (
+            {(() => {
+              const modelInCatalog = !model || Boolean(models?.some((m) => m.id === model));
+              return onModelChange && models && models.length > 0 && modelInCatalog ? (
               <span className="relative inline-flex items-center">
                 <select
                   value={model}
@@ -149,9 +151,9 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
                   <polyline points="6 9 12 15 18 9" />
                 </svg>
               </span>
-            ) : modelLabel ? (
+              ) : modelLabel ? (
               <span className="text-chill-accent font-medium">{modelLabel}</span>
-            ) : null}
+            ) : null})()}
           </span>
           {chillMode && (
             <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-surface px-1.5 py-0.5 text-xs text-chill-accent font-medium select-none" aria-label="Chill Mode aktif">
