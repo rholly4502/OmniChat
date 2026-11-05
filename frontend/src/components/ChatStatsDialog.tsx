@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ConversationUsageSummary, ModelOption } from '../types';
 
@@ -22,7 +22,7 @@ export interface ChatStatsDialogProps {
  * body scroll lock, so the numbers are reviewable without scrolling a panel.
  */
 export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStatsDialogProps) {
-  const panelRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useModalDialog(open, onClose, '[data-stats-close]');
 
   const byModelEntries = Object.entries(usage.byModel);
   const totalUsd = byModelEntries.reduce(
@@ -35,41 +35,6 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStat
     const opt = modelOptions?.find((o) => o.id === id);
     return opt ? opt.label : id;
   };
-
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const panel = panelRef.current;
-    panel?.querySelector<HTMLButtonElement>('[data-stats-close]')?.focus();
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab' || !panel) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
-      );
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onClose]);
 
   if (!open) return null;
 

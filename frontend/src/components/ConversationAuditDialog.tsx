@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ChatSession, Message, ModelOption } from '../types';
 
@@ -47,42 +47,7 @@ function preview(content: string): string {
  * thread. Shares the same focus-trap / Escape / scroll-lock contract.
  */
 export function ConversationAuditDialog({ open, onClose, session, modelOptions }: ConversationAuditDialogProps) {
-  const panelRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const panel = panelRef.current;
-    panel?.querySelector<HTMLButtonElement>('[data-audit-close]')?.focus();
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab' || !panel) return;
-      const items = Array.from(
-        panel.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'),
-      );
-      if (items.length === 0) return;
-      const first = items[0];
-      const last = items[items.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => {
-      window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [open, onClose]);
+  const panelRef = useModalDialog(open, onClose, '[data-audit-close]');
 
   if (!open || !session) return null;
 
