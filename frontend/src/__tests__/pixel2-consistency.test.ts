@@ -207,3 +207,24 @@ describe('pixel2 chill consistency', () => {
     expect(w).toContain('bg-white/15');
   });
 });
+
+describe('pixel2 global square-corner floor', () => {
+  const files = sourceFiles(SRC);
+  // Every <button> across the whole source must be square (rounded-none) — the
+  // square-corner contract is app-wide, not just expenses/advice. A button that
+  // omits it can pick up native OS rounding (e.g. Chrome/Safari default radii),
+  // which is a soft-corner remnant against the chill theme.
+  it('every <button> across the source uses rounded-none', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of buttonTags(readFileSync(file, 'utf8'))) {
+        const cls = /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(attrs);
+        const classes = (cls?.[1] ?? cls?.[2] ?? '').split(/\s+/);
+        if (classes.length && !classes.includes('rounded-none')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} button missing rounded-none — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});

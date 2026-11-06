@@ -473,7 +473,7 @@ export function Sidebar({
                                   setExportMenuFor(null);
                                   onExportSession(s, fmt);
                                 }}
-                                className="block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
+                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
                               >
                                 {EXPORT_FORMAT_LABELS[fmt]}
                               </button>
@@ -613,7 +613,7 @@ export function Sidebar({
           type="button"
           onClick={() => setStatsOpen(true)}
           aria-label="Buka statistik chat"
-          className="w-full mt-2 inline-flex items-center justify-center gap-1.5 min-h-[44px] bg-chill-surface text-sm font-medium text-chill-text border border-chill-border hover:border-chill-accent active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition pixel-shadow-sm"
+          className="rounded-none w-full mt-2 inline-flex items-center justify-center gap-1.5 min-h-[44px] bg-chill-surface text-sm font-medium text-chill-text border border-chill-border hover:border-chill-accent active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition pixel-shadow-sm"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M3 3v18h18" /><rect x="7" y="12" width="3" height="6" /><rect x="12" y="8" width="3" height="10" /><rect x="17" y="4" width="3" height="14" /></svg>
           Statistik Chat
@@ -768,7 +768,7 @@ export function Sidebar({
           <button
             type="button"
             onClick={onLogout}
-            className="mt-2 w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="rounded-none mt-2 w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             Keluar
           </button>
@@ -840,7 +840,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onResetPersona}
-                className="w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                className="rounded-none w-full border border-chill-border px-3 py-2 text-sm text-chill-text transition hover:border-chill-accent hover:text-chill-accent active:translate-y-[2px] active:shadow-none min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
               >
                 Reset parameter
               </button>
@@ -851,7 +851,7 @@ export function Sidebar({
 
       <button
         onClick={onClear}
-        className="mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+        className="rounded-none mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
           <polyline points="3 6 5 6 21 6" />

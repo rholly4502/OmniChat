@@ -91,7 +91,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
           <button
             type="button"
             onClick={() => setReveal((v) => !v)}
-            className="mt-1 inline-flex min-h-[44px] items-center text-sm text-chill-muted transition hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="rounded-none mt-1 inline-flex min-h-[44px] items-center text-sm text-chill-muted transition hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             {reveal ? 'Tutup' : 'Tampilkan'} kunci
           </button>

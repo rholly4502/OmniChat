@@ -44,7 +44,7 @@ export function HistoryFilters({
               onDateFromChange('');
               onDateToChange('');
             }}
-            className="text-xs text-chill-accent hover:text-chill-accent-hover underline-offset-2 hover:underline min-h-[44px] px-1 font-medium"
+            className="text-xs text-chill-accent hover:text-chill-accent-hover underline-offset-2 hover:underline min-h-[44px] px-1 font-medium rounded-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
             aria-label="Hapus semua filter"
           >
             Reset
