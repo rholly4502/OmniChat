@@ -421,7 +421,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       return;
     }
     if (format === 'pdf') {
-      downloadBlob(buildConversationPdf(session.messages, session.title, meta), `${slug}.pdf`);
+      // buildConversationPdf is async (lazy jsPDF); trigger the download when it resolves.
+      void buildConversationPdf(session.messages, session.title, meta).then((blob) =>
+        downloadBlob(blob, `${slug}.pdf`),
+      );
       return;
     }
     const md = buildConversationMarkdown(session.messages, session.title, meta, session.createdAt);

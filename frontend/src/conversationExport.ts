@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import type { Message } from './types';
 
 /** Export formats offered on a conversation. */
@@ -135,7 +134,10 @@ export function buildConversationMarkdown(messages: Message[], title = 'Percakap
  * (emoji, rare diacritics) may not render — the structure, role labels and
  * title always do. CSV/json are the lossless exports; PDF is for print/archive.
  */
-export function buildConversationPdf(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}): Blob {
+export async function buildConversationPdf(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}): Promise<Blob> {
+  // jsPDF is ~200KB and only needed for PDF export; import it lazily so a
+  // user who never exports a PDF never pays for it on the critical load path.
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();

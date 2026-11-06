@@ -79,8 +79,8 @@ describe('buildConversationJson', () => {
 });
 
 describe('buildConversationPdf', () => {
-  it('returns a Blob whose content type is a PDF', () => {
-    const blob = buildConversationPdf(MSGS, 'Judul');
+  it('returns a Blob whose content type is a PDF', async () => {
+    const blob = await buildConversationPdf(MSGS, 'Judul');
     expect(blob).toBeInstanceOf(Blob);
     expect(blob.type).toContain('application/pdf');
   });
