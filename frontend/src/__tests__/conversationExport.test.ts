@@ -146,3 +146,22 @@ describe('buildConversationCsv BOM', () => {
     expect(csv.slice(1)).toContain('role,content');
   });
 });
+
+describe('buildConversationCsv per-message attribution', () => {
+  it('adds model/token columns when any message carries usage attribution', () => {
+    const withUsage: Message[] = [
+      { role: 'user', content: 'halo' },
+      { role: 'assistant', content: 'hi', model: 'claude-sonnet', usage: { promptTokens: 5, completionTokens: 3 } },
+    ];
+    const csv = buildConversationCsv(withUsage);
+    const lines = csv.trim().split('\r\n');
+    expect(lines[0]).toBe('role,content,model,prompt_tokens,completion_tokens,total_tokens');
+    expect(lines[1]).toBe('user,halo,,0,0,0');
+    expect(lines[2]).toBe('assistant,hi,claude-sonnet,5,3,8');
+  });
+
+  it('keeps the classic shape when no per-message usage exists', () => {
+    const csv = buildConversationCsv(MSGS);
+    expect(csv.trim().split('\r\n')[0]).toBe('role,content');
+  });
+});

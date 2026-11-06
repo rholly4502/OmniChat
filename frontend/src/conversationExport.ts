@@ -49,8 +49,30 @@ function csvField(value: string): string {
 
 /** Conversation transcript as RFC 4180 CSV (CRLF, quoted when needed). */
 export function buildConversationCsv(messages: Message[], meta: ConversationExportMeta = {}): string {
-  const rows: string[][] = [['role', 'content']];
-  for (const m of messages) rows.push([m.role, m.content]);
+  // When any turn carries usage/model attribution, the export mirrors the UI's
+  // per-message cost footnote (and the audit dialog) by adding those columns so
+  // a spreadsheet analysis shows *which* model produced each turn at what token
+  // cost — not just the aggregate footer. Without usage the classic 2-column
+  // shape is kept untouched.
+  const hasPerMessage = messages.some((m) => m.model || (m.usage && (m.usage.promptTokens > 0 || m.usage.completionTokens > 0)));
+  const header = hasPerMessage
+    ? ['role', 'content', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens']
+    : ['role', 'content'];
+  const rows: string[][] = [header];
+  for (const m of messages) {
+    if (hasPerMessage) {
+      rows.push([
+        m.role,
+        m.content,
+        m.model ?? '',
+        String(m.usage?.promptTokens ?? 0),
+        String(m.usage?.completionTokens ?? 0),
+        String((m.usage?.promptTokens ?? 0) + (m.usage?.completionTokens ?? 0)),
+      ]);
+    } else {
+      rows.push([m.role, m.content]);
+    }
+  }
   const summary: string[][] = [];
   if (meta.model || meta.mode) summary.push(['model', [meta.model, modeLabel(meta.mode)].filter(Boolean).join(' · ')]);
   const total = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
