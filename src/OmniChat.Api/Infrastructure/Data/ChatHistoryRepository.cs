@@ -94,6 +94,42 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyDictionary<Guid, string?>> GetLatestMessagePreviewsAsync(
+        string userId,
+        IReadOnlyList<Guid> conversationIds,
+        CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+        var ids = conversationIds.Distinct().ToList();
+        if (ids.Count == 0) return new Dictionary<Guid, string?>();
+
+        // Scope to conversations the caller owns: a row from someone else's conversation
+        // must not leak just because its id was passed in.
+        var ownedIds = await db.Conversations
+            .AsNoTracking()
+            .Where(c => c.UserId == userId && ids.Contains(c.Id))
+            .Select(c => c.Id)
+            .ToListAsync(cancellationToken);
+
+        if (ownedIds.Count == 0) return new Dictionary<Guid, string?>();
+
+        // Fetch rows ordered so that, within each conversation, the newest message comes
+        // first; the grouping below collapses that to the preview. The ordering+grouping
+        // is done in memory because SQLite/EF translation of a per-group FirstOrDefault
+        // projection is not guaranteed across providers.
+        var rows = await db.Messages
+            .AsNoTracking()
+            .Where(m => ownedIds.Contains(m.ConversationId))
+            .OrderBy(m => m.ConversationId)
+            .ThenByDescending(m => m.CreatedAt)
+            .Select(m => new { m.ConversationId, m.Content })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => r.ConversationId)
+            .ToDictionary(g => g.Key, g => (string?)g.First().Content);
+    }
+
     public async Task<Message> AppendMessageAsync(Guid conversationId, string userId, Message message, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(message);

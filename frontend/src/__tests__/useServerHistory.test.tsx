@@ -135,6 +135,16 @@ describe('useServerHistory', () => {
     expect(result.current.sessions[0].model).toBe('nvidia/nemotron-3.5-lightning:free');
   });
 
+  it('maps a stored conversation preview onto the sidebar row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([
+      { ...summary(A, 'Deploy'), preview: 'Ini pratinjau pesan terakhir' },
+    ]);
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl })));
+
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    expect(result.current.sessions[0].preview).toBe('Ini pratinjau pesan terakhir');
+  });
+
   it('forwards the API key and refetches when it changes', async () => {
     const listImpl = vi.fn().mockResolvedValue([]);
     const { result, rerender } = renderHook(

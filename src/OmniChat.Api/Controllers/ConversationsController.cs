@@ -63,7 +63,17 @@ public sealed class ConversationsController : ControllerBase
 
         var conversations = await _repository.ListConversationsAsync(owner, limit, search, model, from, to, cancellationToken);
 
-        return Ok(conversations.Select(ConversationSummary.From).ToList());
+        // Latest message content per conversation, for a one-line sidebar preview. The
+        // guards tolerate a caller that omits the preview read (e.g. an old test
+        // double), which Moq answers with a null result: substitute an empty dict so
+        // the mapping below never touches a null dictionary.
+        var previewsTask = _repository.GetLatestMessagePreviewsAsync(
+                owner, conversations.Select(c => c.Id).ToList(), cancellationToken)
+            ?? Task.FromResult<IReadOnlyDictionary<Guid, string?>>(new Dictionary<Guid, string?>());
+        var previews = await previewsTask;
+        previews ??= new Dictionary<Guid, string?>();
+
+        return Ok(conversations.Select(c => ConversationSummary.From(c, previews.GetValueOrDefault(c.Id))).ToList());
     }
 
     /// <summary>Returns one conversation with its transcript, oldest message first.</summary>

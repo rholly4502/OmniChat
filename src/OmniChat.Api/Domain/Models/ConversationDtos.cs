@@ -23,9 +23,13 @@ public sealed record ConversationSummary(
     bool IsPinned,
     int PromptTokens,
     int CompletionTokens,
-    int TotalTokens)
+    int TotalTokens,
+    string? Preview)
 {
-    public static ConversationSummary From(Conversation conversation)
+    /// <summary>Longest preview rendered under a conversation title in the sidebar.</summary>
+    public const int PreviewMaxLength = 80;
+
+    public static ConversationSummary From(Conversation conversation, string? preview = null)
     {
         ArgumentNullException.ThrowIfNull(conversation);
 
@@ -39,7 +43,23 @@ public sealed record ConversationSummary(
             conversation.IsPinned,
             conversation.PromptTokens,
             conversation.CompletionTokens,
-            conversation.PromptTokens + conversation.CompletionTokens);
+            conversation.PromptTokens + conversation.CompletionTokens,
+            TruncatePreview(preview));
+    }
+
+    /// <summary>
+    /// Collapses whitespace and cuts a preview on a word boundary so a sidebar row
+    /// stays one compact line. Null/blank input maps to null (the sidebar hides the
+    /// preview line rather than rendering an empty one).
+    /// </summary>
+    private static string? TruncatePreview(string? preview)
+    {
+        if (string.IsNullOrWhiteSpace(preview)) return null;
+        var clean = string.Join(' ', preview.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (clean.Length <= PreviewMaxLength) return clean;
+        var cut = clean.LastIndexOf(' ', PreviewMaxLength);
+        var end = cut > PreviewMaxLength / 2 ? cut : PreviewMaxLength;
+        return string.Concat(clean.AsSpan(0, end).TrimEnd(), "…");
     }
 }
 

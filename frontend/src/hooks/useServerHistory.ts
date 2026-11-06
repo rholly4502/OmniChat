@@ -173,6 +173,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               totalTokens: row.totalTokens,
               model: row.model,
               mode: row.mode,
+              preview: row.preview,
             };
           });
           return sortSessions([...serverRows, ...drafts]);

@@ -96,6 +96,8 @@ export interface ChatSession {
   model?: string;
   /** Chat mode the conversation last ran under ("agent" | "direct", undefined for a local draft). */
   mode?: string;
+  /** Latest message text, for a one-line preview under the title (server rows only). */
+  preview?: string;
 }
 
 /** One row of the server-side history list, without message bodies. */
@@ -116,6 +118,8 @@ export interface ConversationSummary {
   completionTokens?: number;
   /** Cumulative prompt + completion tokens. */
   totalTokens?: number;
+  /** Latest message text, for a one-line preview under the title. */
+  preview?: string;
 }
 
 /** One replayed turn inside a {@link ConversationDetail}. */

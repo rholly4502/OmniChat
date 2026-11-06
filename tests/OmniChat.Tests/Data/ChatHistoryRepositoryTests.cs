@@ -118,6 +118,41 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetLatestMessagePreviews_returns_the_newest_message_per_conversation()
+    {
+        var first = await _repository.CreateConversationAsync(NewConversation());
+        var second = await _repository.CreateConversationAsync(NewConversation());
+
+        await _repository.AppendMessageAsync(first.Id, "admin", new Message { Role = "user", Content = "halo" });
+        await _repository.AppendMessageAsync(first.Id, "admin", new Message { Role = "assistant", Content = "jawaban terbaru" });
+        await _repository.AppendMessageAsync(second.Id, "admin", new Message { Role = "user", Content = "pertanyaan kedua" });
+
+        var previews = await _repository.GetLatestMessagePreviewsAsync("admin", new[] { first.Id, second.Id });
+
+        Assert.Equal("jawaban terbaru", previews[first.Id]);
+        Assert.Equal("pertanyaan kedua", previews[second.Id]);
+    }
+
+    [Fact]
+    public async Task GetLatestMessagePreviews_ignores_other_users_and_empty_input()
+    {
+        var mine = await _repository.CreateConversationAsync(NewConversation("admin"));
+        var theirs = await _repository.CreateConversationAsync(NewConversation("guest"));
+        await _repository.AppendMessageAsync(mine.Id, "admin", new Message { Role = "user", Content = "punya admin" });
+        await _repository.AppendMessageAsync(theirs.Id, "guest", new Message { Role = "user", Content = "punya tamu" });
+
+        var empty = await _repository.GetLatestMessagePreviewsAsync("admin", Array.Empty<Guid>());
+        Assert.Empty(empty);
+
+        // The guest conversation is outside the caller's ownership scope, so its id is
+        // simply absent from the result rather than leaking another user's text.
+        var previews = await _repository.GetLatestMessagePreviewsAsync("admin", new[] { mine.Id, theirs.Id });
+        Assert.Single(previews);
+        Assert.Equal("punya admin", previews[mine.Id]);
+        Assert.False(previews.ContainsKey(theirs.Id));
+    }
+
+    [Fact]
     public async Task AppendMessage_advances_the_conversation_timestamp()
     {
         var conversation = await _repository.CreateConversationAsync(NewConversation());

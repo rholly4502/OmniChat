@@ -44,6 +44,16 @@ public interface IChatHistoryRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the latest message content per conversation id (for a sidebar preview
+    /// line). A conversation with no messages is absent from the dictionary. Only the
+    /// newest message is read — bodies are otherwise kept off the list path.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, string?>> GetLatestMessagePreviewsAsync(
+        string userId,
+        IReadOnlyList<Guid> conversationIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Appends a turn and advances the parent conversation's <c>UpdatedAt</c>.
     /// Throws <see cref="InvalidOperationException"/> when the conversation does not
     /// belong to <paramref name="userId"/>.

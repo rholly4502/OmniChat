@@ -234,6 +234,29 @@ describe('Sidebar', () => {
     expect(onDeleteSession).toHaveBeenCalledWith('s1');
   });
 
+  it('renders a latest-message preview under a session when provided', () => {
+    const sessions = [
+      { id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1, preview: 'Ini pratinjau pesan' },
+      { id: 's2', title: 'Session 2', messages: [], createdAt: 2, updatedAt: 2 },
+    ];
+
+    const { container } = renderSidebar({ sessions });
+
+    const preview = screen.getByText('Ini pratinjau pesan');
+    expect(preview).toBeInTheDocument();
+    expect(preview.className).toContain('truncate');
+    expect(preview.className).toContain('text-xs');
+    expect(preview.className).toContain('text-chill-muted');
+    expect(preview).toHaveAttribute('title', 'Ini pratinjau pesan');
+
+    // Exactly one preview line: the session without a preview renders none, and the
+    // session title/token row is separate.
+    const previewLines = Array.from(container.querySelectorAll('span')).filter(
+      (el) => el.className.includes('truncate') && el.className.includes('text-xs'),
+    );
+    expect(previewLines).toHaveLength(1);
+  });
+
   it('asks before deleting a session, because the bin sits next to the label', () => {
     const onDeleteSession = vi.fn();
     renderSidebar({

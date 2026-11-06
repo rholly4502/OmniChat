@@ -74,6 +74,46 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task List_IncludesTheLatestMessagePreview_WhenTheRepositoryProvidesOne()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var row = Conversation("first", Turn("user", "halo"), Turn("assistant", "jawaban"));
+
+        _repository
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Conversation> { row });
+
+        _repository
+            .Setup(r => r.GetLatestMessagePreviewsAsync(ChatIdentity.AdminUserId, It.IsAny<IReadOnlyList<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, string?> { [row.Id] = "jawaban" });
+
+        var result = await controller.List(50, null, cancellationToken: CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var summary = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ConversationSummary>>(ok.Value));
+        Assert.Equal("jawaban", summary.Preview);
+    }
+
+    [Fact]
+    public async Task List_ToleratesARepositoryThatDoesNotSupplyPreviews()
+    {
+        // A caller that never wires the preview read (the pre-feature contract) must not
+        // break: the summaries render with a null preview instead of throwing.
+        var controller = CreateController(ChatAccess.Admin);
+        var row = Conversation("first");
+
+        _repository
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<Conversation> { row });
+
+        var result = await controller.List(50, null, cancellationToken: CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var summary = Assert.Single(Assert.IsAssignableFrom<IEnumerable<ConversationSummary>>(ok.Value));
+        Assert.Null(summary.Preview);
+    }
+
+    [Fact]
     public async Task List_ReturnsAnEmptyArray_ForAGuest_WithoutTouchingTheRepository()
     {
         var controller = CreateController(ChatAccess.Guest);
