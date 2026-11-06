@@ -57,6 +57,7 @@ function StatusCallout({
     <div className={`relative rounded-none border px-3 py-2.5 ${box}`}>
       <StatusCalloutTopEdge className={edge} />
       <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-[2px] ${edge}`} />
+      <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
       <p className={`text-sm flex items-start gap-2 ${weight}`}>
         {icon}
         <span>{children}</span>
