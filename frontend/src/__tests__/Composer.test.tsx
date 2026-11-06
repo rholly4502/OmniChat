@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { Composer } from '../components/Composer';
+import { estimateTokens, estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 
 function renderComposer(overrides: Partial<Parameters<typeof Composer>[0]> = {}) {
   const props = {
@@ -136,5 +137,28 @@ describe('Composer keyboard shortcuts', () => {
     const props = renderComposer({ input: 'Halo' });
     fireEvent.keyDown(screen.getByLabelText('Ketik pesan'), { key: 'Enter', shiftKey: true });
     expect(props.onSend).not.toHaveBeenCalled();
+  });
+});
+
+describe('Composer draft token/cost estimate', () => {
+  it('shows a live estimate when a model id is provided', () => {
+    const input = 'x'.repeat(200);
+    renderComposer({ input, model: 'hermes-default' });
+    const tokens = estimateTokens(input.trim());
+    const cost = formatUsd(estimateUsd({ promptTokens: tokens, completionTokens: 0 }, 'hermes-default'));
+    expect(screen.getByText(`≈ ${formatTokens(tokens)} tok · ≈${cost}`)).toBeInTheDocument();
+    expect(screen.getByLabelText(`Perkiraan pesan: ${formatTokens(tokens)} token, perkiraan biaya ${cost}`)).toBeInTheDocument();
+  });
+
+  it('renders nothing when the draft is empty or whitespace', () => {
+    renderComposer({ input: '   ', model: 'hermes-default' });
+    expect(screen.queryByText(/≈ .* tok/)).not.toBeInTheDocument();
+    renderComposer({ model: 'hermes-default' });
+    expect(screen.queryByText(/≈ .* tok/)).not.toBeInTheDocument();
+  });
+
+  it('renders nothing when no model is provided', () => {
+    renderComposer({ input: 'Halo' });
+    expect(screen.queryByText(/≈ .* tok/)).not.toBeInTheDocument();
   });
 });

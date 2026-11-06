@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { estimateTokens, estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 
 /** Props accepted by {@link Composer}. */
 export interface ComposerProps {
@@ -12,6 +13,8 @@ export interface ComposerProps {
   onSend: () => void;
   /** Abort the in-flight reply. */
   onStop: () => void;
+  /** Active model id, used for the draft cost estimate (optional). */
+  model?: string;
 }
 
 /**
@@ -19,8 +22,13 @@ export interface ComposerProps {
  *
  * Supports Enter to send and Shift+Enter for newline.
  * Preserves text-base md:text-sm to prevent iOS Safari auto-zoom on focus.
+ *
+ * When a `model` is supplied and the draft has content, a small live estimate
+ * of the draft's token count and cost appears between the textarea and the
+ * action row — the same rough estimator the header uses for streamed usage, so
+ * the user can gauge message size/cost before sending.
  */
-export function Composer({ input, onInputChange, streaming, onSend, onStop }: ComposerProps) {
+export function Composer({ input, onInputChange, streaming, onSend, onStop, model }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize height based on content
@@ -39,8 +47,30 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop }: Co
     }
   };
 
+  // Live draft estimate: only meaningful when there is content and a model id
+  // to price against. Reuses the same estimator as the streaming header readout.
+  const trimmed = input.trim();
+  const draftTokens = trimmed && model ? estimateTokens(trimmed) : 0;
+  const draftCost = draftTokens > 0 && model
+    ? estimateUsd({ promptTokens: draftTokens, completionTokens: 0 }, model)
+    : 0;
+
   return (
     <div className="p-3 md:p-4 border-t-2 border-chill-border" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0.75rem)' }}>
+      {draftTokens > 0 && (
+        <div
+          className="flex items-center justify-end gap-1 pb-1.5 text-xs text-chill-muted select-none"
+          aria-live="polite"
+          aria-label={`Perkiraan pesan: ${formatTokens(draftTokens)} token, perkiraan biaya ${formatUsd(draftCost)}`}
+        >
+          <span aria-hidden="true" className="inline-flex">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter">
+              <polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </span>
+          ≈ {formatTokens(draftTokens)} tok · ≈{formatUsd(draftCost)}
+        </div>
+      )}
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}

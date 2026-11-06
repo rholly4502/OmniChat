@@ -280,6 +280,7 @@ export default function App() {
             streaming={streaming}
             onSend={send}
             onStop={stopStreaming}
+            model={model}
           />
         </main>
       </div>
@@ -401,6 +402,7 @@ export default function App() {
               streaming={streaming}
               onSend={send}
               onStop={stopStreaming}
+              model={model}
             />
             <ChatStatsDialog
               open={statsOpen}
