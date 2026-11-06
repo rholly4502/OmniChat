@@ -1,0 +1,71 @@
+import { describe, it, expect, vi } from 'vitest';
+import { JOBS_URL, listOpportunities, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+
+/** Minimal Response stand-in used across the jobs transport tests. */
+function okResponse(data: unknown) {
+  return { ok: true, status: 200, json: () => Promise.resolve(data) };
+}
+function errResponse(status: number, retryAfter: string | null = null) {
+  return { ok: false, status, headers: { get: (name: string) => (name === 'Retry-After' ? retryAfter : null) } };
+}
+
+const OPP: Opportunity = {
+  id: 1,
+  judul: 'Backend .NET Developer',
+  perusahaan: 'PT Contoh',
+  lokasi: 'Jakarta',
+  tipe: 'Kontrak',
+  gaji: 'IDR 15-25 jt',
+  link: 'https://example.com/job',
+  catatan: null,
+  status: 'new',
+  ditemukan: '2026-11-06',
+  sourceId: null,
+};
+
+describe('listOpportunities', () => {
+  it('GETs the base path with no auth header when no key is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse([OPP]));
+    const out = await listOpportunities({ fetchImpl: fetchMock as unknown as typeof fetch });
+    expect(out).toEqual([OPP]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(JOBS_URL);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({});
+  });
+
+  it('sends the API key as X-Api-Key when one is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse([]));
+    await listOpportunities({ apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toEqual({ 'X-Api-Key': 'secret-key' });
+  });
+
+  it('appends an encoded ?status= filter when one is given', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse([]));
+    await listOpportunities({ fetchImpl: fetchMock as unknown as typeof fetch }, 'interview');
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}?status=interview`);
+  });
+
+  it('throws an ApiError with the HTTP status and Retry-After when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(429, '30'));
+    await expect(listOpportunities({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({
+      status: 429,
+      retryAfter: '30',
+    });
+  });
+
+  it('propagates the caller abort signal to fetch', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse([]));
+    const signal = new AbortController().signal;
+    await listOpportunities({ fetchImpl: fetchMock as unknown as typeof fetch, signal });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.signal).toBe(signal);
+  });
+
+  it('exposes the documented pipeline statuses in order', () => {
+    expect(OPPORTUNITY_STATUSES).toEqual(['new', 'applied', 'interview', 'offer', 'closed']);
+  });
+});
