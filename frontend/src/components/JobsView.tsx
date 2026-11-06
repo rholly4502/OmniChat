@@ -16,6 +16,27 @@ function statusLabel(status: string): string {
   }
 }
 
+function groupOf(o: Opportunity): string {
+  const t = (o.tipe || '').trim().toLowerCase();
+  if (t.includes('full') || t === 'fte') return 'FTE';
+  if (t.includes('kontrak') || t.includes('contract') || t.includes('b2b') || t.includes('pkwt')) return 'Kontrak';
+  return (o.tipe || '').trim() || '';
+}
+
+const GROUP_ORDER = ['FTE', 'Kontrak', 'Part-time / Freelance', ''];
+const GROUP_LABEL: Record<string, string> = {
+  FTE: 'FTE — pengganti utama',
+  Kontrak: 'Kontrak — pengganti utama',
+  'Part-time / Freelance': 'Part-time / Freelance — bisa double job',
+  '': 'Lainnya',
+};
+const GROUP_HINT: Record<string, string> = {
+  FTE: 'Full-time · penghasilan utama',
+  Kontrak: 'Kontrak / B2B · penghasilan utama',
+  'Part-time / Freelance': 'Tambahan · bisa dijalankan di sela kerja utama',
+  '': '',
+};
+
 function statusTone(status: string): string {
   switch (status) {
     case 'new': return 'bg-chill-accent/15 text-chill-accent border-chill-accent/40';
@@ -110,8 +131,19 @@ export function JobsView({ apiKey }: JobsViewProps) {
             </p>
           </div>
         ) : (
-          <ul className="space-y-3">
-            {opportunities.map((o: Opportunity) => (
+          <div className="space-y-5">
+            {GROUP_ORDER.filter((g) => opportunities.some((o) => groupOf(o) === g)).map((g) => {
+              const items = opportunities.filter((o) => groupOf(o) === g);
+              return (
+                <section key={g} aria-labelledby={`group-${g}`}>
+                  <div className="mb-2 border-l-2 border-chill-accent pl-2">
+                    <h2 id={`group-${g}`} className="text-sm font-semibold text-chill-text">
+                      {GROUP_LABEL[g]} ({items.length})
+                    </h2>
+                    <p className="text-xs text-chill-muted">{GROUP_HINT[g]}</p>
+                  </div>
+                  <ul className="space-y-3">
+            {items.map((o: Opportunity) => (
               <li
                 key={o.id}
                 className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm"
@@ -124,7 +156,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-none border px-2 py-0.5 text-[11px] font-medium ${statusTone(o.status)}`}
+                    className={`shrink-0 rounded-none border px-2 py-0.5 text-xs font-medium ${statusTone(o.status)}`}
                   >
                     {statusLabel(o.status)}
                   </span>
@@ -152,7 +184,11 @@ export function JobsView({ apiKey }: JobsViewProps) {
                 )}
               </li>
             ))}
-          </ul>
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
         )}
       </div>
     </div>
