@@ -141,6 +141,11 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         });
     }
 
+    /// <summary>Today in WIB (UTC+7) — the timezone the ledger and the whole
+    /// app operate in, so the default advice date and trend end-month line up with
+    /// what the user sees on the same calendar day.</summary>
+    private static DateOnly TodayWib() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+
     private static bool TryMonth(string month, out DateOnly parsed) =>
         DateOnly.TryParseExact(month, "yyyy-MM", out parsed);
 
@@ -246,7 +251,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
             };
         }
 
-        var endMonth = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM");
+        var endMonth = TodayWib().ToString("yyyy-MM");
         var points = await repository.GetMonthlyTrendAsync(endMonth, months, cancellationToken);
 
         return Ok(new
@@ -279,7 +284,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         [FromQuery] string? date, CancellationToken cancellationToken = default)
     {
         var day = string.IsNullOrWhiteSpace(date)
-            ? DateOnly.FromDateTime(DateTime.UtcNow)
+            ? TodayWib()
             : (DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsed) ? parsed : (DateOnly?)null);
 
         if (day is null)

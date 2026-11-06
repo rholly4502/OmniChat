@@ -378,7 +378,7 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
                 .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
             var client = Authorized(factory.CreateClient());
 
-            var now = DateTime.UtcNow;
+            var now = DateTime.UtcNow.AddHours(7); // WIB (UTC+7), matching the endpoint's today
             var cur = new DateOnly(now.Year, now.Month, 1);
             var prev2 = cur.AddMonths(-2);
             var prev1 = cur.AddMonths(-1);

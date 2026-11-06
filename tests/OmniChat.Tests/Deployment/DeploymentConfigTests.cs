@@ -225,6 +225,19 @@ public class DeploymentConfigTests
     }
 
     [Fact]
+    public void ExpensesController_UsesWibTodayForDefaults()
+    {
+        // The ledger and the whole app run in WIB (UTC+7); the advice default date
+        // and the trend end-month must follow WIB, not UTC — otherwise during the
+        // first 7h of a WIB day/month the analysis targets the previous day/month.
+        var controller = Read("src/OmniChat.Api/Controllers/ExpensesController.cs");
+        Assert.Contains("TodayWib()", controller);
+        Assert.Contains("DateTime.UtcNow.AddHours(7)", controller);
+        Assert.DoesNotContain("DateTime.UtcNow)", controller);
+        Assert.DoesNotContain("DateOnly.FromDateTime(DateTime.UtcNow)", controller);
+    }
+
+    [Fact]
     public void AppSettings_HasStreamingIdleTimeout()
     {
         Assert.Contains("\"IdleTimeoutSeconds\"", Read("src/OmniChat.Api/appsettings.json"));
