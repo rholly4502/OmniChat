@@ -15,6 +15,15 @@ on:
     # Idempotent + self-healing: re-running skips existing SourceIds and
     # purges mis-imported income rows, so an hourly run is always safe.
     - cron: '0 * * * *'
+  push:
+    # Also run the moment seed-staging data changes (ledger or jobs), so the web
+    # DB reflects edits without waiting for the next hourly tick. This is what
+    # makes the job-hunter cron feed the Jobs tab automatically: its final step
+    # syncs opportunities.json into .github/seed-staging/jobs and pushes, which
+    # triggers this workflow immediately. No manual dispatch or waiting.
+    paths:
+      - '.github/seed-staging/ledger/**'
+      - '.github/seed-staging/jobs/**'
 
 jobs:
   seed:
