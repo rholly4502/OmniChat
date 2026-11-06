@@ -17,6 +17,7 @@ import { useModelCatalog } from './hooks/useModelCatalog';
 import { useApiHealth } from './hooks/useApiHealth';
 import { useChat } from './hooks/useChat';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
+import { useChatShortcuts } from './hooks/useChatShortcuts';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
 import { setMessageFeedback } from './historyApi';
 import { useSettings } from './hooks/useSettings';
@@ -55,6 +56,8 @@ export default function App() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const [searchSignal, setSearchSignal] = useState(0);
   /** Discards a transcript that arrives after the user has switched again. */
   const loadTokenRef = useRef(0);
 
@@ -249,6 +252,15 @@ export default function App() {
     setInput(prompt);
   }
 
+  // Global keyboard shortcuts: `/` or Ctrl+K focus the composer, Ctrl+Shift+F
+  // opens in-transcript search, Ctrl+N starts a new chat (admin only). The
+  // hook itself guards against typing targets and open dialogs.
+  useChatShortcuts({
+    onFocusComposer: () => composerRef.current?.focus(),
+    onOpenSearch: () => setSearchSignal((n) => n + 1),
+    onNewSession: () => { if (!isGuest) void handleNewSession(); },
+  });
+
   // A valid credential is the front door of the workspace: without one there is
   // nothing meaningful to render, so lock the whole surface behind the login form.
   if (locked) {
@@ -271,6 +283,7 @@ export default function App() {
             useAgent={false}
             scrollRef={scrollRef}
             conversationKey="guest"
+            searchSignal={searchSignal}
             onRegenerate={regenerate}
             onEditMessage={editAndResend}
             onSelectSuggestion={handleSelectSuggestion}
@@ -282,6 +295,7 @@ export default function App() {
             onSend={send}
             onStop={stopStreaming}
             model={model}
+            inputRef={composerRef}
           />
         </main>
       </div>
@@ -391,6 +405,7 @@ export default function App() {
               useAgent={useAgent}
               scrollRef={scrollRef}
               conversationKey={activeSessionId}
+              searchSignal={searchSignal}
               onRegenerate={regenerate}
               onEditMessage={editAndResend}
               onSetFeedback={handleSetFeedback}
@@ -404,6 +419,7 @@ export default function App() {
               onSend={send}
               onStop={stopStreaming}
               model={model}
+              inputRef={composerRef}
             />
             <ChatStatsDialog
               open={statsOpen}

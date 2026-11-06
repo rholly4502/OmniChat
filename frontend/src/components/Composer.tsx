@@ -15,6 +15,8 @@ export interface ComposerProps {
   onStop: () => void;
   /** Active model id, used for the draft cost estimate (optional). */
   model?: string;
+  /** Optional ref to the underlying textarea, so the parent can focus it (keyboard shortcuts). */
+  inputRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 /**
@@ -28,7 +30,7 @@ export interface ComposerProps {
  * action row — the same rough estimator the header uses for streamed usage, so
  * the user can gauge message size/cost before sending.
  */
-export function Composer({ input, onInputChange, streaming, onSend, onStop, model }: ComposerProps) {
+export function Composer({ input, onInputChange, streaming, onSend, onStop, model, inputRef }: ComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-resize height based on content
@@ -73,7 +75,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop, mode
       )}
       <div className="flex items-end gap-2">
         <textarea
-          ref={textareaRef}
+          ref={inputRef ?? textareaRef}
           rows={1}
           aria-label="Ketik pesan"
           value={input}

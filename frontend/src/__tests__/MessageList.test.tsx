@@ -20,6 +20,7 @@ function renderList(overrides: {
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
   onSelectSuggestion?: (prompt: string) => void;
   conversationKey?: string;
+  searchSignal?: number;
 } = {}) {
   const scrollRef = createRef<HTMLDivElement>();
   const view = render(
@@ -35,6 +36,7 @@ function renderList(overrides: {
       onSetFeedback={overrides.onSetFeedback}
       onSelectSuggestion={overrides.onSelectSuggestion}
       conversationKey={overrides.conversationKey}
+      searchSignal={overrides.searchSignal}
     />
   );
   return { ...view, scrollRef };
@@ -794,5 +796,51 @@ describe('MessageList per-message model attribution', () => {
       ],
     });
     expect(screen.queryByLabelText(/^Model:/)).not.toBeInTheDocument();
+  });
+});
+
+
+describe('MessageList searchSignal', () => {
+  it('opens the search toolbar when searchSignal changes to a nonzero value', () => {
+    renderList({ searchSignal: 1 });
+    // The toolbar input has aria-label "Cari pesan".
+    expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+  });
+
+  it('does not open the toolbar for a zero signal', () => {
+    renderList({ searchSignal: 0 });
+    expect(screen.queryByLabelText('Cari pesan')).not.toBeInTheDocument();
+  });
+
+  it('reopens when the signal increments again after being closed', () => {
+    const { rerender } = render(
+      <MessageList
+        messages={[]}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={createRef<HTMLDivElement>()}
+        conversationKey="k"
+        searchSignal={1}
+      />
+    );
+    expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+    // Close it via the close button, then increment the signal.
+    fireEvent.click(screen.getByLabelText('Tutup pencarian'));
+    expect(screen.queryByLabelText('Cari pesan')).not.toBeInTheDocument();
+    rerender(
+      <MessageList
+        messages={[]}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={createRef<HTMLDivElement>()}
+        conversationKey="k"
+        searchSignal={2}
+      />
+    );
+    expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
   });
 });

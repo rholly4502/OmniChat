@@ -83,6 +83,12 @@ export interface MessageListProps {
    * message at the same index.
    */
   conversationKey?: string;
+  /**
+   * External trigger for the in-transcript search toolbar: every time this
+   * value changes (e.g. a keyboard shortcut increments a counter), the search
+   * toolbar opens. 0 is ignored so the default state never opens it.
+   */
+  searchSignal?: number;
 }
 
 /** Small, quiet action button used on message footers. */
@@ -139,7 +145,7 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   };
 }
 
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onSelectSuggestion, conversationKey }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -210,6 +216,17 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setActiveIdx(0);
     }
   }, [conversationKey]);
+
+  // Open the search toolbar on an external trigger (e.g. the global keyboard
+  // shortcut). A nonzero change in `searchSignal` acts as a rising edge; the
+  // toolbar's own open/close state still governs thereafter.
+  const prevSearchSignal = useRef(0);
+  useEffect(() => {
+    if (searchSignal && searchSignal !== prevSearchSignal.current) {
+      prevSearchSignal.current = searchSignal;
+      openSearch();
+    }
+  }, [searchSignal]);
 
   // --- Jump-to-bottom affordance -------------------------------------------
   // Track whether the reader has scrolled away from the bottom of the

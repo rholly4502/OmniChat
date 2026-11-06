@@ -657,3 +657,65 @@ describe('App focus mode', () => {
     expect(root).toHaveClass('night-mode');
   });
 });
+
+describe('App keyboard shortcuts', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    localStorage.setItem('omnichat_api_key', 'test-key');
+    setupFetchMock();
+  });
+
+  function fireWindowKey(init: KeyboardEventInit) {
+    window.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, cancelable: true, ...init }));
+  }
+
+  it('Ctrl+Shift+F opens the in-transcript search toolbar', async () => {
+    render(<App />);
+    expect(screen.queryByLabelText('Cari pesan')).not.toBeInTheDocument();
+    fireWindowKey({ key: 'F', ctrlKey: true, shiftKey: true });
+    await waitFor(() => {
+      expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+    });
+  });
+
+  it('"/" focuses the composer textarea', async () => {
+    render(<App />);
+    const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
+    expect(document.activeElement).not.toBe(composer);
+    fireWindowKey({ key: '/' });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(composer);
+    });
+  });
+
+  it('Ctrl+K focuses the composer textarea', async () => {
+    render(<App />);
+    const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
+    fireWindowKey({ key: 'k', ctrlKey: true });
+    await waitFor(() => {
+      expect(document.activeElement).toBe(composer);
+    });
+  });
+
+  it('Ctrl+N starts a new session (returns to the empty transcript)', async () => {
+    render(<App />);
+    // Seed a transcript by sending a message (fetch mocks return 401, so the
+    // turn completes with an error assistant bubble next to the user turn).
+    const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    setter.call(composer, 'halo');
+    composer.dispatchEvent(new Event('input', { bubbles: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kirim' }));
+    // Wait for the stream to be fully settled: the Send button reappearing
+    // (it swaps to Stop while streaming) means `streaming` is false, so the
+    // new-session handler is no longer gated by the in-flight guard.
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Kirim' })).toBeInTheDocument();
+    });
+    fireWindowKey({ key: 'n', ctrlKey: true });
+    // New session resets to the empty transcript: no message bubbles remain.
+    await waitFor(() => {
+      expect(document.querySelector('[data-msg-index]')).toBeNull();
+    });
+  });
+});
