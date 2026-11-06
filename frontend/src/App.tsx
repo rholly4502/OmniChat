@@ -382,7 +382,7 @@ export default function App() {
         ) : activeView === 'jobs' ? (
           <JobsView apiKey={apiKey} />
         ) : (
-          <>
+          <div key={activeView} className="flex-1 flex flex-col min-h-0 pixel-reveal">
             <ChatHeader
               useAgent={useAgent}
               model={model}
@@ -433,7 +433,7 @@ export default function App() {
               session={activeSession}
               modelOptions={historyModels}
             />
-          </>
+          </div>
         )}
       </main>
     </div>

@@ -86,7 +86,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
       .join(' · ') || 'Semua';
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="h-full flex flex-col min-h-0 pixel-reveal">
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-base font-semibold text-chill-text">Job Opportunities</h1>
         <p className="text-xs text-chill-muted mt-0.5">
