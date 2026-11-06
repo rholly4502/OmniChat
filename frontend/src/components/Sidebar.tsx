@@ -488,7 +488,7 @@ export function Sidebar({
                             e.stopPropagation();
                             setExportMenuFor(exportMenuFor === s.id ? null : s.id);
                           }}
-                          className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                          className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent active:bg-chill-elevated rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                         </button>
@@ -526,7 +526,7 @@ export function Sidebar({
                           e.stopPropagation();
                           onPinSession?.(s.id, !s.isPinned);
                         }}
-                        className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                        className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none transition active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                           s.isPinned ? 'text-chill-accent' : 'hover:text-chill-accent'
                         }`}
                       >
@@ -556,7 +556,7 @@ export function Sidebar({
                           setRenameDraft(s.title);
                           setRenamingId(s.id);
                         }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent active:bg-chill-elevated rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
                       </button>
@@ -570,7 +570,7 @@ export function Sidebar({
                           e.stopPropagation();
                           setPendingDeleteId(s.id);
                         }}
-                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-red rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-red active:bg-chill-red/10 rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
                       </button>

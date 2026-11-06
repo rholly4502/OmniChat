@@ -101,7 +101,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
           onClick={() => setFiltersOpen(!filtersOpen)}
           aria-expanded={filtersOpen}
           aria-controls="jobs-filters"
-          className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <span className="flex items-center gap-2">
             <span aria-hidden="true" className="text-chill-muted">≡</span>
@@ -126,8 +126,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
               onClick={() => setTypeFilter(typeFilter === f.key ? '' : f.key)}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 typeFilter === f.key
-                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               {f.label} ({typeCount(f.key)})
@@ -146,8 +146,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
             onClick={() => setStatusFilter('')}
             className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
               statusFilter === ''
-                ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
-                : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+                ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
             }`}
           >
             Semua ({opportunities.filter((o) => typeFilter === '' || groupOf(o) === typeFilter).length})
@@ -161,8 +161,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
               onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 statusFilter === s
-                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               {statusLabel(s)} ({statusCount(s)})
@@ -182,7 +182,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
           <button
             type="button"
             onClick={reload}
-            className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+            className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/25 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
           >
             Coba lagi
           </button>
@@ -253,7 +253,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     href={o.link}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                    className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   >
                     Lihat lowongan →
                   </a>

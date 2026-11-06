@@ -108,7 +108,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         <button
           onClick={onLogout}
           aria-label="Keluar"
-          className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none text-sm text-chill-muted transition hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none text-sm text-chill-muted transition hover:text-chill-accent active:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           Keluar
         </button>
