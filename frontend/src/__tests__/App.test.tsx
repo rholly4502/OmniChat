@@ -105,6 +105,13 @@ describe('App', () => {
     expect(screen.getByRole('combobox', { name: /^Model$/ })).toBeInTheDocument();
   });
 
+  it('restores a saved composer draft on load', () => {
+    localStorage.setItem('omnichat_composer_draft_v1', 'pesan tersimpan');
+    render(<App />);
+    const textarea = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
+    expect(textarea.value).toBe('pesan tersimpan');
+  });
+
   it('shows the API Key input', () => {
     render(<App />);
     // The API key input has type="password"

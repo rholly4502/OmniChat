@@ -5,6 +5,16 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P3 — Composer draft auto-save (frontend)
+
+#### Added
+- The composer draft is auto-saved to localStorage (`omnichat_composer_draft_v1`)
+  as the user types and restored on the next app load, so a long in-progress
+  message survives a reload or an accidental unmount. Sending (or clearing) the
+  draft removes the stored entry. New `useComposerDraft` hook; App.tsx now
+  sources the composer state from it. Frontend tests 733 → 738.
+
+
 ### P3 — Mobile per-conversation model switcher in the top bar (frontend)
 
 #### Added

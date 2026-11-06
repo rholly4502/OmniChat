@@ -10,6 +10,7 @@ import { ChatStatsDialog } from './components/ChatStatsDialog';
 import { ConversationAuditDialog } from './components/ConversationAuditDialog';
 import { SidebarOverlay } from './components/SidebarOverlay';
 import { useApiKey } from './hooks/useApiKey';
+import { useComposerDraft } from './hooks/useComposerDraft';
 import { useAuthGate } from './hooks/useAuthGate';
 import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
@@ -36,7 +37,7 @@ export { CodeBlock };
  * refs (which the hooks cannot create, because they do not own the elements).
  */
 export default function App() {
-  const [input, setInput] = useState('');
+  const { draft: input, setDraft: setInput, clearDraft: clearInput } = useComposerDraft();
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [activeView, setActiveView] = useState<'chat' | 'expenses' | 'jobs'>('chat');
@@ -239,7 +240,7 @@ export default function App() {
   async function send() {
     if (!input.trim() || streaming) return;
     const text = input;
-    setInput('');
+    clearInput();
     await sendMessage(text);
   }
 
