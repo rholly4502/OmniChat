@@ -235,8 +235,10 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Top-level view switcher: Chat vs Pengeluaran */}
-      <div className="grid grid-cols-3 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan">
+      {/* Top-level view switcher: 2x2 square grid. Chat & Pengeluaran on the
+          first row; Lowongan on the second row. The fourth cell is a reserved
+          placeholder that does nothing for now. */}
+      <div className="grid grid-cols-2 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan">
         <button
           type="button"
           role="tab"
@@ -275,6 +277,16 @@ export function Sidebar({
           }`}
         >
           Lowongan
+        </button>
+        {/* Reserved placeholder slot — intentionally inert. It is not a tab and
+            does nothing when clicked. */}
+        <button
+          type="button"
+          disabled
+          aria-label="Kosong (belum tersedia)"
+          className="rounded-none px-3 py-2 text-sm font-medium min-h-[44px] cursor-not-allowed border border-dashed border-chill-border text-chill-muted/40"
+        >
+          —
         </button>
       </div>
 
