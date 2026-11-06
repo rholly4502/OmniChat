@@ -32,7 +32,9 @@ describe('useAuthGate', () => {
     const { result } = renderHook(() => useAuthGate('sk-bad', vi.fn()));
 
     await waitFor(() => expect(result.current.locked).toBe(true));
-    expect(result.current.error).toBe('salah');
+    // Boot rejection locks silently — the login form must not show an error
+    // the user did not trigger (only explicit attemptLogin failures surface it).
+    expect(result.current.error).toBeNull();
   });
 
   it('successful attemptLogin stores the key and unlocks', async () => {

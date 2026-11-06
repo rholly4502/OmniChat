@@ -42,8 +42,11 @@ export function useAuthGate(apiKey: string, setApiKey: (value: string) => void):
     void validateApiKey(apiKey).then((result) => {
       if (!active) return;
       if (!result.ok) {
+        // Stored key was rejected on boot — lock the app, but do not show a
+        // login error the user never triggered. The form is clean; they just
+        // re-enter a valid key. Error text is reserved for explicit attemptLogin
+        // failures.
         setLocked(true);
-        setError(result.reason ?? null);
       }
     });
 
