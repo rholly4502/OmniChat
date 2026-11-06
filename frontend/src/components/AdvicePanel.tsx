@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { formatRupiah, getExpenseAdvice } from '../expensesApi';
 import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
+import { analyseDate } from '../adviceDate';
 import { PixelProgress } from './PixelProgress';
 import { PanelFrame } from './PanelFrame';
 import { CategoryIcon } from './categoryIcons';
@@ -12,18 +13,6 @@ export interface AdvicePanelProps {
   apiKey?: string;
   /** Selected month key (YYYY-MM); used to pick the date to analyse. */
   month: string;
-}
-
-/** Picks the date to analyse: today when the month is current, else the month's last day. */
-function analyseDate(month: string): string {
-  const now = new Date();
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  if (month === currentMonth) {
-    return `${month}-${String(now.getDate()).padStart(2, '0')}`;
-  }
-  const [y, m] = month.split('-').map(Number);
-  const lastDay = new Date(y, m, 0).getDate();
-  return `${month}-${String(lastDay).padStart(2, '0')}`;
 }
 
 /** Hard top-edge bevel strip (pixel meter register) for status callouts — matches

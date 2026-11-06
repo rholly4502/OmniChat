@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { AdvicePanel } from '../components/AdvicePanel';
+import { analyseDate } from '../adviceDate';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -341,3 +342,31 @@ describe('AdvicePanel month-over-month pace (Design Loop)', () => {
     expect(screen.getByText('Belum ada data bulan lalu untuk dibandingkan.')).toBeInTheDocument();
   });
 });
+
+describe('analyseDate (WIB, UTC+7)', () => {
+  it('returns today in WIB for the current month', () => {
+    // 2026-11-05T18:30Z = 2026-11-06 01:30 WIB
+    vi.setSystemTime(new Date('2026-11-05T18:30:00Z'));
+    expect(analyseDate('2026-11')).toBe('2026-11-06');
+  });
+
+  it('detects the current month in WIB, not the client zone', () => {
+    // UTC is still 2026-11-05, WIB already 2026-11-06 -> month is current in WIB.
+    vi.setSystemTime(new Date('2026-11-05T18:30:00Z'));
+    expect(analyseDate('2026-11')).toBe('2026-11-06');
+    // A *prior* month is not current and resolves to its last day.
+    expect(analyseDate('2026-10')).toBe('2026-10-31');
+  });
+
+  it('resolves non-current months to the last day of that month', () => {
+    expect(analyseDate('2026-02')).toBe('2026-02-28'); // non-leap
+    expect(analyseDate('2028-02')).toBe('2028-02-29'); // leap
+    expect(analyseDate('2026-12')).toBe('2026-12-31');
+  });
+
+  it('accepts an injected clock for deterministic tests', () => {
+    const d = new Date('2026-11-06T20:00:00Z');
+    expect(analyseDate('2026-11', d)).toBe('2026-11-06');
+  });
+});
+
