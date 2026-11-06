@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 import { useJobs } from '../hooks/useJobs';
 
@@ -37,6 +38,13 @@ const GROUP_HINT: Record<string, string> = {
   '': '',
 };
 
+const TYPE_FILTERS = [
+  { key: '', label: 'Semua' },
+  { key: 'FTE', label: 'FTE' },
+  { key: 'Kontrak', label: 'Kontrak' },
+  { key: 'Part-time / Freelance', label: 'Part-time / Freelance' },
+];
+
 function statusTone(status: string): string {
   switch (status) {
     case 'new': return 'bg-chill-accent/15 text-chill-accent border-chill-accent/40';
@@ -51,9 +59,25 @@ function statusTone(status: string): string {
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
 export function JobsView({ apiKey }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload } = useJobs(apiKey);
+  const [typeFilter, setTypeFilter] = useState('');
 
-  const counts = (s: string) =>
-    s === '' ? opportunities.length : opportunities.filter((o) => o.status === s).length;
+  const statusCount = (s: string) =>
+    opportunities.filter(
+      (o) =>
+        o.status === s && (typeFilter === '' || groupOf(o) === typeFilter)
+    ).length;
+
+  const typeCount = (g: string) =>
+    opportunities.filter(
+      (o) =>
+        groupOf(o) === g && (statusFilter === '' || o.status === statusFilter)
+    ).length;
+
+  const filtered = opportunities.filter(
+    (o) =>
+      (statusFilter === '' || o.status === statusFilter) &&
+      (typeFilter === '' || groupOf(o) === typeFilter)
+  );
 
   return (
     <div className="h-full flex flex-col min-h-0">
@@ -62,6 +86,28 @@ export function JobsView({ apiKey }: JobsViewProps) {
         <p className="text-xs text-chill-muted mt-0.5">
           Lowongan relevan (.NET, ±2 tahun) yang dikurasi otomatis · kontrak berakhir 30 Des
         </p>
+      </div>
+
+      {/* Position / type filter (buttons) */}
+      <div className="px-4 pb-2">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter posisi">
+          {TYPE_FILTERS.map((f) => (
+            <button
+              key={f.key}
+              type="button"
+              role="tab"
+              aria-selected={typeFilter === f.key}
+              onClick={() => setTypeFilter(typeFilter === f.key ? '' : f.key)}
+              className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                typeFilter === f.key
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+              }`}
+            >
+              {f.label} ({typeCount(f.key)})
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Pipeline filter */}
@@ -78,7 +124,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                 : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
             }`}
           >
-            Semua ({counts('')})
+            Semua ({opportunities.filter((o) => typeFilter === '' || groupOf(o) === typeFilter).length})
           </button>
           {OPPORTUNITY_STATUSES.map((s) => (
             <button
@@ -93,7 +139,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                   : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
               }`}
             >
-              {statusLabel(s)} ({counts(s)})
+              {statusLabel(s)} ({statusCount(s)})
             </button>
           ))}
         </div>
@@ -121,10 +167,12 @@ export function JobsView({ apiKey }: JobsViewProps) {
             <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink" aria-hidden="true" />
             Mencari lowongan…
           </p>
-        ) : opportunities.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <div className="border border-chill-border bg-chill-surface p-6 text-center pixel-shadow rounded-none">
             <p className="text-sm text-chill-muted">
-              Belum ada lowongan{statusFilter ? ` berstatus ${statusLabel(statusFilter)}` : ''}.
+              Belum ada lowongan
+              {statusFilter ? ` berstatus ${statusLabel(statusFilter)}` : ''}
+              {typeFilter ? ` tipe ${typeFilter}` : ''}.
             </p>
             <p className="text-xs text-chill-muted mt-1">
               Cron Job Hunter akan mengisinya otomatis tiap hari.
@@ -132,8 +180,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
           </div>
         ) : (
           <div className="space-y-5">
-            {GROUP_ORDER.filter((g) => opportunities.some((o) => groupOf(o) === g)).map((g) => {
-              const items = opportunities.filter((o) => groupOf(o) === g);
+            {GROUP_ORDER.filter((g) => filtered.some((o) => groupOf(o) === g)).map((g) => {
+              const items = filtered.filter((o) => groupOf(o) === g);
               return (
                 <section key={g} aria-labelledby={`group-${g}`}>
                   <div className="mb-2 border-l-2 border-chill-accent pl-2">
