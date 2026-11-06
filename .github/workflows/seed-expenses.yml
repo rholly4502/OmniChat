@@ -6,7 +6,7 @@
 #   4. verifies the deployed API serves the seeded rows (via the VPS .env key).
 # The ledger files below mirror /root/Tools-Private/Pengeluaran (source of truth).
 # Idempotent: re-running skips rows whose SourceId already exists and upserts targets.
-name: Seed Expenses
+name: Seed Expenses & Jobs
 
 on:
   workflow_dispatch:
@@ -61,6 +61,15 @@ jobs:
           # recorded, so a fixed number would break the recurring seed.
           test "$(wc -l < ledger/2026-10.csv)" -ge 10
           test "$(wc -c < ledger/target.json)" -gt 100
+          # Stage the curated job-opportunity list (agent-maintained). If the file is
+          # absent, the seeder simply imports zero rows — no job to fail the seed.
+          mkdir -p jobs
+          if [ -f .github/seed-staging/jobs/opportunities.json ]; then
+            cp .github/seed-staging/jobs/opportunities.json jobs/opportunities.json
+            python3 -c "import json; d=json.load(open('jobs/opportunities.json')); print('opportunities.json parses OK:', len(d), 'rows')"
+          else
+            echo "no opportunities.json yet — skipping jobs seed"
+          fi
 
       - name: Upload seeder + ledger to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -69,7 +78,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "seeder-out,ledger"
+          source: "seeder-out,ledger,jobs"
           target: /opt/OmniChat/seed-staging
 
       - name: Run seeder against live DB volume + verify API
@@ -99,9 +108,10 @@ jobs:
               -v "$VOL":/data \
               -v /opt/OmniChat/seed-staging/seeder-out:/seeder:ro \
               -v /opt/OmniChat/seed-staging/ledger:/ledger:ro \
+              -v /opt/OmniChat/seed-staging/jobs:/jobs:ro \
               --entrypoint dotnet \
               "$IMG" /seeder/OmniChat.Seeder.dll \
-                --db "Data Source=/data/omnichat.db" --path /ledger
+                --db "Data Source=/data/omnichat.db" --path /ledger --jobs-path /jobs
 
             echo "=== API verification (from VPS host) ==="
             echo "=== API verification (from VPS host) ==="

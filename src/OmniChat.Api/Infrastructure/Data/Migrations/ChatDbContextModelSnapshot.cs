@@ -232,6 +232,64 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.ToTable("Messages", (string)null);
                 });
 
+            modelBuilder.Entity("OmniChat.Domain.Entities.Opportunity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Catatan")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Ditemukan")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Gaji")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Judul")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Lokasi")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Perusahaan")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tipe")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("Opportunities", (string)null);
+                });
+
             modelBuilder.Entity("OmniChat.Domain.Entities.Message", b =>
                 {
                     b.HasOne("OmniChat.Domain.Entities.Conversation", "Conversation")

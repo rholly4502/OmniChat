@@ -27,6 +27,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     /// <summary>Income/pemasukan ledger rows (separate from expenses, never counted as spend).</summary>
     public DbSet<Income> Incomes => Set<Income>();
 
+    /// <summary>Curated job opportunities (read-only list from the agent scan).</summary>
+    public DbSet<Opportunity> Opportunities => Set<Opportunity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // SQLite has no native DateTimeOffset type and rejects it in ORDER BY, which is
@@ -109,5 +112,20 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         income.Property(i => i.Keterangan).IsRequired().HasMaxLength(500);
         income.Property(i => i.Nominal);
         income.HasIndex(i => i.SourceId);
+
+        var opp = modelBuilder.Entity<Opportunity>();
+        opp.ToTable("Opportunities");
+        opp.HasKey(o => o.Id);
+        opp.Property(o => o.Judul).IsRequired().HasMaxLength(200);
+        opp.Property(o => o.Perusahaan).IsRequired().HasMaxLength(200);
+        opp.Property(o => o.Lokasi).IsRequired().HasMaxLength(100);
+        opp.Property(o => o.Tipe).IsRequired().HasMaxLength(32);
+        opp.Property(o => o.Gaji).HasMaxLength(100);
+        opp.Property(o => o.Link).HasMaxLength(1000);
+        opp.Property(o => o.Catatan).HasMaxLength(1000);
+        opp.Property(o => o.Status).IsRequired().HasMaxLength(20);
+        opp.Property(o => o.Ditemukan);
+        opp.HasIndex(o => o.SourceId);
+        opp.HasIndex(o => o.Status);
     }
 }

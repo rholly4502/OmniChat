@@ -20,6 +20,7 @@ import { isServerConversation, useServerHistory } from './hooks/useServerHistory
 import { setMessageFeedback } from './historyApi';
 import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
+import { JobsView } from './components/JobsView';
 import { describeApiError } from './errors';
 import type { TokenUsage } from './types';
 import { DEFAULT_MODEL, CHILL_SYSTEM_PROMPT } from './constants';
@@ -38,7 +39,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
-  const [activeView, setActiveView] = useState<'chat' | 'expenses'>('chat');
+  const [activeView, setActiveView] = useState<'chat' | 'expenses' | 'jobs'>('chat');
   const [statsOpen, setStatsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
@@ -362,6 +363,8 @@ export default function App() {
 
         {activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
+        ) : activeView === 'jobs' ? (
+          <JobsView apiKey={apiKey} />
         ) : (
           <>
             <ChatHeader

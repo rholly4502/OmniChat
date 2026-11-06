@@ -98,9 +98,9 @@ export interface SidebarProps {
   /** Toggle Chill Mode. */
   onChillModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
-  activeView?: 'chat' | 'expenses';
+  activeView?: 'chat' | 'expenses' | 'jobs';
   /** Switch the active top-level view. */
-  onSelectView?: (view: 'chat' | 'expenses') => void;
+  onSelectView?: (view: 'chat' | 'expenses' | 'jobs') => void;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary?: ConversationUsageSummary;
   /** Open the per-conversation audit dialog (message-level token/cost table). */
@@ -236,7 +236,7 @@ export function Sidebar({
       </div>
 
       {/* Top-level view switcher: Chat vs Pengeluaran */}
-      <div className="grid grid-cols-2 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan">
+      <div className="grid grid-cols-3 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan">
         <button
           type="button"
           role="tab"
@@ -262,6 +262,19 @@ export function Sidebar({
           }`}
         >
           Pengeluaran
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'jobs'}
+          onClick={() => onSelectView('jobs')}
+          className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+            activeView === 'jobs'
+              ? 'bg-chill-elevated text-chill-text pixel-shadow-sm'
+              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent'
+          }`}
+        >
+          Lowongan
         </button>
       </div>
 

@@ -40,7 +40,7 @@ export interface MobileTopBarProps {
   /** Chill Mode active: show a subtle chillChill" tag by the mode badge. */
   chillMode?: boolean;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
-  activeView?: 'chat' | 'expenses';
+  activeView?: 'chat' | 'expenses' | 'jobs';
 }
 
 /**
