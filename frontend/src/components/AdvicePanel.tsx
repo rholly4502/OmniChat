@@ -218,6 +218,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                   <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
                   <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                  <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
                   <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Bandingkan dengan bulan lalu</h4>
                   <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
                     <span className="tabular-nums text-chill-text">{formatRupiah(advice.pace.currentThroughDay)}</span>

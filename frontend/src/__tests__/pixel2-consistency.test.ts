@@ -228,3 +228,19 @@ describe('pixel2 global square-corner floor', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('pixel2 advice frame grammar', () => {
+  it('every elevated block in Analisa & Saran carries the full bevel corner set', () => {
+    const a = readFileSync(resolve(SRC, 'components/AdvicePanel.tsx'), 'utf8');
+    // Saran Harian, pace (Bandingkan), Proyeksi — all three framed boxes must
+    // carry the top-right accent pixel (bg-chill-accent/15) alongside the shared
+    // top/left bevel + bottom-left chisel corner, or the panel's frame grammar
+    // fragments mid-panel.
+    const corners = a.match(/bg-chill-accent\/15/g) ?? [];
+    expect(corners.length).toBe(3);
+    // The pace card block itself must carry it (guards against a copy-paste
+    // omission in the middle block).
+    const pace = a.slice(a.indexOf('Bandingkan dengan bulan lalu') - 400, a.indexOf('Bandingkan dengan bulan lalu'));
+    expect(pace).toContain('bg-chill-accent/15');
+  });
+});
