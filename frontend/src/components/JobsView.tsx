@@ -60,6 +60,7 @@ function statusTone(status: string): string {
 export function JobsView({ apiKey }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
+  const [filtersOpen, setFiltersOpen] = useState(true);
 
   const statusCount = (s: string) =>
     opportunities.filter(
@@ -79,6 +80,11 @@ export function JobsView({ apiKey }: JobsViewProps) {
       (typeFilter === '' || groupOf(o) === typeFilter)
   );
 
+  const activeSummary =
+    [typeFilter, statusFilter ? statusLabel(statusFilter) : null]
+      .filter((x): x is string => !!x)
+      .join(' · ') || 'Semua';
+
   return (
     <div className="h-full flex flex-col min-h-0">
       <div className="px-4 pt-4 pb-2">
@@ -88,6 +94,26 @@ export function JobsView({ apiKey }: JobsViewProps) {
         </p>
       </div>
 
+      {/* Toggle area filter (minimize di layar kecil) */}
+      <div className="px-4 pb-2">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+          aria-controls="jobs-filters"
+          className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        >
+          <span className="flex items-center gap-2">
+            <span aria-hidden="true" className="text-chill-muted">≡</span>
+            Filter
+            <span className="text-chill-muted">· {activeSummary}</span>
+          </span>
+          <span aria-hidden="true" className="text-chill-muted">{filtersOpen ? '▲' : '▼'}</span>
+        </button>
+      </div>
+
+      {filtersOpen && (
+        <div id="jobs-filters">
       {/* Position / type filter (buttons) */}
       <div className="px-4 pb-2">
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter posisi">
@@ -145,6 +171,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
         </div>
       </div>
 
+        </div>
+      )}
       {error && (
         <div
           role="alert"
