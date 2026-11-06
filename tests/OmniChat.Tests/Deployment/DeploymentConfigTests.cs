@@ -1289,5 +1289,38 @@ public class DeploymentConfigTests
         Assert.Contains("WARNING", deploy, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void HistoryApi_SendsTheListFilterQueryParams()
+    {
+        var api = Read("frontend/src/historyApi.ts");
+        // Roadmap item 5: the server-side history filter contract (model + date
+        // window). If a future refactor renames these query params, the sidebar's
+        // filters silently stop applying — pin the names here.
+        Assert.Contains("filters.model", api);
+        Assert.Contains("filters.from", api);
+        Assert.Contains("filters.to", api);
+        Assert.Contains("search=$", api);
+        Assert.Contains("encodeURIComponent(term)", api);
+    }
+
+    [Fact]
+    public void ConversationsController_DeclaresMatchingListFilters()
+    {
+        var controller = Read("src/OmniChat.Api/Controllers/ConversationsController.cs");
+        // The controller must accept exactly the query params the frontend sends.
+        Assert.Contains("[FromQuery] string? search", controller);
+        Assert.Contains("[FromQuery] string? model", controller);
+        Assert.Contains("[FromQuery] DateTimeOffset? from", controller);
+        Assert.Contains("[FromQuery] DateTimeOffset? to", controller);
+    }
+
+    [Fact]
+    public void MessageList_SurfacesPerMessageCostFootnote()
+    {
+        var list = Read("frontend/src/components/MessageList.tsx");
+        // Roadmap item 2: the per-message token/cost footnote must not be dropped.
+        Assert.Contains("formatUsd(estimateUsd(", list);
+        Assert.Contains("formatTokens(m.usage.promptTokens", list);
+    }
 
 }
