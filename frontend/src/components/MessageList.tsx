@@ -320,8 +320,12 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             autoFocus
             className="min-w-0 flex-1 bg-transparent text-base md:text-sm text-chill-text placeholder:text-chill-muted outline-none"
           />
-          <span className="text-xs text-chill-muted select-none whitespace-nowrap" aria-live="polite" aria-label="Jumlah hasil pencarian">
-            {query.trim() ? (totalMatches > 0 ? `${totalMatches} cocok` : 'Tidak ada yang cocok') : ''}
+          <span className="text-xs text-chill-muted select-none whitespace-nowrap tabular-nums" aria-live="polite" aria-label="Posisi hasil pencarian">
+            {query.trim()
+              ? totalMatches > 0
+                ? `${activeIdx + 1} dari ${matchRefs.rows.length} pesan`
+                : 'Tidak ada yang cocok'
+              : ''}
           </span>
           <button
             type="button"

@@ -705,7 +705,7 @@ describe('MessageList in-transcript search', () => {
     fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
     // "token" appears in both user turns; assistant markdown is not injected with inline marks
     expect(container.querySelectorAll('mark').length).toBe(2);
-    expect(screen.getByText('3 cocok')).toBeInTheDocument();
+    expect(screen.getByText('1 dari 3 pesan')).toBeInTheDocument();
   });
 
   it('shows a no-match state and disables navigation', () => {
@@ -729,10 +729,13 @@ describe('MessageList in-transcript search', () => {
       return active.map((r) => Number(r.getAttribute('data-msg-index')));
     };
     expect(activeIndex()).toEqual([0]);
+    expect(screen.getByText('1 dari 3 pesan')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Berikutnya' }));
     expect(activeIndex()).toEqual([1]);
+    expect(screen.getByText('2 dari 3 pesan')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Sebelumnya' }));
     expect(activeIndex()).toEqual([0]);
+    expect(screen.getByText('1 dari 3 pesan')).toBeInTheDocument();
   });
 
   it('closes the toolbar and clears highlights', () => {
