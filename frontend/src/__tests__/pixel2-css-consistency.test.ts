@@ -76,3 +76,10 @@ describe('pixel2 focus-mode page grid', () => {
     expect(rules.join('\n')).toContain('.focus-mode .pixel-grid-page { display: none; }');
   });
 });
+
+describe('pixel2 status-badge tokens', () => {
+  it('defines both chill-indigo and chill-emerald in the theme (@theme and night)', () => {
+    expect(CSS.match(/--color-chill-indigo:/g)?.length).toBe(2);
+    expect(CSS.match(/--color-chill-emerald:/g)?.length).toBe(2);
+  });
+});

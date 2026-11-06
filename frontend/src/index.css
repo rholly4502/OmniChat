@@ -204,6 +204,8 @@ input[type='range']::-moz-range-thumb {
   --color-chill-red-active: #b56a5c;   /* red pressed (darker terracotta) */
   --color-chill-sage: #9db380;        /* Stardew-ish sage green · decorative accent */
   --color-chill-deepsea: #5f8d9c;   /* Dave-the-Diver deep sea blue · decorative accent */
+  --color-chill-indigo: #a6a0d9;    /* warm dusty periwinkle · status badge (AA 7.5:1) */
+  --color-chill-emerald: #7fae8c;   /* warm muted green · status badge (AA 7.2:1) */
 }
 
 /* Night / calm ("Mode Malam") palette — toggled by adding `.night-mode` to the app
@@ -228,6 +230,8 @@ input[type='range']::-moz-range-thumb {
   --color-chill-red-active: #b56a5c;
   --color-chill-sage: #93a678;
   --color-chill-deepsea: #557b89;
+  --color-chill-indigo: #9993cb;
+  --color-chill-emerald: #76a483;
 }
 
 
