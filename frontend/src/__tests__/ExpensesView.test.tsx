@@ -683,3 +683,46 @@ describe('ExpensesView all-time sisa cards', () => {
     expect(screen.queryByText('7.4 jt')).not.toBeInTheDocument();
   });
 });
+
+describe('ExpensesView success feedback', () => {
+  it('shows a transient confirmation after adding an expense', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 9, tanggal: '2026-10-29', waktu: '11:00', kategori: 'Makan', keterangan: 'Snack', nominal: 5000 },
+          201,
+        );
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '5000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran tersimpan.')).toBeInTheDocument());
+    expect(screen.getByRole('status')).toHaveTextContent('Pengeluaran tersimpan.');
+  });
+
+  it('shows a transient confirmation after deleting an expense', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'DELETE') {
+        return new Response(null, { status: 204 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hapus Warteg' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Yakin hapus Warteg' }));
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran dihapus.')).toBeInTheDocument());
+    expect(screen.getByRole('status')).toHaveTextContent('Pengeluaran dihapus.');
+  });
+});

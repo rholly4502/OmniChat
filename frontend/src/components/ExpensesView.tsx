@@ -91,6 +91,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [savedNote, setSavedNote] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   // When the edit form opens (mobile), scroll it into view so the save/cancel
@@ -100,6 +101,15 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [showForm, editingItem]);
+
+  // Transient success confirmation (retro feedback principle): confirm the
+  // action where the person is looking, then auto-clear. Hard-edged pixel
+  // register — role="status" live region, stepped reveal, reduced-motion-safe.
+  useEffect(() => {
+    if (!savedNote) return;
+    const t = window.setTimeout(() => setSavedNote(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [savedNote]);
 
   async function handleExport(format: 'csv' | 'pdf') {
     if (!apiKey) {
@@ -129,6 +139,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   }
 
   async function handleSave(payload: ExpenseWritePayload) {
+    const note = editingItem ? 'Perubahan tersimpan.' : 'Pengeluaran tersimpan.';
     if (!apiKey) {
       setFormError('API key diperlukan untuk menyimpan pengeluaran.');
       return;
@@ -147,6 +158,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       }
       setShowForm(false);
       setEditingItem(null);
+      setSavedNote(note);
       // Refresh the 6-month trend chart too — it is independent of the viewed
       // month, so without this it stays stale until the user hits Segarkan.
       trend.reload();
@@ -177,6 +189,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       await deleteExpense(id, { apiKey });
       reload();
       trend.reload();
+      setSavedNote('Pengeluaran dihapus.');
     } catch (err) {
       setDeleteError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
     } finally {
@@ -284,6 +297,17 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         {deleteError && (
           <div role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red">
             {deleteError}
+          </div>
+        )}
+        {savedNote && (
+          <div
+            role="status"
+            className="rounded-none border border-chill-sage/40 bg-chill-sage/10 px-4 py-3 text-sm text-chill-sage flex items-center gap-2 pixel-reveal"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+              <path d="M4 12l5 5L20 6" />
+            </svg>
+            {savedNote}
           </div>
         )}
         {showForm && (
