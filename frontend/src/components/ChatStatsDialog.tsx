@@ -1,5 +1,5 @@
 import { useModalDialog } from '../hooks/useModalDialog';
-import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
 import type { ConversationUsageSummary, ModelOption } from '../types';
 
 /** Props accepted by {@link ChatStatsDialog}. */
@@ -24,7 +24,7 @@ export interface ChatStatsDialogProps {
 export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStatsDialogProps) {
   const panelRef = useModalDialog(open, onClose, '[data-stats-close]');
 
-  const byModelEntries = Object.entries(usage.byModel);
+  const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
   const totalUsd = byModelEntries.reduce(
     (sum, [id, u]) => sum + estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id),
     0,

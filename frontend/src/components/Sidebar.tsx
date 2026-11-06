@@ -3,7 +3,7 @@ import { isServerConversation } from '../hooks/useServerHistory';
 import { BotIcon, BoltIcon, ChillIcon, LockIcon, UnlockIcon } from './Icons';
 import { HistoryFilters } from './HistoryFilters';
 import { ChatStatsDialog } from './ChatStatsDialog';
-import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
 import type { ChatSession, ChatSettings, ConversationUsageSummary, ModelOption } from '../types';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
 import { BackendStatus } from './BackendStatus';
@@ -170,7 +170,7 @@ export function Sidebar({
   const [statsOpen, setStatsOpen] = useState(false);
   const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
   const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
-  const byModelEntries = Object.entries(usage.byModel);
+  const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
   const totalUsd = byModelEntries.reduce(
     (acc, [id, u]) => acc + estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id),
     0,

@@ -53,3 +53,33 @@ export function formatUsd(usd: number): string {
   if (usd < 0.01) return `$${usd.toFixed(4)}`;
   return `$${usd.toFixed(2)}`;
 }
+
+/** A per-model usage row: model id + token counts (the shape shared by the
+ * ChatStatsDialog, the sidebar "Penggunaan" section, and the conversation audit
+ * dialog). */
+export interface ModelUsageRow {
+  promptTokens: number;
+  completionTokens: number;
+}
+
+/**
+ * Sort per-model usage entries by estimated USD cost descending, so the most
+ * expensive model appears first in the per-model tables. The incoming entries
+ * are in server insertion order (or Map insertion order), which is unrelated to
+ * cost; showing the biggest expense first is what the cost-tracking feature is
+ * actually for. Ties fall back to total tokens, then to the model id, so the
+ * order is deterministic for a given dataset.
+ */
+export function sortModelEntriesByCost<T extends ModelUsageRow>(
+  entries: [string, T][],
+): [string, T][] {
+  return entries.sort((a, b) => {
+    const aUsd = estimateUsd({ promptTokens: a[1].promptTokens, completionTokens: a[1].completionTokens }, a[0]);
+    const bUsd = estimateUsd({ promptTokens: b[1].promptTokens, completionTokens: b[1].completionTokens }, b[0]);
+    if (aUsd !== bUsd) return bUsd - aUsd;
+    const aTok = a[1].promptTokens + a[1].completionTokens;
+    const bTok = b[1].promptTokens + b[1].completionTokens;
+    if (aTok !== bTok) return bTok - aTok;
+    return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
+  });
+}

@@ -1,5 +1,5 @@
 import { useModalDialog } from '../hooks/useModalDialog';
-import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
 import type { ChatSession, Message, ModelOption } from '../types';
 
 /** Props accepted by {@link ConversationAuditDialog}. */
@@ -71,7 +71,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
     cur.completionTokens += m.usage.completionTokens ?? 0;
     byModel.set(mid, cur);
   }
-  const byModelEntries = Array.from(byModel.entries());
+  const byModelEntries = sortModelEntriesByCost(Array.from(byModel.entries()));
   const modelId = session.model;
   const modeText = session.mode === 'agent' ? 'Agent (Hermes)' : session.mode === 'direct' ? 'Direct (LLM)' : '';
 

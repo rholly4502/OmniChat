@@ -4,6 +4,7 @@ import {
   estimateUsd,
   formatTokens,
   formatUsd,
+  sortModelEntriesByCost,
 } from '../tokenCost';
 import type { TokenUsage } from '../types';
 
@@ -48,5 +49,34 @@ describe('formatUsd', () => {
     expect(estimateTokens('a')).toBe(1);
     expect(estimateTokens('0123456789')).toBe(3); // round(10/4) = 3
     expect(estimateTokens('x'.repeat(40))).toBe(10);
+  });
+});
+
+describe('sortModelEntriesByCost', () => {
+  it('sorts entries by estimated cost descending (most expensive first)', () => {
+    const entries: [string, { promptTokens: number; completionTokens: number }][] = [
+      ['cheap', { promptTokens: 1000, completionTokens: 1000 }],   // fallback ~0.005
+      ['pricey', { promptTokens: 1000, completionTokens: 2000 }],  // higher output cost
+      ['openrouter/free-tier:free', { promptTokens: 4000, completionTokens: 4000 }],  // :free -> 0
+    ];
+    const sorted = sortModelEntriesByCost(entries).map(([id]) => id);
+    expect(sorted[0]).toBe('pricey');
+    expect(sorted[1]).toBe('cheap');
+    expect(sorted[2]).toBe('openrouter/free-tier:free');
+  });
+
+  it('breaks ties by total tokens, then by model id (deterministic)', () => {
+    const entries: [string, { promptTokens: number; completionTokens: number }][] = [
+      ['b', { promptTokens: 1000, completionTokens: 1000 }],
+      ['a', { promptTokens: 1000, completionTokens: 1000 }],
+      ['c', { promptTokens: 2000, completionTokens: 1000 }],
+    ];
+    const sorted = sortModelEntriesByCost(entries).map(([id]) => id);
+    // same cost, more tokens first; then 'a' < 'b'
+    expect(sorted).toEqual(['c', 'a', 'b']);
+  });
+
+  it('leaves an empty list unchanged', () => {
+    expect(sortModelEntriesByCost([])).toEqual([]);
   });
 });

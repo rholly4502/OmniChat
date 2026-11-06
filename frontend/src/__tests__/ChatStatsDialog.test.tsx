@@ -75,4 +75,15 @@ describe('ChatStatsDialog', () => {
     unmount();
     expect(document.body.style.overflow).toBe('');
   });
+
+  it('renders per-model rows most-expensive-first (cost descending)', () => {
+    renderOpen();
+    // claude-sonnet (≈$0.02) must appear above unknown-model (≈$0.0015)
+    const rows = screen.getAllByRole('row');
+    const labels = rows.map((r) => r.textContent ?? '');
+    const sonnetIdx = labels.findIndex((t) => t.includes('Claude Sonnet'));
+    const unknownIdx = labels.findIndex((t) => t.includes('unknown-model'));
+    expect(sonnetIdx).toBeGreaterThanOrEqual(0);
+    expect(unknownIdx).toBeGreaterThan(sonnetIdx);
+  });
 });
