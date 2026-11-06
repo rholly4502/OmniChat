@@ -38,6 +38,47 @@ function KategoriBadge({ kategori }: { kategori: string }) {
   );
 }
 
+/** Pixel table glyph for the CSV export action (square strokes, chill register). */
+function CsvIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+      <path d="M4 5h16v14H4V5ZM4 10h16M4 15h16M10 5v5M15 10v5" />
+    </svg>
+  );
+}
+
+/** Pixel document glyph for the PDF export action. */
+function PdfIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+      <path d="M7 3h7l4 4v14H7V3ZM14 3v4h4M9.5 12h5M9.5 15h5M9.5 18h3" />
+    </svg>
+  );
+}
+
+/** Pixel plus-or-close glyph for the Tambah ↔ Batal toggle. */
+function AddCloseIcon({ close }: { close: boolean }) {
+  return close ? (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+/** Pixel refresh glyph for reload actions (Segarkan / Coba lagi). */
+function RefreshIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0">
+      <path d="M20 12a8 8 0 1 1-3-6.27M20 5v4h-4" />
+    </svg>
+  );
+}
+
+
 function StatCard({ label, value, icon, tone = 'default' }: { label: string; value: string; icon: string; tone?: 'default' | 'accent' | 'emerald' | 'red' }) {
   const valueClass =
     tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-sage' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
@@ -263,16 +304,20 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
           type="button"
           onClick={() => handleExport('csv')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none inline-flex items-center gap-1.5 justify-center"
         >
+          
+          <CsvIcon />
           {exporting ? 'Menyiapkan…' : 'Ekspor CSV'}
         </button>
         <button
           type="button"
           onClick={() => handleExport('pdf')}
           disabled={exporting}
-          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+          className="relative shrink-0 rounded-none border border-chill-border bg-chill-surface px-4 py-2 text-sm font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none inline-flex items-center gap-1.5 justify-center"
         >
+          
+          <PdfIcon />
           {exporting ? 'Menyiapkan…' : 'Ekspor PDF'}
         </button>
         <button
@@ -282,8 +327,10 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             setShowForm((v) => !v);
             setFormError(null);
           }}
-          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px]"
+          className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] inline-flex items-center gap-1.5 justify-center"
         >
+          
+          <AddCloseIcon close={Boolean(showForm && !editingItem)} />
           {showForm && !editingItem ? 'Batal' : 'Tambah'}
         </button>
       </header>
@@ -334,8 +381,9 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <button
               type="button"
               onClick={reload}
-              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/20 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+              className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/20 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 inline-flex items-center gap-1.5"
             >
+              <RefreshIcon />
               Coba lagi
             </button>
           </div>
@@ -482,9 +530,11 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   type="button"
                   onClick={trend.reload}
                   disabled={trend.loading}
-                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:shadow-none"
+                  className="shrink-0 rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:border-chill-accent/50 hover:text-chill-accent active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:shadow-none inline-flex items-center gap-1.5 justify-center"
                 >
-                  {trend.loading ? 'Memuat…' : 'Segarkan'}
+                  
+          <RefreshIcon />
+          {trend.loading ? 'Memuat…' : 'Segarkan'}
                 </button>
               </div>
               {trend.error ? (
