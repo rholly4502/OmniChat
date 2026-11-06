@@ -31,6 +31,18 @@ public sealed record DailySuggestions(
     string FunFact,
     string TipAnakKos);
 
+/// <summary>Spend-pace comparison: cumulative non-Nabung spend through the same
+/// day-of-month, this month vs last month. A factual baseline for whether the month
+/// is running ahead of or behind the user's own history.</summary>
+public sealed record Pace(
+    string CurrentMonth,
+    int Day,
+    long CurrentThroughDay,
+    string PreviousMonth,
+    long PreviousThroughDay,
+    long Delta,
+    double? PercentChange);
+
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.
 /// </summary>
@@ -44,5 +56,6 @@ public sealed record ExpenseAdvice(
     IReadOnlyList<string> Suggestions,
     IReadOnlyList<CategoryTrendItem> CategoryTrend,
     Projection Projection,
+    Pace Pace,
     PcGoal PcGoal,
     DailySuggestions Daily);

@@ -74,6 +74,23 @@ public sealed class ExpenseAdviceService(
             : 0;
         var projectedOver = anggaran > 0 ? Math.Max(0, projectedTotal - anggaran) : 0;
 
+        // Spend-pace baseline: cumulative non-Nabung spend through the same day-of-month
+        // this month vs last month. Filtered by month prefix so the comparison stays
+        // correct even if a repository returns rows outside the requested month.
+        var prevMonth = date.AddMonths(-1).ToString("yyyy-MM");
+        var prevRows = await repository.ListAllForMonthAsync(prevMonth, ct);
+        var currentThroughDay = rows
+            .Where(r => r.Tanggal.ToString("yyyy-MM") == month && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
+            .Sum(r => r.Nominal);
+        var previousThroughDay = prevRows
+            .Where(r => r.Tanggal.ToString("yyyy-MM") == prevMonth && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
+            .Sum(r => r.Nominal);
+        var delta = currentThroughDay - previousThroughDay;
+        double? percentChange = previousThroughDay > 0
+            ? Math.Round((double)delta / previousThroughDay * 100, 1)
+            : null;
+        var pace = new Pace(month, date.Day, currentThroughDay, prevMonth, previousThroughDay, delta, percentChange);
+
         var p = options.Value;
         var totalNeeded = p.PcVga + p.PcCpu + p.PcMotherboard + p.PcSsd;
         // Cumulative savings pot toward the PC goal: sum every Nabung deposit up to
@@ -103,6 +120,7 @@ public sealed class ExpenseAdviceService(
             suggestions,
             categoryTrend,
             new Projection(total, daysElapsed, daysInMonth, projectedTotal, anggaran, projectedOver),
+            pace,
             new PcGoal(
                 [
                     new PartItem("VGA", p.PcVga),

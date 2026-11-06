@@ -262,6 +262,24 @@ export interface DailySuggestionsDto {
   tipAnakKos: string;
 }
 
+/** Spend-pace comparison against the same day-of-month in the prior month. */
+export interface PaceDto {
+  /** YYYY-MM of the analysed month. */
+  currentMonth: string;
+  /** Day-of-month up to which spend is summed. */
+  day: number;
+  /** Cumulative non-Nabung spend through `day` this month. */
+  currentThroughDay: number;
+  /** Prior month key (YYYY-MM). */
+  previousMonth: string;
+  /** Cumulative non-Nabung spend through `day` last month. */
+  previousThroughDay: number;
+  /** currentThroughDay - previousThroughDay. */
+  delta: number;
+  /** Percent change vs last month (null when no baseline exists). */
+  percentChange: number | null;
+}
+
 /** Analisa & Saran report from `GET /api/expenses/advice`. */
 export interface ExpenseAdvice {
   /** YYYY-MM-DD (WIB). */
@@ -275,6 +293,7 @@ export interface ExpenseAdvice {
   suggestions: string[];
   categoryTrend: CategoryTrendItem[];
   projection: ProjectionDto;
+  pace: PaceDto;
   pcGoal: PcGoalDto;
   daily: DailySuggestionsDto;
 }

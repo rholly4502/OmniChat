@@ -213,6 +213,47 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 <DailyTip label="Tips anak kos">{advice.daily.tipAnakKos}</DailyTip>
               </div>
 
+              {advice.pace && (
+                <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 pixel-shadow-sm">
+                  <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                  <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Bandingkan dengan bulan lalu</h4>
+                  <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm">
+                    <span className="tabular-nums text-chill-text">{formatRupiah(advice.pace.currentThroughDay)}</span>
+                    <span className="text-xs text-chill-muted">s.d. hari ke-{advice.pace.day}</span>
+                    <span className="text-chill-muted">·</span>
+                    <span className="text-xs text-chill-muted">{advice.pace.previousMonth}</span>
+                    <span className="tabular-nums text-chill-muted">{formatRupiah(advice.pace.previousThroughDay)}</span>
+                  </div>
+                  {(() => {
+                    const p2 = advice.pace;
+                    if (p2.previousThroughDay === 0 && p2.currentThroughDay === 0) {
+                      return <p className="mt-1.5 text-sm text-chill-muted">Belum ada data untuk dibandingkan.</p>;
+                    }
+                    if (p2.previousThroughDay === 0) {
+                      return <p className="mt-1.5 text-sm text-chill-muted">Belum ada data bulan lalu untuk dibandingkan.</p>;
+                    }
+                    const pct = p2.percentChange !== null && p2.percentChange !== undefined ? Math.abs(Math.round(p2.percentChange)) : 0;
+                    if (p2.delta > 0) {
+                      return (
+                        <p className="mt-1.5 text-sm font-medium text-chill-red">
+                          Lebih besar {formatRupiah(p2.delta)} ({pct}%) dibanding bulan lalu
+                        </p>
+                      );
+                    }
+                    if (p2.delta < 0) {
+                      return (
+                        <p className="mt-1.5 text-sm font-medium text-chill-sage">
+                          Lebih hemat {formatRupiah(-p2.delta)} ({pct}%) dibanding bulan lalu
+                        </p>
+                      );
+                    }
+                    return <p className="mt-1.5 text-sm text-chill-muted">Pengeluaran sama dengan bulan lalu.</p>;
+                  })()}
+                </div>
+              )}
+
               {advice.suggestions.length > 0 && (
                 <div>
                   <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-2 pixel-heading">Saran</h4>

@@ -491,4 +491,55 @@ public sealed class ExpenseAdviceServiceTests
         }
         Assert.Equal(14, byMenu.Count); // all 14 menus were visited and carry an estimate
     }
+
+    [Fact]
+    public async Task Pace_comparesCumulativeSpendAgainstSameDayLastMonth()
+    {
+        // Current month Nov (analysed to day 5) vs last month Oct at the same day-of-month.
+        // Oct: 10k on day 3, 30k on day 20. Nov: 20k on day 2, 40k on day 6, plus a
+        // Nabung deposit on day 3 that must NOT count as spending.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 3), "Makan", 10_000, "oct3"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 20), "Belanja", 30_000, "oct20"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 2), "Makan", 20_000, "nov2"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Nabung", 1_000_000, "save"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 6), "Belanja", 40_000, "nov6"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 5), CancellationToken.None);
+
+        var pace = advice.Pace;
+        Assert.Equal("2026-11", pace.CurrentMonth);
+        Assert.Equal("2026-10", pace.PreviousMonth);
+        Assert.Equal(5, pace.Day);
+        // Through day 5: Nov has only the day-2 20k (day 6 excluded; Nabung excluded).
+        Assert.Equal(20_000, pace.CurrentThroughDay);
+        // Through day 5: Oct has only the day-3 10k (day 20 excluded).
+        Assert.Equal(10_000, pace.PreviousThroughDay);
+        Assert.Equal(10_000, pace.Delta);
+        Assert.Equal(100.0, pace.PercentChange);
+    }
+
+    [Fact]
+    public async Task Pace_noPreviousData_reportsNoBaseline()
+    {
+        // Only current-month rows exist: compare baseline is empty, so the percent change
+        // must be null (not a fabricated 0%) and delta equals the spend through today.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 2), "Makan", 20_000, "nov2"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 5), "Makan", 15_000, "nov5"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 5), CancellationToken.None);
+
+        var pace = advice.Pace;
+        Assert.Equal(35_000, pace.CurrentThroughDay);
+        Assert.Equal(0, pace.PreviousThroughDay);
+        Assert.Equal(35_000, pace.Delta);
+        Assert.Null(pace.PercentChange);
+    }
 }

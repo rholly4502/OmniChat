@@ -19,6 +19,15 @@ const advicePayload = {
     { kategori: 'Makan', total: 20000 },
   ],
   projection: { spentSoFar: 320000, daysElapsed: 31, daysInMonth: 31, projectedTotal: 320000, anggaran: 520000, projectedOver: 0 },
+  pace: {
+    currentMonth: '2026-05',
+    day: 31,
+    currentThroughDay: 320000,
+    previousMonth: '2026-04',
+    previousThroughDay: 250000,
+    delta: 70000,
+    percentChange: 28.0,
+  },
   pcGoal: {
     parts: [
       { name: 'VGA', price: 3500000 },
@@ -244,4 +253,47 @@ describe('AdvicePanel projection meter (Design Loop)', () => {
     expect(bars.length).toBeGreaterThanOrEqual(3);
   });
 });
+describe('AdvicePanel month-over-month pace (Design Loop)', () => {
+  it('renders the spend-pace comparison with a "lebih besar" delta when ahead of last month', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
+    expect(screen.getByText('Bandingkan dengan bulan lalu')).toBeInTheDocument();
+    expect(screen.getByText('2026-04')).toBeInTheDocument();
+    const label = screen.getByText(/Lebih besar/);
+    expect(label.textContent!.replace(/\s/g, ' ')).toContain('Rp 70.000');
+    expect(label.textContent!.replace(/\s/g, ' ')).toContain('(28%)');
+    expect(label.className).toContain('text-chill-red');
+  });
+
+  it('shows "lebih hemat" in the sage register when behind last month', async () => {
+    const hemat = {
+      ...advicePayload,
+      pace: { ...advicePayload.pace, currentThroughDay: 210000, previousThroughDay: 250000, delta: -40000, percentChange: -16.0 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(hemat)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const label = screen.getByText(/Lebih hemat/);
+    expect(label.textContent!.replace(/\s/g, ' ')).toContain('Rp 40.000');
+    expect(label.textContent!.replace(/\s/g, ' ')).toContain('(16%)');
+    expect(label.className).toContain('text-chill-sage');
+  });
+
+  it('reports no baseline when last month has no spend data', async () => {
+    const noBaseline = {
+      ...advicePayload,
+      pace: { currentMonth: '2026-05', day: 31, currentThroughDay: 120000, previousMonth: '2026-04', previousThroughDay: 0, delta: 120000, percentChange: null },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(noBaseline)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText('Belum ada data bulan lalu untuk dibandingkan.')).toBeInTheDocument();
+  });
+});
