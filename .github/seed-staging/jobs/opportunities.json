@@ -418,5 +418,53 @@
     "catatan": "Kontrak remote dari mana saja; level junior executive (cocok ~2 th); stack C#/.NET + SQL Server; IDR 17-30jt/bln. Via agensi Hire Feed — konfirmasi klien saat interview.",
     "status": "new",
     "ditemukan": "2026-11-06"
+  },
+  {
+    "id": "c371658649",
+    "judul": "Backend .Net Developer",
+    "perusahaan": "PT. Nawa Data Solutions",
+    "lokasi": "Jakarta Utara",
+    "tipe": "Kontrak",
+    "gaji": "Rp 6-9jt/bulan",
+    "link": "https://glints.com/id/opportunities/jobs/backend-net-developer/b63392b5-129b-441f-baae-236b77453b3b",
+    "catatan": "Kontrak, 1-3 thn; backend .NET + SQL Server; cocok level.",
+    "status": "new",
+    "ditemukan": "2026-11-07"
+  },
+  {
+    "id": "d3322e9c91",
+    "judul": ".NET Developer",
+    "perusahaan": "PT Solusi Inovasi Selaras",
+    "lokasi": "Jakarta Utara",
+    "tipe": "Kontrak",
+    "gaji": "",
+    "link": "https://glints.com/id/opportunities/jobs/net-developer/2dd7c3f1-8b42-4002-86ee-f54bf56a2f57",
+    "catatan": "Kontrak, 1-3 thn; .NET Core 8/10 + SQL Server/PostgreSQL + Azure/GCP + microservices (nilai plus). Gaji tidak ditampilkan.",
+    "status": "new",
+    "ditemukan": "2026-11-07"
+  },
+  {
+    "id": "b4626c2216",
+    "judul": ".NET Developer",
+    "perusahaan": "PT. Vlink Consulting Indonesia",
+    "lokasi": "Jakarta Selatan/Yogyakarta (on-site)",
+    "tipe": "FTE",
+    "gaji": "Rp 6,5-15jt/bulan",
+    "link": "https://glints.com/id/en/opportunities/jobs/net-developer/5c2c196b-5648-4597-b9e7-6d3de555d52d",
+    "catatan": "Full-time on-site, 1-3 thn; C#/.NET + SQL Server + microservices/Kafka (nilai plus); klien global.",
+    "status": "new",
+    "ditemukan": "2026-11-07"
+  },
+  {
+    "id": "5a18443caf",
+    "judul": ".Net Engineer",
+    "perusahaan": "PT Talent Placement Consulting Indonesia",
+    "lokasi": "Jakarta Utara",
+    "tipe": "FTE",
+    "gaji": "Rp 10-15jt/bulan",
+    "link": "https://glints.com/companies/pt-talent-placement-consulting-indonesia/62816e9e-10d0-4a2d-b344-12862c31279c",
+    "catatan": "Full-time, 1-3 thn; gaji menarik (10-15jt); via konsultan HR.",
+    "status": "new",
+    "ditemukan": "2026-11-07"
   }
 ]
