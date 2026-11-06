@@ -25,6 +25,13 @@ on:
       - '.github/seed-staging/ledger/**'
       - '.github/seed-staging/jobs/**'
 
+concurrency:
+  # Serialize seed vs deploy: keduanya menyentuh VPS yg sama (reset repo,
+  # docker volume /opt/OmniChat/seed-staging). Tanpa ini push yg memicu keduanya
+  # serentak => race (deploy reset repo di tengah seed baca file).
+  group: vps-maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   seed:
     runs-on: ubuntu-latest

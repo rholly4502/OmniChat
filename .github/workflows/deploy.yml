@@ -9,6 +9,13 @@ on:
     branches: [main]
   workflow_dispatch:  # manual trigger dari GitHub Actions tab
 
+concurrency:
+  # Serialize deploy vs seed (lihat seed-expenses.yml). Keduanya menyentuh VPS
+  # yg sama: deploy reset repo /opt/OmniChat & restart container; seed baca
+  # seed-staging + DB. Tanpa guard ini, push yg memicu keduanya serentak => race.
+  group: vps-maintenance-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to VPS
