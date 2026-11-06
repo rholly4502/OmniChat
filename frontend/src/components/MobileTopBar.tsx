@@ -73,7 +73,26 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         </svg>
       </span>
         <span className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text">
-          <BoltIcon size={14} /> Guest · Direct{modelLabel ? ` · ${modelLabel}` : ''}
+          <BoltIcon size={14} /> Guest · Direct
+          {(() => {
+            const modelInCatalog = !model || Boolean(models?.some((m) => m.id === model));
+            return onModelChange && models && models.length > 0 && modelInCatalog ? (
+              <span className="relative inline-flex items-center">
+                <select
+                  value={model}
+                  onChange={(e) => onModelChange(e.target.value)}
+                  aria-label="Ganti model"
+                  className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none cursor-pointer min-h-[44px] pl-1 pr-4 select-none [color-scheme:dark]"
+                >
+                  {models.map((m) => (
+                    <option key={m.id} value={m.id}>{m.label}</option>
+                  ))}
+                </select>
+                <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-chill-accent">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </span>
+            ) : modelLabel ? ` · ${modelLabel}` : ''})()}
         </span>
         {chillMode && (
           <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-accent font-medium select-none" aria-label="Chill Mode aktif">

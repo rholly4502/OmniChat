@@ -179,10 +179,16 @@ describe('MobileTopBar', () => {
     expect(select.className).toContain('text-base');
   });
 
-  it('guest variant never shows the model switcher', () => {
+  it('guest variant shows the model switcher only when wired with a catalog', () => {
     const onChange = vi.fn();
     const catalog = [{ id: 'hermes-default', label: 'Hermes Default' }];
-    renderBar({ isGuest: true, models: catalog, onModelChange: onChange });
+    // With catalog + handler: the switcher renders and the logout stays.
+    const wired = renderBar({ isGuest: true, models: catalog, onModelChange: onChange });
+    expect(screen.getByLabelText('Ganti model')).toBeInTheDocument();
+    expect(screen.getByLabelText('Keluar')).toBeInTheDocument();
+    wired.unmount();
+    // Without them, guest stays a static label (no switcher) — the fallback.
+    renderBar({ isGuest: true });
     expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
     expect(screen.getByLabelText('Keluar')).toBeInTheDocument();
   });
@@ -194,4 +200,35 @@ describe('MobileTopBar', () => {
     expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
     expect(screen.getByText('Model lama')).toBeInTheDocument();
   });
+  it('guest variant renders a direct-model switcher when catalog + handler are supplied', () => {
+    const onModelChange = vi.fn();
+    const models = [
+      { id: 'gpt-4o-mini', label: 'GPT-4o mini' },
+      { id: 'claude-haiku', label: 'Claude Haiku' },
+    ];
+    renderBar({ isGuest: true, useAgent: true, model: 'gpt-4o-mini', models, onModelChange });
+    const select = screen.getByLabelText('Ganti model') as HTMLSelectElement;
+    expect(select).toBeInTheDocument();
+    expect(select.value).toBe('gpt-4o-mini');
+    expect(screen.getByRole('option', { name: 'Claude Haiku' })).toBeInTheDocument();
+  });
+
+  it('guest switcher forwards a new model selection', () => {
+    const onModelChange = vi.fn();
+    const models = [
+      { id: 'a', label: 'A' },
+      { id: 'b', label: 'B' },
+    ];
+    renderBar({ isGuest: true, model: 'a', models, onModelChange });
+    fireEvent.change(screen.getByLabelText('Ganti model'), { target: { value: 'b' } });
+    expect(onModelChange).toHaveBeenCalledWith('b');
+  });
+
+  it('guest variant falls back to the static label when no catalog is provided', () => {
+    renderBar({ isGuest: true, modelLabel: 'DeepSeek' });
+    expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
+    expect(screen.getByText(/DeepSeek/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Ganti model')).not.toBeInTheDocument();
+  });
+
 });
