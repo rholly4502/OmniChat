@@ -193,7 +193,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 </StatusCallout>
               )}
 
-              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2">
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2 pixel-shadow-sm">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                 <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
@@ -312,7 +312,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
                     <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-xs font-medium text-chill-muted uppercase tracking-wide">Proyeksi akhir bulan</span>
+                      <span className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Proyeksi akhir bulan</span>
                       <span className={`text-sm font-semibold tabular-nums ${advice.projection.projectedOver > 0 ? 'text-chill-red' : 'text-chill-accent'}`}>
                         {formatRupiah(advice.projection.projectedTotal)}{' '}
                         <span className="text-xs font-normal text-chill-muted">/ {formatRupiah(advice.projection.anggaran)}</span>
