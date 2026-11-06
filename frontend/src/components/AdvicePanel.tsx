@@ -205,6 +205,26 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     {advice.dailyBudget > 0 ? ` · anggaran harian ${formatRupiah(advice.dailyBudget)}` : ''}
                   </p>
                 )}
+                {advice.daily.foodSpend > 0 && advice.daily.biayaMax > 0 && (
+                  (() => {
+                    const over = advice.daily.foodSpend - advice.daily.biayaMax;
+                    if (over > 0) {
+                      return (
+                        <div className="relative overflow-hidden rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 mt-1">
+                          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-red/40" />
+                          <p className="text-sm text-chill-red font-medium">
+                            Hari ini sudah tercatat {formatRupiah(advice.daily.foodSpend)} untuk makan — melebihi rencana hemat ±{formatRupiah(advice.daily.biayaMax)} ({formatRupiah(over)} lebih). Cek porsi &amp; jajan.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="mt-1 text-sm text-chill-sage">
+                        Hari ini sudah tercatat {formatRupiah(advice.daily.foodSpend)} untuk makan — masih dalam rencana hemat ±{formatRupiah(advice.daily.biayaMax)}.
+                      </p>
+                    );
+                  })()
+                )}
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
                 <DailyTip label="Makan malam">{advice.daily.makanMalam}</DailyTip>

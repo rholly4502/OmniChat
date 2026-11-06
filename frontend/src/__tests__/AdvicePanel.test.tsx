@@ -45,6 +45,9 @@ const advicePayload = {
     makanSiang: 'Nasi, ayam bakar, tumis kangkung, air putih',
     makanMalam: 'Nasi, telur dadar, sayur bening bayam',
     biaya: '±Rp25–30k',
+    foodSpend: 20000,
+    biayaMin: 25000,
+    biayaMax: 30000,
     aktivitas: 'Jalan kaki 10.000 langkah',
     funFact: 'Otak butuh ±20% energi tubuh',
     tipAnakKos: 'Masak sendiri: belanja bahan seminggu sekali',
@@ -209,6 +212,41 @@ describe('AdvicePanel daily suggestions (P1-6)', () => {
     expect(h.className).toContain('pixel-heading');
     expect(h.closest('div.rounded-none')).toBeTruthy();
     expect(container.querySelectorAll('div[class*="border-chill-border"]').length).toBeGreaterThan(0);
+  });
+
+  it('flags when the day food food spend has run past the frugal menu plan', async () => {
+    const overPayload = {
+      ...advicePayload,
+      daily: { ...advicePayload.daily, foodSpend: 45000, biayaMax: 30000 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(overPayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const overage = screen.getByText(/melebihi rencana hemat/);
+    expect(overage.textContent?.replace(/\s/g, ' ')).toContain('15.000'); // 45.000 - 30.000
+    expect(overage.closest('div.rounded-none')).toBeTruthy();
+  });
+
+  it('confirms the day food spend is within the frugal menu plan', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText(/masih dalam rencana hemat/)).toBeInTheDocument();
+    expect(screen.queryByText(/melebihi rencana hemat/)).not.toBeInTheDocument();
+  });
+
+  it('shows no food comparison when no food spend is recorded for the day', async () => {
+    const zeroPayload = { ...advicePayload, daily: { ...advicePayload.daily, foodSpend: 0 } };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(zeroPayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/Hari ini sudah tercatat/)).not.toBeInTheDocument();
   });
 });
 

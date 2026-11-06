@@ -110,6 +110,11 @@ public sealed class ExpenseAdviceService(
             ? (int)Math.Ceiling(remaining / (double)potentialSavingPerMonth)
             : null;
 
+        // Today's actual food spend (kategori "Makan") — the ground truth the daily
+        // frugal-menu plan is measured against, so the panel can flag when a day's
+        // eating has already run past the planned frugal range.
+        var foodSpend = rows.Where(r => r.Tanggal == date && r.Kategori == "Makan").Sum(r => r.Nominal);
+
         return new ExpenseAdvice(
             date.ToString("yyyy-MM-dd"),
             month,
@@ -134,22 +139,24 @@ public sealed class ExpenseAdviceService(
                 remaining,
                 potentialSavingPerMonth,
                 monthsToReach),
-            Daily(date));
+            Daily(date, foodSpend));
     }
 
     /// <summary>
     /// Rotating daily suggestions (P1-6): a frugal/healthy menu set, an activity, a fun
     /// fact, and a kos-saving tip. Selection is deterministic from the date (DateOnly.DayNumber
     /// modulo each list's length), so a given day always shows the same content — stable across
-    /// retries and testable without randomness.
+    /// retries and testable without randomness. The selected menu's numeric cost range
+    /// (Min/Max) rides along with the display estimate so the UI can compare a day's actual
+    /// food spend ({paramref name="foodSpend"/}) against the plan.
     /// </summary>
-    private static DailySuggestions Daily(DateOnly date)
+    private static DailySuggestions Daily(DateOnly date, long foodSpend)
     {
         var day = date.DayNumber;
         // Decoupled rotations: each pool advances at its own stride and period, so a
         // given calendar day stays deterministic while the full card repeats only after
         // the least common multiple of all pool lengths (~months), not every week.
-        var (sarapan, siang, malam, biaya) = Menus[day % Menus.Length];
+        var (sarapan, siang, malam, biaya, min, max) = Menus[day % Menus.Length];
         return new DailySuggestions(
             sarapan,
             siang,
@@ -157,68 +164,74 @@ public sealed class ExpenseAdviceService(
             biaya,
             Aktivitas[(day * 2 + 1) % Aktivitas.Length],
             FunFacts[(day * 3 + 2) % FunFacts.Length],
-            TipsAnakKos[(day * 5 + 3) % TipsAnakKos.Length]);
+            TipsAnakKos[(day * 5 + 3) % TipsAnakKos.Length],
+            foodSpend,
+            min,
+            max);
     }
 
     /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day.</summary>
-                private static readonly (string Sarapan, string MakanSiang, string MakanMalam, string Biaya)[] Menus =
+    /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day. Each
+    /// set carries a frugal daily-cost range (min/max) matching its display estimate, so the
+    /// UI can compare a day's actual food spend against its plan.</summary>
+    private static readonly (string Sarapan, string MakanSiang, string MakanMalam, string Biaya, int Min, int Max)[] Menus =
     [
         ("Oatmeal + pisang + teh tawar",
          "Nasi, ayam bakar, tumis kangkung, air putih",
          "Nasi, telur dadar, sayur bening bayam",
-         "±Rp25–30k"),
+         "±Rp25–30k", 25000, 30000),
         ("Bubur ayam (minta tanpa minyak berlebih)",
          "Nasi, tempe orek, sop sayuran",
          "Nasi, ikan kembung pepes, lalapan",
-         "±Rp28–35k"),
+         "±Rp28–35k", 28000, 35000),
         ("Telur rebus + roti gandum",
          "Nasi, tahu bacem, capcay",
          "Nasi, ayam suwir, sayur asem",
-         "±Rp27–33k"),
+         "±Rp27–33k", 27000, 33000),
         ("Pisang + susu/teh tawar",
          "Nasi, sayur lodeh, telur balado rencah",
          "Nasi, lele goreng, sambal + timun",
-         "±Rp30–38k"),
+         "±Rp30–38k", 30000, 38000),
         ("Bubur kacang hijau (tanpa gula berlebih)",
          "Nasi, ayam geprek (skip tepung berlebih), wortel rebus",
          "Nasi, oncom goreng, sup ayam",
-         "±Rp30–37k"),
+         "±Rp30–37k", 30000, 37000),
         ("Roti gandum + selai kacang (tanpa gula tambahan)",
          "Nasi, ikan tongkol suwir, tumis brokoli wortel",
          "Nasi, tahu kukus + sambal terasi, sayur bayam",
-         "±Rp29–36k"),
+         "±Rp29–36k", 29000, 36000),
         ("Bubur putih + telur rebus",
          "Nasi, hati ayam tumis (sedikit minyak), mentimun",
          "Nasi, tempe penyet + lalapan, sayur lodeh",
-         "±Rp26–32k"),
+         "±Rp26–32k", 26000, 32000),
         ("Telur mata sapi + nasi merah (porsi kecil)",
          "Nasi, ayam pop, sayur katuk",
          "Nasi, rolade tahu, kuah sayur oyong",
-         "±Rp28–35k"),
+         "±Rp28–35k", 28000, 35000),
         ("Roti tawar gandum + telur orak-arik",
          "Nasi, udang tumis (sedikit), tumis tauge",
          "Nasi, pindang tongkol, sambal + lalapan",
-         "±Rp32–40k"),
+         "±Rp32–40k", 32000, 40000),
         ("Singkong/ubi rebus + teh tawar",
          "Nasi, telur kecap, sop jagung wortel",
          "Nasi, ayam ungkep tanpa kulit, tumis kacang panjang",
-         "±Rp25–31k"),
+         "±Rp25–31k", 25000, 31000),
         ("Apel + yoghurt polos tanpa gula",
          "Nasi, tempe mendoan (tanpa tepung berlebih), sayur bening",
          "Nasi, bandeng presto, lalapan + sambal",
-         "±Rp30–38k"),
+         "±Rp30–38k", 30000, 38000),
         ("Kentang rebus + telur rebus",
          "Nasi, ayam rica-rica (minyak sedikit), mentimun",
          "Nasi, tahu tektek, sayur asem",
-         "±Rp28–35k"),
+         "±Rp28–35k", 28000, 35000),
         ("Bubur putih + abon ayam",
          "Nasi, sawi cah telur, perkedel tahu",
          "Nasi, ikan cakalang suwir, tumis labu siam",
-         "±Rp29–36k"),
+         "±Rp29–36k", 29000, 36000),
         ("Omelet sayur + roti gandum",
          "Nasi, sop ayam bening, tempe goreng tepung tipis",
          "Nasi, semur daging (porsi kecil), tumis buncis",
-         "±Rp33–42k"),
+         "±Rp33–42k", 33000, 42000),
     ];
 /// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
         private static readonly string[] Aktivitas =

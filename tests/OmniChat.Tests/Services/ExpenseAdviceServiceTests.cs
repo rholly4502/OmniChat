@@ -542,4 +542,37 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(35_000, pace.Delta);
         Assert.Null(pace.PercentChange);
     }
+
+    [Fact]
+    public async Task DailySuggestions_foodSpend_aggregatesOnlyThatDaysMakan()
+    {
+        // The daily frugal-menu plan is measured against today's actual food spend. Only
+        // rows on the analysed date with kategori "Makan" count; non-food categories and
+        // other days must not leak into the comparison.
+        var repo = new FakeExpenseRepository();
+        var d = new DateOnly(2026, 11, 5);
+        repo.Rows.Add(Row(d, "Makan", 30_000, "food1"));
+        repo.Rows.Add(Row(d, "Makan", 5_000, "food2"));
+        repo.Rows.Add(Row(d, "Transport", 20_000, "transport"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 4), "Makan", 9_999, "other-day"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(35_000, advice.Daily.FoodSpend);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_planCostRange_isPositiveAndOrderedForEveryMenu()
+    {
+        // Every menu set must carry a sane frugal cost range (min <= max, both positive) so
+        // the UI comparison never divides by zero or flips red for a lower spend.
+        var service = NewService(new FakeExpenseRepository());
+        var anchor = new DateOnly(2026, 10, 1);
+        for (var i = 0; i < 14; i++)
+        {
+            var advice = await service.BuildAsync(anchor.AddDays(i), CancellationToken.None);
+            Assert.True(advice.Daily.BiayaMin > 0, $"BiayaMin <= 0 on day {i}");
+            Assert.True(advice.Daily.BiayaMin <= advice.Daily.BiayaMax, $"BiayaMin > BiayaMax on day {i}");
+        }
+    }
 }
