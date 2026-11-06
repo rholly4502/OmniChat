@@ -235,7 +235,13 @@ describe('AdvicePanel daily suggestions (P1-6)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
-    expect(screen.getByText(/masih dalam rencana hemat/)).toBeInTheDocument();
+    const withinPlan = screen.getByText(/masih dalam rencana hemat/);
+    expect(withinPlan).toBeInTheDocument();
+    // The in-allowance state is framed as a sage callout — mirroring the
+    // sibling over-budget callout so the two states share one chiseled frame
+    // register (rounded-none + hard top/left bevel, warm palette, no glow).
+    expect(withinPlan.closest('div.rounded-none')).toBeTruthy();
+    expect(withinPlan.closest('div[class*="border-chill-sage"]')).toBeTruthy();
     expect(screen.queryByText(/melebihi rencana hemat/)).not.toBeInTheDocument();
   });
 

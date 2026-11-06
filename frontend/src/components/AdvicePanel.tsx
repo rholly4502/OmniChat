@@ -212,6 +212,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       return (
                         <div className="relative overflow-hidden rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 mt-1">
                           <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-red/40" />
+                          <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-red/40" />
                           <p className="text-sm text-chill-red font-medium">
                             Hari ini sudah tercatat {formatRupiah(advice.daily.foodSpend)} untuk makan — melebihi rencana hemat ±{formatRupiah(advice.daily.biayaMax)} ({formatRupiah(over)} lebih). Cek porsi &amp; jajan.
                           </p>
@@ -219,9 +220,13 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       );
                     }
                     return (
-                      <p className="mt-1 text-sm text-chill-sage">
-                        Hari ini sudah tercatat {formatRupiah(advice.daily.foodSpend)} untuk makan — masih dalam rencana hemat ±{formatRupiah(advice.daily.biayaMax)}.
-                      </p>
+                      <div className="relative overflow-hidden rounded-none border border-chill-sage/40 bg-chill-sage/10 px-3 py-2 mt-1">
+                        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-sage/40" />
+                        <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-sage/40" />
+                        <p className="mt-1 text-sm text-chill-sage">
+                          Hari ini sudah tercatat {formatRupiah(advice.daily.foodSpend)} untuk makan — masih dalam rencana hemat ±{formatRupiah(advice.daily.biayaMax)}.
+                        </p>
+                      </div>
                     );
                   })()
                 )}
