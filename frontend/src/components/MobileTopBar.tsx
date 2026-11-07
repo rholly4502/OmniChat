@@ -39,6 +39,8 @@ export interface MobileTopBarProps {
   onModelChange?: (id: string) => void;
   /** Chill Mode active: show a subtle chillChill" tag by the mode badge. */
   chillMode?: boolean;
+  /** Open the aggregate chat stats dialog (mobile path to ChatStatsDialog). */
+  onOpenStats?: () => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
   activeView?: 'chat' | 'expenses' | 'jobs';
 }
@@ -50,7 +52,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, streamingEstimate = 0 }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, streamingEstimate = 0 }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -180,11 +182,22 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               Chill
             </span>
           )}
-          {(tokenLabel || estimate) && (
+          {(tokenLabel || estimate) && (onOpenStats ? (
+            <button
+              type="button"
+              onClick={onOpenStats}
+              aria-haspopup="dialog"
+              aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}
+              title="Statistik chat"
+              className="rounded-none inline-flex items-center gap-1 px-2 min-h-[44px] min-w-[44px] text-xs text-chill-muted transition hover:text-chill-accent active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
+            </button>
+          ) : (
             <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-muted" aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}>
               <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
             </span>
-          )}
+          ))}
         </>
       ) : activeView === 'expenses' ? (
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">

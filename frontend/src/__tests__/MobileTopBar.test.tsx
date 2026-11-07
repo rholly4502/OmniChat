@@ -244,3 +244,24 @@ describe('MobileTopBar', () => {
   });
 
 });
+
+describe('mobile stats readout', () => {
+  it('opens the aggregate chat stats dialog when the cost chip is tapped', () => {
+    const onOpenStats = vi.fn();
+    renderBar({ usage: { promptTokens: 12, completionTokens: 8 }, onOpenStats });
+    const chip = screen.getByRole('button', { name: /Penggunaan token:/ });
+    expect(chip).toHaveAttribute('aria-haspopup', 'dialog');
+    expect(chip.className).toContain('min-h-[44px]');
+    expect(chip.className).toContain('min-w-[44px]');
+    expect(chip.textContent).toContain('token');
+    fireEvent.click(chip);
+    expect(onOpenStats).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the readout non-interactive when no stats handler is wired', () => {
+    renderBar({ usage: { promptTokens: 12, completionTokens: 8 } });
+    expect(screen.queryByRole('button', { name: /Penggunaan token:/ })).not.toBeInTheDocument();
+    const readout = screen.getByLabelText(/Penggunaan token:/);
+    expect(readout.tagName).toBe('SPAN');
+  });
+});

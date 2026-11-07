@@ -405,6 +405,7 @@ export default function App() {
           modelLabel={models.find((m) => m.id === model)?.label}
           models={models}
           onModelChange={handleModelChange}
+          onOpenStats={() => setStatsOpen(true)}
           chillMode={settings.chillMode}
           activeView={activeView}
         />
