@@ -7,9 +7,13 @@ const LABELS: Record<ApiStatus, string> = {
   offline: 'Backend tidak terjangkau',
 };
 
-/** Pixel theme dot colour per status (warm palette, hard-edged). */
+/** Pixel theme dot colour per status (warm palette, hard-edged). The checking
+ *  state additionally carries the shared `pixel-blink` beat so the pod
+ *  "working" indicator reads as alive — mirroring the typing indicator and
+ *  ScanLoader — instead of sitting frozen. Online/offline are terminal states
+ *  and stay static. Reduced-motion is handled by the global media block. */
 const DOT_CLASS: Record<ApiStatus, string> = {
-  checking: 'bg-chill-muted',
+  checking: 'bg-chill-muted pixel-blink',
   online: 'bg-chill-sage',
   offline: 'bg-chill-red',
 };

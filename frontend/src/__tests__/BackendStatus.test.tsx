@@ -20,4 +20,16 @@ describe('BackendStatus', () => {
     expect(screen.getByLabelText('Memeriksa koneksi…')).toBeInTheDocument();
     expect(screen.getByText('Memeriksa koneksi…')).toBeInTheDocument();
   });
+
+  it('blinks the dot in the checking state only', () => {
+    render(<BackendStatus status="checking" />);
+    expect(screen.getByLabelText('Memeriksa koneksi…').querySelector('.pixel-blink')).not.toBeNull();
+  });
+
+  it('keeps terminal state dots static (no blink)', () => {
+    const { rerender } = render(<BackendStatus status="online" />);
+    expect(screen.getByLabelText('Backend terhubung').querySelector('.pixel-blink')).toBeNull();
+    rerender(<BackendStatus status="offline" />);
+    expect(screen.getByLabelText('Backend tidak terjangkau').querySelector('.pixel-blink')).toBeNull();
+  });
 });
