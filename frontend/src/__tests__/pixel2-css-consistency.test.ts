@@ -83,3 +83,11 @@ describe('pixel2 status-badge tokens', () => {
     expect(CSS.match(/--color-chill-emerald:/g)?.length).toBe(2);
   });
 });
+describe('pixel2 range-slider focus ring', () => {
+  it('range inputs get a visible keyboard focus ring (chill accent, 60%)', () => {
+    // `appearance: none` on input[type='range'] strips the browser default focus
+    // indicator, so the Temperature / Max Tokens sliders must carry their own.
+    const rule = CLEAN.match(/input\[type='range'\]:focus-visible\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(rule).toContain('color-mix(in srgb, var(--color-chill-accent) 60%, transparent)');
+  });
+});

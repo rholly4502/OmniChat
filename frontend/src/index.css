@@ -179,6 +179,17 @@ input[type='range']::-moz-range-thumb {
   box-shadow: 2px 2px 0 0 rgb(0 0 0 / 0.35);
 }
 
+/* Range sliders keyboard focus: `appearance: none` (above) strips the browser's
+   default focus indicator, so a keyboard user got no visible cue on the
+   Temperature / Max Tokens controls. Give them the same hard square ring the
+   rest of the app draws with `focus-visible:ring-2` — chill accent at 60%,
+   stepped to the pixel register, reduced-motion-safe (it is a color change,
+   not an animation). */
+input[type='range']:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-chill-accent) 60%, transparent);
+}
+
 
 /* ============================================================================
    CHILL VIBE + PIXEL-ART design tokens (pixel2)
