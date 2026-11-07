@@ -936,3 +936,38 @@ describe('Sidebar load-more pagination', () => {
     expect(screen.queryByRole('button', { name: /Muat lebih banyak/i })).toBeNull();
   });
 });
+
+describe('Sidebar history date grouping', () => {
+  const GUID_A = '11111111-1111-1111-1111-111111111111';
+  const GUID_B = '22222222-2222-2222-2222-222222222222';
+  const GUID_C = '33333333-3333-3333-3333-333333333333';
+  const NOW = new Date('2026-11-07T12:00:00Z').getTime();
+  const day = 24 * 60 * 60 * 1000;
+
+  it('renders study headings above the session buckets', () => {
+    const sessions = [
+      { id: GUID_A, title: 'Lama', messages: [], createdAt: 0, updatedAt: NOW - 30 * day },
+      { id: GUID_B, title: 'Baru', messages: [], createdAt: 0, updatedAt: NOW - 1000 },
+      { id: 'draft_1', title: 'Obrolan Draft', messages: [], createdAt: NOW, updatedAt: NOW },
+    ];
+    renderSidebar({ sessions, activeSessionId: GUID_A });
+
+    expect(screen.getByText('Hari Ini')).toBeInTheDocument();
+    expect(screen.getByText('Sebelumnya')).toBeInTheDocument();
+    expect(screen.getByText('Draf')).toBeInTheDocument();
+    // The session rows themselves still render under their headings.
+    expect(screen.getByText('Lama')).toBeInTheDocument();
+    expect(screen.getByText('Baru')).toBeInTheDocument();
+  });
+
+  it('renders a Disematkan heading for pinned server conversations', () => {
+    const sessions = [
+      { id: GUID_C, title: 'Semat', messages: ['x'], createdAt: 0, updatedAt: NOW, isPinned: true },
+      { id: GUID_A, title: 'Biasa', messages: [], createdAt: 0, updatedAt: NOW - 1000 },
+    ];
+    renderSidebar({ sessions });
+    expect(screen.getByText('Disematkan')).toBeInTheDocument();
+    expect(screen.getByText('Semat')).toBeInTheDocument();
+    expect(screen.getByText('Biasa')).toBeInTheDocument();
+  });
+});

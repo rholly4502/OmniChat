@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { isServerConversation } from '../hooks/useServerHistory';
+import { groupSessionsByDate } from '../sessionGroups';
 import { BotIcon, BoltIcon, ChillIcon, LockIcon, UnlockIcon } from './Icons';
 import { HistoryFilters } from './HistoryFilters';
 import { ChatStatsDialog } from './ChatStatsDialog';
@@ -363,8 +364,13 @@ export function Sidebar({
             <div className="px-1 text-sm text-chill-muted py-2">Tidak ada hasil untuk {search ? `“${search}”` : 'filter ini'}.</div>
           )}
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
-            {sessions.map((s) => {
-              const isActive = s.id === activeSessionId;
+            {groupSessionsByDate(sessions).map((group) => (
+              <div key={group.key} className="space-y-1">
+                {group.label && (
+                  <div className="text-xs text-chill-muted font-medium px-1 pt-1 select-none">{group.label}</div>
+                )}
+                {group.sessions.map((s) => {
+                  const isActive = s.id === activeSessionId;
               return (
                 <div
                   key={s.id}
@@ -586,7 +592,9 @@ export function Sidebar({
                   )}
                 </div>
               );
-            })}
+                })}
+              </div>
+            ))}
           </div>
           {hasMore && onLoadMore && (
             <button
