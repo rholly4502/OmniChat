@@ -900,3 +900,43 @@ describe('MessageList searchSignal', () => {
     expect(onDeleteMessage).not.toHaveBeenCalled();
   });
 });
+
+describe('MessageList pressed-state feedback', () => {
+  it('gives the cancel-edit button a pressed state', () => {
+    renderList({ messages: [{ role: 'user', content: 'teks asli' }], onEditMessage: vi.fn() });
+    fireEvent.click(screen.getByRole('button', { name: 'Edit pesan' }));
+    const batal = screen.getByRole('button', { name: 'Batal' });
+    expect(batal).toHaveClass('active:bg-chill-elevated');
+    expect(batal).toHaveClass('active:translate-y-[2px]');
+    expect(batal).toHaveClass('transition');
+  });
+
+  it('gives the jump-to-bottom button a pressed state', () => {
+    const msgs = (): Message[] => [
+      { role: 'user', content: 'Apa itu?' },
+      { role: 'assistant', content: 'Jawaban panjang'.repeat(40) },
+    ];
+    const { scrollRef } = renderList({ messages: msgs() });
+    const el = scrollRef.current!;
+    Object.defineProperty(el, 'scrollHeight', { configurable: true, value: 1000 });
+    Object.defineProperty(el, 'clientHeight', { configurable: true, value: 200 });
+    Object.defineProperty(el, 'scrollTop', { configurable: true, value: 100 });
+    fireEvent.scroll(el);
+    const btn = screen.getByRole('button', { name: 'Lompat ke bawah' });
+    expect(btn).toHaveClass('active:bg-chill-accent-active');
+    expect(btn).toHaveClass('active:translate-y-[2px]');
+    expect(btn).toHaveClass('active:shadow-none');
+  });
+
+  it('gives the search toggle a pressed state', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'bagaimana cara hemat token?' },
+        { role: 'assistant', content: 'Token hemat dengan ringkas.' },
+      ],
+    });
+    const search = screen.getByRole('button', { name: 'Cari di percakapan' });
+    expect(search).toHaveClass('active:bg-chill-elevated');
+    expect(search).toHaveClass('transition');
+  });
+});

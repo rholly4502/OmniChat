@@ -474,7 +474,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                 <button
                   type="button"
                   onClick={cancelEdit}
-                  className="bg-chill-surface border-2 border-chill-border text-chill-text hover:bg-chill-elevated rounded-none px-3 py-1.5 text-sm transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  className="bg-chill-surface border-2 border-chill-border text-chill-text hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] rounded-none px-3 py-1.5 text-sm transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                 >
                   Batal
                 </button>
@@ -682,7 +682,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           onClick={jumpToBottom}
           aria-label="Lompat ke bawah"
           title="Lompat ke bawah"
-          className="absolute bottom-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-accent pixel-shadow hover:bg-chill-accent hover:text-chill-on-accent transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="absolute bottom-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-accent pixel-shadow hover:bg-chill-accent hover:text-chill-on-accent active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
         </button>
@@ -693,7 +693,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           onClick={openSearch}
           aria-label="Cari di percakapan"
           title="Cari di percakapan"
-          className="absolute top-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-muted hover:text-chill-accent hover:bg-chill-surface transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="absolute top-3 right-3 z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-muted hover:text-chill-accent hover:bg-chill-surface active:bg-chill-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="4" y="4" width="12" height="12" /><line x1="14" y1="14" x2="20" y2="20" /></svg>
         </button>
