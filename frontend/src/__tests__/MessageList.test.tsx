@@ -18,6 +18,7 @@ function renderList(overrides: {
   onRegenerate?: () => void;
   onEditMessage?: (index: number, newContent: string) => void;
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
+  onDeleteMessage?: (messageId: string) => Promise<boolean>;
   onSelectSuggestion?: (prompt: string) => void;
   conversationKey?: string;
   searchSignal?: number;
@@ -34,6 +35,7 @@ function renderList(overrides: {
       onRegenerate={overrides.onRegenerate}
       onEditMessage={overrides.onEditMessage}
       onSetFeedback={overrides.onSetFeedback}
+      onDeleteMessage={overrides.onDeleteMessage}
       onSelectSuggestion={overrides.onSelectSuggestion}
       conversationKey={overrides.conversationKey}
       searchSignal={overrides.searchSignal}
@@ -845,5 +847,56 @@ describe('MessageList searchSignal', () => {
       />
     );
     expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+  });
+
+  it('renders a delete button on stored messages when wired', () => {
+    const onDeleteMessage = vi.fn().mockResolvedValue(true);
+    renderList({
+      messages: [{ id: 'm0', role: 'user', content: 'halo' }],
+      onDeleteMessage,
+    });
+
+    expect(screen.getByLabelText('Hapus pesan')).toBeInTheDocument();
+  });
+
+  it('hides the delete button when no handler or no server id', () => {
+    renderList({ messages: [{ role: 'user', content: 'halo' }] });
+    expect(screen.queryByLabelText('Hapus pesan')).not.toBeInTheDocument();
+
+    const { unmount } = renderList({
+      messages: [{ id: 'm0', role: 'user', content: 'halo' }],
+    });
+    expect(screen.queryByLabelText('Hapus pesan')).not.toBeInTheDocument();
+    unmount();
+  });
+
+  it('requires a confirming click before calling onDeleteMessage', async () => {
+    const onDeleteMessage = vi.fn().mockResolvedValue(true);
+    const { unmount } = renderList({
+      messages: [{ id: 'm0', role: 'user', content: 'halo' }],
+      onDeleteMessage,
+    });
+
+    const button = screen.getByLabelText('Hapus pesan');
+    fireEvent.click(button);
+    // First click only arms the confirmation state.
+    expect(onDeleteMessage).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Yakin hapus?')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText('Yakin hapus?'));
+    await waitFor(() => expect(onDeleteMessage).toHaveBeenCalledWith('m0'));
+    unmount();
+  });
+
+  it('does not call onDeleteMessage without a confirm', () => {
+    const onDeleteMessage = vi.fn().mockResolvedValue(true);
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'jawaban' }],
+      onDeleteMessage,
+      streaming: false,
+    });
+
+    fireEvent.click(screen.getByLabelText('Hapus pesan'));
+    expect(onDeleteMessage).not.toHaveBeenCalled();
   });
 });

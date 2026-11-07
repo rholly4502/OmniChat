@@ -698,4 +698,72 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.Equal(40, stored!.PromptTokens);
         Assert.Equal(10, stored.CompletionTokens);
     }
+
+    [Fact]
+    public async Task DeleteMessage_removes_the_target_and_everything_newer()
+    {
+        var (conv, firstUser) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.DeleteMessageAsync(conv, "admin", firstUser.Id);
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Empty(stored!.Messages);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_mid_conversation_removes_only_the_target_and_successors()
+    {
+        var (conv, _) = await SeedTwoTurnsAsync();
+        var secondUser = (await _repository.GetConversationAsync(conv, "admin"))!.Messages.First(m => m.Content == "kedua");
+
+        var ok = await _repository.DeleteMessageAsync(conv, "admin", secondUser.Id);
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(["pertama", "jawaban satu"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task DeleteMessage_refuses_a_conversation_owned_by_another_user()
+    {
+        var (conv, firstUser) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.DeleteMessageAsync(conv, "guest", firstUser.Id);
+
+        Assert.False(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(4, stored!.Messages.Count);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_returns_false_for_an_unknown_message_id()
+    {
+        var (conv, _) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.DeleteMessageAsync(conv, "admin", Guid.CreateVersion7());
+
+        Assert.False(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(4, stored!.Messages.Count);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_reduces_the_conversation_usage_by_the_removed_turns()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "A" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "a1", PromptTokens = 40, CompletionTokens = 10 });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "B" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "b1", PromptTokens = 50, CompletionTokens = 20 });
+        await _repository.AddConversationUsageAsync(conv.Id, "admin", 90, 30);
+
+        var target = (await _repository.GetConversationAsync(conv.Id, "admin"))!.Messages.First(m => m.Content == "B");
+
+        await _repository.DeleteMessageAsync(conv.Id, "admin", target.Id);
+
+        var stored = await _repository.GetConversationAsync(conv.Id, "admin");
+        Assert.Equal(40, stored!.PromptTokens);
+        Assert.Equal(10, stored.CompletionTokens);
+    }
 }

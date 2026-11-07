@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
-import { deleteConversation, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
+import { deleteConversation, deleteMessage, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
 import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
@@ -48,6 +48,8 @@ export interface ServerHistoryOptions {
   listImpl?: typeof listConversations;
   getImpl?: typeof getConversation;
   deleteImpl?: typeof deleteConversation;
+  /** Injected for tests; default to the real client. */
+  deleteMessageImpl?: typeof deleteMessage;
   renameImpl?: typeof renameConversation;
   pinImpl?: typeof pinConversation;
   /** Injected for tests; default to the real client. */
@@ -68,6 +70,8 @@ export interface ServerHistoryResult {
   selectSession: (id: string) => Promise<Message[] | null>;
   /** Delete `id` and resolve the transcript the caller should now show. */
   deleteSession: (id: string) => Promise<Message[] | null>;
+  /** Delete `messageId` from the active server conversation (and everything newer). */
+  deleteMessageFromActive: (messageId: string) => Promise<Message[] | null>;
   /** Rename `id`; resolves true when the server accepted the new title. */
   renameSession: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin `id`; resolves true when the server applied the state. */
@@ -109,7 +113,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -121,10 +125,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl };
-  }, [listImpl, getImpl, deleteImpl, renameImpl, pinImpl, updateImpl, usageImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl };
+  }, [listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, updateImpl, usageImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -312,6 +316,57 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
   );
 
 
+  /** Delete one stored turn (and everything newer), then reload the transcript. */
+  const deleteMessageFromActive = useCallback(
+    async (messageId: string): Promise<Message[] | null> => {
+      const id = activeRef.current;
+      if (!id || !isServerConversation(id)) return null;
+
+      const del = impls.current.deleteMessage ?? deleteMessage;
+      try {
+        await del(id, messageId, { apiKey: apiKey || undefined });
+      } catch {
+        // The server still holds the turn; leaving it visible is the honest state.
+        return null;
+      }
+
+      // A fresh fetch after truncation (the cache would return the stale transcript).
+      const get = impls.current.get ?? getConversation;
+      try {
+        const detail = await get(id, { apiKey: apiKey || undefined });
+        const messages: Message[] = detail.messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          id: m.id,
+          feedback: m.feedback,
+          createdAt: Date.parse(m.createdAt) || undefined,
+          usage: m.promptTokens || m.completionTokens
+            ? { promptTokens: m.promptTokens ?? 0, completionTokens: m.completionTokens ?? 0 }
+            : undefined,
+          model: m.model,
+        }));
+        setSessions((prev) =>
+          prev.map((s) =>
+            s.id === id
+              ? {
+                  ...s,
+                  messages,
+                  updatedAt: Date.parse(detail.updatedAt) || s.updatedAt,
+                  promptTokens: detail.promptTokens,
+                  completionTokens: detail.completionTokens,
+                  totalTokens: detail.totalTokens,
+                }
+              : s,
+          ),
+        );
+        return messages;
+      } catch {
+        return null;
+      }
+    },
+    [apiKey],
+  );
+
   const renameSession = useCallback(
     async (id: string, title: string): Promise<boolean> => {
       if (!isServerConversation(id)) return false;
@@ -453,6 +508,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     createSession,
     selectSession,
     deleteSession,
+    deleteMessageFromActive,
     renameSession,
     pinSession,
     updateActiveConversationSettings,

@@ -182,6 +182,23 @@ export async function setMessageFeedback(
 }
 
 /**
+ * Delete one message and every message newer than it (rewind to before this
+ * turn). The conversation itself is kept. Resolves on 204. Only admin callers
+ * succeed; drafts have no server row to delete.
+ */
+export async function deleteMessage(
+  conversationId: string,
+  messageId: string,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${conversationId}/messages/${messageId}`,
+    { method: 'DELETE' },
+    options,
+  );
+}
+
+/**
  * Fetch the aggregate token usage for all of the caller's conversations. An
  * admin sees real totals; a guest gets the all-zero shape, so the audit panel
  * renders the same either way.

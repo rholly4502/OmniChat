@@ -73,6 +73,14 @@ public interface IChatHistoryRepository
     /// </summary>
     Task<bool> RewriteMessageAsync(Guid conversationId, string userId, Guid messageId, string newContent, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    ///    Deletes one message and every message newer than it. Used by the delete-message
+    ///    action so a reload shows the conversation without the discarded turn. Adjusts the
+    ///    conversation's token totals. Returns <c>false</c> when the conversation or message
+    ///    is not found / not owned.
+    /// </summary>
+    Task<bool> DeleteMessageAsync(Guid conversationId, string userId, Guid messageId, CancellationToken cancellationToken = default);
+
 
     /// <summary>Renames a conversation. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> RenameConversationAsync(Guid id, string userId, string title, CancellationToken cancellationToken = default);

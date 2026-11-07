@@ -620,4 +620,45 @@ public class ConversationsControllerTests
             r => r.SetMessageFeedbackAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<MessageFeedback?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task DeleteMessage_Returns204_WhenTheMessageWasRemoved()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.DeleteMessageAsync(id, ChatIdentity.AdminUserId, messageId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        Assert.IsType<NoContentResult>(await controller.DeleteMessage(id, messageId, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task DeleteMessage_Returns404_WhenTheMessageIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.DeleteMessageAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.DeleteMessage(Guid.CreateVersion7(), Guid.CreateVersion7(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task DeleteMessage_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.DeleteMessage(Guid.CreateVersion7(), Guid.CreateVersion7(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.DeleteMessageAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

@@ -37,6 +37,7 @@ const deps = (over: Partial<Parameters<typeof useServerHistory>[0]> = {}) => ({
   listImpl: vi.fn().mockResolvedValue([]),
   getImpl: vi.fn(),
   deleteImpl: vi.fn().mockResolvedValue(undefined),
+  deleteMessageImpl: vi.fn().mockResolvedValue(undefined),
   ...over,
 });
 
@@ -698,5 +699,65 @@ describe('useServerHistory', () => {
       vi.useRealTimers();
     }
   });
-});
 
+  it('deleteMessageFromActive calls the API and reloads the truncated transcript', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
+    const deleteMessageImpl = vi.fn().mockImplementationOnce(async () => {});
+    const getImplAfter = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo']));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl, deleteMessageImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+    expect(getImpl).toHaveBeenCalledTimes(1);
+
+    getImpl.mockImplementationOnce(() => getImplAfter());
+
+    let next: unknown = 'unset';
+    await act(async () => {
+      next = await result.current.deleteMessageFromActive('m1');
+    });
+
+    expect(deleteMessageImpl).toHaveBeenCalledWith(A, 'm1', expect.objectContaining({ apiKey: expect.any(String) }));
+    const list = next as Array<Record<string, unknown>>;
+    expect(list.map((m) => m.content)).toEqual(['halo']);
+    expect(result.current.sessions.find((s) => s.id === A)?.messages).toHaveLength(1);
+  });
+
+  it('deleteMessageFromActive returns null when the delete is refused', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai']));
+    const deleteMessageImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl, deleteMessageImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    await act(async () => {
+      await result.current.selectSession(A);
+    });
+
+    let next: unknown = 'unset';
+    await act(async () => {
+      next = await result.current.deleteMessageFromActive('m1');
+    });
+
+    expect(next).toBeNull();
+    expect(result.current.sessions.find((s) => s.id === A)?.messages).toHaveLength(2);
+  });
+
+  it('deleteMessageFromActive ignores drafts', async () => {
+    const { result } = renderHook(() => useServerHistory(deps({})));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(1));
+
+    let next: unknown = 'unset';
+    await act(async () => {
+      next = await result.current.deleteMessageFromActive('anything');
+    });
+
+    expect(next).toBeNull();
+    expect(result.current.activeSessionId).toBe('draft_1');
+  });
+});

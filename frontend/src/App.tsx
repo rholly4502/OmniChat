@@ -82,6 +82,7 @@ export default function App() {
     createSession,
     selectSession,
     deleteSession,
+    deleteMessageFromActive,
     renameSession,
     pinSession,
     updateActiveConversationSettings,
@@ -164,6 +165,19 @@ export default function App() {
     } catch {
       return false;
     }
+  }
+
+  /** Delete one stored turn (and everything newer) from the active conversation. */
+  async function handleDeleteMessage(messageId: string): Promise<boolean> {
+    if (streaming) return false;
+    const token = ++loadTokenRef.current;
+    const next = await deleteMessageFromActive(messageId);
+    // null means the server refused; the transcript stays as it is.
+    if (next && token === loadTokenRef.current) {
+      loadMessages(next, activeSessionId, baseUsageFor(activeSession));
+      return true;
+    }
+    return false;
   }
 
   /** Persist a per-conversation model/mode change immediately so resuming the
@@ -409,6 +423,7 @@ export default function App() {
               onRegenerate={regenerate}
               onEditMessage={editAndResend}
               onSetFeedback={handleSetFeedback}
+              onDeleteMessage={handleDeleteMessage}
               onSelectSuggestion={handleSelectSuggestion}
             />
 

@@ -290,6 +290,34 @@ public sealed class ConversationsController : ControllerBase
         return updated ? NoContent() : ConversationNotFound(id);
     }
 
+    /// <summary>
+    /// Deletes one message and every message newer than it (the equivalent of "rewind
+    /// to before this turn"). The conversation itself is kept.
+    /// </summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="messageId">Message id within the conversation.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Message (and its successors) deleted.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpDelete("{id:guid}/messages/{messageId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteMessage(
+        Guid id,
+        Guid messageId,
+        CancellationToken cancellationToken = default)
+    {
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var deleted = await _repository.DeleteMessageAsync(id, owner, messageId, cancellationToken);
+
+        return deleted ? NoContent() : ConversationNotFound(id);
+    }
+
     /// <summary>Deletes a conversation and its messages.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
