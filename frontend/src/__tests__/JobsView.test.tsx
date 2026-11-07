@@ -136,3 +136,34 @@ describe('JobsView job card micro-interaction', () => {
     });
   });
 });
+describe('JobsView filter controls (pixel icon + micro-interaction)', () => {
+  it('uses crisp SVG icons and rotates the chevron with a stepped transition on toggle', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+
+    const chevronSvg = () =>
+      Array.from(container.querySelectorAll('svg[aria-hidden="true"]')).find(
+        (s) => s.querySelector('polyline'),
+      );
+    // SVG className is an SVGAnimatedString; read the real class list via getAttribute.
+    const chevronClass = () => chevronSvg()!.getAttribute('class') ?? '';
+
+    // Default open: the chevron is rotated via a stepped transform transition.
+    expect(chevronSvg()).toBeTruthy();
+    expect(chevronClass()).toContain('rotate-180');
+    expect(chevronClass()).toContain('transition-transform');
+    expect(chevronClass()).toContain('[transition-timing-function:steps(3,jump-none)]');
+
+    // No text-glyph placeholder icons remain on the toggle.
+    expect(screen.queryByText('≡')).toBeNull();
+    expect(screen.queryByText('▲')).toBeNull();
+    expect(screen.queryByText('▼')).toBeNull();
+
+    const toggle = screen.getByRole('button', { name: /Filter/ });
+    fireEvent.click(toggle); // collapse
+    expect(chevronClass()).not.toContain('rotate-180');
+
+    fireEvent.click(toggle); // expand again
+    expect(chevronClass()).toContain('rotate-180');
+  });
+});
