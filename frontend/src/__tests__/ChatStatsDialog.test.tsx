@@ -165,4 +165,14 @@ describe('ChatStatsDialog bulk export', () => {
     const [, filename] = downloadBlob.mock.calls[before];
     expect(filename).toBe('semua-percakapan.csv');
   });
+
+  it('close & export icon buttons carry pressed-state + transition micro-interaction', () => {
+    renderOpen();
+    const close = screen.getByRole('button', { name: 'Tutup statistik' });
+    expect(close).toHaveClass('active:bg-chill-elevated');
+    expect(close).toHaveClass('transition');
+    const exportCsv = screen.getByRole('button', { name: 'Ekspor statistik sebagai CSV' });
+    expect(exportCsv).toHaveClass('active:bg-chill-elevated');
+    expect(exportCsv).toHaveClass('transition');
+  });
 });

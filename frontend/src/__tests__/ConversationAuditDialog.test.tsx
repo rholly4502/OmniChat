@@ -175,4 +175,14 @@ describe('ConversationAuditDialog CSV export', () => {
     const total = lines.find((l) => l.startsWith('Total'));
     expect(total).toContain('14,22');
   });
+
+  it('close & export icon buttons carry pressed-state + transition micro-interaction', () => {
+    renderOpen();
+    const close = screen.getByRole('button', { name: 'Tutup audit' });
+    expect(close).toHaveClass('active:bg-chill-elevated');
+    expect(close).toHaveClass('transition');
+    const exportCsv = screen.getByRole('button', { name: 'Ekspor audit sebagai CSV' });
+    expect(exportCsv).toHaveClass('active:bg-chill-elevated');
+    expect(exportCsv).toHaveClass('transition');
+  });
 });
