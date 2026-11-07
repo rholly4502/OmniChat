@@ -1,5 +1,6 @@
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
+import { downloadBlob } from '../conversationExport';
 import type { ConversationUsageSummary, ModelOption } from '../types';
 
 /** Props accepted by {@link ChatStatsDialog}. */
@@ -12,6 +13,36 @@ export interface ChatStatsDialogProps {
   usage: ConversationUsageSummary;
   /** Every known model (agent + direct) for id → label resolution. */
   modelOptions?: ModelOption[];
+}
+
+/** RFC 4180 quoting for a single CSV field. */
+function csvField(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/**
+ * Builds an RFC 4180 CSV of the global stats table: one row per model with its
+ * prompt/completion/total tokens and estimated cost, then a Total row. Raw
+ * numbers are used (not formatted strings) so a spreadsheet can sum them.
+ */
+function buildStatsCsv(usage: ConversationUsageSummary, modelOptions: ModelOption[] | undefined): string {
+  const rows: string[][] = [['model', 'prompt_tokens', 'completion_tokens', 'total_tokens', 'biaya_usd']];
+  const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
+  let totalPrompt = 0;
+  let totalCompletion = 0;
+  let totalTokens = 0;
+  let totalUsd = 0;
+  for (const [id, u] of byModelEntries) {
+    totalPrompt += u.promptTokens;
+    totalCompletion += u.completionTokens;
+    totalTokens += u.totalTokens;
+    const cost = estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id);
+    totalUsd += cost;
+    const opt = modelOptions?.find((o) => o.id === id);
+    rows.push([opt ? opt.label : id, String(u.promptTokens), String(u.completionTokens), String(u.totalTokens), cost.toFixed(6)]);
+  }
+  rows.push(['Total', String(usage.totalPromptTokens || totalPrompt), String(usage.totalCompletionTokens || totalCompletion), String(usage.totalTokens || totalTokens), totalUsd.toFixed(6)]);
+  return '\uFEFF' + rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
 }
 
 /**
@@ -54,6 +85,20 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStat
       >
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-chill-text pixel-heading">Statistik Chat</h2>
+          <button
+            type="button"
+            onClick={() =>
+              downloadBlob(
+                new Blob([buildStatsCsv(usage, modelOptions)], { type: 'text/csv;charset=utf-8' }),
+                'statistik-chat.csv',
+              )
+            }
+            aria-label="Ekspor statistik sebagai CSV"
+            title="Ekspor statistik sebagai CSV"
+            className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+          </button>
           <button
             type="button"
             data-stats-close

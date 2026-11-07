@@ -87,3 +87,28 @@ describe('ChatStatsDialog', () => {
     expect(unknownIdx).toBeGreaterThan(sonnetIdx);
   });
 });
+
+const { downloadBlob } = vi.hoisted(() => ({ downloadBlob: vi.fn() }));
+
+describe('ChatStatsDialog CSV export', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doMock('../conversationExport', () => ({ downloadBlob, safeFilenameSlug: (t: string) => t }));
+  });
+
+  it('exports a well-formed CSV with header, per-model rows and a Total row', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} />);
+    const btn = screen.getByRole('button', { name: 'Ekspor statistik sebagai CSV' });
+    fireEvent.click(btn);
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob, filename] = downloadBlob.mock.calls[0];
+    expect(filename).toBe('statistik-chat.csv');
+    const csv = await blob.text();
+    const lines = csv.replace('\uFEFF', '').split('\r\n').filter((l) => l.length > 0);
+    expect(lines[0]).toBe('model,prompt_tokens,completion_tokens,total_tokens,biaya_usd');
+    expect(lines.some((l) => l.startsWith('Claude Sonnet,1000,1000,2000,0.018000'))).toBe(true);
+    expect(lines.some((l) => l.startsWith('unknown-model,500,250,750,0.001500'))).toBe(true);
+    expect(lines[lines.length - 1]).toBe('Total,1000,1000,2000,0.019500');
+  });
+});
