@@ -147,7 +147,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           <rect x="13" y="4" width="2" height="2" fill="currentColor" opacity="0.7" />
         </svg>
       </span>
-      {activeView !== 'expenses' ? (
+      {activeView !== 'expenses' && activeView !== 'jobs' ? (
         <>
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">
             {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
@@ -186,9 +186,13 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
             </span>
           )}
         </>
-      ) : (
+      ) : activeView === 'expenses' ? (
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">
           Pengeluaran
+        </span>
+      ) : (
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">
+          Lowongan
         </span>
       )}
     </div>

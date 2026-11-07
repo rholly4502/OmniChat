@@ -123,6 +123,18 @@ describe('MobileTopBar', () => {
     expect(screen.queryByText(/token/)).not.toBeInTheDocument();
   });
 
+  it('on the Lowongan view shows a pixel view chip and hides chat telemetry', () => {
+    renderBar({ activeView: 'jobs' });
+    expect(screen.getByText('Lowongan')).toBeInTheDocument();
+    const chip = screen.getByText('Lowongan');
+    expect(chip.className).toContain('pixel-heading');
+    expect(chip.className).toContain('bg-chill-elevated');
+    expect(chip.className).toContain('rounded-none');
+    expect(screen.queryByText('Agent')).not.toBeInTheDocument();
+    expect(screen.queryByText('Direct')).not.toBeInTheDocument();
+    expect(screen.queryByText(/token/)).not.toBeInTheDocument();
+  });
+
   it('renders the active model label beside the mode badge in the admin header', () => {
     renderBar({ model: 'hermes-default', modelLabel: 'Hermes Default' });
     expect(screen.getByText('Hermes Default')).toBeInTheDocument();

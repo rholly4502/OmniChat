@@ -645,6 +645,11 @@ describe('Sidebar', () => {
     expect(expensesTab.className).toContain('active:bg-chill-surface');
     const chatTab = screen.getByRole('tab', { name: 'Chat' });
     expect(chatTab.className).toContain('pixel-shadow-sm');
+    // Active tab wears the theme's 2px accent left-bar; the inactive tab keeps
+    // an invisible 2px border so nothing shifts when the selection changes.
+    expect(chatTab.className).toContain('border-l-2');
+    expect(chatTab.className).toContain('border-chill-accent');
+    expect(expensesTab.className).toContain('border-transparent');
   });
 
   it('shows a pin button on server conversations and toggles through it', () => {
