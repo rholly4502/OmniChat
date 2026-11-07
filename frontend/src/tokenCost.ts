@@ -18,13 +18,31 @@ const MODEL_RATES: Record<string, { input: number; output: number }> = {
 /** Conservative fallback for unknown models. */
 const FALLBACK_RATE = { input: 0.001, output: 0.004 };
 
+/** Provenance of a resolved per-model rate. */
+export interface ModelRateInfo {
+  /** Per-1K-token input rate (USD). */
+  input: number;
+  /** Per-1K-token output rate (USD). */
+  output: number;
+  /** 'known' = from the table; 'fallback' = conservative unknown-model rate; 'free' = OpenRouter :free tier. */
+  source: 'known' | 'fallback' | 'free';
+}
+
+/**
+ * Resolve the per-1K-token USD rate for a model id and report how it was
+ * derived, so the UI can make the estimate auditable (the cost readout is an
+ * approximation, not a bill). Free-tier endpoints ('...:free') resolve to zero.
+ */
+export function getModelRate(model: string): ModelRateInfo {
+  if (model.endsWith(':free')) return { input: 0, output: 0, source: 'free' };
+  const rate = MODEL_RATES[model];
+  return rate ? { ...rate, source: 'known' } : { ...FALLBACK_RATE, source: 'fallback' };
+}
+
 /** Estimated USD cost for a token usage, given the model id. */
 export function estimateUsd(usage: TokenUsage, model: string): number {
-  // OpenRouter free-tier endpoints ('...:free') cost nothing — report $0
-  // instead of falling back to a paid per-1K rate.
-  if (model.endsWith(':free')) return 0;
-  const rate = MODEL_RATES[model] ?? FALLBACK_RATE;
-  return (usage.promptTokens / 1000) * rate.input + (usage.completionTokens / 1000) * rate.output;
+  const { input, output } = getModelRate(model);
+  return (usage.promptTokens / 1000) * input + (usage.completionTokens / 1000) * output;
 }
 
 /**

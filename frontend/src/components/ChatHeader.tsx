@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
+import { CostDetailsPopover } from './CostDetailsPopover';
 import type { ModelOption, TokenUsage } from '../types';
 
 export interface ChatHeaderProps {
@@ -137,6 +138,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
             {estimate ? ` · ≈${estimate}` : ''}
           </span>
         )}
+        <CostDetailsPopover model={model} usage={usage} />
         {onCopyTranscript && (
           <button
             type="button"

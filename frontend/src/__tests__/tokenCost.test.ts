@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   estimateTokens,
+  getModelRate,
   estimateUsd,
   formatTokens,
   formatUsd,
@@ -78,5 +79,20 @@ describe('sortModelEntriesByCost', () => {
 
   it('leaves an empty list unchanged', () => {
     expect(sortModelEntriesByCost([])).toEqual([]);
+  });
+});
+
+describe('getModelRate', () => {
+  it('returns the known table rate for a listed model', () => {
+    expect(getModelRate('hermes')).toEqual({ input: 0.002, output: 0.008, source: 'known' });
+    expect(getModelRate('gpt-4o')).toEqual({ input: 0.0025, output: 0.01, source: 'known' });
+  });
+
+  it('falls back to the conservative rate for unknown models', () => {
+    expect(getModelRate('some/unknown-model')).toEqual({ input: 0.001, output: 0.004, source: 'fallback' });
+  });
+
+  it('treats OpenRouter :free tiers as zero-cost', () => {
+    expect(getModelRate('nvidia/nemotron-3.5-lightning:free')).toEqual({ input: 0, output: 0, source: 'free' });
   });
 });
