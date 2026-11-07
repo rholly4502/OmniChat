@@ -146,4 +146,18 @@ describe('typography and contrast floors', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('every editable control that removes its native outline still shows a visible focus ring', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { tag, attrs, line } of editableControls(readFileSync(file, 'utf8'))) {
+        const className = /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(attrs);
+        const classes = (className?.[1] ?? className?.[2] ?? '').split(/\s+/);
+        if (classes.includes('outline-none') && !classes.some((c) => c.startsWith('focus-visible:ring'))) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} <${tag}> uses outline-none without a focus-visible ring — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });

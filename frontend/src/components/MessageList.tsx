@@ -318,7 +318,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             placeholder="Cari di percakapan…"
             aria-label="Cari pesan"
             autoFocus
-            className="min-w-0 flex-1 bg-transparent text-base md:text-sm text-chill-text placeholder:text-chill-muted outline-none"
+            className="min-w-0 flex-1 bg-transparent text-base md:text-sm text-chill-text placeholder:text-chill-muted outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           />
           <span className="text-xs text-chill-muted select-none whitespace-nowrap tabular-nums" aria-live="polite" aria-label="Posisi hasil pencarian">
             {query.trim()
@@ -445,7 +445,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                   onKeyDown={(e) => handleEditKeyDown(e, i)}
                   aria-label="Edit pesan"
                   placeholder="Edit pesan…"
-                  className="w-full bg-transparent text-base md:text-sm leading-relaxed outline-none resize-none text-chill-text placeholder:text-chill-muted"
+                  className="w-full bg-transparent text-base md:text-sm leading-relaxed outline-none resize-none text-chill-text placeholder:text-chill-muted focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                 />
               </div>
               <div className="flex items-center gap-2">
