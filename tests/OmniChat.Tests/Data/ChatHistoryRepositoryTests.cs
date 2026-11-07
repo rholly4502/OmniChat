@@ -118,6 +118,41 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ListConversations_offset_paginates_newest_first()
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            await _repository.CreateConversationAsync(NewConversation());
+        }
+
+        var page1 = await _repository.ListConversationsAsync("admin", limit: 2, offset: 0);
+        var page2 = await _repository.ListConversationsAsync("admin", limit: 2, offset: 2);
+        var page3 = await _repository.ListConversationsAsync("admin", limit: 2, offset: 4);
+
+        Assert.Equal(2, page1.Count);
+        Assert.Equal(2, page2.Count);
+        Assert.Single(page3);
+
+        // Pages are disjoint and, together, cover exactly the full set.
+        var allIds = page1.Concat(page2).Concat(page3).Select(c => c.Id).ToHashSet();
+        Assert.Equal(5, allIds.Count);
+    }
+
+    [Fact]
+    public async Task ListConversations_negative_offset_behaves_as_zero()
+    {
+        for (var i = 0; i < 3; i++)
+        {
+            await _repository.CreateConversationAsync(NewConversation());
+        }
+
+        var negative = await _repository.ListConversationsAsync("admin", limit: 2, offset: -5);
+        var zero = await _repository.ListConversationsAsync("admin", limit: 2, offset: 0);
+
+        Assert.Equal(negative.Select(c => c.Id), zero.Select(c => c.Id));
+    }
+
+    [Fact]
     public async Task GetLatestMessagePreviews_returns_the_newest_message_per_conversation()
     {
         var first = await _repository.CreateConversationAsync(NewConversation());

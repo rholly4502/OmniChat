@@ -37,6 +37,7 @@ public interface IChatHistoryRepository
     Task<IReadOnlyList<Conversation>> ListConversationsAsync(
         string userId,
         int limit = 50,
+        int offset = 0,
         string? search = null,
         string? model = null,
         DateTimeOffset? from = null,

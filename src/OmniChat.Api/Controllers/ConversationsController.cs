@@ -34,6 +34,7 @@ public sealed class ConversationsController : ControllerBase
     /// Lists the caller's conversations, most recently updated first, without message bodies.
     /// </summary>
     /// <param name="limit">Maximum rows to return; clamped by the repository to 1–200.</param>
+    /// <param name="offset">Number of newest rows to skip before returning (for list pagination).</param>
     /// <param name="search">When non-blank, only conversations whose title or a contained
     /// message matches the term are returned.</param>
     /// <param name="model">When non-blank, only conversations previously run on this model
@@ -47,6 +48,7 @@ public sealed class ConversationsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<ConversationSummary>>> List(
         [FromQuery] int limit = 50,
+        [FromQuery] int offset = 0,
         [FromQuery] string? search = null,
         [FromQuery] string? model = null,
         [FromQuery] DateTimeOffset? from = null,
@@ -61,7 +63,7 @@ public sealed class ConversationsController : ControllerBase
             return Ok(Array.Empty<ConversationSummary>());
         }
 
-        var conversations = await _repository.ListConversationsAsync(owner, limit, search, model, from, to, cancellationToken);
+        var conversations = await _repository.ListConversationsAsync(owner, limit, offset, search, model, from, to, cancellationToken);
 
         // Latest message content per conversation, for a one-line sidebar preview. The
         // guards tolerate a caller that omits the preview read (e.g. an old test

@@ -760,4 +760,57 @@ describe('useServerHistory', () => {
     expect(next).toBeNull();
     expect(result.current.activeSessionId).toBe('draft_1');
   });
+
+  it('sets hasMore when a full page comes back and clears it on a short page', async () => {
+    const full = Array.from({ length: 50 }, (_, i) => summary(`${i+1}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Sesi ${i}`));
+    const listImpl = vi.fn().mockResolvedValueOnce(full).mockResolvedValueOnce([]);
+    const usageImpl = vi.fn().mockResolvedValue(EMPTY_USAGE);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, usageImpl })));
+    await waitFor(() => expect(result.current.sessions.length).toBeGreaterThan(1));
+    expect(result.current.hasMore).toBe(true);
+
+    await act(async () => { await result.current.loadMore(); });
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  it('loadMore fetches the next page at the accumulated offset and appends it', async () => {
+    const page1 = Array.from({ length: 50 }, (_, i) => summary(`${i+1}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Dulu ${i}`));
+    const page2 = Array.from({ length: 20 }, (_, i) => summary(`a${i}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Lebih dulu ${i}`));
+    const listImpl = vi.fn()
+      .mockResolvedValueOnce(page1)
+      .mockResolvedValueOnce(page2);
+    const usageImpl = vi.fn().mockResolvedValue(EMPTY_USAGE);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, usageImpl })));
+    await waitFor(() => expect(result.current.sessions.length).toBeGreaterThan(50));
+
+    const before = result.current.sessions.length;
+    expect(listImpl).toHaveBeenCalledTimes(1);
+    expect(listImpl.mock.calls[0][1]).toBe(50);
+    expect(listImpl.mock.calls[0][4]).toBe(0);
+
+    await act(async () => { await result.current.loadMore(); });
+    expect(listImpl).toHaveBeenCalledTimes(2);
+    expect(listImpl.mock.calls[1][4]).toBe(50);
+    expect(result.current.sessions.length).toBe(before + 20);
+    expect(result.current.hasMore).toBe(false);
+  });
+
+  it('loadMore does not duplicate rows already in the list', async () => {
+    const page1 = Array.from({ length: 50 }, (_, i) => summary(`${i+1}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Sesi ${i}`));
+    const dup = summary('00000001-1111-1111-1111-111111111111', 'Sesi 0');
+    const listImpl = vi.fn()
+      .mockResolvedValueOnce(page1)
+      .mockResolvedValueOnce([dup]);
+    const usageImpl = vi.fn().mockResolvedValue(EMPTY_USAGE);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, usageImpl })));
+    await waitFor(() => expect(result.current.sessions.length).toBeGreaterThan(50));
+    const before = result.current.sessions.length;
+
+    await act(async () => { await result.current.loadMore(); });
+    // The duplicate is not appended, so the list length is unchanged.
+    expect(result.current.sessions.length).toBe(before);
+  });
 });

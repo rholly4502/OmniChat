@@ -894,3 +894,40 @@ describe('Sidebar audit entry (mobile-accessible)', () => {
     expect(btn.className).toContain('bg-chill-surface');
   });
 });
+
+describe('Sidebar load-more pagination', () => {
+  it('renders a load-more button when hasMore is true and forwards the callback', () => {
+    const onLoadMore = vi.fn();
+    const sessions = [
+      { id: '11111111-1111-1111-1111-111111111111', title: 'Sesi 1', mode: 'agent', model: 'hermes', createdAt: 1, updatedAt: 2, messages: [], isPinned: false },
+    ];
+    renderSidebar({ hasMore: true, onLoadMore, sessions });
+
+    const btn = screen.getByRole('button', { name: /Muat lebih banyak/i });
+    expect(btn).toBeTruthy();
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('rounded-none');
+
+    fireEvent.click(btn);
+    expect(onLoadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the load-more button when hasMore is false', () => {
+    const onLoadMore = vi.fn();
+    const sessions = [
+      { id: '11111111-1111-1111-1111-111111111111', title: 'Sesi 1', mode: 'agent', model: 'hermes', createdAt: 1, updatedAt: 2, messages: [], isPinned: false },
+    ];
+    renderSidebar({ hasMore: false, onLoadMore, sessions });
+
+    expect(screen.queryByRole('button', { name: /Muat lebih banyak/i })).toBeNull();
+  });
+
+  it('does not render a load-more button when no handler is provided', () => {
+    const sessions = [
+      { id: '11111111-1111-1111-1111-111111111111', title: 'Sesi 1', mode: 'agent', model: 'hermes', createdAt: 1, updatedAt: 2, messages: [], isPinned: false },
+    ];
+    renderSidebar({ hasMore: true, sessions });
+
+    expect(screen.queryByRole('button', { name: /Muat lebih banyak/i })).toBeNull();
+  });
+});

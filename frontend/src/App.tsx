@@ -90,6 +90,8 @@ export default function App() {
     exportSession,
     copyTranscript,
     usageSummary,
+    loadMore,
+    hasMore,
   } = useServerHistory({ apiKey, search: historySearch, modelFilter: historyModelFilter, dateFrom: historyDateFrom, dateTo: historyDateTo });
 
   const {
@@ -357,6 +359,8 @@ export default function App() {
         onRenameSession={handleRenameSession}
         onPinSession={handlePinSession}
         onExportSession={exportSession}
+        onLoadMore={loadMore}
+        hasMore={hasMore}
         usageSummary={usageSummary}
         onOpenAudit={() => setAuditOpen(true)}
         settings={settings}

@@ -75,6 +75,10 @@ export interface SidebarProps {
   onPinSession?: (id: string, pinned: boolean) => Promise<boolean>;
   /** Export a session in the requested format (default Markdown). */
   onExportSession?: (session: ChatSession, format?: ConversationExportFormat) => void;
+  /** Load the next page of older conversations. Called from the sidebar footer. */
+  onLoadMore?: () => void;
+  /** True when more older conversations exist under the current filter. */
+  hasMore?: boolean;
   /** Optional LLM sampling settings and system prompt. */
   settings?: ChatSettings;
   /** System prompt change handler. */
@@ -144,6 +148,8 @@ export function Sidebar({
   onRenameSession,
   onPinSession,
   onExportSession,
+  onLoadMore,
+  hasMore = false,
   settings,
   onSystemPromptChange,
   onResetPersona,
@@ -582,6 +588,17 @@ export function Sidebar({
               );
             })}
           </div>
+          {hasMore && onLoadMore && (
+            <button
+              type="button"
+              onClick={onLoadMore}
+              aria-label="Muat lebih banyak percakapan"
+              className="w-full flex items-center justify-center gap-2 mt-1 min-h-[44px] rounded-none border border-chill-border bg-chill-surface text-sm text-chill-accent font-medium hover:bg-chill-elevated active:bg-chill-elevated transition pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
+              Muat lebih banyak
+            </button>
+          )}
         </div>
       )}
 

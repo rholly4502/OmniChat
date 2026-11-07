@@ -88,6 +88,10 @@ export interface ServerHistoryResult {
   copyTranscript: (session: ChatSession) => Promise<void>;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary: ConversationUsageSummary;
+  /** Load the next page of older conversations and append them to the list. */
+  loadMore: () => Promise<void>;
+  /** True when a full page was returned, so older rows likely exist. */
+  hasMore: boolean;
 }
 
 /**
@@ -122,6 +126,17 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
   /** Bumped to force a refetch after the server names a draft. */
   const [reloadToken, setReloadToken] = useState(0);
   const [usageSummary, setUsageSummary] = useState<ConversationUsageSummary>(EMPTY_USAGE);
+  /** Page size for the history list; older rows load on demand via {@link loadMore}. */
+  const PAGE_SIZE = 50;
+  /** How many newest server rows are already loaded (the offset for the next page). */
+  const [listOffset, setListOffset] = useState(0);
+  /** True when the last page came back full, so more rows likely exist. */
+  const [hasMore, setHasMore] = useState(false);
+  /** Latest filters, readable from `loadMore` without a stale closure. */
+  const filtersRef = useRef({ search, modelFilter, dateFrom, dateTo });
+  useEffect(() => {
+    filtersRef.current = { search, modelFilter, dateFrom, dateTo };
+  }, [search, modelFilter, dateFrom, dateTo]);
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
@@ -154,11 +169,11 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     // model/date filters) resets a short timer instead of firing a server
     // round-trip per keystroke; the fetch runs once the input settles.
     const timer = window.setTimeout(() => {
-    list({ apiKey: apiKey || undefined, signal: ctrl.signal }, 50, search, {
+    list({ apiKey: apiKey || undefined, signal: ctrl.signal }, PAGE_SIZE, search, {
       model: modelFilter,
       from: dateFrom,
       to: dateTo,
-    }).then((rows) => {
+    }, 0).then((rows) => {
         if (cancelled) return;
         setSessions((prev) => {
           const drafts = prev.filter((s) => !isServerConversation(s.id));
@@ -182,11 +197,17 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
           });
           return sortSessions([...serverRows, ...drafts]);
         });
+        // The offset for the next page is the number of rows already loaded.
+        setListOffset(rows.length);
+        // A full page means there may be older rows; a short page means we've
+        // reached the end of history under the current filter.
+        setHasMore(rows.length >= PAGE_SIZE);
       })
       .catch(() => {
         if (cancelled) return;
         // Guest (401) and offline both mean "no history to show". The draft must
         // survive, so the failure is swallowed rather than rendered.
+        setHasMore(false);
       });
     }, listDebounceMs);
 
@@ -195,7 +216,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken, listDebounceMs]);
+  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken, listDebounceMs, PAGE_SIZE]);
 
   // Aggregate usage is global (not affected by search/filter), so it refetches
   // only when the key changes or the server names a draft.
@@ -501,9 +522,55 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     );
   }, []);
 
+  /** Load the next page of older conversations and append them to the list. */
+  const loadMore = useCallback(async () => {
+    const { search, modelFilter, dateFrom, dateTo } = filtersRef.current;
+    const list = impls.current.list ?? listConversations;
+    const nextOffset = listOffset;
+    try {
+      const rows = await list(
+        { apiKey: apiKey || undefined },
+        PAGE_SIZE,
+        search,
+        { model: modelFilter, from: dateFrom, to: dateTo },
+        nextOffset,
+      );
+      setSessions((prev) => {
+        const drafts = prev.filter((s) => !isServerConversation(s.id));
+        const existingIds = new Set(prev.filter((s) => isServerConversation(s.id)).map((s) => s.id));
+        const appended = rows
+          .filter((row) => !existingIds.has(row.id))
+          .map<ChatSession>((row) => {
+            const existing = prev.find((s) => s.id === row.id);
+            return {
+              id: row.id,
+              title: row.title,
+              messages: existing?.messages ?? [],
+              createdAt: Date.parse(row.createdAt) || Date.now(),
+              updatedAt: Date.parse(row.updatedAt) || Date.now(),
+              isPinned: row.isPinned ?? false,
+              promptTokens: row.promptTokens,
+              completionTokens: row.completionTokens,
+              totalTokens: row.totalTokens,
+              model: row.model,
+              mode: row.mode,
+              preview: row.preview,
+            };
+          });
+        return sortSessions([...prev.filter((s) => isServerConversation(s.id)), ...appended, ...drafts]);
+      });
+      setListOffset(nextOffset + rows.length);
+      setHasMore(rows.length >= PAGE_SIZE);
+    } catch {
+      // The append failed; the already-loaded rows remain, and loadMore stays
+      // available for a retry.
+    }
+  }, [apiKey, listOffset, PAGE_SIZE]);
+
   return {
     sessions,
-    activeSession: sessions.find((s) => s.id === resolvedActiveId) ?? sessions[0],
+    activeSession:
+ sessions.find((s) => s.id === resolvedActiveId) ?? sessions[0],
     activeSessionId: resolvedActiveId,
     createSession,
     selectSession,
@@ -517,5 +584,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     exportSession,
     copyTranscript,
     usageSummary,
+    loadMore,
+    hasMore,
   };
 }

@@ -64,11 +64,13 @@ export async function listConversations(
   limit = 50,
   search?: string,
   filters: ConversationListFilters = {},
+  offset = 0,
 ): Promise<ConversationSummary[]> {
   const term = search?.trim();
   // Built by hand rather than with URLSearchParams so spaces stay `%20` (that
   // class encodes them as `+`, which would needlessly change the API contract).
   const parts = [`limit=${limit}`];
+  if (offset > 0) parts.push(`offset=${offset}`);
   if (term) parts.push(`search=${encodeURIComponent(term)}`);
   if (filters.model) parts.push(`model=${encodeURIComponent(filters.model)}`);
   if (filters.from) parts.push(`from=${encodeURIComponent(filters.from)}`);

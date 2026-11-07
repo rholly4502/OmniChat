@@ -40,6 +40,7 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
     public async Task<IReadOnlyList<Conversation>> ListConversationsAsync(
         string userId,
         int limit = 50,
+        int offset = 0,
         string? search = null,
         string? model = null,
         DateTimeOffset? from = null,
@@ -48,6 +49,7 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
     {
         RequireOwner(userId);
         var take = Math.Clamp(limit, 1, MaxListLimit);
+        var skip = Math.Max(offset, 0);
 
         // No Include: the sidebar shows titles only. Messages stay on the server, which
         // is what keeps a long history cheap to list. A search term is the one exception
@@ -90,6 +92,7 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return await query
             .OrderByDescending(c => c.IsPinned)
             .ThenByDescending(c => c.UpdatedAt)
+            .Skip(skip)
             .Take(take)
             .ToListAsync(cancellationToken);
     }
