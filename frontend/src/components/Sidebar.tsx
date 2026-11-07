@@ -54,6 +54,10 @@ export interface SidebarProps {
   modelFilter?: string;
   /** Change the model-id history filter. */
   onModelFilterChange?: (model: string) => void;
+  /** Selected chat-mode filter for history ("" = all modes). */
+  modeFilter?: string;
+  /** Change the chat-mode history filter. */
+  onModeFilterChange?: (mode: string) => void;
   /** Inclusive start date (ISO yyyy-MM-dd) for history. */
   dateFrom?: string;
   /** Inclusive end date (ISO yyyy-MM-dd) for history. */
@@ -144,6 +148,8 @@ export function Sidebar({
   onSearchChange,
   modelFilter = '',
   onModelFilterChange,
+  modeFilter = '',
+  onModeFilterChange,
   dateFrom = '',
   dateTo = '',
   onDateFromChange,
@@ -184,7 +190,7 @@ export function Sidebar({
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [statsOpen, setStatsOpen] = useState(false);
-  const hasActiveFilters = Boolean(modelFilter || dateFrom || dateTo);
+  const hasActiveFilters = Boolean(modelFilter || modeFilter || dateFrom || dateTo);
   const usage = usageSummary ?? { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
   const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
   const totalUsd = byModelEntries.reduce(
@@ -354,6 +360,8 @@ export function Sidebar({
             models={historyModels ?? models}
             modelFilter={modelFilter}
             onModelFilterChange={onModelFilterChange ?? (() => {})}
+            modeFilter={modeFilter}
+            onModeFilterChange={onModeFilterChange ?? (() => {})}
             dateFrom={dateFrom}
             dateTo={dateTo}
             onDateFromChange={onDateFromChange ?? (() => {})}

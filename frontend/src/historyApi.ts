@@ -47,6 +47,8 @@ async function request(
 export interface ConversationListFilters {
   /** Only conversations last run on this model id. */
   model?: string;
+  /** Only conversations run in this chat mode: "agent" or "direct". */
+  mode?: string;
   /** Inclusive start date (ISO `yyyy-MM-dd`) of the updated-at window. */
   from?: string;
   /** Inclusive end date (ISO `yyyy-MM-dd`) of the updated-at window. */
@@ -73,6 +75,7 @@ export async function listConversations(
   if (offset > 0) parts.push(`offset=${offset}`);
   if (term) parts.push(`search=${encodeURIComponent(term)}`);
   if (filters.model) parts.push(`model=${encodeURIComponent(filters.model)}`);
+  if (filters.mode) parts.push(`mode=${encodeURIComponent(filters.mode)}`);
   if (filters.from) parts.push(`from=${encodeURIComponent(filters.from)}`);
   if (filters.to) parts.push(`to=${encodeURIComponent(filters.to)}`);
   const res = await request(`${CONVERSATIONS_URL}?${parts.join('&')}`, { method: 'GET' }, options);

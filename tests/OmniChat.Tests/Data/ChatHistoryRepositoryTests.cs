@@ -400,6 +400,31 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ListConversations_filters_by_mode_when_mode_is_given()
+    {
+        var direct = await _repository.CreateConversationAsync(NewConversation());
+        direct.Mode = "direct";
+        await _db.SaveChangesAsync();
+        await _repository.CreateConversationAsync(NewConversation()); // agent
+
+        var listed = await _repository.ListConversationsAsync("admin", mode: "direct");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(direct.Id, only.Id);
+        Assert.Equal("direct", only.Mode);
+    }
+
+    [Fact]
+    public async Task ListConversations_mode_mismatch_returns_empty()
+    {
+        await _repository.CreateConversationAsync(NewConversation()); // agent
+
+        var listed = await _repository.ListConversationsAsync("admin", mode: "direct");
+
+        Assert.Empty(listed);
+    }
+
+    [Fact]
     public async Task ListConversations_filters_by_updated_at_window()
     {
         var old = await _repository.CreateConversationAsync(NewConversation());

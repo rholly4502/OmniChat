@@ -51,6 +51,7 @@ public sealed class ConversationsController : ControllerBase
         [FromQuery] int offset = 0,
         [FromQuery] string? search = null,
         [FromQuery] string? model = null,
+        [FromQuery] string? mode = null,
         [FromQuery] DateTimeOffset? from = null,
         [FromQuery] DateTimeOffset? to = null,
         CancellationToken cancellationToken = default)
@@ -63,7 +64,7 @@ public sealed class ConversationsController : ControllerBase
             return Ok(Array.Empty<ConversationSummary>());
         }
 
-        var conversations = await _repository.ListConversationsAsync(owner, limit, offset, search, model, from, to, cancellationToken);
+        var conversations = await _repository.ListConversationsAsync(owner, limit, offset, search, model, mode, from, to, cancellationToken);
 
         // Latest message content per conversation, for a one-line sidebar preview. The
         // guards tolerate a caller that omits the preview read (e.g. an old test

@@ -38,6 +38,8 @@ export interface ServerHistoryOptions {
   search?: string;
   /** Narrow the list to conversations last run on this model id. */
   modelFilter?: string;
+  /** Narrow the list to conversations run in this chat mode ("agent"/"direct"). */
+  modeFilter?: string;
   /** Inclusive start date (ISO `yyyy-MM-dd`) for the updated-at window. */
   dateFrom?: string;
   /** Inclusive end date (ISO `yyyy-MM-dd`) for the updated-at window. */
@@ -121,7 +123,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, modeFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -137,10 +139,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
   /** True when the last page came back full, so more rows likely exist. */
   const [hasMore, setHasMore] = useState(false);
   /** Latest filters, readable from `loadMore` without a stale closure. */
-  const filtersRef = useRef({ search, modelFilter, dateFrom, dateTo });
+  const filtersRef = useRef({ search, modelFilter, modeFilter, dateFrom, dateTo });
   useEffect(() => {
-    filtersRef.current = { search, modelFilter, dateFrom, dateTo };
-  }, [search, modelFilter, dateFrom, dateTo]);
+    filtersRef.current = { search, modelFilter, modeFilter, dateFrom, dateTo };
+  }, [search, modelFilter, modeFilter, dateFrom, dateTo]);
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
@@ -175,6 +177,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     const timer = window.setTimeout(() => {
     list({ apiKey: apiKey || undefined, signal: ctrl.signal }, PAGE_SIZE, search, {
       model: modelFilter,
+      mode: modeFilter,
       from: dateFrom,
       to: dateTo,
     }, 0).then((rows) => {
@@ -221,7 +224,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
       clearTimeout(timer);
       ctrl.abort();
     };
-  }, [apiKey, search, modelFilter, dateFrom, dateTo, reloadToken, listDebounceMs, PAGE_SIZE]);
+  }, [apiKey, search, modelFilter, modeFilter, dateFrom, dateTo, reloadToken, listDebounceMs, PAGE_SIZE]);
 
   // Aggregate usage is global (not affected by search/filter), so it refetches
   // only when the key changes or the server names a draft.

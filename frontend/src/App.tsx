@@ -46,6 +46,7 @@ export default function App() {
   const [auditOpen, setAuditOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
   const [historyModelFilter, setHistoryModelFilter] = useState('');
+  const [historyModeFilter, setHistoryModeFilter] = useState('');
   const [historyDateFrom, setHistoryDateFrom] = useState('');
   const [historyDateTo, setHistoryDateTo] = useState('');
   const [showArchived, setShowArchived] = useState(false);
@@ -94,7 +95,7 @@ export default function App() {
     usageSummary,
     loadMore,
     hasMore,
-  } = useServerHistory({ apiKey, search: historySearch, modelFilter: historyModelFilter, dateFrom: historyDateFrom, dateTo: historyDateTo });
+  } = useServerHistory({ apiKey, search: historySearch, modelFilter: historyModelFilter, modeFilter: historyModeFilter, dateFrom: historyDateFrom, dateTo: historyDateTo });
 
   const {
     settings,
@@ -356,6 +357,8 @@ export default function App() {
         onSearchChange={setHistorySearch}
         modelFilter={historyModelFilter}
         onModelFilterChange={setHistoryModelFilter}
+        modeFilter={historyModeFilter}
+        onModeFilterChange={setHistoryModeFilter}
         dateFrom={historyDateFrom}
         dateTo={historyDateTo}
         onDateFromChange={setHistoryDateFrom}

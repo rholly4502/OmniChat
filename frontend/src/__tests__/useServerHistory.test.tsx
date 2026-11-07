@@ -82,6 +82,7 @@ describe('useServerHistory', () => {
     await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
     expect(listImpl.mock.calls[0][3]).toEqual({
       model: 'claude-sonnet',
+      mode: undefined,
       from: '2026-11-01',
       to: '2026-11-30',
     });
@@ -97,7 +98,32 @@ describe('useServerHistory', () => {
     await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
     rerender({ modelFilter: 'b' });
     await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(2));
-    expect(listImpl.mock.calls[1][3]).toEqual({ model: 'b', from: undefined, to: undefined });
+    expect(listImpl.mock.calls[1][3]).toEqual({ model: 'b', mode: undefined, from: undefined, to: undefined });
+  });
+
+  it('forwards the mode filter and refetches when it changes', async () => {
+    const listImpl = vi.fn().mockResolvedValue([]);
+    const { rerender } = renderHook(
+      (f) => useServerHistory(deps({ listImpl, ...f })),
+      { initialProps: { modeFilter: 'direct' } },
+    );
+
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(1));
+    expect(listImpl.mock.calls[0][3]).toEqual({
+      model: undefined,
+      mode: 'direct',
+      from: undefined,
+      to: undefined,
+    });
+
+    rerender({ modeFilter: 'agent' });
+    await waitFor(() => expect(listImpl).toHaveBeenCalledTimes(2));
+    expect(listImpl.mock.calls[1][3]).toEqual({
+      model: undefined,
+      mode: 'agent',
+      from: undefined,
+      to: undefined,
+    });
   });
 
   it('starts with one draft and keeps it when the server has no history', async () => {

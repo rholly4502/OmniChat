@@ -126,12 +126,24 @@ describe('listConversations', () => {
 
     await listConversations({ fetchImpl }, 50, undefined, {
       model: 'claude-sonnet',
+      mode: 'direct',
       from: '2026-11-01',
       to: '2026-11-30',
     });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      `${CONVERSATIONS_URL}?limit=50&model=claude-sonnet&from=2026-11-01&to=2026-11-30`,
+      `${CONVERSATIONS_URL}?limit=50&model=claude-sonnet&mode=direct&from=2026-11-01&to=2026-11-30`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('omits mode when it is blank', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([SUMMARY]));
+
+    await listConversations({ fetchImpl }, 50, undefined, { model: '', mode: '', from: undefined, to: undefined });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}?limit=50`,
       expect.objectContaining({ method: 'GET' }),
     );
   });

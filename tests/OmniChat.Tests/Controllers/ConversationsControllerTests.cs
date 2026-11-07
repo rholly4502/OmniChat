@@ -62,7 +62,7 @@ public class ConversationsControllerTests
         var rows = new List<Conversation> { Conversation("first"), Conversation("second") };
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(rows);
 
         var result = await controller.List(limit: 50, search: null, cancellationToken: CancellationToken.None);
@@ -80,7 +80,7 @@ public class ConversationsControllerTests
         var row = Conversation("first", Turn("user", "halo"), Turn("assistant", "jawaban"));
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Conversation> { row });
 
         _repository
@@ -103,7 +103,7 @@ public class ConversationsControllerTests
         var row = Conversation("first");
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<Conversation> { row });
 
         var result = await controller.List(limit: 50, search: null, cancellationToken: CancellationToken.None);
@@ -123,7 +123,7 @@ public class ConversationsControllerTests
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         Assert.Empty(Assert.IsAssignableFrom<IEnumerable<ConversationSummary>>(ok.Value));
         _repository.Verify(
-            r => r.ListConversationsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            r => r.ListConversationsAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -133,13 +133,13 @@ public class ConversationsControllerTests
         var controller = CreateController(ChatAccess.Admin);
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 7, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 7, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await controller.List(limit: 7, search: null, cancellationToken: CancellationToken.None);
 
         _repository.Verify(
-            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 7, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 7, It.IsAny<int>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -488,13 +488,13 @@ public class ConversationsControllerTests
         var controller = CreateController(ChatAccess.Admin);
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), "spotify", It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), "spotify", It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         await controller.List(limit: 50, search: "spotify", cancellationToken: CancellationToken.None);
 
         _repository.Verify(
-            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), "spotify", It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, It.IsAny<int>(), It.IsAny<int>(), "spotify", It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -506,13 +506,13 @@ public class ConversationsControllerTests
         var to = new DateTimeOffset(2026, 10, 31, 0, 0, 0, TimeSpan.Zero);
 
         _repository
-            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 50, It.IsAny<int>(), null, "claude-sonnet", from, to, It.IsAny<CancellationToken>()))
+            .Setup(r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 50, It.IsAny<int>(), null, "claude-sonnet", It.IsAny<string?>(), from, to, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
-        await controller.List(50, model: "claude-sonnet", from: from, to: to, cancellationToken: CancellationToken.None);
+        await controller.List(50, model: "claude-sonnet", mode: "direct", from: from, to: to, cancellationToken: CancellationToken.None);
 
         _repository.Verify(
-            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 50, It.IsAny<int>(), null, "claude-sonnet", from, to, It.IsAny<CancellationToken>()),
+            r => r.ListConversationsAsync(ChatIdentity.AdminUserId, 50, It.IsAny<int>(), null, "claude-sonnet", "direct", from, to, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 

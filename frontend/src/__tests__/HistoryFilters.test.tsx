@@ -12,6 +12,8 @@ function setup(over: Partial<Parameters<typeof HistoryFilters>[0]> = {}) {
     models: MODELS,
     modelFilter: '',
     onModelFilterChange: vi.fn(),
+    modeFilter: '',
+    onModeFilterChange: vi.fn(),
     dateFrom: '',
     dateTo: '',
     onDateFromChange: vi.fn(),
@@ -38,6 +40,22 @@ describe('HistoryFilters', () => {
     expect(props.onModelFilterChange).toHaveBeenCalledWith('claude-sonnet');
   });
 
+  it('renders the mode dropdown with a blank option and the two modes', () => {
+    render(<HistoryFilters {...setup()} />);
+    const select = screen.getByLabelText('Filter mode') as HTMLSelectElement;
+    expect(select.value).toBe('');
+    expect(screen.getByRole('option', { name: 'Semua mode' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Agent' })).toBeTruthy();
+    expect(screen.getByRole('option', { name: 'Direct' })).toBeTruthy();
+  });
+
+  it('reports a mode selection change', () => {
+    const props = setup();
+    render(<HistoryFilters {...props} />);
+    fireEvent.change(screen.getByLabelText('Filter mode'), { target: { value: 'direct' } });
+    expect(props.onModeFilterChange).toHaveBeenCalledWith('direct');
+  });
+
   it('reports start and end date changes', () => {
     const props = setup();
     render(<HistoryFilters {...props} />);
@@ -53,10 +71,11 @@ describe('HistoryFilters', () => {
   });
 
   it('Reset clears every filter at once', () => {
-    const props = setup({ modelFilter: 'claude-sonnet', dateFrom: '2026-11-01', dateTo: '2026-11-30' });
+    const props = setup({ modelFilter: 'claude-sonnet', modeFilter: 'direct', dateFrom: '2026-11-01', dateTo: '2026-11-30' });
     render(<HistoryFilters {...props} />);
     fireEvent.click(screen.getByLabelText('Hapus semua filter'));
     expect(props.onModelFilterChange).toHaveBeenCalledWith('');
+    expect(props.onModeFilterChange).toHaveBeenCalledWith('');
     expect(props.onDateFromChange).toHaveBeenCalledWith('');
     expect(props.onDateToChange).toHaveBeenCalledWith('');
   });

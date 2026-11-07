@@ -886,6 +886,23 @@ describe('Sidebar history model filter (cross-mode)', () => {
   });
 });
 
+describe('Sidebar history mode filter', () => {
+  it('forwards a mode filter change', () => {
+    const onModeFilterChange = vi.fn();
+    renderSidebar({
+      onSearchChange: vi.fn(),
+      search: '',
+      sessions: [],
+      modeFilter: 'direct',
+      onModeFilterChange,
+    });
+    const select = screen.getByLabelText('Filter mode') as HTMLSelectElement;
+    expect(select.value).toBe('direct');
+    fireEvent.change(select, { target: { value: 'agent' } });
+    expect(onModeFilterChange).toHaveBeenCalledWith('agent');
+  });
+});
+
 describe('Sidebar reset parameter', () => {
   it('renders a Reset parameter button when wired and forwards it', () => {
     const onResetPersona = vi.fn();

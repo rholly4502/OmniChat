@@ -43,6 +43,7 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         int offset = 0,
         string? search = null,
         string? model = null,
+        string? mode = null,
         DateTimeOffset? from = null,
         DateTimeOffset? to = null,
         CancellationToken cancellationToken = default)
@@ -73,6 +74,14 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             // potential index on the column useful.
             var modelId = model.Trim();
             query = query.Where(c => c.Model == modelId);
+        }
+
+        if (!string.IsNullOrWhiteSpace(mode))
+        {
+            // Mode is a fixed enum-shaped label ("agent"/"direct"), so an exact match
+            // is correct and keeps a potential index on the column useful.
+            var modeId = mode.Trim();
+            query = query.Where(c => c.Mode == modeId);
         }
 
         if (from.HasValue)

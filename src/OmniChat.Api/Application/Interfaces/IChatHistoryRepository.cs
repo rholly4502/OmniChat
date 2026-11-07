@@ -30,7 +30,8 @@ public interface IChatHistoryRepository
     /// updated first. Returns an empty list rather than <c>null</c> when the user
     /// has no history. When <paramref name="search"/> is non-blank, only
     /// conversations whose title or a contained message matches the term are
-    /// returned. <paramref name="model"/> narrows to a stored model id;
+    /// returned. <paramref name="model"/> narrows to a stored model id and
+    /// <paramref name="mode"/> to the chat mode ("agent" or "direct");
     /// <paramref name="from"/> and <paramref name="to"/> bound the updated-at
     /// window (the latter inclusive).
     /// </summary>
@@ -40,6 +41,7 @@ public interface IChatHistoryRepository
         int offset = 0,
         string? search = null,
         string? model = null,
+        string? mode = null,
         DateTimeOffset? from = null,
         DateTimeOffset? to = null,
         CancellationToken cancellationToken = default);
