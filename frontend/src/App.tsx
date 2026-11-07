@@ -445,6 +445,7 @@ export default function App() {
               onClose={() => setStatsOpen(false)}
               usage={usageSummary}
               modelOptions={historyModels}
+              apiKey={apiKey}
             />
             <ConversationAuditDialog
               open={auditOpen}

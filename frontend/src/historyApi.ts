@@ -215,3 +215,26 @@ export async function getConversationUsage(
   }
   return payload as ConversationUsageSummary;
 }
+
+/**
+ * List *every* stored conversation by paging through the collection (newest
+ * first) until a page returns fewer than `pageSize` items. Used by bulk
+ * exports and any caller that needs the full history, not just the latest
+ * screenful. Purely additive over {@link listConversations}.
+ */
+export async function listAllConversations(
+  options: HistoryRequestOptions = {},
+  search?: string,
+  filters: ConversationListFilters = {},
+  pageSize = 50,
+): Promise<ConversationSummary[]> {
+  const all: ConversationSummary[] = [];
+  let offset = 0;
+  for (;;) {
+    const page = await listConversations(options, pageSize, search, filters, offset);
+    all.push(...page);
+    if (page.length < pageSize) break;
+    offset += page.length;
+  }
+  return all;
+}

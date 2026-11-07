@@ -201,3 +201,58 @@ export function downloadBlob(blob: Blob, filename: string): void {
   a.remove();
   URL.revokeObjectURL(url);
 }
+
+/** One conversation's portable record for a bulk (all-conversations) export. */
+export interface ConversationExportRecord {
+  id: string;
+  title: string;
+  createdAt: string;
+  updatedAt?: string;
+  model?: string;
+  mode?: string;
+  pinned?: boolean;
+  messages: Array<{
+    role: Message['role'];
+    content: string;
+    model?: string;
+    promptTokens?: number;
+    completionTokens?: number;
+  }>;
+}
+
+/**
+ * All conversations as one JSON document (a full-history backup/audit).
+ * Top-level shape mirrors the single-conversation JSON export: each entry
+ * carries its metadata plus the message list with model/token attribution.
+ */
+export function buildAllConversationsJson(records: ConversationExportRecord[]): string {
+  return JSON.stringify({ exportedAt: new Date().toISOString(), conversations: records }, null, 2);
+}
+
+/**
+ * All conversations as a long-format CSV — one row per message across every
+ * conversation. Columns carry the owning conversation title, its created-at
+ * stamp, the message role/content, and model/token attribution where known, so
+ * a spreadsheet can filter, sum and analyse the whole history at once. A
+ * UTF-8 BOM prefixes the document so spreadsheet apps read Indonesian text
+ * correctly.
+ */
+export function buildAllConversationsCsv(records: ConversationExportRecord[]): string {
+  const header = ['percakapan', 'dibuat', 'peran', 'konten', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens'];
+  const rows: string[][] = [header];
+  for (const rec of records) {
+    for (const m of rec.messages) {
+      rows.push([
+        rec.title,
+        rec.createdAt,
+        m.role,
+        m.content,
+        m.model ?? '',
+        String(m.promptTokens ?? 0),
+        String(m.completionTokens ?? 0),
+        String((m.promptTokens ?? 0) + (m.completionTokens ?? 0)),
+      ]);
+    }
+  }
+  return '\uFEFF' + rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
+}

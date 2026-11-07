@@ -5,9 +5,11 @@ import {
   buildConversationJson,
   buildConversationMarkdown,
   buildConversationPdf,
+  buildAllConversationsJson,
+  buildAllConversationsCsv,
   downloadBlob,
 } from '../conversationExport';
-import type { Message } from '../types';
+import type { ConversationExportRecord, Message } from '../types';
 
 const MSGS: Message[] = [
   { role: 'user', content: 'halo' },
@@ -163,5 +165,42 @@ describe('buildConversationCsv per-message attribution', () => {
   it('keeps the classic shape when no per-message usage exists', () => {
     const csv = buildConversationCsv(MSGS);
     expect(csv.trim().split('\r\n')[0]).toBe('role,content');
+  });
+});
+
+
+describe('buildAllConversationsJson / buildAllConversationsCsv', () => {
+  const RECORDS: ConversationExportRecord[] = [
+    {
+      id: 'a',
+      title: 'Percakapan A',
+      createdAt: '2026-11-01T00:00:00Z',
+      model: 'hermes',
+      mode: 'agent',
+      messages: [
+        { role: 'user', content: 'halo' },
+        { role: 'assistant', content: 'hai, ada koma, dan "kutip"', model: 'hermes', promptTokens: 10, completionTokens: 5 },
+      ],
+    },
+    { id: 'b', title: 'B', createdAt: '2026-11-02T00:00:00Z', messages: [] },
+  ];
+
+  it('JSON emits exportedAt plus one entry per conversation with message details', () => {
+    const doc = JSON.parse(buildAllConversationsJson(RECORDS));
+    expect(doc.conversations).toHaveLength(2);
+    expect(doc.conversations[0].title).toBe('Percakapan A');
+    expect(doc.conversations[0].messages[1].promptTokens).toBe(10);
+    expect(doc.conversations[1].messages).toHaveLength(0);
+  });
+
+  it('CSV emits a BOM, a header row and one row per message (empty conversation contributes none)', () => {
+    const csv = buildAllConversationsCsv(RECORDS);
+    expect(csv.startsWith('\uFEFF')).toBe(true);
+    const lines = csv.replace('\uFEFF', '').trim().split('\r\n');
+    expect(lines[0]).toBe('percakapan,dibuat,peran,konten,model,prompt_tokens,completion_tokens,total_tokens');
+    expect(lines).toHaveLength(3); // header + 2 messages
+    expect(lines[2]).toContain('Percakapan A');
+    expect(lines[2]).toContain('hai, ada koma, dan ""kutip""');
+    expect(lines[2]).toMatch(/10,5,15$/);
   });
 });

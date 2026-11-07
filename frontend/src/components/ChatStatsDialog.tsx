@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
-import { downloadBlob } from '../conversationExport';
+import { getConversation, listAllConversations } from '../historyApi';
+import { buildAllConversationsCsv, buildAllConversationsJson, downloadBlob } from '../conversationExport';
+import type { ConversationExportRecord } from '../conversationExport';
 import type { ConversationUsageSummary, ModelOption } from '../types';
 
 /** Props accepted by {@link ChatStatsDialog}. */
@@ -13,6 +16,8 @@ export interface ChatStatsDialogProps {
   usage: ConversationUsageSummary;
   /** Every known model (agent + direct) for id → label resolution. */
   modelOptions?: ModelOption[];
+  /** API key for the authenticated history calls behind the bulk export. */
+  apiKey?: string;
 }
 
 /** RFC 4180 quoting for a single CSV field. */
@@ -52,7 +57,7 @@ function buildStatsCsv(usage: ConversationUsageSummary, modelOptions: ModelOptio
  * "Penggunaan" `<details>` — a real dialog with focus trap, Escape close and
  * body scroll lock, so the numbers are reviewable without scrolling a panel.
  */
-export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStatsDialogProps) {
+export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: ChatStatsDialogProps) {
   const panelRef = useModalDialog(open, onClose, '[data-stats-close]');
 
   const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
@@ -66,6 +71,51 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStat
     const opt = modelOptions?.find((o) => o.id === id);
     return opt ? opt.label : id;
   };
+
+  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  /** Export every stored conversation as one JSON or CSV document. */
+  async function exportAllConversations(format: 'json' | 'csv') {
+    setExporting(format);
+    setExportError(null);
+    try {
+      const summaries = await listAllConversations({ apiKey });
+      const records: ConversationExportRecord[] = [];
+      for (const s of summaries) {
+        try {
+          const d = await getConversation(s.id, { apiKey });
+          records.push({
+            id: d.id,
+            title: d.title,
+            createdAt: d.createdAt,
+            updatedAt: d.updatedAt,
+            model: d.model,
+            mode: d.mode,
+            pinned: d.isPinned,
+            messages: d.messages.map((m) => ({
+              role: m.role,
+              content: m.content,
+              model: m.model,
+              promptTokens: m.promptTokens,
+              completionTokens: m.completionTokens,
+            })),
+          });
+        } catch {
+          // Skip a conversation that fails to load; the rest still export.
+        }
+      }
+      const blob =
+        format === 'json'
+          ? new Blob([buildAllConversationsJson(records)], { type: 'application/json' })
+          : new Blob([buildAllConversationsCsv(records)], { type: 'text/csv;charset=utf-8' });
+      downloadBlob(blob, format === 'json' ? 'semua-percakapan.json' : 'semua-percakapan.csv');
+    } catch {
+      setExportError('Gagal mengekspor semua percakapan.');
+    } finally {
+      setExporting(null);
+    }
+  }
 
   if (!open) return null;
 
@@ -174,6 +224,33 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions }: ChatStat
                 })}
               </tbody>
             </table>
+          )}
+        </div>
+
+        <div className="border-t border-chill-border pt-2 space-y-2">
+          <div className="text-xs text-chill-muted font-medium">Ekspor semua percakapan</div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => exportAllConversations('json')}
+              disabled={exporting !== null}
+              aria-label="Ekspor semua percakapan sebagai JSON"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+            >
+              {exporting === 'json' ? 'Mengekspor…' : 'JSON'}
+            </button>
+            <button
+              type="button"
+              onClick={() => exportAllConversations('csv')}
+              disabled={exporting !== null}
+              aria-label="Ekspor semua percakapan sebagai CSV"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+            >
+              {exporting === 'csv' ? 'Mengekspor…' : 'CSV'}
+            </button>
+          </div>
+          {exportError && (
+            <p className="text-xs text-chill-red" role="alert">{exportError}</p>
           )}
         </div>
       </div>

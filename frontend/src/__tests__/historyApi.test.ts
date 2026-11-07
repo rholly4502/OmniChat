@@ -4,6 +4,7 @@ import {
   deleteConversation,
   getConversation,
   getConversationUsage,
+  listAllConversations,
   listConversations,
   pinConversation,
   renameConversation,
@@ -40,6 +41,38 @@ function emptyResponse(status = 204) {
 function fetchReturning(res: Response) {
   return vi.fn().mockResolvedValue(res) as unknown as typeof fetch;
 }
+
+describe('listAllConversations', () => {
+  it('pages until a page returns fewer than the page size, concatenating results', async () => {
+    const A = { ...SUMMARY };
+    const B = { ...SUMMARY, id: '22222222-2222-2222-2222-222222222222' };
+    const C = { ...SUMMARY, id: '33333333-3333-3333-3333-333333333333' };
+    const page1 = [A, B]; // full page (len == pageSize) => continue
+    const page2 = [C]; // short page => stop
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(page1))
+      .mockResolvedValueOnce(jsonResponse(page2));
+    const rows = await listAllConversations({ fetchImpl }, undefined, undefined, 2);
+    expect(rows).toHaveLength(3);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('limit=2');
+    expect(String(fetchImpl.mock.calls[0][0])).not.toContain('offset=');
+    expect(String(fetchImpl.mock.calls[1][0])).toContain('offset=2');
+  });
+
+  it('stops on an empty page without infinite looping', async () => {
+    const A = { ...SUMMARY };
+    const B = { ...SUMMARY, id: '22222222-2222-2222-2222-222222222222' };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse([A, B]))
+      .mockResolvedValueOnce(jsonResponse([]));
+    const rows = await listAllConversations({ fetchImpl }, undefined, undefined, 2);
+    expect(rows).toHaveLength(2);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+});
 
 describe('listConversations', () => {
   it('requests the collection with the limit appended', async () => {

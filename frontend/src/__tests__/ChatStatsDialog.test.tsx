@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ChatStatsDialog } from '../components/ChatStatsDialog';
 import type { ConversationUsageSummary } from '../types';
 
@@ -110,5 +110,59 @@ describe('ChatStatsDialog CSV export', () => {
     expect(lines.some((l) => l.startsWith('Claude Sonnet,1000,1000,2000,0.018000'))).toBe(true);
     expect(lines.some((l) => l.startsWith('unknown-model,500,250,750,0.001500'))).toBe(true);
     expect(lines[lines.length - 1]).toBe('Total,1000,1000,2000,0.019500');
+  });
+});
+
+
+describe('ChatStatsDialog bulk export', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doMock('../historyApi', () => ({
+      listAllConversations: vi.fn().mockResolvedValue([
+        { id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-01T00:00:00Z', mode: 'agent', model: 'hermes', isPinned: false },
+        { id: 'c2', title: 'B', createdAt: '2026-11-02T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z', mode: 'direct', model: 'gpt', isPinned: false },
+      ]),
+      getConversation: vi.fn().mockImplementation((id: string) =>
+        Promise.resolve(
+          id === 'c1'
+            ? {
+                id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-01T00:00:00Z', mode: 'agent', model: 'hermes', isPinned: false,
+                messages: [{ id: 'm1', role: 'user' as const, content: 'halo', createdAt: '2026-11-01T00:00:00Z' }],
+              }
+            : {
+                id: 'c2', title: 'B', createdAt: '2026-11-02T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z', mode: 'direct', model: 'gpt', isPinned: false,
+                messages: [{ id: 'm2', role: 'assistant' as const, content: 'hai', createdAt: '2026-11-02T00:00:00Z', model: 'gpt', promptTokens: 4, completionTokens: 6 }],
+              },
+        ),
+      ),
+    }));
+    vi.doMock('../conversationExport', () => ({
+      downloadBlob,
+      buildAllConversationsJson: (r: unknown[]) => JSON.stringify({ conversations: r }),
+      buildAllConversationsCsv: () => 'csv-data',
+    }));
+  });
+
+  it('exports all conversations as JSON, fetching each detail once', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor semua percakapan sebagai JSON' }));
+    const before = downloadBlob.mock.calls.length;
+    await waitFor(() => expect(downloadBlob.mock.calls.length).toBe(before + 1));
+    const [blob, filename] = downloadBlob.mock.calls[before];
+    expect(filename).toBe('semua-percakapan.json');
+    const parsed = JSON.parse(await (blob as Blob).text());
+    expect(parsed.conversations).toHaveLength(2);
+    expect(parsed.conversations[1].messages[0].completionTokens).toBe(6);
+  });
+
+  it('exports all conversations as CSV', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor semua percakapan sebagai CSV' }));
+    const before = downloadBlob.mock.calls.length;
+    await waitFor(() => expect(downloadBlob.mock.calls.length).toBe(before + 1));
+    const [, filename] = downloadBlob.mock.calls[before];
+    expect(filename).toBe('semua-percakapan.csv');
   });
 });
