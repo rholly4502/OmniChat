@@ -136,7 +136,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-chill-bg/60"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-chill-bg/60 pixel-overlay-fade"
       onClick={onClose}
       role="presentation"
     >
@@ -146,7 +146,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
         aria-modal="true"
         aria-label={`Audit percakapan ${session.title}`}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl max-h-[85vh] overflow-y-auto bg-chill-surface border border-chill-border pixel-shadow p-4 space-y-3"
+        className="w-full max-w-xl max-h-[85vh] overflow-y-auto bg-chill-surface border border-chill-border pixel-shadow p-4 space-y-3 pixel-reveal"
       >
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-chill-text pixel-heading truncate">Audit · {session.title}</h2>
