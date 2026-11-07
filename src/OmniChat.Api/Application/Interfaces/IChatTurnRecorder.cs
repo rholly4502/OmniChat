@@ -1,3 +1,5 @@
+using OmniChat.Domain.Models;
+
 namespace OmniChat.Application.Interfaces;
 
 /// <summary>
@@ -14,7 +16,8 @@ public sealed record ChatTurn(
     string UserId,
     string Mode,
     string Model,
-    string UserContent);
+    string UserContent,
+    ChatRewind? Rewind = null);
 
 /// <summary>
 /// Records chat turns into conversation history. Separate from

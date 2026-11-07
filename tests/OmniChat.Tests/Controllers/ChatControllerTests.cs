@@ -624,4 +624,62 @@ public class ChatControllerTests
         yield return string.Empty; // satisfy async-iterator requirement
         throw new InvalidOperationException(exceptionMessage);
     }
+
+    [Fact]
+    public async Task StreamChat_EditRewind_WithoutMessageId_Returns400()
+    {
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            ConversationId = Guid.CreateVersion7(),
+            Rewind = new ChatRewind { Type = "edit" },
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, _controller.Response.StatusCode);
+        Assert.Equal("application/problem+json", _controller.Response.ContentType);
+    }
+
+    [Fact]
+    public async Task StreamChat_RegenerateRewind_CarryingEditFields_Returns400()
+    {
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            ConversationId = Guid.CreateVersion7(),
+            Rewind = new ChatRewind { Type = "regenerate", MessageId = Guid.CreateVersion7(), Content = "x" },
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status400BadRequest, _controller.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task StreamChat_RegenerateRewind_ForwardsRewindToTheRecorder()
+    {
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(AsyncEnumerable.Empty<string>());
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Guid.CreateVersion7());
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            ConversationId = Guid.CreateVersion7(),
+            Rewind = new ChatRewind { Type = "regenerate" },
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.StartTurnAsync(It.Is<ChatTurn>(t => t.Rewind != null && t.Rewind.Type == "regenerate"), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 }

@@ -154,6 +154,20 @@ describe('streamChat', () => {
     expect('conversationId' in JSON.parse(init.body as string)).toBe(false);
   });
 
+  it('sends a rewind instruction when one is supplied', async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(['data: [DONE]\n\n']));
+    await collect({ ...base, rewind: { type: 'edit', messageId: 'msg-0', content: 'x' }, fetchImpl: fetchImpl as unknown as typeof fetch });
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(JSON.parse(init.body as string).rewind).toEqual({ type: 'edit', messageId: 'msg-0', content: 'x' });
+  });
+
+  it('omits the rewind field when none is provided', async () => {
+    const fetchImpl = vi.fn(async () => streamResponse(['data: [DONE]\n\n']));
+    await collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch });
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect('rewind' in JSON.parse(init.body as string)).toBe(false);
+  });
+
   it('throws ApiError carrying the status and Retry-After on 429', async () => {
     const fetchImpl = vi.fn(async () => streamResponse([], { status: 429, retryAfter: '42' }));
     await expect(collect({ ...base, fetchImpl: fetchImpl as unknown as typeof fetch })).rejects.toMatchObject({

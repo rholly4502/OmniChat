@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import type { Message, TokenUsage } from '../types';
+import type { ChatRewind, Message, TokenUsage } from '../types';
 import { streamChat, ApiError, type StreamChunk, type StreamChatOptions } from '../api';
 import { estimateTokens } from '../tokenCost';
 
@@ -201,7 +201,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
    * never by the caller.
    */
   const runTurn = useCallback(
-    async (history: Message[]) => {
+    async (history: Message[], rewind?: ChatRewind) => {
       if (streaming) return;
 
       const outgoingMessages: Message[] = [];
@@ -237,6 +237,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
           temperature,
           maxTokens,
           conversationId: conversationIdRef.current,
+          ...(rewind ? { rewind } : {}),
           signal: ctrl.signal,
         })) {
           if (chunk.conversationId) {
@@ -367,7 +368,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
       // There must be a user turn to re-answer.
       const tail = history[history.length - 1];
       if (!tail || tail.role !== 'user') return;
-      await runTurn(history);
+      await runTurn(history, conversationIdRef.current ? { type: 'regenerate' } : undefined);
     },
     [messages, streaming, runTurn, subtractUsage]
   );
@@ -390,7 +391,11 @@ export function useChat(options: UseChatOptions): UseChatResult {
         }
       }
       if (dropped.promptTokens > 0 || dropped.completionTokens > 0) subtractUsage(dropped);
-      await runTurn([...messages.slice(0, index), { role: 'user', content: newContent, createdAt: Date.now() }]);
+      const rewind: ChatRewind | undefined =
+        conversationIdRef.current && target.id
+          ? { type: 'edit', messageId: target.id, content: newContent }
+          : undefined;
+      await runTurn([...messages.slice(0, index), { role: 'user', content: newContent, createdAt: Date.now() }], rewind);
     },
     [messages, streaming, runTurn, subtractUsage]
   );

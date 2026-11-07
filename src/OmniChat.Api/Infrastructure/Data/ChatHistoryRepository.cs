@@ -150,6 +150,63 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return message;
     }
 
+    public async Task<bool> DeleteTrailingAssistantAsync(Guid conversationId, string userId, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var conversation = await db.Conversations
+            .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
+            .SingleOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId, cancellationToken);
+
+        if (conversation is null) return false;
+
+        var last = conversation.Messages.LastOrDefault();
+        if (last is null || last.Role != "assistant") return true; // nothing to trim
+
+        db.Messages.Remove(last);
+        conversation.PromptTokens = (int)Math.Max(0, (long)conversation.PromptTokens - last.PromptTokens);
+        conversation.CompletionTokens = (int)Math.Max(0, (long)conversation.CompletionTokens - last.CompletionTokens);
+        conversation.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> RewriteMessageAsync(Guid conversationId, string userId, Guid messageId, string newContent, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var conversation = await db.Conversations
+            .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
+            .SingleOrDefaultAsync(c => c.Id == conversationId && c.UserId == userId, cancellationToken);
+
+        if (conversation is null) return false;
+
+        var ordered = conversation.Messages.ToList();
+        var index = ordered.FindIndex(m => m.Id == messageId);
+        if (index < 0) return false;
+
+        var target = ordered[index];
+        target.Content = newContent;
+        target.PromptTokens = 0;
+        target.CompletionTokens = 0;
+        target.Model = null;
+
+        long droppedPrompt = 0;
+        long droppedCompletion = 0;
+        for (var i = index + 1; i < ordered.Count; i++)
+        {
+            droppedPrompt += ordered[i].PromptTokens;
+            droppedCompletion += ordered[i].CompletionTokens;
+            db.Messages.Remove(ordered[i]);
+        }
+
+        conversation.PromptTokens = (int)Math.Max(0, (long)conversation.PromptTokens - droppedPrompt);
+        conversation.CompletionTokens = (int)Math.Max(0, (long)conversation.CompletionTokens - droppedCompletion);
+        conversation.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     public async Task<bool> RenameConversationAsync(Guid id, string userId, string title, CancellationToken cancellationToken = default)
     {
         RequireOwner(userId);

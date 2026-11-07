@@ -1,5 +1,5 @@
 import { API_URL } from './constants';
-import type { ChatRequestBody, TokenUsage } from './types';
+import type { ChatRequestBody, ChatRewind, TokenUsage } from './types';
 
 /** A streamed piece of an assistant reply. */
 export interface StreamChunk {
@@ -90,6 +90,8 @@ export interface StreamChatOptions {
   maxTokens?: number;
   /** Existing conversation to continue; omit to start a new one. */
   conversationId?: string | null;
+  /** Optional rewind (regenerate / edit) instead of a plain append. */
+  rewind?: ChatRewind;
   signal?: AbortSignal;
   /** Inject a fetch implementation for tests; defaults to the global fetch. */
   fetchImpl?: typeof fetch;
@@ -103,7 +105,7 @@ export interface StreamChatOptions {
  * for a missing response body; rethrows the original error on abort.
  */
 export async function* streamChat(options: StreamChatOptions): AsyncGenerator<StreamChunk> {
-  const { model, useHermesBridge, messages, apiKey, temperature, maxTokens, conversationId, signal, fetchImpl } = options;
+  const { model, useHermesBridge, messages, apiKey, temperature, maxTokens, conversationId, rewind, signal, fetchImpl } = options;
   const doFetch = fetchImpl ?? fetch;
 
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -112,6 +114,7 @@ export async function* streamChat(options: StreamChatOptions): AsyncGenerator<St
   // Omitted rather than sent as null when absent: the server treats a missing id as "new thread".
   const body: ChatRequestBody = { model, useHermesBridge, messages, temperature, maxTokens };
   if (conversationId) body.conversationId = conversationId;
+  if (rewind) body.rewind = rewind;
 
   const res = await doFetch(API_URL, {
     method: 'POST',

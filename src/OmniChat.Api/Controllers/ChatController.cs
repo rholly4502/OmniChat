@@ -68,6 +68,22 @@ public sealed class ChatController : ControllerBase
     [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task StreamChat([FromBody] ChatRequest request, CancellationToken cancellationToken)
     {
+        // Rewind cross-field rules beyond the attribute checks: an "edit" must name a message
+        // and supply replacement content, and a "regenerate" must carry neither. Attribute
+        // validation already covers the type enum itself.
+        if (request.Rewind is { } rw && (rw.Type == "edit" || rw.Type == "regenerate"))
+        {
+            var invalid = rw.Type == "edit"
+                ? !rw.MessageId.HasValue || string.IsNullOrWhiteSpace(rw.Content)
+                : rw.MessageId.HasValue || !string.IsNullOrWhiteSpace(rw.Content);
+            if (invalid)
+            {
+                ModelState.AddModelError(nameof(ChatRequest.Rewind), rw.Type == "edit"
+                    ? "Edit rewind requires messageId and content."
+                    : "Regenerate rewind must not carry messageId or content.");
+            }
+        }
+
         // [ApiController] + ApiBehaviorOptions handle invalid model state automatically
         // in the MVC pipeline. This manual check provides defense-in-depth and makes
         // the controller unit-testable (action filters don't run in direct unit tests).
@@ -106,7 +122,8 @@ public sealed class ChatController : ControllerBase
                 userId,
                 request.UseHermesBridge ? "agent" : "direct",
                 request.Model,
-                LastUserPrompt(request)),
+                LastUserPrompt(request),
+                request.Rewind),
             cancellationToken);
 
         if (conversationId is Guid started)

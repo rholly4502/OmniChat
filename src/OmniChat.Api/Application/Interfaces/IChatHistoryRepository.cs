@@ -59,6 +59,20 @@ public interface IChatHistoryRepository
     /// belong to <paramref name="userId"/>.
     /// </summary>
     Task<Message> AppendMessageAsync(Guid conversationId, string userId, Message message, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Removes the trailing assistant reply of a conversation, leaving the user turn that
+    /// prompted it intact. Used by regenerate. Returns <c>false</c> when the conversation is not
+    /// found or not owned; <c>true</c> when there is nothing to remove or the removal succeeded.
+    /// </summary>
+    Task<bool> DeleteTrailingAssistantAsync(Guid conversationId, string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Rewrites a stored user message and deletes every message newer than it. Used by
+    /// edit-and-resend so a reload shows the edited transcript, not the discarded old turns.
+    /// Returns <c>false</c> when the conversation or message is not found / not owned.
+    /// </summary>
+    Task<bool> RewriteMessageAsync(Guid conversationId, string userId, Guid messageId, string newContent, CancellationToken cancellationToken = default);
+
 
     /// <summary>Renames a conversation. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> RenameConversationAsync(Guid id, string userId, string title, CancellationToken cancellationToken = default);

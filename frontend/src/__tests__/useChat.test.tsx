@@ -907,6 +907,75 @@ describe('useChat live streaming estimate', () => {
     await act(async () => { await pending; });
     expect(result.current.streamingEstimate).toBe(0);
   });
+
+  it('regenerate sends a rewind instruction when continuing a server conversation', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    await act(async () => {
+      result.current.loadMessages([{ role: 'user', content: 'q' }], 'server-conv-id');
+    });
+    await act(async () => { await result.current.regenerate(); });
+
+    expect(captured?.rewind).toEqual({ type: 'regenerate' });
+  });
+
+  it('regenerate omits the rewind instruction on a local thread without a server id', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    await act(async () => { await result.current.send('q'); });
+    await act(async () => { await result.current.regenerate(); });
+
+    expect(captured?.rewind).toBeUndefined();
+  });
+
+  it('editAndResend sends an edit rewind with the target message id when editing a stored turn', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    await act(async () => {
+      result.current.loadMessages(
+        [{ role: 'user', content: 'q1', id: 'msg-0' }, { role: 'assistant', content: 'a', id: 'msg-1' }],
+        'server-conv-id',
+      );
+    });
+    await act(async () => { await result.current.editAndResend(0, 'q1-edited'); });
+
+    expect(captured?.rewind).toEqual({ type: 'edit', messageId: 'msg-0', content: 'q1-edited' });
+  });
+
+  it('editAndResend omits the rewind when the edited message has no server id', async () => {
+    let captured: StreamChatOptions | undefined;
+    const { result } = setup({
+      streamImpl: (options) => {
+        captured = options;
+        return streamOf([{ content: 'ok' }])(options);
+      },
+    });
+
+    await act(async () => {
+      result.current.loadMessages([{ role: 'user', content: 'q1' }], 'server-conv-id');
+    });
+    await act(async () => { await result.current.editAndResend(0, 'q1-edited'); });
+
+    expect(captured?.rewind).toBeUndefined();
+  });
 });
 
 /** Aborts before yielding anything, so `send` leaves no partial reply. */

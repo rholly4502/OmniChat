@@ -68,6 +68,16 @@ export interface TokenUsage {
   completionTokens: number;
 }
 
+/** Rewind instruction for a stored conversation (server-side regenerate / edit). */
+export interface ChatRewind {
+  /** "regenerate" re-runs the last turn; "edit" rewrites a past user turn. */
+  type: 'regenerate' | 'edit';
+  /** For "edit": server id of the user message being rewritten. */
+  messageId?: string;
+  /** For "edit": replacement content for that user message. */
+  content?: string;
+}
+
 export interface ChatRequestBody {
   model: string;
   useHermesBridge: boolean;
@@ -76,6 +86,8 @@ export interface ChatRequestBody {
   maxTokens?: number;
   /** Backend conversation to append to; omitted for a new thread. */
   conversationId?: string | null;
+  /** Optional rewind (regenerate / edit) instead of a plain append. */
+  rewind?: ChatRewind;
 }
 
 export interface ChatSession {

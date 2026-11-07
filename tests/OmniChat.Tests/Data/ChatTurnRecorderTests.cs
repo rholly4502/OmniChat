@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Data;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Tests.Data;
 
@@ -291,5 +292,52 @@ public sealed class ChatTurnRecorderTests : IDisposable
 
         var stored = await _repository.GetConversationAsync(id!.Value, Admin);
         Assert.Equal("hermes-default", stored!.Model);
+    }
+
+    private static ChatTurn NewRegenerateTurn(Guid conversationId) =>
+        new(conversationId, Admin, "agent", "hermes-default", "kedua", new ChatRewind { Type = "regenerate" });
+
+    private static ChatTurn NewEditTurn(Guid conversationId, Guid messageId, string content) =>
+        new(conversationId, Admin, "agent", "hermes-default", content, new ChatRewind { Type = "edit", MessageId = messageId, Content = content });
+
+    [Fact]
+    public async Task StartTurn_Regenerate_DoesNotAppendADuplicateUserTurn_AndTrimsTheLastAssistant()
+    {
+        var id = await _recorder.StartTurnAsync(NewTurn("pertama"));
+        await _recorder.CompleteTurnAsync(id!.Value, Admin, "jawaban satu");
+        await _recorder.StartTurnAsync(NewTurn("kedua", id));
+        await _recorder.CompleteTurnAsync(id.Value, Admin, "jawaban dua");
+
+        await _recorder.StartTurnAsync(NewRegenerateTurn(id.Value));
+
+        var stored = await _repository.GetConversationAsync(id!.Value, Admin);
+        Assert.Equal(["pertama", "jawaban satu", "kedua"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task StartTurn_Edit_RewritesTheTargetUserTurn_AndDropsEverythingNewer()
+    {
+        var id = await _recorder.StartTurnAsync(NewTurn("pertama"));
+        await _recorder.CompleteTurnAsync(id!.Value, Admin, "jawaban satu");
+        var secondRun = await _recorder.StartTurnAsync(NewTurn("kedua", id));
+        await _recorder.CompleteTurnAsync(id.Value, Admin, "jawaban dua");
+
+        var target = (await _repository.GetConversationAsync(id!.Value, Admin))!.Messages.First(m => m.Content == "kedua");
+
+        await _recorder.StartTurnAsync(NewEditTurn(id.Value, target.Id, "kedua suntingan"));
+
+        var stored = await _repository.GetConversationAsync(id!.Value, Admin);
+        Assert.Equal(["pertama", "jawaban satu", "kedua suntingan"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task StartTurn_RewindOnAnUnknownConversation_CreatesNothing()
+    {
+        var unknown = Guid.CreateVersion7();
+
+        var id = await _recorder.StartTurnAsync(NewRegenerateTurn(unknown));
+
+        Assert.Equal(unknown, id);
+        Assert.Equal(0, await _db.Conversations.CountAsync());
     }
 }

@@ -568,4 +568,134 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.Equal(0, summary.TotalUpFeedback);
         Assert.Equal(0, summary.TotalDownFeedback);
     }
+
+    private async Task<(Guid conv, Message firstUser)> SeedTwoTurnsAsync()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+        var firstUser = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "pertama" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "jawaban satu" });
+        var secondUser = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "kedua" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "jawaban dua" });
+        return (conv.Id, firstUser);
+    }
+
+    [Fact]
+    public async Task DeleteTrailingAssistant_removes_only_the_last_assistant_reply()
+    {
+        var (conv, _) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.DeleteTrailingAssistantAsync(conv, "admin");
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(["pertama", "jawaban satu", "kedua"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task DeleteTrailingAssistant_leaves_a_user_terminated_transcript_untouched()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "pertama" });
+
+        var ok = await _repository.DeleteTrailingAssistantAsync(conv.Id, "admin");
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv.Id, "admin");
+        Assert.Equal(["pertama"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task DeleteTrailingAssistant_refuses_a_conversation_owned_by_another_user()
+    {
+        var (conv, _) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.DeleteTrailingAssistantAsync(conv, "guest");
+
+        Assert.False(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(4, stored!.Messages.Count);
+    }
+
+    [Fact]
+    public async Task RewriteMessage_updates_the_target_and_drops_everything_newer()
+    {
+        var (conv, firstUser) = await SeedTwoTurnsAsync();
+        var target = (await _repository.GetConversationAsync(conv, "admin"))!.Messages.First(m => m.Content == "kedua");
+
+        var ok = await _repository.RewriteMessageAsync(conv, "admin", target.Id, "kedua suntingan");
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(["pertama", "jawaban satu", "kedua suntingan"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task RewriteMessage_mid_conversation_removes_all_following_turns()
+    {
+        var (conv, firstUser) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.RewriteMessageAsync(conv, "admin", firstUser.Id, "pertama suntingan");
+
+        Assert.True(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(["pertama suntingan"], stored!.Messages.Select(m => m.Content).ToArray());
+    }
+
+    [Fact]
+    public async Task RewriteMessage_refuses_a_conversation_owned_by_another_user()
+    {
+        var (conv, firstUser) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.RewriteMessageAsync(conv, "guest", firstUser.Id, "disuntik");
+
+        Assert.False(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(4, stored!.Messages.Count);
+    }
+
+    [Fact]
+    public async Task RewriteMessage_returns_false_for_an_unknown_message_id()
+    {
+        var (conv, _) = await SeedTwoTurnsAsync();
+
+        var ok = await _repository.RewriteMessageAsync(conv, "admin", Guid.CreateVersion7(), "apa pun");
+
+        Assert.False(ok);
+        var stored = await _repository.GetConversationAsync(conv, "admin");
+        Assert.Equal(4, stored!.Messages.Count);
+    }
+
+    [Fact]
+    public async Task DeleteTrailingAssistant_reduces_the_conversation_usage_by_the_removed_reply()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "q" });
+        var reply = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "a", PromptTokens = 40, CompletionTokens = 10 });
+        await _repository.AddConversationUsageAsync(conv.Id, "admin", 40, 10);
+
+        await _repository.DeleteTrailingAssistantAsync(conv.Id, "admin");
+
+        var stored = await _repository.GetConversationAsync(conv.Id, "admin");
+        Assert.Equal(0, stored!.PromptTokens);
+        Assert.Equal(0, stored.CompletionTokens);
+    }
+
+    [Fact]
+    public async Task RewriteMessage_reduces_the_conversation_usage_by_the_discarded_turns()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "A" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "a1", PromptTokens = 40, CompletionTokens = 10 });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "user", Content = "B" });
+        await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "b1", PromptTokens = 50, CompletionTokens = 20 });
+        await _repository.AddConversationUsageAsync(conv.Id, "admin", 90, 30);
+
+        var target = (await _repository.GetConversationAsync(conv.Id, "admin"))!.Messages.First(m => m.Content == "B");
+
+        await _repository.RewriteMessageAsync(conv.Id, "admin", target.Id, "B-edited");
+
+        var stored = await _repository.GetConversationAsync(conv.Id, "admin");
+        Assert.Equal(40, stored!.PromptTokens);
+        Assert.Equal(10, stored.CompletionTokens);
+    }
 }

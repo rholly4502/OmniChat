@@ -27,6 +27,34 @@ public sealed class ChatTurnRecorder(
         {
             if (turn.ConversationId is Guid existing)
             {
+                // Rewind (regenerate / edit) rewrites the stored conversation instead of appending
+                // a fresh turn, so a reload shows what the client shows — not the discarded old
+                // turns piling up again. Best-effort like every other write here: a failure must
+                // not cost the stream. The rewind is skipped entirely when there is no existing
+                // thread (a new conversation has nothing to rewrite).
+                if (turn.Rewind is { } rewind)
+                {
+                    var applied = rewind.Type switch
+                    {
+                        "regenerate" => await repository.DeleteTrailingAssistantAsync(existing, turn.UserId, cancellationToken),
+                        "edit" when rewind.MessageId is Guid mid => await repository.RewriteMessageAsync(
+                            existing, turn.UserId, mid, rewind.Content ?? "", cancellationToken),
+                        _ => false,
+                    };
+
+                    // The model switch still applies to the rewind (resuming with the last-used model).
+                    try
+                    {
+                        await repository.SetConversationModelAsync(existing, turn.UserId, turn.Model, cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogDebug(ex, "Conversation model switch could not be persisted.");
+                    }
+
+                    return existing;
+                }
+
                 await repository.AppendMessageAsync(
                     existing, turn.UserId, NewMessage("user", turn.UserContent), cancellationToken);
 
