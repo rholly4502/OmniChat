@@ -466,5 +466,41 @@
     "catatan": "Full-time, 1-3 thn; gaji menarik (10-15jt); via konsultan HR.",
     "status": "new",
     "ditemukan": "2026-11-07"
+  },
+  {
+    "id": "6c23fd364e",
+    "judul": "Junior Full Stack Developer (.NET)",
+    "perusahaan": "PT Accelist Lentera Indonesia",
+    "lokasi": "West Jakarta (onsite)",
+    "tipe": "Kontrak",
+    "gaji": "Rp 10-15jt/bulan",
+    "link": "https://freehire.me/jobs/junior-full-stack-developer-net-pt-accelist-lentera-indonesia-mkkeir5r",
+    "catatan": "Junior, kontrak 6 bulan; stack .NET Core + React/Angular + SQL Server/PostgreSQL; pas level 1+ thn.",
+    "status": "new",
+    "ditemukan": "2026-11-08"
+  },
+  {
+    "id": "5b5275519a",
+    "judul": ".Net Developer",
+    "perusahaan": "PT Pro Sigmaka Mandiri",
+    "lokasi": "Jakarta Selatan (onsite)",
+    "tipe": "Kontrak",
+    "gaji": "Rp 6,8-10,2jt/bulan",
+    "link": "https://glints.com/id/opportunities/jobs/net-developer/50c8a4a9-f2f3-4c7d-8d34-60ec619b767a",
+    "catatan": "Kontrak 1-3 thn; .NET Core/ASP.NET Core + SQL Server + REST API; pas Rholly.",
+    "status": "new",
+    "ditemukan": "2026-11-08"
+  },
+  {
+    "id": "2f49ee12a2",
+    "judul": ".NET DEVELOPER",
+    "perusahaan": "PT Astra Graphia Tbk",
+    "lokasi": "Jakarta",
+    "tipe": "FTE",
+    "gaji": "Tidak dicantumkan",
+    "link": "https://career.astragraphia.co.id/jobs/44",
+    "catatan": "Min 1 thn; C#/ASP.Net/MVC + MS SQL stored procedure + SSRS; dalam grup Astra (Rholly kini via vendor di Astra).",
+    "status": "new",
+    "ditemukan": "2026-11-08"
   }
 ]
