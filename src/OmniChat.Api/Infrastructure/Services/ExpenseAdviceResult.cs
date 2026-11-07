@@ -46,6 +46,17 @@ public sealed record Pace(
     long Delta,
     double? PercentChange);
 
+/// <summary>What the user can still afford per day for the rest of the month,
+/// given what has already been spent. The actionable counterpart to the static
+/// daily budget (which assumes a uniform spend from day 1 — rarely true once a
+/// lumpy bill like sewa kos lands early).</summary>
+public sealed record RemainingAllowance(
+    long Anggaran,
+    long SpentSoFar,
+    long RemainingBudget,
+    int DaysLeft,
+    long PerDayAllowance);
+
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.
 /// </summary>
@@ -61,4 +72,5 @@ public sealed record ExpenseAdvice(
     Projection Projection,
     Pace Pace,
     PcGoal PcGoal,
-    DailySuggestions Daily);
+    DailySuggestions Daily,
+    RemainingAllowance RemainingAllowance);

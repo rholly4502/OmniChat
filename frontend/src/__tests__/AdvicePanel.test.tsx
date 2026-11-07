@@ -29,6 +29,13 @@ const advicePayload = {
     delta: 70000,
     percentChange: 28.0,
   },
+  remainingAllowance: {
+    anggaran: 520000,
+    spentSoFar: 320000,
+    remainingBudget: 200000,
+    daysLeft: 1,
+    perDayAllowance: 200000,
+  },
   pcGoal: {
     parts: [
       { name: 'VGA', price: 3500000 },
@@ -370,3 +377,33 @@ describe('analyseDate (WIB, UTC+7)', () => {
   });
 });
 
+
+describe('AdvicePanel remaining-budget envelope (eval)', () => {
+  it('renders the remaining allowance with a per-day figure for the days left', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+
+    await waitFor(() => expect(screen.getByText('Sisa anggaran')).toBeInTheDocument());
+    // Non-breaking spaces from formatRupiah collapse to a normal space; match loosely.
+    expect(screen.getByText((c: string) => c.includes('Terpakai') && c.includes('520.000'))).toBeInTheDocument();
+    expect(screen.getByText((c: string) => c.includes('200.000') && c.includes('/hari'))).toBeInTheDocument();
+    expect(screen.getByText((c: string) => c.includes('hari terakhir'))).toBeInTheDocument();
+  });
+
+  it('warns when the budget is already exceeded (zero remaining allowance)', async () => {
+    const over = {
+      ...advicePayload,
+      remainingAllowance: { anggaran: 520000, spentSoFar: 600000, remainingBudget: 0, daysLeft: 5, perDayAllowance: 0 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(over)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+
+    await waitFor(() =>
+      expect(screen.getByText((c: string) => c.includes('Anggaran sudah terlampaui'))).toBeInTheDocument(),
+    );
+  });
+});

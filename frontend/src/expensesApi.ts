@@ -286,6 +286,22 @@ export interface PaceDto {
   percentChange: number | null;
 }
 
+/** Remaining per-day envelope for the rest of the month (anggaran minus what is
+    already spent, divided by the days left). The actionable counterpart to the
+    static dailyBudget, which assumes a uniform spend from day 1. */
+export interface RemainingAllowanceDto {
+  /** Monthly budget (anggaran) in rupiah. */
+  anggaran: number;
+  /** Cumulative non-Nabung spend so far this month. */
+  spentSoFar: number;
+  /** max(0, anggaran - spentSoFar). */
+  remainingBudget: number;
+  /** Days remaining in the month (>= 1). */
+  daysLeft: number;
+  /** floor(remainingBudget / daysLeft) — affordable per day from tomorrow. */
+  perDayAllowance: number;
+}
+
 /** Analisa & Saran report from `GET /api/expenses/advice`. */
 export interface ExpenseAdvice {
   /** YYYY-MM-DD (WIB). */
@@ -300,6 +316,7 @@ export interface ExpenseAdvice {
   categoryTrend: CategoryTrendItem[];
   projection: ProjectionDto;
   pace: PaceDto;
+  remainingAllowance: RemainingAllowanceDto;
   pcGoal: PcGoalDto;
   daily: DailySuggestionsDto;
 }

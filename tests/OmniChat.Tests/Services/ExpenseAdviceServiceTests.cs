@@ -575,4 +575,67 @@ public sealed class ExpenseAdviceServiceTests
             Assert.True(advice.Daily.BiayaMin <= advice.Daily.BiayaMax, $"BiayaMin > BiayaMax on day {i}");
         }
     }
+
+    [Fact]
+    public async Task RemainingAllowance_computesPerDayEnvelopeForRestOfMonth()
+    {
+        // After an early lumpy bill (sewa kos), the static daily budget overstates what is
+        // affordable. What matters is what is left divided by the days remaining. A Nabung
+        // deposit must not reduce the remaining budget (it is not spending).
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 6);
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "kos"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Makan", 53_000, "m1"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 2), "Makan", 30_000, "m2"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Transport", 160_000, "t1"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 4), "Makan", 72_000, "m3"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 5), "Makan", 50_000, "m4"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 6), "Makan", 183_000, "m5"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 6), "Nabung", 200_000, "save"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        // Non-Nabung through day 6 = 1.3M + 53k + 30k + 160k + 72k + 50k + 183k = 1.848M.
+        Assert.Equal(1_848_000, advice.RemainingAllowance.SpentSoFar);
+        Assert.Equal(2_052_000, advice.RemainingAllowance.RemainingBudget); // 3.9M - 1.848M
+        Assert.Equal(24, advice.RemainingAllowance.DaysLeft);              // 30 - 6
+        Assert.Equal(85_500, advice.RemainingAllowance.PerDayAllowance);   // floor(2_052_000 / 24)
+    }
+
+    [Fact]
+    public async Task RemainingAllowance_zeroWhenSpentBeyondBudget()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 10);
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Belanja", 4_000_000, "big"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(0, advice.RemainingAllowance.RemainingBudget);
+        Assert.Equal(0, advice.RemainingAllowance.PerDayAllowance);
+    }
+
+    [Fact]
+    public async Task RemainingAllowance_lastDayStillYieldsAtLeastOneDay()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 30);
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 15), "Makan", 1_000_000, "m"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(1, advice.RemainingAllowance.DaysLeft);
+        Assert.Equal(2_900_000, advice.RemainingAllowance.RemainingBudget);
+        Assert.Equal(2_900_000, advice.RemainingAllowance.PerDayAllowance);
+    }
 }
+

@@ -183,6 +183,42 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 </StatusCallout>
               )}
 
+              {advice.remainingAllowance.anggaran > 0 && (
+                <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 pixel-shadow-sm">
+                  <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                  <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Sisa anggaran</h4>
+                    <span className={`text-sm font-semibold tabular-nums ${advice.remainingAllowance.remainingBudget > 0 ? 'text-chill-accent' : 'text-chill-red'}`}>
+                      {formatRupiah(advice.remainingAllowance.remainingBudget)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-chill-muted tabular-nums">
+                    Terpakai {formatRupiah(advice.remainingAllowance.spentSoFar)} dari {formatRupiah(advice.remainingAllowance.anggaran)}
+                  </p>
+                  <p className={`mt-1.5 text-sm tabular-nums ${advice.remainingAllowance.perDayAllowance > 0 ? 'text-chill-text' : 'text-chill-red font-medium'}`}>
+                    {advice.remainingAllowance.perDayAllowance > 0 ? (
+                      <>
+                        ±{formatRupiah(advice.remainingAllowance.perDayAllowance)}/hari{' '}
+                        {advice.remainingAllowance.daysLeft === 1
+                          ? 'di sisa hari terakhir bulan ini'
+                          : `untuk ${advice.remainingAllowance.daysLeft} hari ke depan`}
+                      </>
+                    ) : (
+                      <>Anggaran sudah terlampaui — fokus kurangi pengeluaran hari ini.</>
+                    )}
+                  </p>
+                  <div className="mt-2">
+                    <PixelProgress
+                      percent={(advice.remainingAllowance.spentSoFar / Math.max(1, advice.remainingAllowance.anggaran)) * 100}
+                      tone={advice.remainingAllowance.remainingBudget > 0 ? 'accent' : 'red'}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 space-y-2 pixel-shadow-sm">
                 <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
                 <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />

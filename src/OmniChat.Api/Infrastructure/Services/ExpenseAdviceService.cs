@@ -115,6 +115,14 @@ public sealed class ExpenseAdviceService(
         // eating has already run past the planned frugal range.
         var foodSpend = rows.Where(r => r.Tanggal == date && r.Kategori == "Makan").Sum(r => r.Nominal);
 
+        // Remaining-day envelope: the static DailyBudget assumes a uniform spend from day
+        // 1, which is rarely true (a lumpy sewa-kos bill early on makes it meaningless).
+        // What actually matters is how much is left vs how many days remain — the per-day
+        // allowance the user can afford from tomorrow to the end of the month.
+        var remainingBudget = Math.Max(0, anggaran - currentThroughDay);
+        var daysLeft = Math.Max(1, effectiveDays - date.Day);
+        var perDayAllowance = anggaran > 0 ? (long)Math.Floor(remainingBudget / (double)daysLeft) : 0;
+
         return new ExpenseAdvice(
             date.ToString("yyyy-MM-dd"),
             month,
@@ -139,7 +147,8 @@ public sealed class ExpenseAdviceService(
                 remaining,
                 potentialSavingPerMonth,
                 monthsToReach),
-            Daily(date, foodSpend));
+            Daily(date, foodSpend),
+            new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance));
     }
 
     /// <summary>
