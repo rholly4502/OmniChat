@@ -231,6 +231,37 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     {advice.dailyBudget > 0 ? ` · anggaran harian ${formatRupiah(advice.dailyBudget)}` : ''}
                   </p>
                 )}
+
+                {advice.remainingAllowance.perDayAllowance > 0 && advice.daily.biayaMin > 0 && (
+                  (() => {
+                    const allow = advice.remainingAllowance.perDayAllowance;
+                    const lo = advice.daily.biayaMin;
+                    const hi = advice.daily.biayaMax;
+                    if (lo > allow) {
+                      return (
+                        <div className="relative overflow-hidden rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 mt-1">
+                          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-red/40" />
+                          <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-red/40" />
+                          <p className="text-sm text-chill-red font-medium">
+                            Rencana menu hari ini (±{formatRupiah(lo)}–{formatRupiah(hi)}) melebihi sisa anggaran ±{formatRupiah(allow)} per hari untuk {advice.remainingAllowance.daysLeft} hari ke depan. Cek porsi &amp; pilih menu lebih sederhana.
+                          </p>
+                        </div>
+                      );
+                    }
+                    if (hi <= allow) {
+                      return (
+                        <div className="relative overflow-hidden rounded-none border border-chill-sage/40 bg-chill-sage/10 px-3 py-2 mt-1">
+                          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-sage/40" />
+                          <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-sage/40" />
+                          <p className="text-sm text-chill-sage">
+                            Rencana menu hari ini (±{formatRupiah(lo)}–{formatRupiah(hi)}) masih dalam sisa anggaran ±{formatRupiah(allow)} per hari.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()
+                )}
                 {advice.daily.foodSpend > 0 && advice.daily.biayaMax > 0 && (
                   (() => {
                     const over = advice.daily.foodSpend - advice.daily.biayaMax;

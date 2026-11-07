@@ -407,3 +407,48 @@ describe('AdvicePanel remaining-budget envelope (eval)', () => {
     );
   });
 });
+
+describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', () => {
+  it('flags a red callout when the menu min cost exceeds the remaining per-day allowance', async () => {
+    const tight = {
+      ...advicePayload,
+      remainingAllowance: { anggaran: 520000, spentSoFar: 480000, remainingBudget: 40000, daysLeft: 2, perDayAllowance: 20000 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(tight)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const warn = screen.getByText(/melebihi sisa anggaran/);
+    expect(warn.closest('div.rounded-none')).toBeTruthy();
+    expect(warn.closest('div[class*="border-chill-red"]')).toBeTruthy();
+    expect(warn.textContent!.replace(/\s/g, ' ')).toContain('25.000');
+    expect(warn.textContent!.replace(/\s/g, ' ')).toContain('20.000');
+    expect(warn.textContent!.replace(/\s/g, ' ')).toContain('2 hari');
+  });
+
+  it('shows a sage confirmation when the menu max is within the remaining allowance', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const ok = screen.getByText(/masih dalam sisa anggaran/);
+    expect(ok.closest('div[class*="border-chill-sage"]')).toBeTruthy();
+    expect(screen.queryByText(/melebihi sisa anggaran/)).not.toBeInTheDocument();
+  });
+
+  it('renders no affordability callout when no allowance is available (perDayAllowance 0)', async () => {
+    const over = {
+      ...advicePayload,
+      remainingAllowance: { anggaran: 520000, spentSoFar: 600000, remainingBudget: 0, daysLeft: 5, perDayAllowance: 0 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(over)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/melebihi sisa anggaran/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/masih dalam sisa anggaran/)).not.toBeInTheDocument();
+  });
+});
