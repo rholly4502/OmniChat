@@ -190,6 +190,37 @@ public sealed class ConversationsController : ControllerBase
 
         return pinned ? NoContent() : ConversationNotFound(id);
     }
+    /// <summary>Archives or unarchives a conversation.</summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="request">Requested archive state.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Archive state applied.</response>
+    /// <response code="400">Malformed body.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPut("{id:guid}/archive")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetArchived(
+        Guid id,
+        [FromBody] ArchiveConversationRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblemObject();
+        }
+
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var archived = await _repository.SetArchivedAsync(id, owner, request.IsArchived, cancellationToken);
+
+        return archived ? NoContent() : ConversationNotFound(id);
+    }
 
     /// <summary>
     /// Sets or clears the caller's rating on one message of a conversation (audit feedback).

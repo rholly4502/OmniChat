@@ -294,6 +294,27 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task SetArchived_marks_and_unmarks_a_conversation()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+
+        Assert.True(await _repository.SetArchivedAsync(conversation.Id, "admin", true));
+        Assert.True((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsArchived);
+
+        Assert.True(await _repository.SetArchivedAsync(conversation.Id, "admin", false));
+        Assert.False((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsArchived);
+    }
+
+    [Fact]
+    public async Task SetArchived_returns_false_for_an_unowned_conversation()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        Assert.False(await _repository.SetArchivedAsync(conversation.Id, "guest", true));
+        Assert.False((await _repository.GetConversationAsync(conversation.Id, "admin"))!.IsArchived);
+    }
+
+    [Fact]
     public async Task ListConversations_sorts_pinned_first_then_by_recency()
     {
         var olderPinned = await _repository.CreateConversationAsync(NewConversation());

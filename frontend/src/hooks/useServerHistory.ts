@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
-import { deleteConversation, deleteMessage, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
+import { archiveConversation, deleteConversation, deleteMessage, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
 import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
@@ -53,6 +53,8 @@ export interface ServerHistoryOptions {
   renameImpl?: typeof renameConversation;
   pinImpl?: typeof pinConversation;
   /** Injected for tests; default to the real client. */
+  archiveImpl?: typeof archiveConversation;
+  /** Injected for tests; default to the real client. */
   updateImpl?: typeof updateConversationSettings;
   /** Injected for tests; default to the real client. */
   usageImpl?: typeof getConversationUsage;
@@ -76,6 +78,8 @@ export interface ServerHistoryResult {
   renameSession: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin `id`; resolves true when the server applied the state. */
   pinSession: (id: string, pinned: boolean) => Promise<boolean>;
+  /** Archive/unarchive `id`; resolves true when the server applied the state. */
+  archiveSession: (id: string, archived: boolean) => Promise<boolean>;
   /** Persist a model and/or mode change for the active server conversation. */
   updateActiveConversationSettings: (model?: string, mode?: string) => Promise<boolean>;
   /** Adopt the id the server assigned to the active draft, then refresh the list. */
@@ -117,7 +121,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, updateImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -140,10 +144,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl };
-  }, [listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, updateImpl, usageImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl };
+  }, [listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -187,6 +191,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               createdAt: Date.parse(row.createdAt) || Date.now(),
               updatedAt: Date.parse(row.updatedAt) || Date.now(),
               isPinned: row.isPinned ?? false,
+              isArchived: row.isArchived ?? false,
               promptTokens: row.promptTokens,
               completionTokens: row.completionTokens,
               totalTokens: row.totalTokens,
@@ -422,6 +427,23 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     },
     [apiKey],
   );
+
+  /** Archive or unarchive a stored conversation; updates the row state on success. */
+  const archiveSession = useCallback(
+    async (id: string, archived: boolean): Promise<boolean> => {
+      if (!isServerConversation(id)) return false;
+      const archive = impls.current.archive ?? archiveConversation;
+      try {
+        await archive(id, archived, { apiKey: apiKey || undefined });
+      } catch {
+        // The server still holds the old archive state; the row is left untouched.
+        return false;
+      }
+      setSessions((prev) => prev.map((s) => (s.id === id ? { ...s, isArchived: archived } : s)));
+      return true;
+    },
+    [apiKey],
+  );
   /** Persist a model and/or mode change for the active server conversation. */
   const updateActiveConversationSettings = useCallback(
     async (model?: string, mode?: string): Promise<boolean> => {
@@ -549,6 +571,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
               createdAt: Date.parse(row.createdAt) || Date.now(),
               updatedAt: Date.parse(row.updatedAt) || Date.now(),
               isPinned: row.isPinned ?? false,
+              isArchived: row.isArchived ?? false,
               promptTokens: row.promptTokens,
               completionTokens: row.completionTokens,
               totalTokens: row.totalTokens,
@@ -578,6 +601,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     deleteMessageFromActive,
     renameSession,
     pinSession,
+    archiveSession,
     updateActiveConversationSettings,
     adoptConversation,
     updateActiveSessionMessages,

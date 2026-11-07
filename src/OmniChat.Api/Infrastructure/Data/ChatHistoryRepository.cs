@@ -297,6 +297,22 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+    public async Task<bool> SetArchivedAsync(Guid id, string userId, bool isArchived, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var conversation = await db.Conversations
+            .SingleOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
+        if (conversation is null)
+        {
+            return false;
+        }
+
+        conversation.IsArchived = isArchived;
+        conversation.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 
     public async Task<bool> SetConversationModelAsync(
         Guid id,

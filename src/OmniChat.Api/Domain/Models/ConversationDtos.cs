@@ -21,6 +21,7 @@ public sealed record ConversationSummary(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     bool IsPinned,
+    bool IsArchived,
     int PromptTokens,
     int CompletionTokens,
     int TotalTokens,
@@ -41,6 +42,7 @@ public sealed record ConversationSummary(
             conversation.CreatedAt,
             conversation.UpdatedAt,
             conversation.IsPinned,
+            conversation.IsArchived,
             conversation.PromptTokens,
             conversation.CompletionTokens,
             conversation.PromptTokens + conversation.CompletionTokens,
@@ -98,6 +100,7 @@ public sealed record ConversationDetail(
     string Model,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
+    bool IsArchived,
     int PromptTokens,
     int CompletionTokens,
     int TotalTokens,
@@ -119,6 +122,7 @@ public sealed record ConversationDetail(
             conversation.Model,
             conversation.CreatedAt,
             conversation.UpdatedAt,
+            conversation.IsArchived,
             conversation.PromptTokens,
             conversation.CompletionTokens,
             conversation.PromptTokens + conversation.CompletionTokens,
@@ -181,6 +185,13 @@ public sealed class PinConversationRequest
 {
     /// <summary>Pin state to apply. Pinned conversations sort to the top of the sidebar.</summary>
     public bool IsPinned { get; set; }
+}
+
+/// <summary>Body of <c>PUT /api/conversations/{id}/archive</c>.</summary>
+public sealed class ArchiveConversationRequest
+{
+    /// <summary>Archive state to apply. Archived conversations hide from the default history list.</summary>
+    public bool IsArchived { get; set; }
 }
 
 /// <summary>Body of <c>PUT /api/conversations/{id}/messages/{messageId}/feedback</c>.</summary>

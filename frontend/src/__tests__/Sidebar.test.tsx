@@ -706,6 +706,79 @@ describe('Sidebar', () => {
     expect(pin.className).toContain('focus-visible:ring-chill-accent/60');
   });
 
+  it('shows an archive button on server conversations and toggles through it', () => {
+    const onArchiveSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onArchiveSession,
+    });
+
+    const arch = screen.getByLabelText('Arsipkan Deploy');
+    expect(arch).toBeInTheDocument();
+    fireEvent.click(arch);
+    expect(onArchiveSession).toHaveBeenCalledWith(A, true);
+  });
+
+  it('reflects the archived state and offers unarchive for an already-archived row', () => {
+    const onArchiveSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1, isArchived: true }],
+      activeSessionId: A,
+      showArchived: true,
+      onArchiveSession,
+    });
+
+    const arch = screen.getByLabelText('Buka dari arsip Deploy');
+    expect(arch).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(arch);
+    expect(onArchiveSession).toHaveBeenCalledWith(A, false);
+  });
+
+  it('hides the archive button for a local draft', () => {
+    renderSidebar({
+      sessions: [{ id: 'draft_1', title: 'Obrolan Baru', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 'draft_1',
+      onArchiveSession: vi.fn(),
+    });
+
+    expect(screen.queryByLabelText('Arsipkan Obrolan Baru')).not.toBeInTheDocument();
+  });
+
+  it('hides archived conversations by default and reveals them via the toggle', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    const B = '22222222-2222-2222-2222-222222222222';
+    renderSidebar({
+      sessions: [
+        { id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1, isArchived: true },
+        { id: B, title: 'Aktif', messages: ['y'], createdAt: 2, updatedAt: 2 },
+      ],
+      showArchived: false,
+      onToggleShowArchived: vi.fn(),
+    });
+
+    // Archived row is hidden from the list by default.
+    expect(screen.queryByText('Deploy')).not.toBeInTheDocument();
+    expect(screen.getByText('Aktif')).toBeInTheDocument();
+    // The toggle is present and labelled for the hidden state.
+    expect(screen.getByRole('button', { name: 'Tampilkan arsip' })).toBeInTheDocument();
+  });
+
+  it('renders archived rows when the show-archived toggle is on', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1, isArchived: true }],
+      showArchived: true,
+      onToggleShowArchived: vi.fn(),
+    });
+
+    expect(screen.getByText('Deploy')).toBeInTheDocument();
+    const toggle = screen.getByRole('button', { name: 'Sembunyikan arsip' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  });
+
   describe('conversation export menu', () => {
     const session = {
       id: 's1',

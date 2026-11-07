@@ -48,6 +48,7 @@ export default function App() {
   const [historyModelFilter, setHistoryModelFilter] = useState('');
   const [historyDateFrom, setHistoryDateFrom] = useState('');
   const [historyDateTo, setHistoryDateTo] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const [apiKey, setApiKey] = useApiKey();
   const { locked, busy, error, attemptLogin, enterGuest, logout, isGuest } = useAuthGate(apiKey, setApiKey);
   // A guest has no credential and must never reach the Hermes agent gateway: force direct mode.
@@ -85,6 +86,7 @@ export default function App() {
     deleteMessageFromActive,
     renameSession,
     pinSession,
+    archiveSession,
     updateActiveConversationSettings,
     adoptConversation,
     exportSession,
@@ -255,6 +257,12 @@ export default function App() {
     return pinSession(id, pinned);
   }
 
+  /** Archive/unarchive a stored conversation; the hook updates the row on success. */
+  async function handleArchiveSession(id: string, archived: boolean): Promise<boolean> {
+    if (streaming) return false;
+    return archiveSession(id, archived);
+  }
+
   /** Validate the draft, clear it, then hand the text to the chat hook. */
   async function send() {
     if (!input.trim() || streaming) return;
@@ -358,6 +366,9 @@ export default function App() {
         onDeleteSession={handleDeleteSession}
         onRenameSession={handleRenameSession}
         onPinSession={handlePinSession}
+        onArchiveSession={handleArchiveSession}
+        showArchived={showArchived}
+        onToggleShowArchived={() => setShowArchived((v) => !v)}
         onExportSession={exportSession}
         onLoadMore={loadMore}
         hasMore={hasMore}

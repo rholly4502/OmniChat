@@ -74,6 +74,12 @@ export interface SidebarProps {
   onRenameSession?: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin a session; resolves when the server applies the state. */
   onPinSession?: (id: string, pinned: boolean) => Promise<boolean>;
+  /** Archive/unarchive a server conversation. */
+  onArchiveSession?: (id: string, archived: boolean) => Promise<boolean>;
+  /** Show archived conversations in the history list. */
+  showArchived?: boolean;
+  /** Toggle the archived-conversation visibility. */
+  onToggleShowArchived?: () => void;
   /** Export a session in the requested format (default Markdown). */
   onExportSession?: (session: ChatSession, format?: ConversationExportFormat) => void;
   /** Load the next page of older conversations. Called from the sidebar footer. */
@@ -148,6 +154,9 @@ export function Sidebar({
   onDeleteSession,
   onRenameSession,
   onPinSession,
+  onArchiveSession,
+  showArchived = false,
+  onToggleShowArchived,
   onExportSession,
   onLoadMore,
   hasMore = false,
@@ -353,6 +362,23 @@ export function Sidebar({
         </div>
       )}
 
+      {onToggleShowArchived && (
+        <button
+          type="button"
+          onClick={onToggleShowArchived}
+          aria-pressed={showArchived}
+          aria-label={showArchived ? 'Sembunyikan arsip' : 'Tampilkan arsip'}
+          className="w-full flex items-center gap-2 min-h-[44px] rounded-none px-1 text-xs text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        >
+          <span className={`inline-flex items-center justify-center w-4 h-4 border-2 border-chill-accent/60 ${showArchived ? 'bg-chill-accent' : 'bg-transparent'}`}>
+            {showArchived && (
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#020617" strokeWidth="3.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+            )}
+          </span>
+          {showArchived ? 'Arsip terlihat' : 'Tampilkan arsip'}
+        </button>
+      )}
+
       {/* Sessions History List */}
       {sessions && (sessions.length > 0 || search || hasActiveFilters) && (
         <div className="space-y-1">
@@ -364,7 +390,7 @@ export function Sidebar({
             <div className="px-1 text-sm text-chill-muted py-2">Tidak ada hasil untuk {search ? `“${search}”` : 'filter ini'}.</div>
           )}
           <div className="max-h-36 overflow-y-auto space-y-1 pr-1 overscroll-y-contain">
-            {groupSessionsByDate(sessions).map((group) => (
+            {groupSessionsByDate(showArchived ? sessions : sessions.filter((s) => !s.isArchived)).map((group) => (
               <div key={group.key} className="space-y-1">
                 {group.label && (
                   <div className="text-xs text-chill-muted font-medium px-1 pt-1 select-none">{group.label}</div>
@@ -555,6 +581,27 @@ export function Sidebar({
                         >
                           <path d="M12 21s-5.5-4.8-5.5-9.5a5.5 5.5 0 0 1 11 0C17.5 16.2 12 21 12 21Z" />
                           {!s.isPinned && <circle cx="12" cy="11" r="2" />}
+                        </svg>
+                      </button>
+                    )}
+                    {onArchiveSession && isServerConversation(s.id) && (
+                      <button
+                        type="button"
+                        title={s.isArchived ? 'Buka dari arsip' : 'Arsipkan'}
+                        aria-label={`${s.isArchived ? 'Buka dari arsip' : 'Arsipkan'} ${s.title}`}
+                        aria-pressed={!!s.isArchived}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onArchiveSession?.(s.id, !s.isArchived);
+                        }}
+                        className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-none transition active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                          s.isArchived ? 'text-chill-accent' : 'hover:text-chill-accent'
+                        }`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill={s.isArchived ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true">
+                          <rect x="3" y="4" width="18" height="4" />
+                          <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
+                          <line x1="10" y1="12" x2="14" y2="12" />
                         </svg>
                       </button>
                     )}

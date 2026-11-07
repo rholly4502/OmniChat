@@ -376,6 +376,51 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task SetArchived_Returns204_WhenTheArchiveStateWasApplied()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetArchivedAsync(id, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetArchived(id, new ArchiveConversationRequest { IsArchived = true }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetArchivedAsync(id, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetArchived_Returns404_WhenTheConversationIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.SetArchivedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.SetArchived(Guid.CreateVersion7(), new ArchiveConversationRequest { IsArchived = true }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SetArchived_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.SetArchived(Guid.CreateVersion7(), new ArchiveConversationRequest { IsArchived = true }, CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.SetArchivedAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task UpdateSettings_Returns204_WhenTheSettingsWereApplied()
     {
         var controller = CreateController(ChatAccess.Admin);

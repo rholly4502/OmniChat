@@ -162,6 +162,27 @@ export async function pinConversation(
 }
 
 /**
+ * Archive or unarchive a conversation. Resolves on 204. Archived conversations
+ * hide from the default history list (the sidebar's "Tampilkan arsip" toggle
+ * reveals them again).
+ */
+export async function archiveConversation(
+  id: string,
+  isArchived: boolean,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${id}/archive`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isArchived }),
+    },
+    options,
+  );
+}
+
+/**
  * Set or clear a user's rating on one stored turn. Resolves on 204. The
  * feedback value is "up", "down" or null (clear). Only admin callers succeed;
  * guests and drafts keep their local-only toggle.

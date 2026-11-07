@@ -519,6 +519,72 @@ describe('useServerHistory', () => {
     expect(ok).toBe(false);
   });
 
+  it('archives a stored conversation, calls the API, and updates the row', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const archiveImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, archiveImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.archiveSession(A, true);
+    });
+
+    expect(archiveImpl).toHaveBeenCalledWith(A, true, expect.objectContaining({ apiKey: 'k' }));
+    expect(ok).toBe(true);
+    expect(result.current.sessions[0]?.isArchived).toBe(true);
+  });
+
+  it('unarchives a stored conversation', async () => {
+    const alreadyArchived = { ...summary(A, 'Deploy'), isArchived: true };
+    const listImpl = vi.fn().mockResolvedValue([alreadyArchived]);
+    const archiveImpl = vi.fn().mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, archiveImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+    expect(result.current.sessions[0]?.isArchived).toBe(true);
+
+    let ok = false;
+    await act(async () => {
+      ok = await result.current.archiveSession(A, false);
+    });
+
+    expect(archiveImpl).toHaveBeenCalledWith(A, false, expect.objectContaining({ apiKey: 'k' }));
+    expect(ok).toBe(true);
+    expect(result.current.sessions[0]?.isArchived).toBe(false);
+  });
+
+  it('leaves the row untouched when the server refuses the archive', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const archiveImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, archiveImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.archiveSession(A, true);
+    });
+
+    expect(ok).toBe(false);
+    expect(result.current.sessions[0]?.isArchived).toBeFalsy();
+  });
+
+  it('refuses to archive a local draft, which has no server row', async () => {
+    const archiveImpl = vi.fn();
+    const { result } = renderHook(() => useServerHistory(deps({ archiveImpl })));
+    await act(async () => {});
+
+    let ok = true;
+    await act(async () => {
+      ok = await result.current.archiveSession('draft_1', true);
+    });
+
+    expect(archiveImpl).not.toHaveBeenCalled();
+    expect(ok).toBe(false);
+  });
+
   it('fetches the aggregate usage summary and exposes it', async () => {
     const usageSummary = {
       totalPromptTokens: 1100,

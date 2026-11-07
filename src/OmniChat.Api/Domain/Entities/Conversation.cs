@@ -32,6 +32,9 @@ public class Conversation
     /// <summary>Pinned state for the sidebar; pinned conversations sort to the top.</summary>
     public bool IsPinned { get; set; }
 
+    /// <summary>Archived state; archived conversations hide from the default history list.</summary>
+    public bool IsArchived { get; set; }
+
     /// <summary>Accumulated input tokens billed to this conversation (from upstream usage).</summary>
     public int PromptTokens { get; set; }
 

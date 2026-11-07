@@ -89,6 +89,9 @@ public interface IChatHistoryRepository
     /// <summary>Pins or unpins a conversation. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> PinConversationAsync(Guid id, string userId, bool isPinned, CancellationToken cancellationToken = default);
 
+    /// <summary>Archives or unarchives a conversation. Returns <c>false</c> when not found or not owned.</summary>
+    Task<bool> SetArchivedAsync(Guid id, string userId, bool isArchived, CancellationToken cancellationToken = default);
+
     /// <summary>Deletes a conversation and its messages. Returns <c>false</c> when not found or not owned.</summary>
     Task<bool> DeleteConversationAsync(Guid id, string userId, CancellationToken cancellationToken = default);
 

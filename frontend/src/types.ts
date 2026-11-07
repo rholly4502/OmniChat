@@ -98,6 +98,8 @@ export interface ChatSession {
   updatedAt: number;
   /** Server-side pin state; undefined for a local draft. */
   isPinned?: boolean;
+  /** Server-side archive state; undefined for a local draft. */
+  isArchived?: boolean;
   /** Server-reported cumulative input tokens (undefined for a local draft). */
   promptTokens?: number;
   /** Server-reported cumulative output tokens (undefined for a local draft). */
@@ -124,6 +126,8 @@ export interface ConversationSummary {
   updatedAt: string;
   /** Pin state; pinned conversations sort to the top of the sidebar. */
   isPinned: boolean;
+  /** Archive state; archived conversations hide from the default history list. */
+  isArchived: boolean;
   /** Cumulative input tokens billed to this conversation. */
   promptTokens?: number;
   /** Cumulative output tokens billed to this conversation. */

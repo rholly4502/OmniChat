@@ -9,6 +9,7 @@ import {
   pinConversation,
   renameConversation,
   setMessageFeedback,
+  archiveConversation,
   updateConversationSettings,
 } from '../historyApi';
 import { ApiError } from '../api';
@@ -280,6 +281,26 @@ describe('pinConversation', () => {
     const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
 
     await expect(pinConversation('gone', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('archiveConversation', () => {
+  it('PUTs a JSON body carrying the archive state to the /archive path', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await archiveConversation(SUMMARY.id, true, { fetchImpl });
+
+    const [path, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(path).toBe(`${CONVERSATIONS_URL}/${SUMMARY.id}/archive`);
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+    expect(init.body).toBe(JSON.stringify({ isArchived: true }));
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
+
+    await expect(archiveConversation('gone', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });
 

@@ -31,6 +31,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<long>("CreatedAt")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("IsPinned")
                         .HasColumnType("INTEGER");
 
