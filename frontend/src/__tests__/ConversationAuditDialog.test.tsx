@@ -3,6 +3,12 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import { ConversationAuditDialog } from '../components/ConversationAuditDialog';
 import type { ChatSession, ModelOption } from '../types';
 
+const { downloadBlob } = vi.hoisted(() => ({ downloadBlob: vi.fn() }));
+vi.mock('../conversationExport', () => ({
+  downloadBlob,
+  safeFilenameSlug: (t: string) => t.toLowerCase().replace(/\s+/g, '-'),
+}));
+
 const MODELS: ModelOption[] = [{ id: 'claude-sonnet', label: 'Claude Sonnet' }];
 
 const SESSION: ChatSession = {
@@ -146,5 +152,27 @@ describe('ConversationAuditDialog', () => {
     };
     renderOpen(vi.fn(), noUsage);
     expect(screen.queryByText('Rincian per model')).not.toBeInTheDocument();
+  });
+});
+
+describe('ConversationAuditDialog CSV export', () => {
+  it('exports a well-formed CSV with header, per-message rows and the Total row', async () => {
+    renderOpen();
+    const btn = screen.getByRole('button', { name: 'Ekspor audit sebagai CSV' });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob, filename] = downloadBlob.mock.calls[0];
+    expect(filename).toBe('deploy-audit.csv');
+    expect(blob).toBeInstanceOf(Blob);
+    const csv = await blob.text();
+    const lines = csv.split('\r\n');
+    expect(lines[0]).toContain('peran,pesan,prompt_tokens,completion_tokens,biaya_usd,umpan_balik');
+    expect(lines[1]).toContain('1,Pengguna,Halo,,,');
+    const asst = lines.find((l) => l.includes('Asisten,Hai! Ini balasan asisten') && l.includes('10,20'));
+    expect(asst).toBeTruthy();
+    expect(asst).toContain('up');
+    const total = lines.find((l) => l.startsWith('Total'));
+    expect(total).toContain('14,22');
   });
 });

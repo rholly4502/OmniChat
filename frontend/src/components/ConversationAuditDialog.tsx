@@ -1,5 +1,6 @@
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
+import { downloadBlob, safeFilenameSlug } from '../conversationExport';
 import type { ChatSession, Message, ModelOption } from '../types';
 
 /** Props accepted by {@link ConversationAuditDialog}. */
@@ -36,6 +37,64 @@ function labelFor(id: string | undefined, options: ModelOption[] | undefined): s
 function preview(content: string): string {
   const flat = content.replace(/\s+/g, ' ').trim();
   return flat.length > 72 ? `${flat.slice(0, 72)}…` : flat;
+}
+
+/** RFC 4180 quoting for a single CSV field. */
+function csvField(value: string): string {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
+/**
+ * Builds an RFC 4180 CSV of the audit table: one row per message with its role,
+ * content preview, prompt/completion tokens, estimated cost and rating, then a
+ * footer total row, then per-model subtotal rows when the thread spans models.
+ * Raw numbers are used (not formatted strings) so a spreadsheet can sum them.
+ */
+function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undefined): string {
+  const msgs = session.messages;
+  const rows: string[][] = [['#', 'peran', 'pesan', 'prompt_tokens', 'completion_tokens', 'biaya_usd', 'umpan_balik']];
+  let totalPrompt = 0;
+  let totalCompletion = 0;
+  let totalUsd = 0;
+  msgs.forEach((m, i) => {
+    const usage = m.usage;
+    const pTok = usage?.promptTokens ?? 0;
+    const cTok = usage?.completionTokens ?? 0;
+    totalPrompt += pTok;
+    totalCompletion += cTok;
+    const rowCost = usage ? estimateUsd(usage, m.model ?? session.model ?? '') : null;
+    if (rowCost !== null) totalUsd += rowCost;
+    const cost = rowCost !== null ? rowCost.toFixed(6) : '';
+    const feedback = m.feedback === 'up' ? 'up' : m.feedback === 'down' ? 'down' : '';
+    rows.push([
+      String(i + 1),
+      roleLabel(m.role),
+      preview(m.content),
+      String(pTok || ''),
+      String(cTok || ''),
+      cost,
+      feedback,
+    ]);
+  });
+  const totalUsdFixed = totalUsd.toFixed(6);
+  rows.push(['Total', '', '', String(totalPrompt), String(totalCompletion), String(totalUsdFixed), '']);
+
+  const byModel = new Map<string, { promptTokens: number; completionTokens: number }>();
+  for (const m of msgs) {
+    if (!m.usage) continue;
+    const mid = m.model ?? session.model ?? '';
+    if (!mid) continue;
+    const cur = byModel.get(mid) ?? { promptTokens: 0, completionTokens: 0 };
+    cur.promptTokens += m.usage.promptTokens ?? 0;
+    cur.completionTokens += m.usage.completionTokens ?? 0;
+    byModel.set(mid, cur);
+  }
+  for (const [mid, u] of sortModelEntriesByCost(Array.from(byModel.entries()))) {
+    const cost = estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, mid).toFixed(6);
+    rows.push([labelFor(mid, modelOptions), '', '', String(u.promptTokens), String(u.completionTokens), cost, '']);
+  }
+
+  return '\uFEFF' + rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
 }
 
 /**
@@ -91,18 +150,34 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
       >
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-chill-text pixel-heading truncate">Audit · {session.title}</h2>
-          <button
-            type="button"
-            data-audit-close
-            onClick={onClose}
-            aria-label="Tutup audit"
-            className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true">
-              <line x1="6" y1="6" x2="18" y2="18" />
-              <line x1="18" y1="6" x2="6" y2="18" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                downloadBlob(
+                  new Blob([buildAuditCsv(session, modelOptions)], { type: 'text/csv;charset=utf-8' }),
+                  `${safeFilenameSlug(session.title)}-audit.csv`,
+                )
+              }
+              aria-label="Ekspor audit sebagai CSV"
+              title="Ekspor audit sebagai CSV"
+              className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            </button>
+            <button
+              type="button"
+              data-audit-close
+              onClick={onClose}
+              aria-label="Tutup audit"
+              className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true">
+                <line x1="6" y1="6" x2="18" y2="18" />
+                <line x1="18" y1="6" x2="6" y2="18" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted border-b border-chill-border pb-2">
