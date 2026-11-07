@@ -847,4 +847,65 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.Equal(40, stored!.PromptTokens);
         Assert.Equal(10, stored.CompletionTokens);
     }
+
+    [Fact]
+    public async Task GetUsageSummary_respects_a_from_window_on_updatedAt()
+    {
+        var old = await _repository.CreateConversationAsync(NewConversation());
+        var recent = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AddConversationUsageAsync(old.Id, "admin", 1000, 500);
+        await _repository.AddConversationUsageAsync(recent.Id, "admin", 10, 5);
+
+        // Back-date the old conversation to before the window start.
+        var oldEntity = await _db.Conversations.SingleAsync(c => c.Id == old.Id);
+        oldEntity.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-30);
+        await _db.SaveChangesAsync();
+
+        var from = DateTimeOffset.UtcNow.AddDays(-7);
+        var summary = await _repository.GetUsageSummaryAsync("admin", from);
+
+        Assert.Equal(1, summary.ConversationCount);
+        Assert.Equal(15, summary.TotalTokens);
+        Assert.Equal(15, summary.ByModel["hermes-default"].TotalTokens);
+    }
+
+    [Fact]
+    public async Task GetUsageSummary_respects_a_to_window_on_updatedAt()
+    {
+        var old = await _repository.CreateConversationAsync(NewConversation());
+        var recent = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AddConversationUsageAsync(old.Id, "admin", 1000, 500);
+        await _repository.AddConversationUsageAsync(recent.Id, "admin", 10, 5);
+
+        var oldEntity = await _db.Conversations.SingleAsync(c => c.Id == old.Id);
+        oldEntity.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-30);
+        await _db.SaveChangesAsync();
+
+        var to = DateTimeOffset.UtcNow.AddDays(-10);
+        var summary = await _repository.GetUsageSummaryAsync("admin", null, to);
+
+        Assert.Equal(1, summary.ConversationCount);
+        Assert.Equal(1500, summary.TotalTokens);
+    }
+
+    [Fact]
+    public async Task GetUsageSummary_window_scopes_feedback_counts()
+    {
+        var old = await _repository.CreateConversationAsync(NewConversation());
+        var recent = await _repository.CreateConversationAsync(NewConversation());
+
+        var oldMsg = await _repository.AppendMessageAsync(old.Id, "admin", new Message { Role = "assistant", Content = "lama" });
+        var recentMsg = await _repository.AppendMessageAsync(recent.Id, "admin", new Message { Role = "assistant", Content = "baru" });
+        await _repository.SetMessageFeedbackAsync(old.Id, oldMsg.Id, "admin", MessageFeedback.Up);
+        await _repository.SetMessageFeedbackAsync(recent.Id, recentMsg.Id, "admin", MessageFeedback.Down);
+
+        var oldEntity = await _db.Conversations.SingleAsync(c => c.Id == old.Id);
+        oldEntity.UpdatedAt = DateTimeOffset.UtcNow.AddDays(-30);
+        await _db.SaveChangesAsync();
+
+        var summary = await _repository.GetUsageSummaryAsync("admin", DateTimeOffset.UtcNow.AddDays(-7));
+
+        Assert.Equal(0, summary.TotalUpFeedback);
+        Assert.Equal(1, summary.TotalDownFeedback);
+    }
 }

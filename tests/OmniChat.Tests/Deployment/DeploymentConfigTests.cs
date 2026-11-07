@@ -445,6 +445,29 @@ public class DeploymentConfigTests
         Assert.Contains("promptTokens?: number", frontendTypes);
     }
 
+    [Fact]
+    public void ConversationUsage_SupportsADateWindow()
+    {
+        // Tahap 3 cost/status deepening: the aggregate usage endpoint accepts an
+        // optional from/to date window (like the history list) so the global stats
+        // dialog can answer "how much did I spend this month". The repository filters
+        // by conversation UpdatedAt; the controller forwards the query params; the
+        // frontend client passes them through.
+        var repoInterface = Read("src/OmniChat.Api/Application/Interfaces/IChatHistoryRepository.cs");
+        var controller = Read("src/OmniChat.Api/Controllers/ConversationsController.cs");
+        var repo = Read("src/OmniChat.Api/Infrastructure/Data/ChatHistoryRepository.cs");
+        var frontendApi = Read("frontend/src/historyApi.ts");
+
+        Assert.Contains("DateTimeOffset? from = null", repoInterface);
+        Assert.Contains("DateTimeOffset? to = null", repoInterface);
+        Assert.Contains("[FromQuery] DateTimeOffset? from", controller);
+        Assert.Contains("[FromQuery] DateTimeOffset? to", controller);
+        Assert.Contains("c.UpdatedAt >= fromUtc", repo);
+        Assert.Contains("c.UpdatedAt < toExclusive", repo);
+        Assert.Contains("filters.from", frontendApi);
+        Assert.Contains("filters.to", frontendApi);
+    }
+
     // ── Milestone 15: ProblemDetails standardization ──
 
     [Fact]

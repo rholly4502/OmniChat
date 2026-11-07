@@ -105,12 +105,19 @@ public sealed class ConversationsController : ControllerBase
     /// uses this as the usage/audit overview; a guest gets the empty shape (200), so the
     /// frontend can render the same panel in both states without a branch.
     /// </summary>
+    /// <param name="from">Optional window start (inclusive, UTC). Only conversations last
+    /// updated at or after this instant are counted.</param>
+    /// <param name="to">Optional window end (inclusive date; exclusive of the next day).
+    /// Only conversations last updated before the following day are counted.</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
     /// <returns>Aggregate token totals plus a per-model breakdown.</returns>
     /// <response code="200">Usage summary (possibly all-zero).</response>
     [HttpGet("usage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<ConversationUsageSummary>> Usage(CancellationToken cancellationToken = default)
+    public async Task<ActionResult<ConversationUsageSummary>> Usage(
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default)
     {
         var owner = AdminOwnerId();
         if (owner is null)
@@ -120,7 +127,7 @@ public sealed class ConversationsController : ControllerBase
             return Ok(ConversationUsageSummary.Empty);
         }
 
-        var summary = await _repository.GetUsageSummaryAsync(owner, cancellationToken);
+        var summary = await _repository.GetUsageSummaryAsync(owner, from, to, cancellationToken);
         return Ok(summary);
     }
 

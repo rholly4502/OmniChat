@@ -527,10 +527,10 @@ public class ConversationsControllerTests
             });
 
         _repository
-            .Setup(r => r.GetUsageSummaryAsync(ChatIdentity.AdminUserId, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetUsageSummaryAsync(ChatIdentity.AdminUserId, null, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(summary);
 
-        var result = await controller.Usage(CancellationToken.None);
+        var result = await controller.Usage(cancellationToken: CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var payload = Assert.IsType<ConversationUsageSummary>(ok.Value);
@@ -544,15 +544,37 @@ public class ConversationsControllerTests
     {
         var controller = CreateController(ChatAccess.Guest);
 
-        var result = await controller.Usage(CancellationToken.None);
+        var result = await controller.Usage(cancellationToken: CancellationToken.None);
 
         var ok = Assert.IsType<OkObjectResult>(result.Result);
         var payload = Assert.IsType<ConversationUsageSummary>(ok.Value);
         Assert.Equal(0, payload.TotalTokens);
         Assert.Empty(payload.ByModel);
         _repository.Verify(
-            r => r.GetUsageSummaryAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            r => r.GetUsageSummaryAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Usage_ForwardsFromAndToWindowToTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var from = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+        var to = new DateTimeOffset(2026, 10, 31, 0, 0, 0, TimeSpan.Zero);
+        var summary = new ConversationUsageSummary(10, 5, 15, 1, 0, 0, new Dictionary<string, ConversationModelUsage>
+        {
+            ["hermes-default"] = new(10, 5),
+        });
+
+        _repository
+            .Setup(r => r.GetUsageSummaryAsync(ChatIdentity.AdminUserId, from, to, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(summary);
+
+        await controller.Usage(from: from, to: to, cancellationToken: CancellationToken.None);
+
+        _repository.Verify(
+            r => r.GetUsageSummaryAsync(ChatIdentity.AdminUserId, from, to, It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]

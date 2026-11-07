@@ -119,11 +119,17 @@ public interface IChatHistoryRepository
     /// conversation does not exist or does not belong to <paramref name="userId"/>.
     /// </summary>
     /// <summary>
-    /// Aggregates token usage across all of the caller's conversations (no message
+    /// Aggregates token usage across the caller's conversations (no message
     /// bodies). Always returns a summary — a caller with no history gets all-zero
-    /// totals and an empty per-model breakdown.
+    /// totals and an empty per-model breakdown. When <paramref name="from"/> or
+    /// <paramref name="to"/> is supplied, only conversations whose last update
+    /// falls inside the inclusive window are counted (mirrors the list filter).
     /// </summary>
-    Task<ConversationUsageSummary> GetUsageSummaryAsync(string userId, CancellationToken cancellationToken = default);
+    Task<ConversationUsageSummary> GetUsageSummaryAsync(
+        string userId,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default);
 
     Task<bool> AddConversationUsageAsync(
         Guid conversationId,

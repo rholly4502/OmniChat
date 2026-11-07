@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
-import { getConversation, listAllConversations } from '../historyApi';
+import { getConversation, getConversationUsage, listAllConversations } from '../historyApi';
 import { buildAllConversationsCsv, buildAllConversationsJson, downloadBlob } from '../conversationExport';
 import type { ConversationExportRecord } from '../conversationExport';
 import type { ConversationUsageSummary, ModelOption } from '../types';
@@ -60,20 +60,56 @@ function buildStatsCsv(usage: ConversationUsageSummary, modelOptions: ModelOptio
 export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: ChatStatsDialogProps) {
   const panelRef = useModalDialog(open, onClose, '[data-stats-close]');
 
-  const byModelEntries = sortModelEntriesByCost(Object.entries(usage.byModel));
+  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [rangeFrom, setRangeFrom] = useState('');
+  const [rangeTo, setRangeTo] = useState('');
+  const [scopedUsage, setScopedUsage] = useState<ConversationUsageSummary | null>(null);
+  const [scopedLoading, setScopedLoading] = useState(false);
+  const [scopedError, setScopedError] = useState<string | null>(null);
+
+  // The summary shown is the scoped one when a window is active, else the lifetime prop.
+  const displayUsage = scopedUsage ?? usage;
+
+  const byModelEntries = sortModelEntriesByCost(Object.entries(displayUsage.byModel));
   const totalUsd = byModelEntries.reduce(
     (sum, [id, u]) => sum + estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, id),
     0,
   );
-  const totalTokens = usage.totalTokens || byModelEntries.reduce((sum, [, u]) => sum + u.totalTokens, 0);
+  const totalTokens = displayUsage.totalTokens || byModelEntries.reduce((sum, [, u]) => sum + u.totalTokens, 0);
 
   const labelFor = (id: string): string => {
     const opt = modelOptions?.find((o) => o.id === id);
     return opt ? opt.label : id;
   };
 
-  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
-  const [exportError, setExportError] = useState<string | null>(null);
+  async function applyRange() {
+    if (!rangeFrom && !rangeTo) {
+      setScopedUsage(null);
+      setScopedError(null);
+      return;
+    }
+    setScopedLoading(true);
+    setScopedError(null);
+    try {
+      const filters: { from?: string; to?: string } = {};
+      if (rangeFrom) filters.from = rangeFrom;
+      if (rangeTo) filters.to = rangeTo;
+      const got = await getConversationUsage({ apiKey }, filters);
+      setScopedUsage(got);
+    } catch {
+      setScopedError('Gagal memuat statistik periode ini.');
+    } finally {
+      setScopedLoading(false);
+    }
+  }
+
+  function clearRange() {
+    setRangeFrom('');
+    setRangeTo('');
+    setScopedUsage(null);
+    setScopedError(null);
+  }
 
   /** Export every stored conversation as one JSON or CSV document. */
   async function exportAllConversations(format: 'json' | 'csv') {
@@ -139,7 +175,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
             type="button"
             onClick={() =>
               downloadBlob(
-                new Blob([buildStatsCsv(usage, modelOptions)], { type: 'text/csv;charset=utf-8' }),
+                new Blob([buildStatsCsv(displayUsage, modelOptions)], { type: 'text/csv;charset=utf-8' }),
                 'statistik-chat.csv',
               )
             }
@@ -163,6 +199,56 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
           </button>
         </div>
 
+        <div className="border-t border-chill-border pt-2 space-y-1.5">
+          <div className="flex items-center gap-2 flex-wrap">
+            <label className="text-xs text-chill-muted font-medium" htmlFor="stats-from">Dari</label>
+            <input
+              id="stats-from"
+              type="date"
+              value={rangeFrom}
+              onChange={(e) => setRangeFrom(e.target.value)}
+              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              aria-label="Tanggal awal periode statistik"
+            />
+            <label className="text-xs text-chill-muted font-medium" htmlFor="stats-to">sampai</label>
+            <input
+              id="stats-to"
+              type="date"
+              value={rangeTo}
+              onChange={(e) => setRangeTo(e.target.value)}
+              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              aria-label="Tanggal akhir periode statistik"
+            />
+            <button
+              type="button"
+              onClick={applyRange}
+              disabled={scopedLoading}
+              aria-label="Terapkan periode statistik"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+            >
+              {scopedLoading ? 'Memuat…' : 'Terapkan'}
+            </button>
+            {(rangeFrom || rangeTo) && (
+              <button
+                type="button"
+                onClick={clearRange}
+                aria-label="Bersihkan periode statistik"
+                className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-muted border border-chill-border hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              >
+                Bersihkan
+              </button>
+            )}
+          </div>
+          {scopedError && (
+            <p className="text-xs text-chill-red" role="alert">{scopedError}</p>
+          )}
+          {scopedUsage && (
+            <p className="text-xs text-chill-muted">
+              Periode {rangeFrom || '…'} s.d. {rangeTo || '…'} (dari {formatTokens(usage.totalTokens)} total sepanjang masa)
+            </p>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-chill-elevated border border-chill-border p-2.5 space-y-0.5">
             <div className="text-xs text-chill-muted">Total token</div>
@@ -174,18 +260,18 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
           </div>
           <div className="bg-chill-elevated border border-chill-border p-2.5 space-y-0.5">
             <div className="text-xs text-chill-muted">Percakapan</div>
-            <div className="text-sm text-chill-text font-semibold">{usage.conversationCount}</div>
+            <div className="text-sm text-chill-text font-semibold">{displayUsage.conversationCount}</div>
           </div>
           <div className="bg-chill-elevated border border-chill-border p-2.5 space-y-0.5">
             <div className="text-xs text-chill-muted">Umpan balik</div>
             <div className="text-sm text-chill-text font-semibold flex items-center gap-2">
               <span className="inline-flex items-center gap-1">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg>
-                {usage.totalUpFeedback}
+                {displayUsage.totalUpFeedback}
               </span>
               <span className="inline-flex items-center gap-1">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /></svg>
-                {usage.totalDownFeedback}
+                {displayUsage.totalDownFeedback}
               </span>
             </div>
           </div>

@@ -399,6 +399,28 @@ describe('getConversationUsage', () => {
     expect((err as ApiError).status).toBe(429);
     expect((err as ApiError).retryAfter).toBe('15');
   });
+
+  it('appends a from/to window when filters are supplied', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({ totalTokens: 50, byModel: {} }));
+
+    await getConversationUsage({ fetchImpl }, { from: '2026-10-01', to: '2026-10-31' });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage?from=2026-10-01&to=2026-10-31`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('does not add query params when the window is empty', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({ totalTokens: 50, byModel: {} }));
+
+    await getConversationUsage({ fetchImpl }, {});
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
 });
 
 describe('updateConversationSettings', () => {

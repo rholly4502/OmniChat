@@ -231,8 +231,13 @@ export async function deleteMessage(
  */
 export async function getConversationUsage(
   options: HistoryRequestOptions = {},
+  filters: ConversationListFilters = {},
 ): Promise<ConversationUsageSummary> {
-  const res = await request(`${CONVERSATIONS_URL}/usage`, { method: 'GET' }, options);
+  const parts: string[] = [];
+  if (filters.from) parts.push(`from=${encodeURIComponent(filters.from)}`);
+  if (filters.to) parts.push(`to=${encodeURIComponent(filters.to)}`);
+  const qs = parts.length > 0 ? `?${parts.join('&')}` : '';
+  const res = await request(`${CONVERSATIONS_URL}/usage${qs}`, { method: 'GET' }, options);
   const payload = (await res.json()) as unknown;
   if (!payload || typeof payload !== 'object' || !('totalTokens' in payload)) {
     return { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };

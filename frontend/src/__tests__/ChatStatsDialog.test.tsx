@@ -175,4 +175,85 @@ describe('ChatStatsDialog bulk export', () => {
     expect(exportCsv).toHaveClass('active:bg-chill-elevated');
     expect(exportCsv).toHaveClass('transition');
   });
+
+});
+
+
+const { getUsageMock } = vi.hoisted(() => ({ getUsageMock: vi.fn() }));
+
+describe('ChatStatsDialog period filter', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doMock('../historyApi', () => ({
+      getConversationUsage: getUsageMock,
+      listAllConversations: vi.fn().mockResolvedValue([]),
+      getConversation: vi.fn(),
+    }));
+  });
+
+  afterEach(() => {
+    getUsageMock.mockClear();
+  });
+
+  it('renders the period filter controls', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+    expect(screen.getByLabelText('Tanggal awal periode statistik')).toBeInTheDocument();
+    expect(screen.getByLabelText('Tanggal akhir periode statistik')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Terapkan periode statistik' })).toBeInTheDocument();
+  });
+
+  it('fetching a scoped window renders the scoped summary and a period note', async () => {
+    const scoped = {
+      totalPromptTokens: 10,
+      totalCompletionTokens: 5,
+      totalTokens: 15,
+      conversationCount: 1,
+      totalUpFeedback: 0,
+      totalDownFeedback: 0,
+      byModel: { 'claude-sonnet': { promptTokens: 10, completionTokens: 5, totalTokens: 15 } },
+    };
+    getUsageMock.mockResolvedValue(scoped);
+
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+
+    fireEvent.change(screen.getByLabelText('Tanggal awal periode statistik'), { target: { value: '2026-10-01' } });
+    fireEvent.change(screen.getByLabelText('Tanggal akhir periode statistik'), { target: { value: '2026-10-31' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Terapkan periode statistik' }));
+
+    await waitFor(() => expect(getUsageMock).toHaveBeenCalled());
+    expect(getUsageMock).toHaveBeenCalledWith(
+      { apiKey: 'k' },
+      { from: '2026-10-01', to: '2026-10-31' },
+    );
+    // The scoped summary (15 tokens) replaces the lifetime total (2000).
+    await waitFor(() => expect(screen.getAllByText('15').length).toBeGreaterThanOrEqual(1));
+    expect(screen.getByText(/Periode 2026-10-01 s.d. 2026-10-31/)).toBeInTheDocument();
+    expect(screen.getByText(/2k total sepanjang masa/)).toBeInTheDocument();
+  });
+
+  it('clearing the window restores the lifetime summary', async () => {
+    const scoped = {
+      totalPromptTokens: 0,
+      totalCompletionTokens: 0,
+      totalTokens: 0,
+      conversationCount: 0,
+      totalUpFeedback: 0,
+      totalDownFeedback: 0,
+      byModel: {},
+    };
+    getUsageMock.mockResolvedValue(scoped);
+
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+
+    fireEvent.change(screen.getByLabelText('Tanggal awal periode statistik'), { target: { value: '2026-10-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Terapkan periode statistik' }));
+    await waitFor(() => expect(screen.getByText(/Periode 2026-10-01 s.d./)).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Bersihkan periode statistik' }));
+    await waitFor(() => expect(screen.queryByText(/Periode 2026-10-01/)).not.toBeInTheDocument());
+    expect(screen.getAllByText('2k').length).toBeGreaterThanOrEqual(1);
+  });
 });

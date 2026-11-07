@@ -413,15 +413,31 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return true;
     }
 
-    public async Task<ConversationUsageSummary> GetUsageSummaryAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<ConversationUsageSummary> GetUsageSummaryAsync(
+        string userId,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default)
     {
         RequireOwner(userId);
 
         // Only the stored columns are pulled (no message bodies), so the aggregate stays
-        // cheap even for a long history.
-        var rows = await db.Conversations
-            .AsNoTracking()
-            .Where(c => c.UserId == userId)
+        // cheap even for a long history. A from/to window limits the summary to
+        // conversations last updated inside the inclusive range (mirrors the list
+        // filter's from-inclusive / to-exclusive semantics).
+        var convQuery = db.Conversations.AsNoTracking().Where(c => c.UserId == userId);
+        if (from.HasValue)
+        {
+            var fromUtc = from.Value.UtcDateTime;
+            convQuery = convQuery.Where(c => c.UpdatedAt >= fromUtc);
+        }
+        if (to.HasValue)
+        {
+            var toExclusive = to.Value.UtcDateTime.AddDays(1);
+            convQuery = convQuery.Where(c => c.UpdatedAt < toExclusive);
+        }
+
+        var rows = await convQuery
             .Select(c => new { c.Model, c.PromptTokens, c.CompletionTokens })
             .ToListAsync(cancellationToken);
 
@@ -437,10 +453,24 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
                     g.Sum(r => r.CompletionTokens)));
 
         // Feedback is stored per message; aggregate up/down counts across every
-        // message of the caller's conversations for the audit overview.
+        // message of the caller's conversations for the audit overview. When a
+        // window is set, only feedback on conversations inside that window counts.
+        var feedbackConvQuery = db.Conversations.AsNoTracking().Where(c => c.UserId == userId);
+        if (from.HasValue)
+        {
+            var fromUtc = from.Value.UtcDateTime;
+            feedbackConvQuery = feedbackConvQuery.Where(c => c.UpdatedAt >= fromUtc);
+        }
+        if (to.HasValue)
+        {
+            var toExclusive = to.Value.UtcDateTime.AddDays(1);
+            feedbackConvQuery = feedbackConvQuery.Where(c => c.UpdatedAt < toExclusive);
+        }
+        var windowConversationIds = await feedbackConvQuery.Select(c => c.Id).ToListAsync(cancellationToken);
+
         var feedbackRows = await db.Messages
             .AsNoTracking()
-            .Where(m => m.Conversation!.UserId == userId && m.Feedback.HasValue)
+            .Where(m => windowConversationIds.Contains(m.ConversationId) && m.Feedback.HasValue)
             .GroupBy(m => m.Feedback)
             .Select(g => new { Feedback = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);
