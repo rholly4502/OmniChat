@@ -223,7 +223,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
             {items.map((o: Opportunity) => (
               <li
                 key={o.id}
-                className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm"
+                className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm transition hover:bg-chill-elevated"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">

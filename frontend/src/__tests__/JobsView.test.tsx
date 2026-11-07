@@ -121,4 +121,18 @@ describe('JobsView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Coba lagi' }));
     expect(reload).toHaveBeenCalledTimes(1);
   });
+
+});
+describe('JobsView job card micro-interaction', () => {
+  it('every opportunity card carries the shared hover register (transition + hover:bg-chill-elevated)', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+    // Cards are the <li> elements inside the grouped list (the empty-state box is a div).
+    const cards = container.querySelectorAll('ul li');
+    expect(cards.length).toBeGreaterThan(0);
+    cards.forEach((card) => {
+      expect(card.className).toContain('transition');
+      expect(card.className).toContain('hover:bg-chill-elevated');
+    });
+  });
 });
