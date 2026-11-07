@@ -771,7 +771,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
   }, [confirming]);
 
   return (
-    <li className="flex items-center gap-2 rounded-none bg-chill-surface border border-chill-border px-3 py-2.5 pixel-shadow-sm">
+    <li className="flex items-center gap-2 rounded-none bg-chill-surface border border-chill-border px-3 py-2.5 pixel-shadow-sm transition hover:bg-chill-elevated">
       <div className="shrink-0 text-center leading-tight w-14 border-r border-chill-border pr-3">
         <div className="text-sm font-medium text-chill-text tabular-nums">{item.tanggal.slice(8, 10)}</div>
         <div className="text-xs text-chill-muted tabular-nums">{item.tanggal.slice(5, 7)}/{item.tanggal.slice(0, 4)}</div>

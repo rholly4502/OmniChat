@@ -726,3 +726,19 @@ describe('ExpensesView success feedback', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Pengeluaran dihapus.');
   });
 });
+
+describe('ExpensesView transaction-row micro-interaction', () => {
+  it('each transaction row carries the hover surface tone + transition (pixel language)', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    const section = screen.getByLabelText('Daftar transaksi');
+    const rows = section.querySelectorAll('li');
+    expect(rows.length).toBeGreaterThan(0);
+    rows.forEach((row) => {
+      expect(row.className).toContain('transition');
+      expect(row.className).toContain('hover:bg-chill-elevated');
+    });
+  });
+});
