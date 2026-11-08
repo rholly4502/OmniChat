@@ -1,6 +1,6 @@
 # Cycle 75 — chat message-bubble entrance animation (pixel2)
 
-Commit: (set after push). Frontend only. FE 871/871, BE 583/583, tsc/lint/build clean.
+Commit: `722da8a`. Frontend only. FE 871/871, BE 583/583, tsc/lint/build clean.
 
 ## What changed
 `frontend/src/components/MessageList.tsx`: the message bubble wrapper gained the shared
