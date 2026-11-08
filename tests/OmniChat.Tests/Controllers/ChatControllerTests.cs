@@ -142,6 +142,26 @@ public class ChatControllerTests
     }
 
     [Fact]
+    public async Task StreamChat_ConvertsUpstreamReasoningFrames_IntoReasoningEvents()
+    {
+        // A reasoning (chain-of-thought) frame must be re-enveloped as {"reasoning":"…"}
+        // — and never as {"content":"…"}: leaking it into content would print the thinking
+        // trace inside the assistant's answer instead of a separate disclosure.
+        var reasoning = "thinking step one";
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { ReasoningFrame.Encode(reasoning), "Hello" }.ToAsyncEnumerable());
+
+        await _controller.StreamChat(NewRequest(), CancellationToken.None);
+
+        var output = ReadBody();
+        Assert.Contains($"data: {{\"reasoning\":\"{reasoning}\"}}", output);
+        Assert.DoesNotContain(ReasoningFrame.Encode(reasoning), output);
+        Assert.Contains("data: {\"content\":\"Hello\"}", output);
+        Assert.DoesNotContain($"data: {{\"content\":\"{reasoning}\"}}", output);
+    }
+
+    [Fact]
     public async Task StreamChat_EmitsTheStatusEvent_BeforeAnyContent()
     {
         // Ordering is the whole feature: a progress frame that arrives after the answer has

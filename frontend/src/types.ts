@@ -16,6 +16,12 @@ export interface Message {
    */
   status?: string;
   /**
+   * Chain-of-thought reasoning text for this turn, when the provider exposed it
+   * (e.g. reasoning models). Streamed on its own frame and shown in a collapsible
+   * "Berpikir" disclosure above the final answer; it is never mixed into `content`.
+   */
+  reasoning?: string;
+  /**
    * Token usage for this specific turn, attached when the streaming turn completes
    * with a usage frame. Undefined on user turns and on replies the provider did not
    * report usage for (e.g. error/abort before any usage frame arrived). Used to render

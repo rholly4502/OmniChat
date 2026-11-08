@@ -152,7 +152,10 @@ public class ChatServiceTests
         }
 
         Assert.Equal(ThinkingFrame, tokens[0]);
-        Assert.Contains("step one", tokens);
+        // The reasoning delta is forwarded on its own frame, never as raw content.
+        var reasoningTokens = tokens.Where(t => t.StartsWith("[reasoning:", StringComparison.Ordinal)).ToArray();
+        Assert.Single(reasoningTokens);
+        Assert.Contains("step one", reasoningTokens[0]);
         Assert.Contains("answer", tokens);
     }
 
@@ -194,8 +197,13 @@ public class ChatServiceTests
             tokens.Add(token);
         }
 
-        Assert.Contains("thinking step", tokens);
+        // The reasoning text must travel on its own frame, separate from final content.
+        var reasoningTokens = tokens.Where(t => t.StartsWith("[reasoning:", StringComparison.Ordinal)).ToArray();
+        Assert.Single(reasoningTokens);
+        Assert.Contains("thinking step", reasoningTokens[0]);
+        // It must never be mixed into the assistant's content token.
         Assert.Contains("final answer", tokens);
+        Assert.DoesNotContain("thinking step", tokens.Where(t => !t.StartsWith("[reasoning:", StringComparison.Ordinal)));
     }
 
     [Fact]
@@ -906,5 +914,40 @@ public class ChatServiceTests
                 return Task.FromException<HttpResponseMessage>(ex);
             }
         }
+    }
+}
+
+/// <summary>
+/// Unit tests for the <see cref="ReasoningFrame"/> wire codec. Reasoning is forwarded
+/// on its own bracketed sentinel so the client can display it separately from the final
+/// answer; the codec must round-trip arbitrary text, including square brackets.
+/// </summary>
+public class ReasoningFrameTests
+{
+    [Fact]
+    public void EncodeAndTryRead_RoundTrip_PlainText()
+    {
+        var frame = ReasoningFrame.Encode("thinking step one");
+        Assert.Equal("[reasoning: thinking step one]", frame);
+        Assert.Equal("thinking step one", ReasoningFrame.TryRead(frame));
+    }
+
+    [Fact]
+    public void TryRead_HandlesBracketsInsideReasoning()
+    {
+        // The payload can itself contain closing brackets; decoding must strip only the
+        // final `]` (the sentinel's own terminator), not split mid-text.
+        var frame = ReasoningFrame.Encode("if [x] then [y]");
+        Assert.Equal("if [x] then [y]", ReasoningFrame.TryRead(frame));
+    }
+
+    [Fact]
+    public void TryRead_ReturnsNull_ForNonReasoningTokens()
+    {
+        Assert.Null(ReasoningFrame.TryRead("plain assistant text"));
+        Assert.Null(ReasoningFrame.TryRead("[status: Berpikir]"));
+        Assert.Null(ReasoningFrame.TryRead("[usage: 1|2]"));
+        Assert.Null(ReasoningFrame.TryRead("[reasoning: ]"));
+        Assert.Null(ReasoningFrame.TryRead(null));
     }
 }

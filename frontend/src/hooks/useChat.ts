@@ -253,6 +253,24 @@ export function useChat(options: UseChatOptions): UseChatResult {
               copy[copy.length - 1] = { ...last, status: phase };
               return copy;
             });
+          } else if (chunk.reasoning) {
+            // Chain-of-thought is displayed as a separate disclosure above the final
+            // answer. Append it live to the trailing assistant message and keep the
+            // phase on "thinking" until the first final-content delta arrives.
+            const piece = chunk.reasoning;
+            setMessages((prev) => {
+              const copy = [...prev];
+              const previous = copy[copy.length - 1];
+              if (!previous || previous.role !== 'assistant') return prev;
+              copy[copy.length - 1] = {
+                role: 'assistant',
+                content: previous.content,
+                reasoning: (previous.reasoning ?? '') + piece,
+                status: 'Berpikir',
+                createdAt: previous.createdAt,
+              };
+              return copy;
+            });
           } else if (chunk.usage) {
             recordUsage(chunk.usage);
             turnUsage.promptTokens += chunk.usage.promptTokens;
@@ -278,6 +296,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
               copy[copy.length - 1] = clearPhase({
                 role: 'assistant',
                 content: last.content ? `${last.content}\n\n⚠️ ${detail}` : `⚠️ ${detail}`,
+                reasoning: last.reasoning,
                 createdAt: last.createdAt,
               });
               return copy;
@@ -291,6 +310,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
               copy[copy.length - 1] = clearPhase({
                 role: 'assistant',
                 content: previous.content + piece,
+                reasoning: previous.reasoning,
                 status: previous.status,
                 createdAt: previous.createdAt,
               });

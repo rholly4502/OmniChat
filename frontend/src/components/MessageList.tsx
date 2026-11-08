@@ -139,6 +139,7 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   return {
     role: m.role,
     content: m.content,
+    ...(m.reasoning ? { reasoning: m.reasoning } : {}),
     ...(m.id ? { id: m.id } : {}),
     ...(m.model ? { model: m.model } : {}),
     ...(m.feedback ? { feedback: m.feedback } : {}),
@@ -157,6 +158,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteArmedIndex, setDeleteArmedIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  /** Index of the assistant bubble whose "Berpikir" disclosure is expanded. */
+  const [openReasoningIndex, setOpenReasoningIndex] = useState<number | null>(null);
   /** Resolved label of the model currently selected, for the typing indicator. */
   const activeModelLabel = models.find((m) => m.id === model)?.label;
   /** Resolves a model id to its label; falls back to the raw id when unknown. */
@@ -219,6 +222,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setEditingIndex(null);
       setDraft('');
       setDeleteArmedIndex(null);
+      setOpenReasoningIndex(null);
       setSearchOpen(false);
       setQuery('');
       setActiveIdx(0);
@@ -499,10 +503,41 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                 }
               `}
             >
-              {m.role === 'assistant' && !m.content ? (
+              {m.role === 'assistant' && !m.content && !m.reasoning ? (
                 <TypingIndicator status={m.status} modelLabel={activeModelLabel} />
               ) : m.role === 'assistant' ? (
                 <div>
+                  {m.reasoning && (
+                    <div className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => setOpenReasoningIndex((cur) => (cur === i ? null : i))}
+                        aria-expanded={openReasoningIndex === i}
+                        aria-controls={`reasoning-${i}`}
+                        className="w-full inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-xs text-chill-muted hover:text-chill-accent active:bg-chill-elevated min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
+                      >
+                        <svg
+                          width="10" height="6" viewBox="0 0 24 24" fill="none"
+                          stroke="currentColor" strokeWidth="3" strokeLinecap="square"
+                          shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"
+                          className={`shrink-0 transition-transform ${openReasoningIndex === i ? 'rotate-180' : ''}`}
+                        >
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                        <span className="font-medium select-none">Berpikir</span>
+                        <span className="text-chill-accent select-none">·</span>
+                        <span className="truncate max-w-[38ch] opacity-80 select-none">{m.reasoning.trim()}</span>
+                      </button>
+                      {openReasoningIndex === i && (
+                        <div
+                          id={`reasoning-${i}`}
+                          className="mt-1 rounded-none border border-chill-border bg-chill-bg px-2.5 py-2 text-xs leading-relaxed text-chill-text whitespace-pre-wrap"
+                        >
+                          {m.reasoning}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <div className="md-body">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}

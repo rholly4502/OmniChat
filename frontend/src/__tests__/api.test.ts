@@ -107,6 +107,23 @@ describe('parseSseBuffer', () => {
     const { events } = parseSseBuffer('data: {"status":"Kerja"}\n\n');
     expect(events[0]).not.toHaveProperty('content');
   });
+
+  it('parses a reasoning frame into its own field', () => {
+    const { events } = parseSseBuffer('data: {"reasoning":"Let me parse this"}\n\n');
+    expect(events).toEqual([{ reasoning: 'Let me parse this' }]);
+  });
+
+  it('never mixes a reasoning frame into content', () => {
+    const { events } = parseSseBuffer('data: {"reasoning":"thinking hard…"}\n\n');
+    expect(events[0]).not.toHaveProperty('content');
+  });
+
+  it('keeps reasoning distinct from content and status', () => {
+    const { events } = parseSseBuffer(
+      'data: {"reasoning":"step1"}\n\ndata: {"status":"Berpikir"}\n\ndata: {"content":"answer"}\n\n'
+    );
+    expect(events).toEqual([{ reasoning: 'step1' }, { status: 'Berpikir' }, { content: 'answer' }]);
+  });
 });
 
 describe('streamChat', () => {

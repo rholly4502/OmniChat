@@ -169,6 +169,13 @@ public sealed class ChatController : ControllerBase
                     continue;
                 }
 
+                var reasoning = ReasoningFrame.TryRead(token);
+                if (reasoning is not null)
+                {
+                    await WriteEventAsync(new { reasoning }, cancellationToken);
+                    continue;
+                }
+
                 reply.Append(token);
                 await WriteEventAsync(new { content = token }, cancellationToken);
             }

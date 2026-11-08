@@ -15,6 +15,11 @@ export interface StreamChunk {
    */
   status?: string;
   /**
+   * Chain-of-thought reasoning text. Sent as its own frame while the model is
+   * still thinking; never mixed into `content`.
+   */
+  reasoning?: string;
+  /**
    * Backend id of the conversation this turn was filed under. Sent once, as the
    * first frame, and only when the server actually recorded the turn.
    */
@@ -71,6 +76,7 @@ export function parseSseBuffer(buffer: string): { events: StreamChunk[]; rest: s
       else if (parsed.conversationId) events.push({ conversationId: parsed.conversationId });
       else if (parsed.messageId) events.push({ messageId: parsed.messageId });
       else if (parsed.usage) events.push({ usage: parsed.usage });
+      else if (parsed.reasoning) events.push({ reasoning: parsed.reasoning });
       else if (parsed.content) events.push({ content: parsed.content });
     } catch {
       // Ignore malformed frames: a single bad event must not kill the stream.

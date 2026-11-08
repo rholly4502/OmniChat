@@ -51,6 +51,36 @@ describe('MessageList', () => {
     expect(region).toHaveAttribute('aria-live', 'polite');
   });
 
+  it('shows a collapsible Berpikir disclosure for an assistant message with reasoning', () => {
+    const messages: Message[] = [
+      { role: 'user', content: 'q', createdAt: 1 },
+      { role: 'assistant', content: 'answer', reasoning: 'thinking step one', createdAt: 2 },
+    ];
+    renderList({ messages });
+    const toggle = screen.getByRole('button', { name: /Berpikir/ });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    // The reasoning body (a <div> carrying the full text) is hidden until expanded.
+    // The button's own preview <span> also contains the text, so target the body div.
+    const bodyId = 'reasoning-1';
+    expect(document.getElementById(bodyId)).toBeNull();
+    fireEvent.click(toggle);
+    expect(document.getElementById(bodyId)).toBeTruthy();
+    expect(document.getElementById(bodyId)?.textContent).toContain('thinking step one');
+    expect(screen.getByRole('button', { name: /Berpikir/ })).toHaveAttribute('aria-expanded', 'true');
+    // Toggle again to collapse.
+    fireEvent.click(screen.getByRole('button', { name: /Berpikir/ }));
+    expect(document.getElementById(bodyId)).toBeNull();
+  });
+
+  it('omits the reasoning disclosure when the assistant message has no reasoning', () => {
+    const messages: Message[] = [
+      { role: 'user', content: 'q', createdAt: 1 },
+      { role: 'assistant', content: 'answer', createdAt: 2 },
+    ];
+    renderList({ messages });
+    expect(screen.queryByRole('button', { name: /Berpikir/ })).toBeNull();
+  });
+
   it('marks itself busy only while streaming', () => {
     const { unmount } = renderList({ streaming: true });
     expect(screen.getByLabelText('Chat messages')).toHaveAttribute('aria-busy', 'true');

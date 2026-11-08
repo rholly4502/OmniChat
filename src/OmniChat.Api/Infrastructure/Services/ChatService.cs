@@ -243,14 +243,18 @@ public sealed class ChatService : IChatService
                                 phase = ProgressMessages.Thinking;
                                 await writer.WriteAsync(ProgressPhase.Encode(phase), ct);
                             }
+                            // Reasoning (chain-of-thought) is forwarded on its own frame so the
+                            // client can show it as a separate disclosure instead of the final
+                            // answer — it must never be mixed into the visible reply.
+                            await writer.WriteAsync(ReasoningFrame.Encode(deltaText), ct);
                         }
                         else
                         {
                             // Final content composes the answer; any later silence reports
                             // "Menyusun jawaban" rather than a pre-token thinking state.
                             phase = ProgressMessages.Working;
+                            await writer.WriteAsync(deltaText, ct);
                         }
-                        await writer.WriteAsync(deltaText, ct);
                     }
                 }
             }
