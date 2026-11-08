@@ -166,6 +166,10 @@ public sealed class ExpenseAdviceService(
         // given calendar day stays deterministic while the full card repeats only after
         // the least common multiple of all pool lengths (~months), not every week.
         var (sarapan, siang, malam, biaya, min, max) = Menus[day % Menus.Length];
+        // When today's food spend already exceeds the planned menu range, offer a simple,
+        // cheaper dinner alternative (date-keyed, own coprime stride) so the panel gives an
+        // actionable next-meal choice instead of only a red overrun banner.
+        var malamSederhana = foodSpend > max ? MalamSederhana[(day * 7 + 4) % MalamSederhana.Length] : null;
         return new DailySuggestions(
             sarapan,
             siang,
@@ -176,7 +180,8 @@ public sealed class ExpenseAdviceService(
             TipsAnakKos[(day * 5 + 3) % TipsAnakKos.Length],
             foodSpend,
             min,
-            max);
+            max,
+            malamSederhana);
     }
 
     /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day.</summary>
@@ -241,6 +246,20 @@ public sealed class ExpenseAdviceService(
          "Nasi, sop ayam bening, tempe goreng tepung tipis",
          "Nasi, semur daging (porsi kecil), tumis buncis",
          "±Rp33–42k", 33000, 42000),
+    ];
+    /// <summary>Simple, cheap (±Rp15k) weight-loss-aligned dinner alternatives offered
+    /// when today's Makan spend has already run past the planned menu range — a concrete
+    /// "what should I eat for the rest of the day" fallback instead of only a red banner.</summary>
+    private static readonly string[] MalamSederhana =
+    [
+        "Telur dadar + sayur bening bayam + nasi kecil (±Rp13k).",
+        "Tahu bacem + lalapan + nasi kecil (±Rp12k).",
+        "Sup ayam bening + tempe goreng tipis + nasi kecil (±Rp14k).",
+        "Telur rebus 2 + timun + nasi kecil (±Rp10k).",
+        "Lele goreng + sambal + timun + nasi kecil (±Rp14k).",
+        "Sayur lodeh + tahu + nasi kecil (±Rp12k).",
+        "Omelet sayur + roti gandum (tanpa nasi) (±Rp13k).",
+        "Sop jagung wortel + telur rebus + nasi kecil (±Rp13k).",
     ];
 /// <summary>Free daily activities doable in/around a kos, rotated by day.</summary>
         private static readonly string[] Aktivitas =

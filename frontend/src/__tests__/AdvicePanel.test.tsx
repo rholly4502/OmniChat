@@ -451,4 +451,31 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
     expect(screen.queryByText(/melebihi sisa anggaran/)).not.toBeInTheDocument();
     expect(screen.queryByText(/masih dalam sisa anggaran/)).not.toBeInTheDocument();
   });
+
+  it('shows a simple dinner alternative when food spend exceeds the menu plan', async () => {
+    const daily = {
+      ...advicePayload.daily,
+      foodSpend: 45000,
+      biayaMax: 30000,
+      malamSederhana: 'Telur dadar + sayur bening bayam + nasi kecil (±Rp13k).',
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ ...advicePayload, daily })));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText(/makan malam bisa diganti/)).toBeInTheDocument();
+    expect(screen.getByText('Telur dadar + sayur bening bayam + nasi kecil (±Rp13k).')).toBeInTheDocument();
+    // The three planned meals still render alongside the fallback tip.
+    expect(screen.getByText('Oatmeal + pisang + teh tawar')).toBeInTheDocument();
+  });
+
+  it('renders no dinner alternative when food spend stays within the menu plan', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/makan malam bisa diganti/)).not.toBeInTheDocument();
+  });
 });

@@ -287,6 +287,16 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     );
                   })()
                 )}
+                {advice.daily.malamSederhana && (
+                  <div className="relative overflow-hidden rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2 mt-1">
+                    <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-accent/40" />
+                    <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-accent/40" />
+                    <p className="text-sm text-chill-text font-medium">
+                      Pengeluaran makan hari ini sudah lewat rencana hemat — untuk sisa hari ini, makan malam bisa diganti:{' '}
+                      <span className="text-chill-muted">{advice.daily.malamSederhana}</span>
+                    </p>
+                  </div>
+                )}
                 <DailyTip label="Sarapan">{advice.daily.sarapan}</DailyTip>
                 <DailyTip label="Makan siang">{advice.daily.makanSiang}</DailyTip>
                 <DailyTip label="Makan malam">{advice.daily.makanMalam}</DailyTip>

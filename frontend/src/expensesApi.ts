@@ -266,6 +266,9 @@ export interface DailySuggestionsDto {
   biayaMin: number;
   /** High end of the selected menu set's frugal daily-cost range (rupiah). */
   biayaMax: number;
+  /** When today's actual "Makan" spend already exceeds the planned menu range, a
+      concrete cheap dinner alternative for the rest of the day (null otherwise). */
+  malamSederhana: string | null;
 }
 
 /** Spend-pace comparison against the same day-of-month in the prior month. */

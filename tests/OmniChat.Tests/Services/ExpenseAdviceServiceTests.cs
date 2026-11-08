@@ -637,5 +637,62 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(2_900_000, advice.RemainingAllowance.RemainingBudget);
         Assert.Equal(2_900_000, advice.RemainingAllowance.PerDayAllowance);
     }
+
+    [Fact]
+    public async Task DailySuggestions_simpleDinnerAlternative_shownWhenFoodSpendExceedsMenuMax()
+    {
+        // When today's Makan spend already tops the planned menu range, the panel must
+        // offer a concrete cheap dinner alternative rather than only a red banner.
+        var probe = NewService(new FakeExpenseRepository());
+        var d = new DateOnly(2026, 11, 5);
+        var max = (await probe.BuildAsync(d, CancellationToken.None)).Daily.BiayaMax;
+
+        var repo = new FakeExpenseRepository();
+        repo.Rows.Add(Row(d, "Makan", max + 10_000, "food"));
+
+        var service = NewService(repo);
+        var advice = await service.BuildAsync(d, CancellationToken.None);
+
+        Assert.False(string.IsNullOrWhiteSpace(advice.Daily.MalamSederhana));
+        // Deterministic per date.
+        var again = await service.BuildAsync(d, CancellationToken.None);
+        Assert.Equal(advice.Daily.MalamSederhana, again.Daily.MalamSederhana);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_simpleDinnerAlternative_nullWhenFoodSpendWithinMenuRange()
+    {
+        var probe = NewService(new FakeExpenseRepository());
+        var d = new DateOnly(2026, 11, 6);
+        var min = (await probe.BuildAsync(d, CancellationToken.None)).Daily.BiayaMin;
+
+        var repo = new FakeExpenseRepository();
+        repo.Rows.Add(Row(d, "Makan", Math.Max(1, min / 2), "food"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Null(advice.Daily.MalamSederhana);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_simpleDinnerAlternatives_rotateAllEntriesAcrossWindow()
+    {
+        // The fallback pool rotates on its own coprime stride; over ~16 days every one
+        // of the simple-dinner options must surface at least once when over budget.
+        var service = NewService(new FakeExpenseRepository());
+        var anchor = new DateOnly(2026, 11, 1);
+        var seen = new HashSet<string>();
+        for (var i = 0; i < 16; i++)
+        {
+            var d = anchor.AddDays(i);
+            var max = (await service.BuildAsync(d, CancellationToken.None)).Daily.BiayaMax;
+            var repo = new FakeExpenseRepository();
+            repo.Rows.Add(Row(d, "Makan", max + 5_000, $"f{i}"));
+            var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+            Assert.NotNull(advice.Daily.MalamSederhana);
+            seen.Add(advice.Daily.MalamSederhana!);
+        }
+        Assert.Equal(8, seen.Count); // full simple-dinner pool surfaced within the window
+    }
 }
 
