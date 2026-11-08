@@ -492,7 +492,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             <div
               className={`
                 max-w-[85%] md:max-w-[75%] rounded-none px-3.5 md:px-4 py-2.5 md:py-3
-                text-sm leading-relaxed break-words
+                text-sm leading-relaxed break-words pixel-reveal
                 ${m.role === 'user'
                   ? 'bg-chill-accent text-chill-on-accent border-2 border-chill-border'
                   : 'bg-chill-surface border-2 border-chill-border rounded-none'
