@@ -426,6 +426,8 @@ export default function App() {
               modelLabel={models.find((m) => m.id === model)?.label}
               usage={usage}
               streamingEstimate={streamingEstimate}
+              streaming={streaming}
+              status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined}
               models={models}
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}

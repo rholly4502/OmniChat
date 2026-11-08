@@ -3,6 +3,7 @@ import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversa
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import { CostDetailsPopover } from './CostDetailsPopover';
+import { TypingIndicator } from './TypingIndicator';
 import type { ModelOption, TokenUsage } from '../types';
 
 export interface ChatHeaderProps {
@@ -53,6 +54,17 @@ export interface ChatHeaderProps {
    * even with the sidebar collapsed. Optional.
    */
   title?: string;
+  /**
+   * true while an assistant reply is streaming, so the header shows a live
+   * "thinking" indicator (phase + model + elapsed) at a glance, even when the
+   * transcript is scrolled away from the typing indicator.
+   */
+  streaming?: boolean;
+  /**
+   * Progress phase reported by the backend for the in-flight reply (e.g.
+   * "Berpikir…" / "Menyusun jawaban"). Only meaningful while `streaming` is true.
+   */
+  status?: string;
 }
 
 /**
@@ -61,7 +73,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, title, streamingEstimate = 0 }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, title, streamingEstimate = 0, streaming = false, status }: ChatHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -140,6 +152,15 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
           aria-label={`Percakapan: ${title}`}
         >
           {title}
+        </span>
+      )}
+      {/* The transcript's own typing indicator is the live region that announces
+          to assistive tech; this header copy is a purely visual at-a-glance
+          mirror, so it is aria-hidden to avoid a duplicate screen-reader
+          announcement every second. */}
+      {streaming && (
+        <span aria-hidden="true" className="inline-flex items-center">
+          <TypingIndicator status={status} modelLabel={modelLabel} />
         </span>
       )}
       <div className="ml-auto inline-flex items-center gap-2">

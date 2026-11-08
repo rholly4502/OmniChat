@@ -165,3 +165,24 @@ describe('conversation title', () => {
     expect(screen.queryByLabelText(/Percakapan:/)).not.toBeInTheDocument();
   });
 });
+
+describe('ChatHeader streaming indicator', () => {
+  it('shows a live typing indicator with phase and model while streaming', () => {
+    const { container } = renderHeader({ streaming: true, status: 'Berpikir', modelLabel: 'Claude Sonnet' });
+    const status = container.querySelector('[role="status"]');
+    expect(status).toBeTruthy();
+    expect(status).toHaveAttribute('aria-label', 'Berpikir · Claude Sonnet');
+  });
+
+  it('falls back to the default waiting label when no phase is reported yet', () => {
+    const { container } = renderHeader({ streaming: true });
+    const status = container.querySelector('[role="status"]');
+    expect(status).toBeTruthy();
+    expect(status).toHaveAttribute('aria-label', 'Menunggu respons · Claude Sonnet');
+  });
+
+  it('hides the indicator when the reply is not streaming', () => {
+    const { container } = renderHeader({ streaming: false });
+    expect(container.querySelector('[role="status"]')).toBeNull();
+  });
+});
