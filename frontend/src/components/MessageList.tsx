@@ -531,7 +531,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       {openReasoningIndex === i && (
                         <div
                           id={`reasoning-${i}`}
-                          className="mt-1 rounded-none border border-chill-border bg-chill-bg px-2.5 py-2 text-xs leading-relaxed text-chill-text whitespace-pre-wrap"
+                          className="mt-1 rounded-none border border-chill-border bg-chill-bg px-2.5 py-2 text-xs leading-relaxed text-chill-text whitespace-pre-wrap pixel-reveal"
                         >
                           {m.reasoning}
                         </div>

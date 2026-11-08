@@ -66,6 +66,8 @@ describe('MessageList', () => {
     fireEvent.click(toggle);
     expect(document.getElementById(bodyId)).toBeTruthy();
     expect(document.getElementById(bodyId)?.textContent).toContain('thinking step one');
+    // The revealed body uses the app's stepped reveal entrance animation.
+    expect(document.getElementById(bodyId)).toHaveClass('pixel-reveal');
     expect(screen.getByRole('button', { name: /Berpikir/ })).toHaveAttribute('aria-expanded', 'true');
     // Toggle again to collapse.
     fireEvent.click(screen.getByRole('button', { name: /Berpikir/ }));
