@@ -316,6 +316,10 @@ export interface MonthlyNabungDto {
   percentCollected: number;
   /** max(0, target - collectedThisMonth). */
   remaining: number;
+  /** Projected end-of-month savings at the current spend pace: max(0, anggaran - projectedTotal). */
+  projectedSavings: number;
+  /** max(0, target - projectedSavings) — the shortfall vs the monthly savings target. */
+  projectedDeficit: number;
 }
 
 /** Analisa & Saran report from `GET /api/expenses/advice`. */

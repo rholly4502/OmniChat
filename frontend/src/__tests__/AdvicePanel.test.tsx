@@ -65,6 +65,8 @@ const advicePayload = {
     collectedThisMonth: 800000,
     percentCollected: 25.8,
     remaining: 2300000,
+    projectedSavings: 0,
+    projectedDeficit: 3100000,
   },
 };
 
@@ -501,12 +503,34 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
   });
 
   it('nudges when no savings deposit has been set this month', async () => {
-    const m = { target: 3100000, collectedThisMonth: 0, percentCollected: 0, remaining: 3100000 };
+    const m = { target: 3100000, collectedThisMonth: 0, percentCollected: 0, remaining: 3100000, projectedSavings: 0, projectedDeficit: 3100000 };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ ...advicePayload, monthlyNabung: m })));
     render(<AdvicePanel apiKey="secret" month="2026-05" />);
     fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
     expect(screen.getByText('Belum ada setoran Nabung bulan ini.')).toBeInTheDocument();
+  });
+
+  it('flags when the projected savings fall short of the monthly target', async () => {
+    const m = { target: 3100000, collectedThisMonth: 800000, percentCollected: 25.8, remaining: 2300000, projectedSavings: 400000, projectedDeficit: 2700000 };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ ...advicePayload, monthlyNabung: m })));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const note = screen.getByText(/diperkirakan tersisa/);
+    expect(note.textContent).toContain('kurang');
+    expect(note.textContent).toContain('2.700.000');
+  });
+
+  it('shows when the monthly savings target is projected to be met', async () => {
+    const m = { target: 3100000, collectedThisMonth: 1000000, percentCollected: 32.3, remaining: 2100000, projectedSavings: 3100000, projectedDeficit: 0 };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ ...advicePayload, monthlyNabung: m })));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText(/diproyeksikan tercapai/)).toBeInTheDocument();
   });
 });

@@ -65,7 +65,9 @@ public sealed record MonthlyNabung(
     long Target,
     long CollectedThisMonth,
     double PercentCollected,
-    long Remaining);
+    long Remaining,
+    long ProjectedSavings,
+    long ProjectedDeficit);
 
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.

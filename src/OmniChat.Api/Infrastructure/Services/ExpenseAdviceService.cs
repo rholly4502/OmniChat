@@ -73,6 +73,11 @@ public sealed class ExpenseAdviceService(
             ? fixedCommitted + (long)Math.Round(discretionary / (double)daysElapsed * daysInMonth)
             : 0;
         var projectedOver = anggaran > 0 ? Math.Max(0, projectedTotal - anggaran) : 0;
+        // Mirror of the spend projection for the savings goal: at the current spend
+        // pace, how much will actually be left to bank this month vs the user-set
+        // monthly target. A comfortable spending projection can still miss the
+        // savings target entirely, so surface the shortfall explicitly.
+        var projectedSavings = Math.Max(0, anggaran - projectedTotal);
 
         // Spend-pace baseline: cumulative non-Nabung spend through the same day-of-month
         // this month vs last month. Filtered by month prefix so the comparison stays
@@ -131,6 +136,7 @@ public sealed class ExpenseAdviceService(
             .Where(r => r.Kategori == "Nabung" && r.Tanggal <= date)
             .Sum(r => r.Nominal);
         var remainingNabung = Math.Max(0, nabungTarget - nabungThisMonth);
+        var projectedDeficit = Math.Max(0, nabungTarget - projectedSavings);
         var percentNabung = nabungTarget > 0
             ? Math.Min(100, Math.Round(nabungThisMonth / (double)nabungTarget * 100, 1))
             : 0;
@@ -161,7 +167,7 @@ public sealed class ExpenseAdviceService(
                 monthsToReach),
             Daily(date, foodSpend),
             new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance),
-            new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung));
+            new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung, projectedSavings, projectedDeficit));
     }
 
     /// <summary>

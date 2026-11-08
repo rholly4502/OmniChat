@@ -786,4 +786,48 @@ public sealed class ExpenseAdviceServiceTests
 
         Assert.Equal(200_000, advice.MonthlyNabung.CollectedThisMonth);
     }
+
+    [Fact]
+    public async Task MonthlyNabung_projectedSavings_meetsTargetWhenSpendPaceAllows()
+    {
+        // No non-Nabung spend yet → the projection rounds to ~0 spend, so the whole
+        // budget is still available to bank → the 3.1jt savings target is covered.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 8), CancellationToken.None);
+
+        var n = advice.MonthlyNabung;
+        Assert.Equal(3_900_000, n.ProjectedSavings);
+        Assert.Equal(0, n.ProjectedDeficit);
+    }
+
+    [Fact]
+    public async Task MonthlyNabung_projectedDeficit_whenSpendPaceFallsShortOfMonthlyTarget()
+    {
+        // Same scenario as RemainingAllowance: a lumpy sewa bill + current daily pace
+        // projects ~4.04jt spend (over budget) → nothing left to save → the full
+        // 3.1jt target is the shortfall. This is the "at this pace I can't hit my
+        // savings goal" signal the panel must surface.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 6);
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "kos"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Makan", 53_000, "m1"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 2), "Makan", 30_000, "m2"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Transport", 160_000, "t1"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 4), "Makan", 72_000, "m3"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 5), "Makan", 50_000, "m4"));
+        repo.Rows.Add(Row(d, "Makan", 183_000, "m5"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(4_040_000, advice.Projection.ProjectedTotal);
+        var n = advice.MonthlyNabung;
+        Assert.Equal(0, n.ProjectedSavings);
+        Assert.Equal(3_100_000, n.ProjectedDeficit);
+    }
 }

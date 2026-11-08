@@ -448,6 +448,23 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                   {advice.monthlyNabung.collectedThisMonth === 0 && (
                     <p className="mt-2 text-sm text-chill-muted">Belum ada setoran Nabung bulan ini.</p>
                   )}
+                  {advice.monthlyNabung.projectedDeficit > 0 ? (
+                    <div className="relative overflow-hidden rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 mt-2">
+                      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-red/40" />
+                      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-red/40" />
+                      <p className="text-sm text-chill-red font-medium">
+                        Pada pola pengeluaran saat ini, diperkirakan tersisa ±{formatRupiah(advice.monthlyNabung.projectedSavings)} untuk ditabung bulan ini vs target {formatRupiah(advice.monthlyNabung.target)} — kurang {formatRupiah(advice.monthlyNabung.projectedDeficit)}. Kurangi pengeluaran harian supaya target tercapai.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="relative overflow-hidden rounded-none border border-chill-sage/40 bg-chill-sage/10 px-3 py-2 mt-2">
+                      <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-sage/40" />
+                      <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-sage/40" />
+                      <p className="text-sm text-chill-sage font-medium">
+                        Dengan pola ini, target nabung bulan ini diproyeksikan tercapai (±{formatRupiah(advice.monthlyNabung.projectedSavings)} ≥ {formatRupiah(advice.monthlyNabung.target)}).
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
