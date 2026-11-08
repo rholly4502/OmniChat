@@ -363,7 +363,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => toggleFollowUpEdit(o.id, o.followUpTanggal)}
+                      onClick={() => toggleFollowUpEdit(o.id, o.followUpTanggal ?? null)}
                       className="rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated hover:text-chill-text min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
                     >
                       {o.followUpTanggal ? 'Ubah follow-up' : 'Atur follow-up'}
