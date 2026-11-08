@@ -972,3 +972,59 @@ describe('MessageList pressed-state feedback', () => {
     expect(search).toHaveClass('transition');
   });
 });
+
+describe('MessageList reasoning copy action', () => {
+  it('copies the reasoning text when the disclosure is expanded', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({
+      messages: [
+        { role: 'user', content: 'q', createdAt: 1 },
+        { role: 'assistant', content: 'answer', reasoning: 'thinking step one', createdAt: 2 },
+      ],
+    });
+    // The copy affordance lives inside the expanded disclosure, not before it.
+    expect(screen.queryByRole('button', { name: 'Salin cara berpikir' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Berpikir/ }));
+    expect(screen.getByRole('button', { name: 'Salin cara berpikir' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Salin cara berpikir' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith('thinking step one');
+  });
+
+  it('shows a transient copied confirmation for reasoning', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({
+      messages: [
+        { role: 'user', content: 'q', createdAt: 1 },
+        { role: 'assistant', content: 'answer', reasoning: 'thinking step one', createdAt: 2 },
+      ],
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Berpikir/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Salin cara berpikir' }));
+    expect(await screen.findByRole('button', { name: 'Cara berpikir tersalin' })).toBeInTheDocument();
+  });
+
+  it('never offers the reasoning copy action when the disclosure is collapsed', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'q', createdAt: 1 },
+        { role: 'assistant', content: 'answer', reasoning: 'thinking step one', createdAt: 2 },
+      ],
+    });
+    expect(screen.queryByRole('button', { name: 'Salin cara berpikir' })).not.toBeInTheDocument();
+  });
+
+  it('gives the reasoning copy button a 44px touch target on mobile', () => {
+    renderList({
+      messages: [
+        { role: 'user', content: 'q', createdAt: 1 },
+        { role: 'assistant', content: 'answer', reasoning: 'thinking step one', createdAt: 2 },
+      ],
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Berpikir/ }));
+    const btn = screen.getByRole('button', { name: 'Salin cara berpikir' });
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('min-w-[44px]');
+  });
+});

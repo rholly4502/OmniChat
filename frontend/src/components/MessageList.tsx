@@ -160,6 +160,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const [draft, setDraft] = useState('');
   /** Index of the assistant bubble whose "Berpikir" disclosure is expanded. */
   const [openReasoningIndex, setOpenReasoningIndex] = useState<number | null>(null);
+  const [reasoningCopiedIndex, setReasoningCopiedIndex] = useState<number | null>(null);
   /** Resolved label of the model currently selected, for the typing indicator. */
   const activeModelLabel = models.find((m) => m.id === model)?.label;
   /** Resolves a model id to its label; falls back to the raw id when unknown. */
@@ -223,6 +224,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setDraft('');
       setDeleteArmedIndex(null);
       setOpenReasoningIndex(null);
+      setReasoningCopiedIndex(null);
       setSearchOpen(false);
       setQuery('');
       setActiveIdx(0);
@@ -277,6 +279,16 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     navigator.clipboard?.writeText(text).then(() => {
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
+    }).catch(() => {});
+  };
+
+  /** Copy a turn's reasoning text to the clipboard and flash confirmation. */
+  const handleCopyReasoning = (index: number) => {
+    const reasoning = messages[index]?.reasoning;
+    if (!reasoning) return;
+    navigator.clipboard?.writeText(reasoning).then(() => {
+      setReasoningCopiedIndex(index);
+      setTimeout(() => setReasoningCopiedIndex(null), 2000);
     }).catch(() => {});
   };
 
@@ -534,6 +546,20 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           className="mt-1 rounded-none border border-chill-border bg-chill-bg px-2.5 py-2 text-xs leading-relaxed text-chill-text whitespace-pre-wrap pixel-reveal"
                         >
                           {m.reasoning}
+                          <div className="mt-1.5 pt-1.5 border-t border-chill-border flex justify-end">
+                            <ActionButton
+                              label="Salin cara berpikir"
+                              activeLabel="Cara berpikir tersalin"
+                              active={reasoningCopiedIndex === i}
+                              onClick={() => handleCopyReasoning(i)}
+                              icon={
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                              }
+                              activeIcon={
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                              }
+                            />
+                          </div>
                         </div>
                       )}
                     </div>
