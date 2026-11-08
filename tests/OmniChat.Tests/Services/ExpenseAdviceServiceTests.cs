@@ -694,5 +694,56 @@ public sealed class ExpenseAdviceServiceTests
         }
         Assert.Equal(8, seen.Count); // full simple-dinner pool surfaced within the window
     }
-}
 
+    [Fact]
+    public async Task MonthlyNabung_reflectsDepositsAgainstTarget()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        // Two deposits before/on the analysed date; one after is not yet "collected".
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Nabung", 500_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 8), "Nabung", 300_000, "b"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 15), "Nabung", 400_000, "c"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 8), CancellationToken.None);
+
+        var n = advice.MonthlyNabung;
+        Assert.Equal(3_100_000, n.Target);
+        Assert.Equal(800_000, n.CollectedThisMonth);
+        Assert.Equal(2_300_000, n.Remaining);
+        Assert.True(n.PercentCollected > 25.7 && n.PercentCollected < 25.9);
+    }
+
+    [Fact]
+    public async Task MonthlyNabung_zeroWhenNoTarget()
+    {
+        var repo = new FakeExpenseRepository(); // no target
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Nabung", 500_000, "a"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 8), CancellationToken.None);
+
+        var n = advice.MonthlyNabung;
+        Assert.Equal(0, n.Target);
+        // Collected still reflects actual deposits even when no target is set.
+        Assert.Equal(500_000, n.CollectedThisMonth);
+        Assert.Equal(0, n.Remaining);
+        Assert.Equal(0, n.PercentCollected);
+    }
+
+    [Fact]
+    public async Task MonthlyNabung_excludesDepositsAfterAnalysedDate()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 5), "Nabung", 200_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 12), "Nabung", 900_000, "b"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 8), CancellationToken.None);
+
+        Assert.Equal(200_000, advice.MonthlyNabung.CollectedThisMonth);
+    }
+}

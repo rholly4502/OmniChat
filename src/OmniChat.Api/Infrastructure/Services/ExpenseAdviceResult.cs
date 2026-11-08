@@ -58,6 +58,15 @@ public sealed record RemainingAllowance(
     int DaysLeft,
     long PerDayAllowance);
 
+/// <summary>This month's savings effort vs the user-set monthly target
+/// (target_nabung). The actionable near-term counterpart to the long-term PC
+/// goal: how much of this month's saving target has been set aside so far.</summary>
+public sealed record MonthlyNabung(
+    long Target,
+    long CollectedThisMonth,
+    double PercentCollected,
+    long Remaining);
+
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.
 /// </summary>
@@ -74,4 +83,5 @@ public sealed record ExpenseAdvice(
     Pace Pace,
     PcGoal PcGoal,
     DailySuggestions Daily,
-    RemainingAllowance RemainingAllowance);
+    RemainingAllowance RemainingAllowance,
+    MonthlyNabung MonthlyNabung);

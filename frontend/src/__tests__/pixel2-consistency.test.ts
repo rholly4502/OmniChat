@@ -253,9 +253,9 @@ describe('pixel2 advice frame grammar', () => {
     // top/left bevel + bottom-left chisel corner, or the panel's frame grammar
     // fragments mid-panel.
     const corners = a.match(/bg-chill-accent\/15/g) ?? [];
-    // Saran Harian, pace (Bandingkan), Proyeksi, Sisa anggaran — four framed
-    // boxes, each with the top-right accent pixel.
-    expect(corners.length).toBe(4);
+    // Saran Harian, pace (Bandingkan), Proyeksi, Sisa anggaran, Progres
+    // Nabung — five framed boxes, each with the top-right accent pixel.
+    expect(corners.length).toBe(5);
     // The pace card block itself must carry it (guards against a copy-paste
     // omission in the middle block).
     const pace = a.slice(a.indexOf('Bandingkan dengan bulan lalu') - 400, a.indexOf('Bandingkan dengan bulan lalu'));
@@ -263,5 +263,8 @@ describe('pixel2 advice frame grammar', () => {
     // The Sisa anggaran block must carry it too.
     const sisa = a.slice(a.indexOf('Sisa anggaran') - 400, a.indexOf('Sisa anggaran'));
     expect(sisa).toContain('bg-chill-accent/15');
+    // The Progres Nabung block must carry it too.
+    const nabung = a.slice(a.indexOf('Progres Nabung Bulan Ini') - 400, a.indexOf('Progres Nabung Bulan Ini'));
+    expect(nabung).toContain('bg-chill-accent/15');
   });
 });

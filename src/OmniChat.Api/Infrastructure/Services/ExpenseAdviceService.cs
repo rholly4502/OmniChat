@@ -123,6 +123,18 @@ public sealed class ExpenseAdviceService(
         var daysLeft = Math.Max(1, effectiveDays - date.Day);
         var perDayAllowance = anggaran > 0 ? (long)Math.Floor(remainingBudget / (double)daysLeft) : 0;
 
+        // This month's savings effort vs the user-set monthly target (target_nabung).
+        // The monthly target is the actionable near-term number; the PC goal above is
+        // the long-term total. Collected = Nabung deposits up to the analysed date.
+        var nabungTarget = target?.TargetNabung ?? 0;
+        var nabungThisMonth = rows
+            .Where(r => r.Kategori == "Nabung" && r.Tanggal <= date)
+            .Sum(r => r.Nominal);
+        var remainingNabung = Math.Max(0, nabungTarget - nabungThisMonth);
+        var percentNabung = nabungTarget > 0
+            ? Math.Min(100, Math.Round(nabungThisMonth / (double)nabungTarget * 100, 1))
+            : 0;
+
         return new ExpenseAdvice(
             date.ToString("yyyy-MM-dd"),
             month,
@@ -148,7 +160,8 @@ public sealed class ExpenseAdviceService(
                 potentialSavingPerMonth,
                 monthsToReach),
             Daily(date, foodSpend),
-            new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance));
+            new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance),
+            new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung));
     }
 
     /// <summary>

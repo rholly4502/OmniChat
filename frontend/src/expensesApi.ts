@@ -305,6 +305,19 @@ export interface RemainingAllowanceDto {
   perDayAllowance: number;
 }
 
+/** This month's savings effort vs the user-set monthly target (target_nabung). The
+    actionable near-term counterpart to the long-term PC goal. */
+export interface MonthlyNabungDto {
+  /** The month's savings target in rupiah. */
+  target: number;
+  /** Nabung deposits collected up to the analysed date this month. */
+  collectedThisMonth: number;
+  /** collectedThisMonth / target * 100 (0–100). */
+  percentCollected: number;
+  /** max(0, target - collectedThisMonth). */
+  remaining: number;
+}
+
 /** Analisa & Saran report from `GET /api/expenses/advice`. */
 export interface ExpenseAdvice {
   /** YYYY-MM-DD (WIB). */
@@ -322,6 +335,7 @@ export interface ExpenseAdvice {
   remainingAllowance: RemainingAllowanceDto;
   pcGoal: PcGoalDto;
   daily: DailySuggestionsDto;
+  monthlyNabung: MonthlyNabungDto;
 }
 
 /** Fetch the daily Analisa & Saran report for a date (YYYY-MM-DD). */

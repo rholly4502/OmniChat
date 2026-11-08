@@ -427,6 +427,30 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                 </div>
               )}
 
+              {advice.monthlyNabung.target > 0 && (
+                <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 pixel-shadow-sm">
+                  <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
+                  <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                  <div aria-hidden="true" className="absolute right-0 top-0 h-2 w-2 bg-chill-accent/15" />
+                  <div className="flex items-center justify-between gap-3">
+                    <h4 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Progres Nabung Bulan Ini</h4>
+                    <span className={`text-sm font-semibold tabular-nums ${advice.monthlyNabung.percentCollected >= 100 ? 'text-chill-sage' : 'text-chill-accent'}`}>
+                      {formatRupiah(advice.monthlyNabung.collectedThisMonth)}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-chill-muted tabular-nums">
+                    dari target {formatRupiah(advice.monthlyNabung.target)} ({advice.monthlyNabung.percentCollected}%) · kurang {formatRupiah(advice.monthlyNabung.remaining)}
+                  </p>
+                  <div className="mt-2">
+                    <PixelProgress percent={advice.monthlyNabung.percentCollected} />
+                  </div>
+                  {advice.monthlyNabung.collectedThisMonth === 0 && (
+                    <p className="mt-2 text-sm text-chill-muted">Belum ada setoran Nabung bulan ini.</p>
+                  )}
+                </div>
+              )}
+
               <div className="border-t border-chill-border pt-3">
                 <div className="flex items-center gap-1.5 mb-2">
                     {/* Easter egg: sage sprout (Stardew Valley) — decorative, aria-hidden */}

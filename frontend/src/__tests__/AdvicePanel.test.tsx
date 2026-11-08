@@ -60,6 +60,12 @@ const advicePayload = {
     funFact: 'Otak butuh ±20% energi tubuh',
     tipAnakKos: 'Masak sendiri: belanja bahan seminggu sekali',
   },
+  monthlyNabung: {
+    target: 3100000,
+    collectedThisMonth: 800000,
+    percentCollected: 25.8,
+    remaining: 2300000,
+  },
 };
 
 afterEach(() => {
@@ -83,6 +89,8 @@ describe('AdvicePanel', () => {
     expect(screen.getByText('Oatmeal + pisang + teh tawar')).toBeInTheDocument();
     expect(screen.getByText('Tahukah kamu?')).toBeInTheDocument();
     expect(screen.getByText('Tips anak kos')).toBeInTheDocument();
+    expect(screen.getByText('Progres Nabung Bulan Ini')).toBeInTheDocument();
+    expect(screen.getByText(/dari target/)).toBeInTheDocument();
   });
 
   it('shows a message when no API key is provided', async () => {
@@ -477,5 +485,28 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
     expect(screen.queryByText(/makan malam bisa diganti/)).not.toBeInTheDocument();
+  });
+
+  it('renders the monthly nabung target progress', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    // formatRupiah emits a non-breaking space between "Rp" and the amount.
+    expect(screen.getByText(/Rp\s*800\.000/)).toBeInTheDocument();
+    expect(screen.getByText(/dari target/)).toBeInTheDocument();
+    expect(screen.getByText(/25.8%/)).toBeInTheDocument();
+    expect(screen.getByText(/dari target.*kurang/)).toBeInTheDocument();
+  });
+
+  it('nudges when no savings deposit has been set this month', async () => {
+    const m = { target: 3100000, collectedThisMonth: 0, percentCollected: 0, remaining: 3100000 };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ ...advicePayload, monthlyNabung: m })));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.getByText('Belum ada setoran Nabung bulan ini.')).toBeInTheDocument();
   });
 });
