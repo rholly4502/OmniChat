@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -32,14 +31,14 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_PromoEvents_SourceId",
-                table: "PromoEvents",
-                column: "SourceId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PromoEvents_Aplikasi",
                 table: "PromoEvents",
                 column: "Aplikasi");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PromoEvents_SourceId",
+                table: "PromoEvents",
+                column: "SourceId");
         }
 
         /// <inheritdoc />

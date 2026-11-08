@@ -293,6 +293,53 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.ToTable("Opportunities", (string)null);
                 });
 
+            modelBuilder.Entity("OmniChat.Domain.Entities.PromoEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Aplikasi")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Benefit")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("BerlakuSampai")
+                        .HasMaxLength(64)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Ditemukan")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Judul")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Link")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Syarat")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Aplikasi");
+
+                    b.HasIndex("SourceId");
+
+                    b.ToTable("PromoEvents", (string)null);
+                });
+
             modelBuilder.Entity("OmniChat.Domain.Entities.Message", b =>
                 {
                     b.HasOne("OmniChat.Domain.Entities.Conversation", "Conversation")
