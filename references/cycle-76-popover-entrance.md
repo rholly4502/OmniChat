@@ -1,6 +1,6 @@
 ## Cycle 76 — popover/menu entrance animation (2026-11-08)
 
-**Commit `XXXX`**, frontend-only. CI + Deploy green, live bundle hash matched.
+**Commit `8e2ef61`**, frontend-only. CI + Deploy green, live bundle hash matched.
 
 ### What changed
 The three transient popover/menu panels mounted instantly while every other surface
