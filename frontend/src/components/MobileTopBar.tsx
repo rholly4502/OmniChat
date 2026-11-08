@@ -218,9 +218,13 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">
           Pengeluaran
         </span>
-      ) : (
+      ) : activeView === 'jobs' ? (
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">
           Lowongan
+        </span>
+      ) : (
+        <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">
+          Event
         </span>
       )}
     </div>

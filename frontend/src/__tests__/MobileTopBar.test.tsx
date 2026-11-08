@@ -135,6 +135,19 @@ describe('MobileTopBar', () => {
     expect(screen.queryByText(/token/)).not.toBeInTheDocument();
   });
 
+  it('on the Event view shows a pixel view chip and hides chat telemetry', () => {
+    renderBar({ activeView: 'events' });
+    expect(screen.getByText('Event')).toBeInTheDocument();
+    const chip = screen.getByText('Event');
+    expect(chip.className).toContain('pixel-heading');
+    expect(chip.className).toContain('bg-chill-elevated');
+    expect(chip.className).toContain('rounded-none');
+    expect(screen.queryByText('Agent')).not.toBeInTheDocument();
+    expect(screen.queryByText('Direct')).not.toBeInTheDocument();
+    expect(screen.queryByText('Lowongan')).not.toBeInTheDocument();
+    expect(screen.queryByText(/token/)).not.toBeInTheDocument();
+  });
+
   it('renders the active model label beside the mode badge in the admin header', () => {
     renderBar({ model: 'hermes-default', modelLabel: 'Hermes Default' });
     expect(screen.getByText('Hermes Default')).toBeInTheDocument();
