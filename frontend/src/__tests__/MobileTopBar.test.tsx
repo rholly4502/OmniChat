@@ -298,3 +298,34 @@ describe('conversation title', () => {
     expect(screen.queryByLabelText(/Percakapan:/)).not.toBeInTheDocument();
   });
 });
+
+describe('streaming indicator (mobile parity with ChatHeader)', () => {
+  it('guest variant shows a live thinking indicator while streaming', () => {
+    const { container } = renderBar({ isGuest: true, streaming: true, status: 'Berpikir', modelLabel: 'DeepSeek' });
+    // The indicator is aria-hidden (the transcript's own live region announces),
+    // so assert on the rendered pixel blocks + the aria-hidden wrapper.
+    const loader = container.querySelector('[aria-hidden="true"]');
+    expect(loader).toBeTruthy();
+    expect(container.querySelectorAll('.pixel-think, .pixel-scan').length).toBeGreaterThan(0);
+    expect(container.textContent).toContain('Berpikir');
+    expect(container.textContent).toContain('DeepSeek');
+  });
+
+  it('admin variant shows a live thinking indicator in chat view while streaming', () => {
+    const { container } = renderBar({ activeView: 'chat', streaming: true, status: 'Menyusun jawaban', modelLabel: 'Hermes Default' });
+    expect(container.querySelectorAll('.pixel-think, .pixel-scan').length).toBeGreaterThan(0);
+    expect(container.textContent).toContain('Menyusun jawaban');
+    expect(container.textContent).toContain('Hermes Default');
+  });
+
+  it('admin variant hides the indicator outside chat view', () => {
+    const { container } = renderBar({ activeView: 'expenses', streaming: true, status: 'Berpikir', modelLabel: 'Hermes Default' });
+    expect(container.querySelectorAll('.pixel-think, .pixel-scan').length).toBe(0);
+  });
+
+  it('hides the indicator when not streaming', () => {
+    const { container } = renderBar({ activeView: 'chat', streaming: false, status: 'Berpikir' });
+    expect(container.querySelectorAll('.pixel-think, .pixel-scan').length).toBe(0);
+  });
+});
+

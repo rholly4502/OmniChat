@@ -300,7 +300,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} chillMode={settings.chillMode} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} chillMode={settings.chillMode} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -410,6 +410,8 @@ export default function App() {
           chillMode={settings.chillMode}
           activeView={activeView}
           title={activeSession?.title}
+          streaming={streaming}
+          status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined}
         />
 
         {activeView === 'expenses' ? (

@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
+import { TypingIndicator } from './TypingIndicator';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ModelOption, TokenUsage } from '../types';
 
@@ -49,6 +50,17 @@ export interface MobileTopBarProps {
    * thread stays identifiable while the drawer is closed. Optional.
    */
   title?: string;
+  /**
+   * true while an assistant reply is streaming, so the top bar shows a live
+   * "thinking" indicator (phase + model + elapsed) even when the transcript is
+   * scrolled away from the typing indicator — mobile parity with ChatHeader.
+   */
+  streaming?: boolean;
+  /**
+   * Progress phase reported by the backend for the in-flight reply (e.g.
+   * "Berpikir…" / "Menyusun jawaban"). Only meaningful while `streaming` is true.
+   */
+  status?: string;
 }
 
 /**
@@ -58,7 +70,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, title, streamingEstimate = 0 }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -102,6 +114,11 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               </span>
             ) : modelLabel ? ` · ${modelLabel}` : ''})()}
         </span>
+        {streaming && (
+          <span aria-hidden="true" className="inline-flex items-center">
+            <TypingIndicator status={status} modelLabel={modelLabel} />
+          </span>
+        )}
         {chillMode && (
           <span className="inline-flex items-center gap-1 rounded-none px-1 text-xs text-chill-accent font-medium select-none" aria-label="Chill Mode aktif">
             <ChillIcon size={12} />
@@ -162,6 +179,11 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           aria-label={`Percakapan: ${title}`}
         >
           {title}
+        </span>
+      )}
+      {streaming && activeView === 'chat' && (
+        <span aria-hidden="true" className="inline-flex items-center gap-1">
+          <TypingIndicator status={status} modelLabel={modelLabel} />
         </span>
       )}
       {activeView !== 'expenses' && activeView !== 'jobs' && activeView !== 'events' ? (
