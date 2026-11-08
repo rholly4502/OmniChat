@@ -124,6 +124,46 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(94_226, advice.OverBy);
         Assert.NotEmpty(advice.Suggestions);
     }
+    [Fact]
+    public async Task TagihanRentDay_doesNotFlagOverBudget()
+    {
+        // Committed recurring bills (Tagihan, e.g. kos rent) are fixed outlays, not
+        // discretionary overspending. On rent-payment day the day spend includes a
+        // 1.3jt rent bill; the daily status must still read "oke" when the only
+        // discretionary (Makan) spend is within the daily budget, so the panel does
+        // not raise a false red alarm with cut-back tips that cannot reduce rent.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "sewa"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Makan", 20_000, "m"));
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 1), CancellationToken.None);
+        // 3.9jt / 30 = 130k daily budget; day total (discretionary only) = 20k.
+        Assert.Equal("oke", advice.Status);
+        Assert.Equal(20_000, advice.DayTotal);
+        Assert.Equal(0, advice.OverBy);
+        Assert.Empty(advice.Suggestions);
+    }
+
+    [Fact]
+    public async Task OverBudget_stillFlagsWhenDiscretionaryOverspends()
+    {
+        // Rent being excluded must not mask real discretionary overspending: when the
+        // day's non-rent spend exceeds the daily budget, the red over-budget status
+        // still fires, with overBy computed from the discretionary overrun.
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000 },
+        };
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "sewa"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Makan", 250_000, "m"));
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 1), CancellationToken.None);
+        Assert.Equal("over_budget", advice.Status);
+        Assert.Equal(250_000, advice.DayTotal);
+        Assert.Equal(120_000, advice.OverBy); // 250k - 130k
+        Assert.NotEmpty(advice.Suggestions);
+    }
 
     [Fact]
     public async Task NabungDeposit_doesNotCountAsDaySpend()

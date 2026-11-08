@@ -23,7 +23,7 @@ public sealed class ExpenseAdviceService(
 
         // Savings deposits (kategori "Nabung") are not spending: they must not push a
         // day over budget nor inflate the month projection / saving-potential math.
-        var dayTotal = rows.Where(r => r.Tanggal == date && r.Kategori != "Nabung").Sum(r => r.Nominal);
+        var dayTotal = rows.Where(r => r.Tanggal == date && r.Kategori != "Nabung" && r.Kategori != "Tagihan").Sum(r => r.Nominal);
         var total = rows.Where(r => r.Kategori != "Nabung").Sum(r => r.Nominal);
 
         var anggaran = target?.Anggaran ?? 0;
