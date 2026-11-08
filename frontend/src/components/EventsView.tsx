@@ -31,7 +31,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
   const activeSummary = appFilter || 'Semua';
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="h-full flex flex-col min-h-0 pixel-reveal">
       <div className="px-4 pt-4 pb-2">
         <h1 className="text-base font-semibold text-chill-text">Event & Promo</h1>
         <p className="text-xs text-chill-muted mt-0.5">
@@ -46,14 +46,20 @@ export function EventsView({ apiKey }: EventsViewProps) {
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls="events-filters"
-          className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <span className="flex items-center gap-2">
-            <span aria-hidden="true" className="text-chill-muted">≡</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="text-chill-muted shrink-0">
+              <line x1="4" y1="6" x2="20" y2="6" />
+              <line x1="7" y1="12" x2="17" y2="12" />
+              <line x1="10" y1="18" x2="14" y2="18" />
+            </svg>
             Filter
             <span className="text-chill-muted">· {activeSummary}</span>
           </span>
-          <span aria-hidden="true" className="text-chill-muted">{open ? '▲' : '▼'}</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`text-chill-muted shrink-0 transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] ${open ? 'rotate-180' : ''}`}>
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
       </div>
 
