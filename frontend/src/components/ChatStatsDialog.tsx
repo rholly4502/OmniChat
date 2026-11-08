@@ -233,7 +233,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
                 type="button"
                 onClick={clearRange}
                 aria-label="Bersihkan periode statistik"
-                className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-muted border border-chill-border hover:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-muted border border-chill-border transition hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
               >
                 Bersihkan
               </button>
