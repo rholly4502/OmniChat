@@ -150,3 +150,18 @@ describe('ChatHeader export menu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
 });
+
+describe('conversation title', () => {
+  it('renders the active conversation title as a truncated readable label', () => {
+    renderHeader({ title: 'Cicilan VGA 2026' });
+    const label = screen.getByLabelText('Percakapan: Cicilan VGA 2026');
+    expect(label).toBeInTheDocument();
+    expect(label.textContent).toBe('Cicilan VGA 2026');
+    expect(label.className).toContain('truncate');
+  });
+
+  it('omits the title label when no title is provided', () => {
+    renderHeader();
+    expect(screen.queryByLabelText(/Percakapan:/)).not.toBeInTheDocument();
+  });
+});

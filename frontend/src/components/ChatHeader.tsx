@@ -47,6 +47,12 @@ export interface ChatHeaderProps {
    * menu button is hidden when no handler is given.
    */
   onExport?: (format: ConversationExportFormat) => void;
+  /**
+   * Title of the active conversation. When present it is rendered as a truncated
+   * label beside the mode badge so the current thread is identifiable at a glance
+   * even with the sidebar collapsed. Optional.
+   */
+  title?: string;
 }
 
 /**
@@ -55,7 +61,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, streamingEstimate = 0 }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, title, streamingEstimate = 0 }: ChatHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -125,6 +131,15 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
         >
           <ChillIcon size={12} />
           Chill
+        </span>
+      )}
+      {title && (
+        <span
+          className="truncate max-w-[34ch] text-sm text-chill-text font-medium select-none"
+          title={title}
+          aria-label={`Percakapan: ${title}`}
+        >
+          {title}
         </span>
       )}
       <div className="ml-auto inline-flex items-center gap-2">

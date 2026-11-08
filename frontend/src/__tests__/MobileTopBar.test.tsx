@@ -265,3 +265,23 @@ describe('mobile stats readout', () => {
     expect(readout.tagName).toBe('SPAN');
   });
 });
+
+describe('conversation title', () => {
+  it('renders the active conversation title in chat view', () => {
+    renderBar({ activeView: 'chat', title: 'Rencana PC part' });
+    const label = screen.getByLabelText('Percakapan: Rencana PC part');
+    expect(label).toBeInTheDocument();
+    expect(label.textContent).toBe('Rencana PC part');
+    expect(label.className).toContain('truncate');
+  });
+
+  it('does not render the title outside chat view', () => {
+    renderBar({ activeView: 'expenses', title: 'Rencana PC part' });
+    expect(screen.queryByLabelText(/Percakapan:/)).not.toBeInTheDocument();
+  });
+
+  it('omits the title when not provided', () => {
+    renderBar({ activeView: 'chat' });
+    expect(screen.queryByLabelText(/Percakapan:/)).not.toBeInTheDocument();
+  });
+});

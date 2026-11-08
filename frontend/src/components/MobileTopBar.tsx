@@ -43,6 +43,12 @@ export interface MobileTopBarProps {
   onOpenStats?: () => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
   activeView?: 'chat' | 'expenses' | 'jobs';
+  /**
+   * Title of the active conversation. When present (chat view) it is rendered
+   * as a truncated label between the brand and the mode badge so the current
+   * thread stays identifiable while the drawer is closed. Optional.
+   */
+  title?: string;
 }
 
 /**
@@ -52,7 +58,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, streamingEstimate = 0 }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, title, streamingEstimate = 0 }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -149,6 +155,15 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           <rect x="13" y="4" width="2" height="2" fill="currentColor" opacity="0.7" />
         </svg>
       </span>
+      {title && activeView === 'chat' && (
+        <span
+          className="flex-1 min-w-0 truncate text-xs text-chill-muted select-none px-1"
+          title={title}
+          aria-label={`Percakapan: ${title}`}
+        >
+          {title}
+        </span>
+      )}
       {activeView !== 'expenses' && activeView !== 'jobs' ? (
         <>
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">

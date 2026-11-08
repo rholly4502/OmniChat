@@ -408,6 +408,7 @@ export default function App() {
           onOpenStats={() => setStatsOpen(true)}
           chillMode={settings.chillMode}
           activeView={activeView}
+          title={activeSession?.title}
         />
 
         {activeView === 'expenses' ? (
@@ -429,6 +430,7 @@ export default function App() {
               onCopyTranscript={() => { if (activeSession) void copyTranscript(activeSession); }}
               onExport={(fmt) => { if (activeSession) exportSession(activeSession, fmt); }}
               chillMode={settings.chillMode}
+              title={activeSession?.title}
             />
             <MessageList
               messages={messages}
