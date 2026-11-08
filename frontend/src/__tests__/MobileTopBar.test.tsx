@@ -329,3 +329,23 @@ describe('streaming indicator (mobile parity with ChatHeader)', () => {
   });
 });
 
+
+describe('MobileTopBar shortcuts button', () => {
+  it('admin variant renders the help button and opens on click', () => {
+    const onOpenShortcuts = vi.fn();
+    renderBar({ onOpenShortcuts });
+    fireEvent.click(screen.getByRole('button', { name: 'Pintasan keyboard' }));
+    expect(onOpenShortcuts).toHaveBeenCalledTimes(1);
+  });
+
+  it('admin variant omits the button without a handler', () => {
+    const { container } = renderBar();
+    expect(container.textContent).not.toContain('Pintasan keyboard');
+  });
+
+  it('guest variant renders the help button when a handler is provided', () => {
+    const onOpenShortcuts = vi.fn();
+    renderBar({ isGuest: true, onOpenShortcuts });
+    expect(screen.getByRole('button', { name: 'Pintasan keyboard' })).toBeInTheDocument();
+  });
+});

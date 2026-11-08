@@ -8,6 +8,7 @@ import { MobileTopBar } from './components/MobileTopBar';
 import { ChatHeader } from './components/ChatHeader';
 import { ChatStatsDialog } from './components/ChatStatsDialog';
 import { ConversationAuditDialog } from './components/ConversationAuditDialog';
+import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { SidebarOverlay } from './components/SidebarOverlay';
 import { useApiKey } from './hooks/useApiKey';
 import { useComposerDraft } from './hooks/useComposerDraft';
@@ -45,6 +46,7 @@ export default function App() {
   const [activeView, setActiveView] = useState<'chat' | 'expenses' | 'jobs' | 'events'>('chat');
   const [statsOpen, setStatsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
   const [historyModelFilter, setHistoryModelFilter] = useState('');
   const [historyModeFilter, setHistoryModeFilter] = useState('');
@@ -300,7 +302,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} chillMode={settings.chillMode} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} onOpenShortcuts={() => setShortcutsOpen(true)} chillMode={settings.chillMode} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
           <MessageList
             messages={messages}
             streaming={streaming}
@@ -324,6 +326,7 @@ export default function App() {
             inputRef={composerRef}
           />
         </main>
+        <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
       </div>
     );
   }
@@ -407,6 +410,7 @@ export default function App() {
           models={models}
           onModelChange={handleModelChange}
           onOpenStats={() => setStatsOpen(true)}
+          onOpenShortcuts={() => setShortcutsOpen(true)}
           chillMode={settings.chillMode}
           activeView={activeView}
           title={activeSession?.title}
@@ -434,6 +438,7 @@ export default function App() {
               onModelChange={handleModelChange}
               onOpenStats={() => setStatsOpen(true)}
               onOpenAudit={() => setAuditOpen(true)}
+              onOpenShortcuts={() => setShortcutsOpen(true)}
               onCopyTranscript={() => { if (activeSession) void copyTranscript(activeSession); }}
               onExport={(fmt) => { if (activeSession) exportSession(activeSession, fmt); }}
               chillMode={settings.chillMode}
@@ -482,6 +487,7 @@ export default function App() {
           </div>
         )}
       </main>
+      <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   );
 }

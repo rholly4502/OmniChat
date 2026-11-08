@@ -186,3 +186,17 @@ describe('ChatHeader streaming indicator', () => {
     expect(container.querySelector('[role="status"]')).toBeNull();
   });
 });
+
+describe('ChatHeader shortcuts button', () => {
+  it('renders an open-shortcuts button when a handler is provided and fires on click', () => {
+    const onOpenShortcuts = vi.fn();
+    renderHeader({ onOpenShortcuts });
+    fireEvent.click(screen.getByRole('button', { name: 'Pintasan keyboard' }));
+    expect(onOpenShortcuts).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the button when no handler is given', () => {
+    renderHeader();
+    expect(screen.queryByRole('button', { name: 'Pintasan keyboard' })).not.toBeInTheDocument();
+  });
+});

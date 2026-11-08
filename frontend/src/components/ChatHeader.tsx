@@ -55,6 +55,11 @@ export interface ChatHeaderProps {
    */
   title?: string;
   /**
+   * Opens the keyboard-shortcut reference dialog. Optional; the button that
+   * opens it is hidden when no handler is given.
+   */
+  onOpenShortcuts?: () => void;
+  /**
    * true while an assistant reply is streaming, so the header shows a live
    * "thinking" indicator (phase + model + elapsed) at a glance, even when the
    * transcript is scrolled away from the typing indicator.
@@ -73,7 +78,7 @@ export interface ChatHeaderProps {
  * mobile top bar, so the current model is always visible while chatting (the
  * sidebar can be collapsed). Pure telemetry: no interactive controls.
  */
-export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, title, streamingEstimate = 0, streaming = false, status }: ChatHeaderProps) {
+export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModelChange, onOpenStats, onOpenAudit, chillMode, onCopyTranscript, onExport, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: ChatHeaderProps) {
   const [copied, setCopied] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
@@ -244,6 +249,17 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
             className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M3 3v18h18" /><rect x="7" y="12" width="3" height="6" /><rect x="12" y="8" width="3" height="10" /><rect x="17" y="4" width="3" height="14" /></svg>
+          </button>
+        )}
+        {onOpenShortcuts && (
+          <button
+            type="button"
+            onClick={onOpenShortcuts}
+            aria-label="Pintasan keyboard"
+            title="Pintasan keyboard"
+            className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 transition"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
           </button>
         )}
       </div>
