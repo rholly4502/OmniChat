@@ -72,7 +72,7 @@ export function CostDetailsPopover({ model, usage }: CostDetailsPopoverProps) {
         <div
           role="dialog"
           aria-label="Perincian perkiraan biaya"
-          className="absolute right-0 top-full z-30 mt-1 w-72 bg-chill-elevated border-2 border-chill-border pixel-shadow p-3"
+          className="absolute right-0 top-full z-30 mt-1 w-72 bg-chill-elevated border-2 border-chill-border pixel-shadow p-3 pixel-reveal"
         >
           <p className="text-xs text-chill-muted">
             Perkiraan biaya untuk <span className="text-chill-accent font-medium">{model}</span>

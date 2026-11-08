@@ -186,7 +186,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
               <div
                 role="menu"
                 aria-label="Format ekspor"
-                className="absolute right-0 top-full z-30 mt-1 w-40 bg-chill-elevated border-2 border-chill-border pixel-shadow"
+                className="absolute right-0 top-full z-30 mt-1 w-40 bg-chill-elevated border-2 border-chill-border pixel-shadow pixel-reveal"
               >
                 {(Object.keys(EXPORT_FORMAT_LABELS) as ConversationExportFormat[]).map((fmt) => (
                   <button
