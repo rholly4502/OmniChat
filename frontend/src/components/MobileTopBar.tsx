@@ -42,7 +42,7 @@ export interface MobileTopBarProps {
   /** Open the aggregate chat stats dialog (mobile path to ChatStatsDialog). */
   onOpenStats?: () => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
-  activeView?: 'chat' | 'expenses' | 'jobs';
+  activeView?: 'chat' | 'expenses' | 'jobs' | 'events';
   /**
    * Title of the active conversation. When present (chat view) it is rendered
    * as a truncated label between the brand and the mode badge so the current
@@ -164,7 +164,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           {title}
         </span>
       )}
-      {activeView !== 'expenses' && activeView !== 'jobs' ? (
+      {activeView !== 'expenses' && activeView !== 'jobs' && activeView !== 'events' ? (
         <>
           <span className="text-xs text-chill-muted ml-auto inline-flex items-center gap-1">
             {useAgent ? <BotIcon size={14} /> : <BoltIcon size={14} />}
