@@ -4,16 +4,19 @@
  * The summary exposes the month's total `sisaAnggaran` (budget − spend), and the
  * daily chart draws a reference dashed at `anggaran / daysInMonth`. Neither tells
  * the user what they can still afford per day going forward — this does: leftover
- * rupiah divided by the calendar days left in the month (including today). It is
+ * rupiah divided by the calendar days left in the month after today. Today is
+ * excluded so the figure matches the advice panel's per-day allowance (whose
+ * remaining-budget numerator already reflects today's spend), keeping the two
+ * panels consistent instead of showing conflicting numbers on one screen. It is
  * only meaningful for the live month, so past/future months return null.
  */
 
 export interface RemainingBudget {
   /** Rupiah not yet spent this month (negative ⇒ over budget). */
   sisa: number;
-  /** Calendar days remaining in the month, including today (1-based). */
+  /** Calendar days remaining in the month after today. */
   daysLeft: number;
-  /** `sisa / daysLeft` rounded to whole rupiah; 0 when no days remain. */
+  /** `sisa / daysLeft` rounded to whole rupiah; at least 1 day remains. */
   dailyAllowance: number;
 }
 
@@ -40,7 +43,7 @@ export function remainingDailyBudget(
   if (month !== monthKey(now)) return null;
 
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const daysLeft = daysInMonth - now.getUTCDate() + 1;
-  const dailyAllowance = daysLeft > 0 ? Math.round(sisaAnggaran / daysLeft) : 0;
+  const daysLeft = Math.max(1, daysInMonth - now.getUTCDate());
+  const dailyAllowance = Math.round(sisaAnggaran / daysLeft);
   return { sisa: sisaAnggaran, daysLeft, dailyAllowance };
 }

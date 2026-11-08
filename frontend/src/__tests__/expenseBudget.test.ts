@@ -8,19 +8,19 @@ describe('remainingDailyBudget', () => {
   it('returns dailyAllowance = sisa / daysLeft for the live month', () => {
     const r = remainingDailyBudget('2026-11', 280_000, NOW);
     expect(r).not.toBeNull();
-    expect(r!.daysLeft).toBe(28); // 30 - 3 + 1
+    expect(r!.daysLeft).toBe(27); // 30 - 3
     expect(r!.sisa).toBe(280_000);
-    expect(r!.dailyAllowance).toBe(10_000);
+    expect(r!.dailyAllowance).toBe(10_370);
   });
 
   it('rounds to whole rupiah', () => {
     const r = remainingDailyBudget('2026-11', 100_000, NOW);
-    expect(r!.dailyAllowance).toBe(3571); // Math.round(100000/28)
+    expect(r!.dailyAllowance).toBe(3704); // Math.round(100000/27)
   });
 
   it('returns a negative allowance when already over budget', () => {
     const r = remainingDailyBudget('2026-11', -14_000, NOW);
-    expect(r!.dailyAllowance).toBe(-500);
+    expect(r!.dailyAllowance).toBe(-519);
     expect(r!.sisa).toBe(-14_000);
   });
 
