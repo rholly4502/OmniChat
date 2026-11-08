@@ -73,8 +73,8 @@ export function EventsView({ apiKey }: EventsViewProps) {
               onClick={() => setAppFilter('')}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 appFilter === ''
-                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               Semua ({events.length})
@@ -88,8 +88,8 @@ export function EventsView({ apiKey }: EventsViewProps) {
                 onClick={() => setAppFilter(appFilter === a ? '' : a)}
                 className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                   appFilter === a
-                    ? 'bg-chill-elevated text-chill-text border-chill-accent/50'
-                    : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated'
+                    ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                    : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
                 }`}
               >
                 {a} ({events.filter((e) => e.aplikasi === a).length})
@@ -139,7 +139,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
                   </div>
                   <ul className="space-y-3">
                     {items.map((e: PromoEvent) => (
-                      <li key={e.id} className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm">
+                      <li key={e.id} className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm transition hover:bg-chill-elevated">
                         <h3 className="text-sm font-semibold text-chill-text">{e.judul}</h3>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted">
                           <span>· ditemukan {e.ditemukan}</span>
@@ -151,7 +151,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
                             href={e.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                            className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                           >
                             Lihat promo →
                           </a>
