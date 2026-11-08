@@ -228,7 +228,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               onClick={applyRange}
               disabled={scopedLoading}
               aria-label="Terapkan periode statistik"
-              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
               {scopedLoading ? 'Memuat…' : 'Terapkan'}
             </button>
@@ -330,7 +330,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               onClick={() => exportAllConversations('json')}
               disabled={exporting !== null}
               aria-label="Ekspor semua percakapan sebagai JSON"
-              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
               {exporting === 'json' ? 'Mengekspor…' : 'JSON'}
             </button>
@@ -339,7 +339,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               onClick={() => exportAllConversations('csv')}
               disabled={exporting !== null}
               aria-label="Ekspor semua percakapan sebagai CSV"
-              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
               {exporting === 'csv' ? 'Mengekspor…' : 'CSV'}
             </button>

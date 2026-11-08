@@ -247,7 +247,7 @@ export function Sidebar({
         <button
           ref={closeButtonRef}
           onClick={onClose}
-          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition-colors p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           aria-label="Close sidebar"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges">
@@ -557,7 +557,7 @@ export function Sidebar({
                                   setExportMenuFor(null);
                                   onExportSession(s, fmt);
                                 }}
-                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                               >
                                 {EXPORT_FORMAT_LABELS[fmt]}
                               </button>
