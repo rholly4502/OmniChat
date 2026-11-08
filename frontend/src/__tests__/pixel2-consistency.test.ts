@@ -152,6 +152,22 @@ describe('pixel2 chill consistency', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('never embeds a raw hex color literal (tokens only)', () => {
+    // The design floor is token-only: every colour must come from the chill
+    // @theme (or a var() reference to it). A raw hex literal in component
+    // source is how a cold-palette colour sneaks back in (e.g. an inline SVG
+    // stroke="#"020617" that class-based scans cannot see).
+    const offenders: string[] = [];
+    const hexRe = /#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?(?![\da-fA-F])/g;
+    for (const file of files) {
+      stripComments(readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
+        const hits = line.match(hexRe);
+        if (hits?.length) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${hits.join(', ')}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('keeps every expenses/advice button on the 44px touch floor with a hard offset shadow and square edge', () => {
     const scoped = files.filter((f) => /ExpensesView\.tsx$|AdvicePanel\.tsx$/.test(f));
     expect(scoped.length).toBe(2);

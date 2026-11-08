@@ -380,7 +380,7 @@ export function Sidebar({
         >
           <span className={`inline-flex items-center justify-center w-4 h-4 border-2 border-chill-accent/60 ${showArchived ? 'bg-chill-accent' : 'bg-transparent'}`}>
             {showArchived && (
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#020617" strokeWidth="3.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--color-chill-on-accent)" strokeWidth="3.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
             )}
           </span>
           {showArchived ? 'Arsip terlihat' : 'Tampilkan arsip'}
