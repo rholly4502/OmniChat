@@ -56,6 +56,38 @@ public sealed class JobsController(IOpportunityRepository repository) : Controll
         var updated = await repository.UpdateStatusAsync(id, request.Status, cancellationToken);
         return updated ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
     }
+
+    /// <summary>Sets/clears the follow-up date for one opportunity.</summary>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="request">Body carrying an ISO date (YYYY-MM-DD) or null to clear.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Follow-up date updated.</response>
+    /// <response code="400">Malformed date.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No opportunity with this id.</response>
+    [HttpPatch("{id}/follow-up")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateFollowUp(
+        long id,
+        [FromBody] UpdateOpportunityFollowUpRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        DateOnly? tanggal = null;
+        if (!string.IsNullOrWhiteSpace(request.Tanggal))
+        {
+            if (!DateOnly.TryParse(request.Tanggal, out var parsed))
+            {
+                return BadRequest(new { message = $"Tanggal '{request.Tanggal}' tidak valid." });
+            }
+            tanggal = parsed;
+        }
+
+        var updated = await repository.UpdateFollowUpAsync(id, tanggal, cancellationToken);
+        return updated ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
+    }
 }
 
 /// <summary>Allowed pipeline status values.</summary>
@@ -73,3 +105,7 @@ public static class OpportunityStatuses
 
 /// <summary>Request body for <c>PATCH /api/jobs/{id}/status</c>.</summary>
 public sealed record UpdateOpportunityStatusRequest(string Status);
+
+/// <summary>Request body for <c>PATCH /api/jobs/{id}/follow-up</c>.</summary>
+public sealed record UpdateOpportunityFollowUpRequest(string? Tanggal);
+

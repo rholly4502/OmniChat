@@ -75,4 +75,19 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<bool> UpdateFollowUpAsync(
+        long id, DateOnly? tanggal, CancellationToken cancellationToken)
+    {
+        var opp = await db.Opportunities
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        if (opp is null)
+        {
+            return false;
+        }
+
+        opp.FollowUpTanggal = tanggal;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

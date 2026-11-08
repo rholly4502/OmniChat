@@ -59,9 +59,44 @@ function statusTone(status: string): string {
 
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
 export function JobsView({ apiKey }: JobsViewProps) {
-  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updatingId } = useJobs(apiKey);
+  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
+  const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
+
+  const today = new Date();
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  /** Active (applied/interview/offer) && scheduled && overdue → needs follow-up. */
+  const needsFollowUp = (o: Opportunity): boolean => {
+    if (!o.followUpTanggal) return false;
+    if (o.status !== 'applied' && o.status !== 'interview' && o.status !== 'offer') return false;
+    return o.followUpTanggal <= todayISO;
+  };
+
+  const toggleFollowUpEdit = (id: number, current: string | null) => {
+    setFollowUpEditing((m) => {
+      const next = { ...m };
+      next[id] = !m[id];
+      return next;
+    });
+    setFollowUpDraft((m) => ({ ...m, [id]: current ?? todayISO }));
+  };
+
+  const saveFollowUp = (o: Opportunity) => {
+    const draft = followUpDraft[o.id];
+    if (draft) {
+      void updateFollowUp(o.id, draft);
+    } else {
+      void updateFollowUp(o.id, null);
+    }
+    setFollowUpEditing((m) => {
+      const next = { ...m };
+      delete next[o.id];
+      return next;
+    });
+  };
 
   const statusCount = (s: string) =>
     opportunities.filter(
@@ -286,6 +321,54 @@ export function JobsView({ apiKey }: JobsViewProps) {
                       </button>
                     ))}
                   </span>
+                </div>
+
+                <div className="mt-3 border-t border-chill-border pt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {needsFollowUp(o) && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-none border border-chill-red/50 bg-chill-red/15 px-2 py-0.5 text-xs font-semibold text-chill-red"
+                    >
+                      ⚠ Perlu follow-up
+                    </span>
+                  )}
+                  {o.followUpTanggal && !needsFollowUp(o) && (
+                    <span className="text-xs text-chill-muted">Follow-up s/d {o.followUpTanggal}</span>
+                  )}
+                  {followUpEditing[o.id] ? (
+                    <span className="inline-flex items-center gap-1.5 flex-wrap">
+                      <input
+                        type="date"
+                        value={followUpDraft[o.id] ?? ''}
+                        min={todayISO}
+                        onChange={(e) => setFollowUpDraft((m) => ({ ...m, [o.id]: e.target.value }))}
+                        aria-label="Tanggal follow-up"
+                        className="rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-base text-chill-text min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 [color-scheme:dark]"
+                      />
+                      <button
+                        type="button"
+                        disabled={updatingId === o.id}
+                        onClick={() => saveFollowUp(o)}
+                        className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                      >
+                        Simpan
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { void updateFollowUp(o.id, null); setFollowUpEditing((m) => { const n = { ...m }; delete n[o.id]; return n; }); }}
+                        className="rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                      >
+                        Hapus
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => toggleFollowUpEdit(o.id, o.followUpTanggal)}
+                      className="rounded-none border border-chill-border px-2.5 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated hover:text-chill-text min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                    >
+                      {o.followUpTanggal ? 'Ubah follow-up' : 'Atur follow-up'}
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

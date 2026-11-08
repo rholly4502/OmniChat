@@ -34,6 +34,12 @@ public class Opportunity
     /// <summary>Pipeline status: new, applied, interview, offer, closed.</summary>
     public string Status { get; set; } = "new";
 
+    /// <summary>
+    /// Optional target date for the next follow-up (e.g. to chase an applied or
+    /// interviewed role). Null means no follow-up scheduled.
+    /// </summary>
+    public DateOnly? FollowUpTanggal { get; set; }
+
     /// <summary>When the opportunity was first found (WIB).</summary>
     public DateOnly Ditemukan { get; set; }
 

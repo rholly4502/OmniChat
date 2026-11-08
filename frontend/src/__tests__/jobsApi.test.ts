@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, listOpportunities, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, listOpportunities, updateOpportunityFollowUp, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -67,5 +67,30 @@ describe('listOpportunities', () => {
 
   it('exposes the documented pipeline statuses in order', () => {
     expect(OPPORTUNITY_STATUSES).toEqual(['new', 'applied', 'interview', 'offer', 'closed']);
+  });
+});
+
+describe('updateOpportunityFollowUp', () => {
+  it('PATCHes the follow-up endpoint with the ISO date and auth header', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204, headers: { get: () => null } });
+    const fetchMock2 = fetchMock as unknown as typeof fetch;
+    await updateOpportunityFollowUp(7, '2026-11-20', { apiKey: 'k', fetchImpl: fetchMock2 });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/7/follow-up`);
+    expect(init.method).toBe('PATCH');
+    expect(init.headers).toEqual({ 'X-Api-Key': 'k', 'Content-Type': 'application/json' });
+    expect(JSON.parse(String(init.body))).toEqual({ tanggal: '2026-11-20' });
+  });
+
+  it('sends null to clear the follow-up date', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204, headers: { get: () => null } });
+    await updateOpportunityFollowUp(7, null, { fetchImpl: fetchMock as unknown as typeof fetch });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toEqual({ tanggal: null });
+  });
+
+  it('throws ApiError on non-2xx', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, headers: { get: () => null } });
+    await expect(updateOpportunityFollowUp(7, '2026-11-20', { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
   });
 });

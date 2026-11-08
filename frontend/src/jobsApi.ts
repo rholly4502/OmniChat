@@ -24,6 +24,7 @@ export interface Opportunity {
   link?: string | null;
   catatan?: string | null;
   status: string;
+  followUpTanggal?: string | null; // YYYY-MM-DD
   ditemukan: string; // YYYY-MM-DD (WIB)
   sourceId?: string | null;
 }
@@ -64,6 +65,24 @@ export async function updateOpportunityStatus(
     method: 'PATCH',
     headers: { ...authHeaders(options.apiKey), 'Content-Type': 'application/json' },
     body: JSON.stringify({ status }),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+}
+
+/** Set/clear a follow-up target date for one opportunity. 204 on success. */
+export async function updateOpportunityFollowUp(
+  id: number,
+  tanggal: string | null,
+  options: JobsRequestOptions = {},
+): Promise<void> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${JOBS_URL}/${id}/follow-up`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(options.apiKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tanggal }),
     signal: options.signal,
   });
   if (!res.ok) {

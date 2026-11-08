@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { listOpportunities, updateOpportunityStatus, type Opportunity } from '../jobsApi';
+import { listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type Opportunity } from '../jobsApi';
 
 export interface UseJobsResult {
   opportunities: Opportunity[];
@@ -10,6 +10,7 @@ export interface UseJobsResult {
   setStatusFilter: (s: string) => void;
   reload: () => void;
   updateStatus: (id: number, status: string) => Promise<void>;
+  updateFollowUp: (id: number, tanggal: string | null) => Promise<void>;
   updatingId: number | null;
 }
 
@@ -61,5 +62,16 @@ export function useJobs(apiKey?: string): UseJobsResult {
     }
   }, [apiKey]);
 
-  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updatingId };
+  const updateFollowUp = useCallback(async (id: number, tanggal: string | null) => {
+    if (!apiKey) return;
+    setUpdatingId(id);
+    try {
+      await updateOpportunityFollowUp(id, tanggal, { apiKey });
+      setReloadKey((k) => k + 1);
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [apiKey]);
+
+  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId };
 }

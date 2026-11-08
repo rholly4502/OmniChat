@@ -248,6 +248,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<DateOnly>("Ditemukan")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("FollowUpTanggal")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Gaji")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");

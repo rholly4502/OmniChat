@@ -20,4 +20,10 @@ public interface IOpportunityRepository
     /// unknown (404). The status value must already be normalized by the caller.
     /// </summary>
     Task<bool> UpdateStatusAsync(long id, string status, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets or clears the follow-up target date of one opportunity. Returns false
+    /// when the id is unknown (404).
+    /// </summary>
+    Task<bool> UpdateFollowUpAsync(long id, DateOnly? tanggal, CancellationToken cancellationToken);
 }
