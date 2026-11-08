@@ -95,4 +95,16 @@ describe('EventsView', () => {
       expect(cls).toContain('rounded-none');
     }
   });
+
+  it('loading state uses the shared ScanLoader stepped loader (parity with Jobs/Expenses)', () => {
+    mockState({ loading: true });
+    render(<EventsView />);
+    // Full-page loader pattern: role=status live region carrying the human label,
+    // plus the pixel-scan ScanLoader (not the older single blink square).
+    const status = screen.getByRole('status');
+    expect(status).toBeTruthy();
+    expect(status.textContent).toContain('Memuat event');
+    expect(status.querySelector('.pixel-scan')).toBeTruthy();
+    expect(status.querySelector('.pixel-blink')).toBeNull();
+  });
 });

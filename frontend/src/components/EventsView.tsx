@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PromoEvent } from '../eventsApi';
 import { useEvents } from '../hooks/useEvents';
+import { ScanLoader } from './ScanLoader';
 
 interface EventsViewProps {
   apiKey?: string;
@@ -118,7 +119,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
       <div className="flex-1 overflow-y-auto px-4 pb-6 min-h-0">
         {loading ? (
           <p className="flex items-center justify-center gap-2 text-sm text-chill-muted py-10" role="status">
-            <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink" aria-hidden="true" />
+            <ScanLoader />
             Memuat event…
           </p>
         ) : filtered.length === 0 ? (
