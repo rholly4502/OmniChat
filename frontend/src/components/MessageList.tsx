@@ -110,7 +110,7 @@ function ActionButton({ label, activeLabel, active, onClick, icon, activeIcon }:
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded-none text-chill-muted hover:text-chill-accent hover:bg-chill-elevated active:bg-chill-surface active:translate-y-[2px] transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
+      className="inline-flex items-center justify-center gap-1 px-2 min-h-[44px] min-w-[44px] md:min-h-[28px] rounded-none text-chill-muted hover:text-chill-accent hover:bg-chill-elevated active:bg-chill-surface active:translate-y-[2px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
       aria-label={active ? activeLabel : label}
       aria-pressed={active}
     >

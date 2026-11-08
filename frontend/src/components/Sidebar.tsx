@@ -557,7 +557,7 @@ export function Sidebar({
                                   setExportMenuFor(null);
                                   onExportSession(s, fmt);
                                 }}
-                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-chill-accent/60"
+                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                               >
                                 {EXPORT_FORMAT_LABELS[fmt]}
                               </button>
@@ -919,7 +919,7 @@ export function Sidebar({
                 value={settings.systemPrompt}
                 onChange={(e) => onSystemPromptChange?.(e.target.value)}
                 placeholder="Contoh: Bertindak sebagai Software Architect..."
-                className="w-full bg-chill-surface border border-chill-border p-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-1 focus-visible:ring-chill-accent/60 resize-none"
+                className="w-full bg-chill-surface border border-chill-border p-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-none"
               />
             </div>
             <div>
