@@ -96,3 +96,36 @@ describe('getModelRate', () => {
     expect(getModelRate('nvidia/nemotron-3.5-lightning:free')).toEqual({ input: 0, output: 0, source: 'free' });
   });
 });
+
+describe('getModelRate (provider-qualified ids)', () => {
+  it('resolves a known family behind a routing prefix', () => {
+    expect(getModelRate('openai/gpt-4o')).toEqual({ input: 0.0025, output: 0.01, source: 'known' });
+    expect(getModelRate('anthropic/claude-sonnet')).toEqual({ input: 0.003, output: 0.015, source: 'known' });
+  });
+
+  it('recognizes freshly added current models as known, not fallback', () => {
+    expect(getModelRate('gpt-4.1').source).toBe('known');
+    expect(getModelRate('gpt-4.1-mini').source).toBe('known');
+    expect(getModelRate('claude-opus-4').source).toBe('known');
+    expect(getModelRate('deepseek-chat').source).toBe('known');
+    expect(getModelRate('gemini-2.0-flash').source).toBe('known');
+  });
+
+  it('keeps unknown families on the conservative fallback', () => {
+    expect(getModelRate('openai/gpt-3.5-turbo').source).toBe('fallback');
+  });
+});
+
+describe('sortModelEntriesByCost immutability', () => {
+  it('does not mutate the input array', () => {
+    const entries: [string, { promptTokens: number; completionTokens: number }][] = [
+      ['b', { promptTokens: 1000, completionTokens: 1000 }],
+      ['a', { promptTokens: 1000, completionTokens: 1000 }],
+    ];
+    const before = JSON.stringify(entries);
+    sortModelEntriesByCost(entries);
+    expect(JSON.stringify(entries)).toBe(before);
+    expect(entries[0][0]).toBe('b');
+    expect(entries[1][0]).toBe('a');
+  });
+});

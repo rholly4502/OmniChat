@@ -13,6 +13,11 @@ const MODEL_RATES: Record<string, { input: number; output: number }> = {
   'claude-haiku': { input: 0.001, output: 0.005 },
   'hermes-default': { input: 0.002, output: 0.008 },
   'hermes': { input: 0.002, output: 0.008 },
+  'gpt-4.1': { input: 0.0025, output: 0.01 },
+  'gpt-4.1-mini': { input: 0.0004, output: 0.0016 },
+  'claude-opus-4': { input: 0.015, output: 0.075 },
+  'deepseek-chat': { input: 0.00027, output: 0.0011 },
+  'gemini-2.0-flash': { input: 0.0001, output: 0.0004 },
 };
 
 /** Conservative fallback for unknown models. */
@@ -33,9 +38,22 @@ export interface ModelRateInfo {
  * derived, so the UI can make the estimate auditable (the cost readout is an
  * approximation, not a bill). Free-tier endpoints ('...:free') resolve to zero.
  */
+/**
+ * Reduces a provider-qualified id to its bare family name so a known family is
+ * still recognized when the routing catalog names an endpoint (e.g.
+ * `openai/gpt-4o` → `gpt-4o`, `anthropic/claude-sonnet` → `claude-sonnet`).
+ * Returns the input unchanged when there is no `/` or nothing follows it.
+ */
+function bareModelId(model: string): string {
+  const slash = model.lastIndexOf('/');
+  if (slash < 0) return model;
+  const bare = model.slice(slash + 1);
+  return bare.length > 0 ? bare : model;
+}
+
 export function getModelRate(model: string): ModelRateInfo {
   if (model.endsWith(':free')) return { input: 0, output: 0, source: 'free' };
-  const rate = MODEL_RATES[model];
+  const rate = MODEL_RATES[model] ?? MODEL_RATES[bareModelId(model)];
   return rate ? { ...rate, source: 'known' } : { ...FALLBACK_RATE, source: 'fallback' };
 }
 
@@ -91,7 +109,7 @@ export interface ModelUsageRow {
 export function sortModelEntriesByCost<T extends ModelUsageRow>(
   entries: [string, T][],
 ): [string, T][] {
-  return entries.sort((a, b) => {
+  return [...entries].sort((a, b) => {
     const aUsd = estimateUsd({ promptTokens: a[1].promptTokens, completionTokens: a[1].completionTokens }, a[0]);
     const bUsd = estimateUsd({ promptTokens: b[1].promptTokens, completionTokens: b[1].completionTokens }, b[0]);
     if (aUsd !== bUsd) return bUsd - aUsd;
