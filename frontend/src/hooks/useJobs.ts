@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { listOpportunities, type Opportunity } from '../jobsApi';
+import { listOpportunities, updateOpportunityStatus, type Opportunity } from '../jobsApi';
 
 export interface UseJobsResult {
   opportunities: Opportunity[];
@@ -9,6 +9,8 @@ export interface UseJobsResult {
   statusFilter: string;
   setStatusFilter: (s: string) => void;
   reload: () => void;
+  updateStatus: (id: number, status: string) => Promise<void>;
+  updatingId: number | null;
 }
 
 /** Loads the curated job-opportunity list, with an optional pipeline status filter. */
@@ -18,6 +20,7 @@ export function useJobs(apiKey?: string): UseJobsResult {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,5 +50,16 @@ export function useJobs(apiKey?: string): UseJobsResult {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  return { opportunities, loading, error, statusFilter, setStatusFilter, reload };
+  const updateStatus = useCallback(async (id: number, status: string) => {
+    if (!apiKey) return;
+    setUpdatingId(id);
+    try {
+      await updateOpportunityStatus(id, status, { apiKey });
+      setReloadKey((k) => k + 1);
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [apiKey]);
+
+  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updatingId };
 }

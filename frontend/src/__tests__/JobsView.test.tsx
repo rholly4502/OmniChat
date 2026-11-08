@@ -69,8 +69,8 @@ describe('JobsView', () => {
     expect(screen.getByText('Senior .NET Engineer')).toBeTruthy();
     expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
     expect(screen.getByText('Freelance Blazor')).toBeTruthy();
-    expect(screen.getByText('Interview')).toBeTruthy();
-    expect(screen.getByText('Tawaran')).toBeTruthy();
+    expect(screen.getAllByText('Interview').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Tawaran').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Lihat lowongan →')).toHaveLength(3);
     expect(screen.getAllByText('PT Contoh · Jakarta')).toHaveLength(3);
   });

@@ -52,3 +52,21 @@ export async function listOpportunities(
   }
   return (await res.json()) as Opportunity[];
 }
+
+/** Move one opportunity to another pipeline stage. 204 on success. */
+export async function updateOpportunityStatus(
+  id: number,
+  status: string,
+  options: JobsRequestOptions = {},
+): Promise<void> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${JOBS_URL}/${id}/status`, {
+    method: 'PATCH',
+    headers: { ...authHeaders(options.apiKey), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+}

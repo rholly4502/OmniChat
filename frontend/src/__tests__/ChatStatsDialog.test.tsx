@@ -257,3 +257,64 @@ describe('ChatStatsDialog period filter', () => {
     expect(screen.getAllByText('2k').length).toBeGreaterThanOrEqual(1);
   });
 });
+
+
+const { filteredListMock } = vi.hoisted(() => ({ filteredListMock: vi.fn() }));
+
+describe('ChatStatsDialog filtered bulk export', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doMock('../historyApi', () => ({
+      listAllConversations: filteredListMock,
+      getConversation: vi.fn().mockResolvedValue({
+        id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z',
+        updatedAt: '2026-11-01T00:00:00Z', mode: 'direct', model: 'gpt',
+        isPinned: false,
+        messages: [{ id: 'm1', role: 'user', content: 'halo', createdAt: '2026-11-01T00:00:00Z' }],
+      }),
+    }));
+    vi.doMock('../conversationExport', () => ({
+      downloadBlob,
+      buildAllConversationsJson: (r: unknown[]) => JSON.stringify({ conversations: r }),
+      buildAllConversationsCsv: () => 'csv-data',
+    }));
+    filteredListMock.mockClear();
+    filteredListMock.mockResolvedValue([
+      { id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-01T00:00:00Z', mode: 'direct', model: 'gpt', isPinned: false },
+    ]);
+  });
+
+  it('passes the active filters + search to the bulk export and labels it accordingly', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(
+      <Dialog
+        open
+        onClose={vi.fn()}
+        usage={USAGE}
+        modelOptions={MODELS}
+        apiKey="k"
+        search="halo"
+        filters={{ model: 'gpt', mode: 'direct', from: '2026-11-01', to: '2026-11-30' }}
+      />,
+    );
+    expect(screen.getByText('Ekspor percakapan sesuai filter')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor semua percakapan sebagai JSON' }));
+    const before = downloadBlob.mock.calls.length;
+    await waitFor(() => expect(downloadBlob.mock.calls.length).toBe(before + 1));
+    expect(filteredListMock).toHaveBeenCalledWith(
+      { apiKey: 'k' },
+      'halo',
+      { model: 'gpt', mode: 'direct', from: '2026-11-01', to: '2026-11-30' },
+    );
+  });
+
+  it('keeps the "all conversations" label when no filters are active', async () => {
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+    expect(screen.getByText('Ekspor semua percakapan')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor semua percakapan sebagai JSON' }));
+    const before = downloadBlob.mock.calls.length;
+    await waitFor(() => expect(downloadBlob.mock.calls.length).toBe(before + 1));
+    expect(filteredListMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, undefined);
+  });
+});

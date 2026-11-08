@@ -59,7 +59,7 @@ function statusTone(status: string): string {
 
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
 export function JobsView({ apiKey }: JobsViewProps) {
-  const { opportunities, loading, error, statusFilter, setStatusFilter, reload } = useJobs(apiKey);
+  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updatingId } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
 
@@ -255,16 +255,38 @@ export function JobsView({ apiKey }: JobsViewProps) {
                   <p className="mt-2 text-xs text-chill-muted">{o.catatan}</p>
                 )}
 
-                {o.link && (
-                  <a
-                    href={o.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
-                  >
-                    Lihat lowongan →
-                  </a>
-                )}
+                <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-2">
+                  {o.link && (
+                    <a
+                      href={o.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                    >
+                      Lihat lowongan →
+                    </a>
+                  )}
+                  <span className="text-xs text-chill-muted" aria-hidden="true">
+                    •
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 flex-wrap" role="group" aria-label="Ubah status">
+                    {OPPORTUNITY_STATUSES.filter((s) => s !== o.status).map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        disabled={updatingId === o.id}
+                        onClick={() => updateStatus(o.id, s)}
+                        className={`rounded-none border px-2.5 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${
+                          updatingId === o.id
+                            ? 'opacity-50 cursor-wait border-chill-border text-chill-muted bg-chill-surface'
+                            : 'border-chill-border bg-chill-surface text-chill-muted hover:bg-chill-elevated hover:text-chill-text'
+                        }`}
+                      >
+                        {statusLabel(s)}
+                      </button>
+                    ))}
+                  </span>
+                </div>
               </li>
             ))}
                   </ul>

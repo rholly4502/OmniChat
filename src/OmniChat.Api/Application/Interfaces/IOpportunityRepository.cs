@@ -14,4 +14,10 @@ public interface IOpportunityRepository
 
     /// <summary>Inserts opportunities whose non-empty <see cref="Opportunity.SourceId"/> is not already present.</summary>
     Task<int> InsertMissingAsync(IEnumerable<Opportunity> opportunities, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Sets the pipeline status of one opportunity. Returns false when the id is
+    /// unknown (404). The status value must already be normalized by the caller.
+    /// </summary>
+    Task<bool> UpdateStatusAsync(long id, string status, CancellationToken cancellationToken);
 }

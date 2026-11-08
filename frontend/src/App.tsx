@@ -416,6 +416,8 @@ export default function App() {
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (
           <JobsView apiKey={apiKey} />
+        ) : activeView === 'events' ? (
+          <EventsView apiKey={apiKey} />
         ) : (
           <div key={activeView} className="flex-1 flex flex-col min-h-0 pixel-reveal">
             <ChatHeader
@@ -464,6 +466,8 @@ export default function App() {
               usage={usageSummary}
               modelOptions={historyModels}
               apiKey={apiKey}
+              search={historySearch}
+              filters={{ model: historyModelFilter || undefined, mode: historyModeFilter || undefined, from: historyDateFrom || undefined, to: historyDateTo || undefined }}
             />
             <ConversationAuditDialog
               open={auditOpen}

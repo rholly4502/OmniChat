@@ -60,4 +60,19 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         db.Opportunities.AddRange(missing);
         return await db.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<bool> UpdateStatusAsync(
+        long id, string status, CancellationToken cancellationToken)
+    {
+        var opp = await db.Opportunities
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        if (opp is null)
+        {
+            return false;
+        }
+
+        opp.Status = status;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

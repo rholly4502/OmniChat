@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
-import { getConversation, getConversationUsage, listAllConversations } from '../historyApi';
+import { getConversation, getConversationUsage, listAllConversations, type ConversationListFilters } from '../historyApi';
 import { buildAllConversationsCsv, buildAllConversationsJson, downloadBlob } from '../conversationExport';
 import type { ConversationExportRecord } from '../conversationExport';
 import type { ConversationUsageSummary, ModelOption } from '../types';
@@ -18,6 +18,10 @@ export interface ChatStatsDialogProps {
   modelOptions?: ModelOption[];
   /** API key for the authenticated history calls behind the bulk export. */
   apiKey?: string;
+  /** Active history-list filters (model/mode/date) to scope the bulk export. */
+  filters?: ConversationListFilters;
+  /** Active history search term to scope the bulk export. */
+  search?: string;
 }
 
 /** RFC 4180 quoting for a single CSV field. */
@@ -57,7 +61,7 @@ function buildStatsCsv(usage: ConversationUsageSummary, modelOptions: ModelOptio
  * "Penggunaan" `<details>` — a real dialog with focus trap, Escape close and
  * body scroll lock, so the numbers are reviewable without scrolling a panel.
  */
-export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: ChatStatsDialogProps) {
+export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, filters, search }: ChatStatsDialogProps) {
   const panelRef = useModalDialog(open, onClose, '[data-stats-close]');
 
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null);
@@ -116,7 +120,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
     setExporting(format);
     setExportError(null);
     try {
-      const summaries = await listAllConversations({ apiKey });
+      const summaries = await listAllConversations({ apiKey }, search, filters);
       const records: ConversationExportRecord[] = [];
       for (const s of summaries) {
         try {
@@ -314,7 +318,12 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey }: 
         </div>
 
         <div className="border-t border-chill-border pt-2 space-y-2">
-          <div className="text-xs text-chill-muted font-medium">Ekspor semua percakapan</div>
+          <div className="text-xs text-chill-muted font-medium">{(() => {
+            const scanningActive = Boolean(search?.trim()) || Boolean(
+              filters && (filters.model || filters.mode || filters.from || filters.to),
+            );
+            return scanningActive ? 'Ekspor percakapan sesuai filter' : 'Ekspor semua percakapan';
+          })()}</div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
