@@ -29,16 +29,6 @@ jobs:
           set -euo pipefail
           SHA="${{ github.sha }}"
           echo "Waiting for CI on $SHA ..."
-          # The CI workflow reports through *check runs*, not legacy commit statuses,
-          # so /commits/$SHA/status always returns pending with zero entries. Poll the
-          # check-runs API instead and require every CI check (everything except this
-          # Deploy job) to have completed successfully.
-          #
-          # Robustness: the gh api call is guarded so a transient API/CLI error logs a
-          # warning and keeps polling instead of killing the step via `set -e`. Fail-fast
-          # only applies once we have actually seen CI checks (N > 0) and they ALL
-          # completed with a non-success conclusion — a zero-check window (checks not yet
-          # registered, e.g. the CI jobs are still spinning up) must simply keep waiting.
           for i in $(seq 1 90); do
             if ! READOUT="$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs --jq '
               [.check_runs[] | select(.name != "Deploy to VPS")] as $ci |
@@ -67,25 +57,22 @@ jobs:
           exit 1
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.VPS_PORT || 22 }}
-          script: |
-            # Abort on the first failing command. Without this a failed `git pull` was
-            # silently ignored, the build ran against stale source, and the job still
-            # reported success.
+        # Pendekatan lama pakai appleboy/ssh-action, yg mengunduh binary drone-ssh
+        # dari GitHub releases. Endpoint release-asset itu sering 504/timeout, sehingga
+        # deploy gagal konsisten walau CI hijau. Sekarang pakai ssh bawaan runner
+        # (key dari secret) — tidak mengunduh apa pun, kebal terhadap kegagalan itu.
+        shell: bash
+        env:
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          REMOTE_SCRIPT: |
             set -euo pipefail
             cd /opt/OmniChat
 
             echo "=== Target commit: ${{ github.sha }} ==="
 
-            # The deploy checkout is READ-ONLY: origin/main is the source of truth.
-            # A dirty working tree previously made `git pull` abort, so the image was
-            # rebuilt from stale code. Preserve any local modification as a patch for
-            # review, then hard-sync to the pushed commit.
             if ! git diff --quiet || ! git diff --cached --quiet; then
               BACKUP="/tmp/omnichat-local-$(date +%Y%m%d-%H%M%S).patch"
               git diff HEAD > "$BACKUP"
@@ -95,7 +82,6 @@ jobs:
 
             git fetch --prune origin main
             git reset --hard origin/main
-            # Remove stray untracked build leftovers. No -x, so ignored files (.env) survive.
             git clean -fd
 
             DEPLOYED_SHA="$(git rev-parse HEAD)"
@@ -108,10 +94,6 @@ jobs:
             echo "=== Building images ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend backend
 
-            # The backend joins a shared bridge with the Hermes agent container so it can
-            # reach the Hermes API server by container name. An `external` network that
-            # does not exist makes `up -d` fail outright and take the whole stack down,
-            # so create it if it is missing.
             echo "=== Ensuring shared Hermes network ==="
             HERMES_NET="${HERMES_DOCKER_NETWORK:-omnichat_hermes}"
             docker network inspect "$HERMES_NET" > /dev/null 2>&1 || docker network create "$HERMES_NET"
@@ -120,11 +102,6 @@ jobs:
             echo "=== Starting services ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
-            # The Caddy service bind-mounts the Caddyfile as a single FILE. A container that
-            # is already running keeps the mount it resolved at start-up, so a config edited
-            # on disk (git reset --hard, editor save) can stay invisible to `caddy reload`.
-            # Validate against the host file in a throwaway container — that always reads the
-            # current bytes — then force-recreate the service so the mount is re-resolved.
             echo "=== Validating Caddyfile (from host) ==="
             docker run --rm --entrypoint caddy \
               -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
@@ -150,9 +127,6 @@ jobs:
             echo "=== Container status ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
-            # Assert /health is answered by the API, not by the SPA. The frontend nginx serves
-            # index.html for unknown paths, so a 200 alone proves nothing — it previously hid
-            # a Caddy route that had stopped sending /health to the backend.
             echo "=== Public health check (must reach the API) ==="
             for i in $(seq 1 15); do
               BODY="$(curl -fsS https://rhol-ai.tech/health 2>/dev/null || true)"
@@ -169,12 +143,6 @@ jobs:
               sleep 2
             done
 
-                        
-            # Security invariant: the API must require credentials in production. A 200 on
-            # /api/models means Security__ApiKey is unset on the VPS .env and the whole API is
-            # open (anyone can reach the paid Hermes gateway). This is a loud WARNING, not a
-            # hard failure: it must not block unrelated deploys, but it must be impossible to
-            # miss. Restore the key in /opt/OmniChat/.env and redeploy to clear it.
             echo "=== Auth enforcement check ==="
             AUTH_CODE="$(curl -s -o /dev/null -w '%{http_code}' https://rhol-ai.tech/api/models || echo 000)"
             if [ "$AUTH_CODE" = "401" ]; then
@@ -186,3 +154,10 @@ jobs:
             fi
 
             echo "=== Deploy complete: $DEPLOYED_SHA ==="
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          PORT="${VPS_PORT:-22}"
+          printf '%s\n' "$REMOTE_SCRIPT" | ssh             -o StrictHostKeyChecking=accept-new             -o UserKnownHostsFile=/dev/null             -o ConnectTimeout=20             -p "$PORT"             "${VPS_USER}@${VPS_HOST}" 'bash -s'
