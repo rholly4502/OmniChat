@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import { TypingIndicator } from '../components/TypingIndicator';
 
 describe('TypingIndicator', () => {
@@ -54,3 +54,45 @@ describe('TypingIndicator', () => {
     expect(container.querySelector('span.pixel-scan')).toBeNull();
   });
 });
+
+
+describe('TypingIndicator elapsed timer', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does not show an elapsed readout before one second', () => {
+    vi.useFakeTimers();
+    render(<TypingIndicator status="Menyusun jawaban" />);
+    expect(screen.queryByText(/· \d+s/)).not.toBeInTheDocument();
+  });
+
+  it('ticks upward every second while streaming', () => {
+    vi.useFakeTimers();
+    render(<TypingIndicator status="Menyusun jawaban" />);
+    act(() => { vi.advanceTimersByTime(3000); });
+    expect(screen.getByText('· 3s')).toBeInTheDocument();
+    act(() => { vi.advanceTimersByTime(2000); });
+    expect(screen.getByText('· 5s')).toBeInTheDocument();
+  });
+
+  it('keeps the accessible live region unchanged by the ticking readout', () => {
+    vi.useFakeTimers();
+    render(<TypingIndicator status="Menyusun jawaban" modelLabel="Hermes (Default)" />);
+    act(() => { vi.advanceTimersByTime(4000); });
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-label', 'Menyusun jawaban · Hermes (Default)');
+    const elapsed = screen.getByText('· 4s');
+    expect(elapsed).toHaveAttribute('aria-hidden', 'true');
+    expect(status).not.toContainElement(elapsed);
+  });
+
+  it('stops ticking when unmounted', () => {
+    vi.useFakeTimers();
+    const view = render(<TypingIndicator status="Menyusun jawaban" />);
+    view.unmount();
+    act(() => { vi.advanceTimersByTime(5000); });
+    expect(screen.queryByText(/· \d+s/)).not.toBeInTheDocument();
+  });
+});
+
