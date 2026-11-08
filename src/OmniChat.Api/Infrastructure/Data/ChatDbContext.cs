@@ -30,6 +30,9 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
     /// <summary>Curated job opportunities (read-only list from the agent scan).</summary>
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
 
+    /// <summary>Curated promo/event entries (read-only list from the agent scan).</summary>
+    public DbSet<PromoEvent> PromoEvents => Set<PromoEvent>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // SQLite has no native DateTimeOffset type and rejects it in ORDER BY, which is
@@ -127,5 +130,18 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         opp.Property(o => o.Ditemukan);
         opp.HasIndex(o => o.SourceId);
         opp.HasIndex(o => o.Status);
+
+        var ev = modelBuilder.Entity<PromoEvent>();
+        ev.ToTable("PromoEvents");
+        ev.HasKey(e => e.Id);
+        ev.Property(e => e.Aplikasi).IsRequired().HasMaxLength(64);
+        ev.Property(e => e.Judul).IsRequired().HasMaxLength(500);
+        ev.Property(e => e.Benefit).HasMaxLength(500);
+        ev.Property(e => e.Syarat).HasMaxLength(2000);
+        ev.Property(e => e.Link).HasMaxLength(1000);
+        ev.Property(e => e.BerlakuSampai).HasMaxLength(64);
+        ev.Property(e => e.Ditemukan);
+        ev.HasIndex(e => e.SourceId);
+        ev.HasIndex(e => e.Aplikasi);
     }
 }

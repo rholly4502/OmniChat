@@ -24,6 +24,7 @@ on:
     paths:
       - '.github/seed-staging/ledger/**'
       - '.github/seed-staging/jobs/**'
+      - '.github/seed-staging/events/**'
 
 concurrency:
   # Serialize seed vs deploy: keduanya menyentuh VPS yg sama (reset repo,
@@ -87,6 +88,16 @@ jobs:
             echo "no opportunities.json yet — skipping jobs seed"
           fi
 
+          # Stage the curated promo/event list (agent-maintained). Same convention:
+          # absent file => seeder imports zero rows.
+          mkdir -p events
+          if [ -f .github/seed-staging/events/events.json ]; then
+            cp .github/seed-staging/events/events.json events/events.json
+            python3 -c "import json; d=json.load(open('events/events.json')); print('events.json parses OK:', len(d), 'rows')"
+          else
+            echo "no events.json yet — skipping events seed"
+          fi
+
       - name: Upload seeder + ledger to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -94,7 +105,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT || 22 }}
-          source: "seeder-out,ledger,jobs"
+          source: "seeder-out,ledger,jobs,events"
           target: /opt/OmniChat/seed-staging
 
       - name: Run seeder against live DB volume + verify API
@@ -125,9 +136,10 @@ jobs:
               -v /opt/OmniChat/seed-staging/seeder-out:/seeder:ro \
               -v /opt/OmniChat/seed-staging/ledger:/ledger:ro \
               -v /opt/OmniChat/seed-staging/jobs:/jobs:ro \
+              -v /opt/OmniChat/seed-staging/events:/events:ro \
               --entrypoint dotnet \
               "$IMG" /seeder/OmniChat.Seeder.dll \
-                --db "Data Source=/data/omnichat.db" --path /ledger --jobs-path /jobs
+                --db "Data Source=/data/omnichat.db" --path /ledger --jobs-path /jobs --events-path /events
 
             echo "=== API verification (from VPS host) ==="
             echo "=== API verification (from VPS host) ==="

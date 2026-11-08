@@ -34,6 +34,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddScoped<IChatTurnRecorder, ChatTurnRecorder>();
         services.AddScoped<IExpenseRepository, ExpenseRepository>();
         services.AddScoped<IOpportunityRepository, OpportunityRepository>();
+        services.AddScoped<IPromoEventRepository, PromoEventRepository>();
         // Creates the schema on boot. Logged, not fatal: chat streaming works without history.
         services.AddHostedService<PersistenceInitializer>();
         return services;

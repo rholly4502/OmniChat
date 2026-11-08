@@ -113,9 +113,9 @@ export interface SidebarProps {
   /** Toggle Chill Mode. */
   onChillModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
-  activeView?: 'chat' | 'expenses' | 'jobs';
+  activeView?: 'chat' | 'expenses' | 'jobs' | 'events';
   /** Switch the active top-level view. */
-  onSelectView?: (view: 'chat' | 'expenses' | 'jobs') => void;
+  onSelectView?: (view: 'chat' | 'expenses' | 'jobs' | 'events') => void;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary?: ConversationUsageSummary;
   /** Open the per-conversation audit dialog (message-level token/cost table). */
@@ -300,15 +300,18 @@ export function Sidebar({
         >
           Lowongan
         </button>
-        {/* Reserved placeholder slot — intentionally inert. It is not a tab and
-            does nothing when clicked. */}
         <button
           type="button"
-          disabled
-          aria-label="Kosong (belum tersedia)"
-          className="rounded-none px-3 py-2 text-sm font-medium min-h-[44px] cursor-not-allowed border border-dashed border-chill-border text-chill-muted/40"
+          role="tab"
+          aria-selected={activeView === 'events'}
+          onClick={() => onSelectView('events')}
+          className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
+            activeView === 'events'
+              ? 'bg-chill-elevated text-chill-text pixel-shadow-sm border-chill-accent'
+              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent border-transparent'
+          }`}
         >
-          —
+          Event
         </button>
       </div>
 

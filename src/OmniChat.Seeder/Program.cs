@@ -14,6 +14,7 @@ var cliArgs = Environment.GetCommandLineArgs().Skip(1).ToArray();
 string? connectionString = null;
 string? directory = null;
 string? jobsDirectory = null;
+string? eventsDirectory = null;
 
 for (var i = 0; i < cliArgs.Length; i++)
 {
@@ -27,6 +28,9 @@ for (var i = 0; i < cliArgs.Length; i++)
             break;
         case "--jobs-path" when i + 1 < args.Length:
             jobsDirectory = cliArgs[++i];
+            break;
+        case "--events-path" when i + 1 < args.Length:
+            eventsDirectory = cliArgs[++i];
             break;
         default:
             Console.Error.WriteLine($"Unknown or incomplete argument: {args[i]}");
@@ -67,6 +71,21 @@ if (jobsDirectory is not null)
     {
         Console.WriteLine($"Skipped {oppResult.Skipped.Count} opportunity line(s):");
         foreach (var line in oppResult.Skipped.Take(20))
+        {
+            Console.WriteLine($"  - {line}");
+        }
+    }
+}
+
+if (eventsDirectory is not null)
+{
+    var evImporter = new PromoEventImporter(new PromoEventRepository(db));
+    var evResult = await evImporter.ImportFileAsync(eventsDirectory, CancellationToken.None);
+    Console.WriteLine($"Inserted {evResult.Inserted} promo event row(s).");
+    if (evResult.Skipped.Count > 0)
+    {
+        Console.WriteLine($"Skipped {evResult.Skipped.Count} event line(s):");
+        foreach (var line in evResult.Skipped.Take(20))
         {
             Console.WriteLine($"  - {line}");
         }
