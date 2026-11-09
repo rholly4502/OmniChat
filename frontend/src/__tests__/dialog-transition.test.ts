@@ -16,6 +16,7 @@ const SRC = resolve(process.cwd(), 'src');
 describe('dialog enter transition', () => {
   const stats = readFileSync(resolve(SRC, 'components/ChatStatsDialog.tsx'), 'utf8');
   const audit = readFileSync(resolve(SRC, 'components/ConversationAuditDialog.tsx'), 'utf8');
+  const shortcuts = readFileSync(resolve(SRC, 'components/ShortcutsDialog.tsx'), 'utf8');
 
   it('ChatStatsDialog backdrop fades in (pixel-overlay-fade)', () => {
     expect(stats).toContain('bg-chill-bg/60 pixel-overlay-fade');
@@ -28,5 +29,12 @@ describe('dialog enter transition', () => {
   });
   it('ConversationAuditDialog panel reveals (pixel-reveal)', () => {
     expect(audit).toContain('pixel-shadow p-4 space-y-3 pixel-reveal');
+  });
+
+  it('ShortcutsDialog backdrop fades in (pixel-overlay-fade)', () => {
+    expect(shortcuts).toContain('bg-chill-bg/60 pixel-overlay-fade');
+  });
+  it('ShortcutsDialog panel reveals (pixel-reveal)', () => {
+    expect(shortcuts).toContain('pixel-shadow p-4 space-y-3 pixel-reveal');
   });
 });

@@ -19,6 +19,7 @@ describe('view-switch enter transition', () => {
   const app = readFileSync(resolve(SRC, 'App.tsx'), 'utf8');
   const expenses = readFileSync(resolve(SRC, 'components/ExpensesView.tsx'), 'utf8');
   const jobs = readFileSync(resolve(SRC, 'components/JobsView.tsx'), 'utf8');
+  const events = readFileSync(resolve(SRC, 'components/EventsView.tsx'), 'utf8');
 
   it('the Chat branch is wrapped in a keyed pixel-reveal container', () => {
     expect(app).toContain('key={activeView}');
@@ -34,5 +35,9 @@ describe('view-switch enter transition', () => {
 
   it('JobsView root carries the pixel-reveal enter animation', () => {
     expect(jobs).toContain('h-full flex flex-col min-h-0 pixel-reveal');
+  });
+
+  it('EventsView root carries the pixel-reveal enter animation', () => {
+    expect(events).toContain('h-full flex flex-col min-h-0 pixel-reveal');
   });
 });
