@@ -543,3 +543,26 @@ input[type='radio'],
 input[type='range'] {
   cursor: pointer;
 }
+
+/* Pixel chisel scrollbars: a square thumb in the warm border register on the
+   deep background track, matching the rounded-none language. Lightweight
+   chrome only — no motion, so prefers-reduced-motion is unaffected.
+   Firefox uses scrollbar-width/color; Chromium/Safari use -webkit-. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-chill-border) var(--color-chill-bg);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: var(--color-chill-bg);
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-chill-border);
+  border: 2px solid var(--color-chill-bg);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-chill-accent);
+}
