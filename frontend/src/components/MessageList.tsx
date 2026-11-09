@@ -19,7 +19,8 @@ function formatMessageTime(ts?: number): string {
 }
 
 /** Same calendar day? (both epoch-ms timestamps). */
-function sameCalendarDay(a: number, b: number): boolean {
+function sameCalendarDay(a?: number, b?: number): boolean {
+  if (!a || !b) return false;
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
 
@@ -513,7 +514,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       {messages.map((m, i) => {
         const prev = messages[i - 1];
         const showDayDivider =
-          Boolean(m.createdAt) && (!prev?.createdAt || !sameCalendarDay(m.createdAt, prev.createdAt));
+          Boolean(m.createdAt) && (!prev?.createdAt || !sameCalendarDay(m.createdAt ?? 0, prev.createdAt ?? 0));
         return (
         <Fragment key={i}>
           {showDayDivider && (
