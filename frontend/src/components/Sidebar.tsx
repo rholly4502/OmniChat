@@ -250,7 +250,7 @@ export function Sidebar({
         <button
           ref={closeButtonRef}
           onClick={onClose}
-          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition-colors p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           aria-label="Close sidebar"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges">

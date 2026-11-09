@@ -222,6 +222,23 @@ describe('pixel2 chill consistency', () => {
     expect(w).toContain('relative h-full');
     expect(w).toContain('bg-white/15');
   });
+
+  it('every press-slide button uses the `transition` shorthand (covers transform), never `transition-colors`', () => {
+    // A button with active:translate-y and only `transition-colors` animates its
+    // colours but snaps the translate — the pixel press-slide (2–3px) must
+    // animate smoothly. `transition` (shorthand) includes transform; plain
+    // `transition-colors` does not. This locked in the 8-button sweep.
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of buttonTags(readFileSync(file, 'utf8'))) {
+        if (!attrs.includes('active:translate-y')) continue;
+        if (!/\btransition\b/.test(attrs) || attrs.includes('transition-colors')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} press-slide button must use the transition shorthand, not transition-colors — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('pixel2 global square-corner floor', () => {
