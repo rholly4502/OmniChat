@@ -127,7 +127,7 @@ export function ChatHeader({ useAgent, model, modelLabel, usage, models, onModel
               value={model}
               onChange={(e) => onModelChange(e.target.value)}
               aria-label="Ganti model"
-              className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 cursor-pointer min-h-[44px] pl-1 pr-4 select-none [color-scheme:dark]"
+              className="appearance-none bg-transparent text-chill-accent text-base md:text-sm font-medium transition-colors hover:text-chill-accent-hover outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 cursor-pointer min-h-[44px] pl-1 pr-4 select-none [color-scheme:dark]"
             >
               {models.map((m) => (
                 <option key={m.id} value={m.id}>{m.label}</option>
