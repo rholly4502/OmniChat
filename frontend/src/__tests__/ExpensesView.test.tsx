@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import { ExpensesView } from '../components/ExpensesView';
+import { findDuplicateExpense } from '../expenseDup';
+import type { ExpenseItem } from '../expensesApi';
 import { currentMonthKey } from '../hooks/useExpenses';
 import { remainingDailyBudget } from '../expenseBudget';
 import { formatRupiah } from '../expensesApi';
@@ -765,5 +767,132 @@ describe('ExpensesView transaction-row micro-interaction', () => {
       expect(row.className).toContain('transition');
       expect(row.className).toContain('hover:bg-chill-elevated');
     });
+  });
+});
+
+describe('ExpensesView duplicate-entry guard', () => {
+  const dupItems: ExpenseItem[] = [
+    { id: 1, tanggal: '2026-10-28', waktu: '12:30', kategori: 'Makan', keterangan: 'Warteg', nominal: 12000 },
+    { id: 2, tanggal: '2026-10-27', waktu: '09:00', kategori: 'Lain', keterangan: 'Kopi', nominal: 8000 },
+  ];
+
+  function dupPagePayload() {
+    return { month: '2026-10', page: 1, pageSize: 200, total: 2, items: dupItems };
+  }
+
+  it('warns before saving an exact duplicate and does not POST until confirmed', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 3, tanggal: '2026-10-28', waktu: '', kategori: 'Makan', keterangan: 'Warteg', nominal: 12000 },
+          201,
+        );
+      }
+      return String(url).includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(dupPagePayload());
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-28' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '12000' } });
+    fireEvent.change(screen.getByLabelText('Keterangan'), { target: { value: 'Warteg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    expect(await screen.findByText(/Entri serupa sudah ada/)).toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'POST')).toBe(false);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan tetap' }));
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+    });
+    const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST')!;
+    const body = JSON.parse(String((post[1] as RequestInit).body));
+    expect(body).toMatchObject({ tanggal: '2026-10-28', kategori: 'Makan', nominal: 12000 });
+  });
+
+  it('lets the user cancel a duplicate warning without saving', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 4, tanggal: '2026-10-28', waktu: '', kategori: 'Makan', keterangan: 'Warteg', nominal: 12000 },
+          201,
+        );
+      }
+      return String(url).includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(dupPagePayload());
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-28' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '12000' } });
+    fireEvent.change(screen.getByLabelText('Keterangan'), { target: { value: 'Warteg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    const alert = await screen.findByRole('alert');
+    fireEvent.click(within(alert).getByRole('button', { name: 'Batal' }));
+
+    expect(screen.queryByText(/Entri serupa sudah ada/)).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some((c) => (c[1] as RequestInit)?.method === 'POST')).toBe(false);
+    // The add form stays open so the user can edit the entry.
+    expect(screen.getByLabelText('Tambah pengeluaran')).toBeInTheDocument();
+  });
+
+  it('does not warn when the payload differs from every existing row', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return jsonResponse(
+          { id: 5, tanggal: '2026-10-29', waktu: '', kategori: 'Makan', keterangan: 'Makan siang', nominal: 20000 },
+          201,
+        );
+      }
+      return String(url).includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(dupPagePayload());
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    fireEvent.change(screen.getByLabelText('Tanggal'), { target: { value: '2026-10-29' } });
+    fireEvent.change(screen.getByLabelText('Nominal (Rp)'), { target: { value: '20000' } });
+    fireEvent.change(screen.getByLabelText('Keterangan'), { target: { value: 'Makan siang' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      const post = fetchMock.mock.calls.find((c) => (c[1] as RequestInit)?.method === 'POST');
+      expect(post).toBeTruthy();
+    });
+    expect(screen.queryByText(/Entri serupa sudah ada/)).not.toBeInTheDocument();
+  });
+});
+
+describe('findDuplicateExpense', () => {
+  const rows: ExpenseItem[] = [
+    { id: 1, tanggal: '2026-10-28', waktu: '12:30', kategori: 'Makan', keterangan: '  Warteg  ', nominal: 12000 },
+    { id: 2, tanggal: '2026-10-27', waktu: '09:00', kategori: 'Lain', keterangan: 'Kopi', nominal: 8000 },
+  ];
+
+  it('matches an exact duplicate by date/kategori/nominal/normalized keterangan', () => {
+    const found = findDuplicateExpense(
+      { tanggal: '2026-10-28', kategori: 'Makan', keterangan: 'warteg', nominal: 12000 },
+      rows,
+    );
+    expect(found?.id).toBe(1);
+  });
+
+  it('ignores a difference in any field', () => {
+    expect(findDuplicateExpense({ tanggal: '2026-10-28', kategori: 'Makan', keterangan: 'Warteg', nominal: 13000 }, rows)).toBeNull();
+    expect(findDuplicateExpense({ tanggal: '2026-10-29', kategori: 'Makan', keterangan: 'Warteg', nominal: 12000 }, rows)).toBeNull();
+    expect(findDuplicateExpense({ tanggal: '2026-10-28', kategori: 'Transport', keterangan: 'Warteg', nominal: 12000 }, rows)).toBeNull();
+  });
+
+  it('never flags a row against itself via excludeId', () => {
+    const p = { tanggal: '2026-10-28', kategori: 'Makan', keterangan: 'Warteg', nominal: 12000 };
+    expect(findDuplicateExpense(p, rows, 1)).toBeNull();
+    expect(findDuplicateExpense(p, rows, 2)).toEqual(rows[0]);
   });
 });

@@ -20,6 +20,7 @@ import { PixelProgress } from './PixelProgress';
 import { PanelFrame } from './PanelFrame';
 import { ScanLoader } from './ScanLoader';
 import { CategoryIcon } from './categoryIcons';
+import { findDuplicateExpense } from '../expenseDup';
 import type { ExpenseItem } from '../expensesApi';
 
 /** Props accepted by {@link ExpensesView}. */
@@ -134,6 +135,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [savedNote, setSavedNote] = useState<string | null>(null);
+  const [dupWarning, setDupWarning] = useState<{ payload: ExpenseWritePayload; match: ExpenseItem } | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   // When the edit form opens (mobile), scroll it into view so the save/cancel
@@ -183,7 +185,6 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   }
 
   async function handleSave(payload: ExpenseWritePayload) {
-    const note = editingItem ? 'Perubahan tersimpan.' : 'Pengeluaran tersimpan.';
     if (!apiKey) {
       setFormError('API key diperlukan untuk menyimpan pengeluaran.');
       return;
@@ -192,6 +193,24 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       setFormError('Nominal harus lebih dari 0.');
       return;
     }
+    // Guard against accidental double-entry: if the payload exactly matches an
+    // existing row (same date, kategori, nominal and keterangan), pause for an
+    // explicit confirmation instead of silently inserting a duplicate that would
+    // skew every aggregate (totals, projection, advice). The edited row itself is
+    // excluded so editing without changing the values is never flagged. Only rows
+    // in the currently-loaded month are visible here, which is the realistic
+    // double-entry window.
+    const dup = findDuplicateExpense(payload, items, editingItem?.id);
+    if (dup) {
+      setDupWarning({ payload, match: dup });
+      return;
+    }
+    setFormError(null);
+    await performSave(payload);
+  }
+
+  async function performSave(payload: ExpenseWritePayload) {
+    const note = editingItem ? 'Perubahan tersimpan.' : 'Pengeluaran tersimpan.';
     setSaving(true);
     setFormError(null);
     try {
@@ -245,6 +264,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     setEditingItem(item);
     setShowForm(true);
     setFormError(null);
+    setDupWarning(null);
   }
 
   const hasData = (summary !== null && summary.total > 0) || items.length > 0;
@@ -337,6 +357,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             setEditingItem(null);
             setShowForm((v) => !v);
             setFormError(null);
+            setDupWarning(null);
           }}
           className="relative shrink-0 rounded-none border border-chill-accent/60 bg-chill-accent text-chill-on-accent px-4 py-2 text-sm font-semibold transition hover:bg-chill-accent-hover active:bg-chill-accent-active hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] inline-flex items-center gap-1.5 justify-center"
         >
@@ -370,6 +391,36 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
         )}
         {showForm && (
           <div ref={formRef}>
+          {dupWarning && (
+            <div role="alert" className="mb-3 rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm">
+              <p className="font-medium text-chill-red">
+                Entri serupa sudah ada: {formatRupiah(dupWarning.match.nominal)} · “{dupWarning.match.keterangan || dupWarning.match.kategori}”
+              </p>
+              <p className="mt-0.5 text-xs text-chill-muted tabular-nums">
+                {dupWarning.match.tanggal} · {dupWarning.match.kategori} · {formatRupiah(dupWarning.match.nominal)}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const p = dupWarning.payload;
+                    setDupWarning(null);
+                    void performSave(p);
+                  }}
+                  className="rounded-none border border-chill-red/70 bg-chill-red/20 px-3.5 py-2 text-sm font-semibold text-chill-red transition hover:bg-chill-red/30 active:bg-chill-red/40 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 min-h-[44px]"
+                >
+                  Simpan tetap
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDupWarning(null)}
+                  className="rounded-none border border-chill-border px-3.5 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          )}
           <ExpenseForm
             initial={editingItem}
             saving={saving}
@@ -379,6 +430,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               setShowForm(false);
               setEditingItem(null);
               setFormError(null);
+              setDupWarning(null);
             }}
           />
           </div>
