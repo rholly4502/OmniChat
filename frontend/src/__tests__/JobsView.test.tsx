@@ -158,6 +158,18 @@ describe('JobsView job card micro-interaction', () => {
       expect(card.className).toContain('hover:bg-chill-elevated');
     });
   });
+
+  it('follow-up save button carries the shared accent press register (hover + active bg)', () => {
+    mockState();
+    render(<JobsView />);
+    const atur = screen.getAllByRole('button', { name: /Atur follow-up/ })[0];
+    fireEvent.click(atur);
+    const simpan = screen.getByRole('button', { name: 'Simpan' });
+    expect(simpan.className).toContain('transition');
+    expect(simpan.className).toContain('hover:bg-chill-accent/20');
+    expect(simpan.className).toContain('active:bg-chill-accent/30');
+    expect(simpan.className).toContain('active:translate-y-[2px]');
+  });
 });
 describe('JobsView filter controls (pixel icon + micro-interaction)', () => {
   it('uses crisp SVG icons and rotates the chevron with a stepped transition on toggle', () => {

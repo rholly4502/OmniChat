@@ -56,6 +56,10 @@ describe("CodeBlock (extracted module)", () => {
     const btn = screen.getByRole("button", { name: "Copy code to clipboard" });
     expect(btn.className).toContain("focus-visible:ring-2");
     expect(btn.className).toContain("min-h-[44px]");
+    // Pressed state: hover lightens to border, press darkens to surface
+    // (distinct from the elevated base) for click-feedback contrast.
+    expect(btn.className).toContain("active:bg-chill-surface");
+    expect(btn.className).toContain("active:translate-y-[2px]");
   });
 
   it("extracts and renders the language name from code className", () => {

@@ -444,7 +444,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                         type="button"
                         disabled={updatingId === o.id}
                         onClick={() => saveFollowUp(o)}
-                        className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                        className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
                       >
                         Simpan
                       </button>
