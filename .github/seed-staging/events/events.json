@@ -340,6 +340,16 @@
     "ditemukan": "2026-11-07"
   },
   {
+    "id": "24c34fb63729",
+    "aplikasi": "GoPay",
+    "judul": "Cashback 90% (maks 12.000 GoPay Coins) top-up game di UniPin — khusus pengguna baru GoPay di UniPin (transaksi pertama), min. transaksi Rp10.000, 1x/pengguna, pukul 10.00–23.59 WIB",
+    "benefit": null,
+    "syarat": "1 Okt–31 Des 2026",
+    "link": "https://gopay.co.id/promo/unipin",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-09"
+  },
+  {
     "id": "71f451c78fef",
     "aplikasi": "Grab",
     "judul": "Diskon s.d. 55% GrabFood (Puas Kilat akhir bulan) — tanpa kode, klaim langsung di app Grab. 25-31 Okt 2026.",
@@ -468,6 +478,26 @@
     "link": "https://www.telkomsel.com/en/promo/shopeepay-cashback-loyal-user",
     "berlaku_sampai": null,
     "ditemukan": "2026-11-06"
+  },
+  {
+    "id": "a290923d1f02",
+    "aplikasi": "ShopeePay",
+    "judul": "Voucher Paket Super Besar 1 KFC cuma Rp11.000 (kampanye Aplikasi ShopeePay 11.11) — klaim mulai 6 Nov, tukar 11 Nov pukul 14.00 WIB atau 14 Nov pukul 11.00 WIB, kuota 40.000, khusus yang belum dapat voucher KFC periode lalu",
+    "benefit": null,
+    "syarat": "6–15 Nov 2026",
+    "link": "https://shopeepay.co.id/promo",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-09"
+  },
+  {
+    "id": "9e7fa003df87",
+    "aplikasi": "ShopeePay",
+    "judul": "Saldo Kaget harian + diskon s.d. 90% produk digital (pulsa & digital) di kampanye Aplikasi ShopeePay 11.11 — klaim amplop Saldo Kaget tiap hari di app ShopeePay selama kuota ada",
+    "benefit": null,
+    "syarat": "6–15 Nov 2026",
+    "link": "https://shopeepay.co.id/promo",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-09"
   },
   {
     "id": "284308533a38",
