@@ -103,7 +103,7 @@ public sealed class ChatTurnRecorder(
         }
     }
 
-    public async Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, string? model = null, CancellationToken cancellationToken = default)
+    public async Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, string? model = null, string? reasoning = null, CancellationToken cancellationToken = default)
     {
         // The assistant's half of the turn is filed even when it came back blank (an
         // aborted generation), so the reply column is never a silent gap. The usage
@@ -117,7 +117,7 @@ public sealed class ChatTurnRecorder(
                 var message = await repository.AppendMessageAsync(
                     conversationId,
                     userId,
-                    NewMessage("assistant", assistantContent.Trim(), promptTokens, completionTokens, model),
+                    NewMessage("assistant", assistantContent.Trim(), promptTokens, completionTokens, model, reasoning),
                     cancellationToken);
                 messageId = message.Id;
             }
@@ -142,13 +142,14 @@ public sealed class ChatTurnRecorder(
         }
     }
 
-    private static Message NewMessage(string role, string content, int promptTokens = 0, int completionTokens = 0, string? model = null) => new()
+    private static Message NewMessage(string role, string content, int promptTokens = 0, int completionTokens = 0, string? model = null, string? reasoning = null) => new()
     {
         Role = role,
         Content = content,
         PromptTokens = promptTokens,
         CompletionTokens = completionTokens,
         Model = model,
+        Reasoning = reasoning,
     };
 
     /// <summary>

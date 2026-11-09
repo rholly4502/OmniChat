@@ -139,6 +139,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               model: m.model,
               promptTokens: m.promptTokens,
               completionTokens: m.completionTokens,
+              reasoning: m.reasoning,
             })),
           });
         } catch {

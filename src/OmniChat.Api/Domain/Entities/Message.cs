@@ -36,5 +36,12 @@ public class Message
     /// </summary>
     public string? Model { get; set; }
 
+    /// <summary>
+    /// Chain-of-thought reasoning text for this turn, when the provider exposed it (e.g.
+    /// reasoning models). Persisted so a reloaded conversation can still show the "Berpikir"
+    /// disclosure that streamed live; null on user turns and on replies with no reasoning.
+    /// </summary>
+    public string? Reasoning { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

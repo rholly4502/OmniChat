@@ -165,6 +165,9 @@ export interface ConversationMessage {
   completionTokens?: number;
   /** Model id that produced this assistant turn, persisted for the cost footnote. */
   model?: string;
+  /** Chain-of-thought reasoning text for this turn, persisted so a reloaded
+   * conversation can still show the "Berpikir" disclosure. */
+  reasoning?: string;
 }
 
 /** A stored conversation together with its transcript. */

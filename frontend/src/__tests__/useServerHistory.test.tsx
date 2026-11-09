@@ -17,7 +17,7 @@ function summary(id: string, title: string, updatedAt = '2026-10-25T10:00:00+00:
   };
 }
 
-function detail(id: string, title: string, contents: string[]) {
+function detail(id: string, title: string, contents: string[], reasoning?: string) {
   return {
     ...summary(id, title),
     messages: contents.map((content, i) => ({
@@ -28,6 +28,7 @@ function detail(id: string, title: string, contents: string[]) {
       promptTokens: i % 2 === 1 ? 12 : undefined,
       completionTokens: i % 2 === 1 ? 8 : undefined,
       model: i % 2 === 1 ? 'hermes-default' : undefined,
+      reasoning: i % 2 === 1 ? reasoning : undefined,
     })),
   };
 }
@@ -906,3 +907,21 @@ describe('useServerHistory', () => {
     expect(result.current.sessions.length).toBe(before);
   });
 });
+
+  it('carries the persisted reasoning onto reloaded assistant messages', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const getImpl = vi.fn().mockResolvedValue(detail(A, 'Deploy', ['halo', 'hai'], 'proses: cek konteks'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, getImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let messages: unknown;
+    await act(async () => {
+      messages = await result.current.selectSession(A);
+    });
+
+    const list = messages as Array<Record<string, unknown>>;
+    expect(list[1]).toMatchObject({ role: 'assistant', reasoning: 'proses: cek konteks' });
+    // The user turn never carries reasoning.
+    expect(list[0].reasoning).toBeUndefined();
+  });

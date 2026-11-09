@@ -226,6 +226,10 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(0);
 
+                    b.Property<string>("Reasoning")
+                        .HasMaxLength(32000)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)

@@ -270,6 +270,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
             ? { promptTokens: m.promptTokens ?? 0, completionTokens: m.completionTokens ?? 0 }
             : undefined,
           model: m.model,
+          reasoning: m.reasoning,
         }));
         setSessions((prev) =>
           prev.map((s) =>
@@ -373,6 +374,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
             ? { promptTokens: m.promptTokens ?? 0, completionTokens: m.completionTokens ?? 0 }
             : undefined,
           model: m.model,
+          reasoning: m.reasoning,
         }));
         setSessions((prev) =>
           prev.map((s) =>

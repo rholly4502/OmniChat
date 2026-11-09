@@ -71,6 +71,7 @@ public class ChatDbContext(DbContextOptions<ChatDbContext> options) : DbContext(
         message.Property(m => m.PromptTokens).HasDefaultValue(0);
         message.Property(m => m.CompletionTokens).HasDefaultValue(0);
         message.Property(m => m.Model).HasMaxLength(100);
+        message.Property(m => m.Reasoning).HasMaxLength(32_000);
         message.Property(m => m.CreatedAt).HasConversion(timestamp);
         message.HasIndex(m => new { m.ConversationId, m.CreatedAt });
         message

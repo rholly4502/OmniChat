@@ -11,6 +11,25 @@ import {
 } from '../conversationExport';
 import type { ConversationExportRecord, Message } from '../types';
 
+const { pdfTextCalls, JsPdfMock } = vi.hoisted(() => {
+  const pdfTextCalls: string[][] = [];
+  const JsPdfMock = function JsPdfMock() {
+    return {
+    internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
+    setFont: () => {},
+    setFontSize: () => {},
+    setTextColor: () => {},
+    text: (t: string | string[]) => { pdfTextCalls.push(Array.isArray(t) ? t : [t]); },
+    splitTextToSize: (s: string) => s.split('\n'),
+    addPage: () => {},
+    output: () => new Blob(['%PDF'], { type: 'application/pdf' }),
+    };
+  }
+  return { pdfTextCalls, JsPdfMock };
+});
+
+vi.mock('jspdf', () => ({ jsPDF: JsPdfMock }));
+
 const MSGS: Message[] = [
   { role: 'user', content: 'halo' },
   { role: 'assistant', content: 'hi' },
@@ -197,10 +216,44 @@ describe('buildAllConversationsJson / buildAllConversationsCsv', () => {
     const csv = buildAllConversationsCsv(RECORDS);
     expect(csv.startsWith('\uFEFF')).toBe(true);
     const lines = csv.replace('\uFEFF', '').trim().split('\r\n');
-    expect(lines[0]).toBe('percakapan,dibuat,peran,konten,model,prompt_tokens,completion_tokens,total_tokens');
+    expect(lines[0]).toBe('percakapan,dibuat,peran,konten,model,prompt_tokens,completion_tokens,total_tokens,reasoning');
     expect(lines).toHaveLength(3); // header + 2 messages
     expect(lines[2]).toContain('Percakapan A');
     expect(lines[2]).toContain('hai, ada koma, dan ""kutip""');
-    expect(lines[2]).toMatch(/10,5,15$/);
+    expect(lines[2]).toMatch(/10,5,15,$/); // empty reasoning cell appended
+  });
+});
+
+describe('conversation exports carry reasoning', () => {
+  const WITH_REASONING: Message[] = [
+    { role: 'user', content: 'halo' },
+    { role: 'assistant', content: 'hi', reasoning: 'proses: cek konteks' },
+  ];
+
+  it('JSON embeds the reasoning field only when present', () => {
+    const withReasoning = JSON.parse(buildConversationJson(WITH_REASONING, 'Judul'));
+    expect(withReasoning.messages[1].reasoning).toBe('proses: cek konteks');
+    expect(withReasoning.messages[0].reasoning).toBeUndefined();
+
+    const plain = JSON.parse(buildConversationJson(MSGS, 'Judul'));
+    expect(plain.messages[1].reasoning).toBeUndefined();
+  });
+
+  it('Markdown renders reasoning as a blockquote "Berpikir" section', () => {
+    const md = buildConversationMarkdown(WITH_REASONING, 'Judul');
+    expect(md).toContain('> **Berpikir:**');
+    expect(md).toContain('> proses: cek konteks');
+
+    const plain = buildConversationMarkdown(MSGS, 'Judul');
+    expect(plain).not.toContain('Berpikir');
+  });
+
+  it('PDF renders reasoning text when present', async () => {
+    pdfTextCalls.length = 0;
+    const blob = await buildConversationPdf(WITH_REASONING, 'Judul');
+    expect(blob.type).toContain('application/pdf');
+    const joined = pdfTextCalls.flat().join('\n');
+    expect(joined).toContain('Berpikir:');
+    expect(joined).toContain('proses: cek konteks');
   });
 });

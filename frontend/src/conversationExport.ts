@@ -90,7 +90,7 @@ export function buildConversationJson(messages: Message[], title = 'Percakapan',
   const doc: Record<string, unknown> = {
     title,
     exportedAt: new Date().toISOString(),
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    messages: messages.map((m) => ({ role: m.role, content: m.content, ...(m.reasoning ? { reasoning: m.reasoning } : {}) })),
   };
   if (meta.model) doc.model = meta.model;
   if (meta.mode) doc.mode = meta.mode;
@@ -123,6 +123,11 @@ export function buildConversationMarkdown(messages: Message[], title = 'Percakap
   for (const msg of messages) {
     const roleLabel = msg.role === 'user' ? 'Pengguna' : 'Asisten';
     lines.push(`### ${roleLabel}`, '', msg.content, '');
+    if (msg.reasoning) {
+      const reasoningLines = ['> **Berpikir:**', ''];
+      for (const ln of msg.reasoning.split('\n')) reasoningLines.push(`> ${ln}`);
+      lines.push(...reasoningLines, '');
+    }
   }
   return lines.join('\n');
 }
@@ -184,6 +189,22 @@ export async function buildConversationPdf(messages: Message[], title = 'Percaka
       doc.text(line, margin, y);
       y += 6;
     }
+    if (m.reasoning) {
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(120);
+      y += 2;
+      const rLines = ['Berpikir:'];
+      for (const paragraph of m.reasoning.split(/\n+/)) {
+        rLines.push(...doc.splitTextToSize(paragraph.trim(), maxWidth));
+      }
+      for (const line of rLines) {
+        if (y > pageHeight - 16) newPage();
+        doc.text(line, margin, y);
+        y += 5;
+      }
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(25);
+    }
     y += 3;
   }
 
@@ -217,6 +238,7 @@ export interface ConversationExportRecord {
     model?: string;
     promptTokens?: number;
     completionTokens?: number;
+    reasoning?: string;
   }>;
 }
 
@@ -238,7 +260,7 @@ export function buildAllConversationsJson(records: ConversationExportRecord[]): 
  * correctly.
  */
 export function buildAllConversationsCsv(records: ConversationExportRecord[]): string {
-  const header = ['percakapan', 'dibuat', 'peran', 'konten', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens'];
+  const header = ['percakapan', 'dibuat', 'peran', 'konten', 'model', 'prompt_tokens', 'completion_tokens', 'total_tokens', 'reasoning'];
   const rows: string[][] = [header];
   for (const rec of records) {
     for (const m of rec.messages) {
@@ -251,6 +273,7 @@ export function buildAllConversationsCsv(records: ConversationExportRecord[]): s
         String(m.promptTokens ?? 0),
         String(m.completionTokens ?? 0),
         String((m.promptTokens ?? 0) + (m.completionTokens ?? 0)),
+        m.reasoning ?? '',
       ]);
     }
   }

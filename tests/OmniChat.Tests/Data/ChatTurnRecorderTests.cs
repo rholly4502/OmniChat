@@ -340,4 +340,20 @@ public sealed class ChatTurnRecorderTests : IDisposable
         Assert.Equal(unknown, id);
         Assert.Equal(0, await _db.Conversations.CountAsync());
     }
+
+    [Fact]
+    public async Task CompleteTurn_PersistsReasoning_OnTheAssistantMessage()
+    {
+        var id = (await _recorder.StartTurnAsync(NewTurn("halo")))!.Value;
+
+        var messageId = await _recorder.CompleteTurnAsync(id, Admin, "Halo juga!", 0, 0, "claude-sonnet", "proses: cek konteks");
+
+        var stored = await _repository.GetConversationAsync(id, Admin);
+        Assert.NotNull(messageId);
+        var assistant = stored!.Messages.Single(m => m.Role == "assistant");
+        Assert.Equal("proses: cek konteks", assistant.Reasoning);
+        // The user turn never carries reasoning.
+        var user = stored.Messages.Single(m => m.Role == "user");
+        Assert.Null(user.Reasoning);
+    }
 }

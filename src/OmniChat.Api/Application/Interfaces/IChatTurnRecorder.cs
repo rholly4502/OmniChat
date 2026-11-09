@@ -48,5 +48,5 @@ public interface IChatTurnRecorder
     /// reply, or the turn could not be recorded). The streaming endpoint forwards this id so the
     /// client can attach feedback to the freshly-completed answer without a reload.
     /// </returns>
-    Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, string? model = null, CancellationToken cancellationToken = default);
+    Task<Guid?> CompleteTurnAsync(Guid conversationId, string userId, string assistantContent, int promptTokens = 0, int completionTokens = 0, string? model = null, string? reasoning = null, CancellationToken cancellationToken = default);
 }

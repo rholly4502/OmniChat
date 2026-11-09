@@ -139,6 +139,7 @@ public sealed class ChatController : ControllerBase
         var promptTokens = 0;
         var completionTokens = 0;
         var reply = new StringBuilder();
+        var reasoningBuilder = new StringBuilder();
         // Set once the assistant reply has been filed; its id is forwarded before [DONE]
         // so the client can attach feedback to the just-finished answer without a reload.
         Guid? completedMessageId = null;
@@ -172,6 +173,7 @@ public sealed class ChatController : ControllerBase
                 var reasoning = ReasoningFrame.TryRead(token);
                 if (reasoning is not null)
                 {
+                    reasoningBuilder.Append(reasoning);
                     await WriteEventAsync(new { reasoning }, cancellationToken);
                     continue;
                 }
@@ -185,7 +187,7 @@ public sealed class ChatController : ControllerBase
             if (conversationId is Guid recorded)
             {
                 completedMessageId = await _turnRecorder.CompleteTurnAsync(
-                    recorded, userId, reply.ToString(), promptTokens, completionTokens, request.Model, cancellationToken);
+                    recorded, userId, reply.ToString(), promptTokens, completionTokens, request.Model, reasoningBuilder.ToString(), cancellationToken);
                 turnCompleted = true;
 
                 if (completedMessageId is Guid mid)
@@ -218,7 +220,7 @@ public sealed class ChatController : ControllerBase
             // The success path already completed the turn above; only the failure paths land here.
             if (!turnCompleted && conversationId is Guid awaitingRecord)
             {
-                await _turnRecorder.CompleteTurnAsync(awaitingRecord, userId, reply.ToString(), promptTokens, completionTokens, request.Model, CancellationToken.None);
+                await _turnRecorder.CompleteTurnAsync(awaitingRecord, userId, reply.ToString(), promptTokens, completionTokens, request.Model, reasoningBuilder.ToString(), CancellationToken.None);
             }
         }
     }

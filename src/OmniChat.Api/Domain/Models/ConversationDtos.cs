@@ -75,7 +75,8 @@ public sealed record ConversationMessage(
     int PromptTokens,
     int CompletionTokens,
     string? Model,
-    bool IsBookmarked = false)
+    bool IsBookmarked = false,
+    string? Reasoning = null)
 {
     public static ConversationMessage From(Message message)
     {
@@ -90,7 +91,8 @@ public sealed record ConversationMessage(
             message.PromptTokens,
             message.CompletionTokens,
             message.Model,
-            message.IsBookmarked);
+            message.IsBookmarked,
+            message.Reasoning);
     }
 }
 
