@@ -487,6 +487,18 @@ input[type='time']::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
+/* Text-entry fields: step the focus border/background accent in the same hard
+   beats as the press-slide buttons instead of snapping instantly. Fields that
+   already carry a Tailwind `transition-*` utility keep it (class rules win over
+   this element rule); plain inputs gain a brief border-color step. The global
+   reduced-motion media block zeroes the duration. */
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+select,
+textarea {
+  transition-property: border-color, background-color;
+  transition-duration: 120ms;
+}
+
 /* ============================================================================
    FOCUS MODE (Mode Fokus) — minimal calm chat surface
    Enabled by adding `.focus-mode` to the app root (same mechanism as

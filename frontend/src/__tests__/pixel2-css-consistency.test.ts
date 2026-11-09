@@ -80,6 +80,15 @@ describe('pixel2 css consistency', () => {
     }
     expect(body).toContain('cursor: pointer');
   });
+
+  it('steps the focus border/background on text-entry fields (no instant snap)', () => {
+    // Forms use `focus:border-chill-accent`; without a transition the accent snaps
+    // instantly. The pixel language steps it in hard beats, same as buttons.
+    const block = CLEAN.match(/input:not\(\[type='checkbox'\]\)[\s\S]*?\}/)?.[0] ?? '';
+    expect(block).toContain('transition-property: border-color');
+    expect(block).toContain('transition-duration: 120ms');
+    expect(block).toContain('textarea');
+  });
 });
 describe('pixel2 focus-mode page grid', () => {
   it('focus mode also quiets the expenses full-canvas checkerboard (pixel-grid-page)', () => {
