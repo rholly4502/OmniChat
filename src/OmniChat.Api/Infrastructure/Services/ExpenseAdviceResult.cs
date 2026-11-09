@@ -86,4 +86,5 @@ public sealed record ExpenseAdvice(
     PcGoal PcGoal,
     DailySuggestions Daily,
     RemainingAllowance RemainingAllowance,
-    MonthlyNabung MonthlyNabung);
+    MonthlyNabung MonthlyNabung,
+    long JajanTotal);

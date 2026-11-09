@@ -61,6 +61,14 @@ public sealed class ExpenseAdviceService(
             .Select(kv => new CategoryTrendItem(kv.Key, kv.Value))
             .ToList();
 
+        // Snack/junk spend: ledger rows logged under "Makan" whose keterangan marks a
+        // snack purchase (the user's consistent convention). It folds into the Makan
+        // category line, so surface the sub-total explicitly - it is the most
+        // controllable leak against both frugality and weight-loss goals.
+        var jajanTotal = rows
+            .Where(r => r.Kategori == "Makan" && SnackKeywords.Any(k => r.Keterangan.Contains(k, StringComparison.OrdinalIgnoreCase)))
+            .Sum(r => r.Nominal);
+
         var daysElapsed = date.Day;
         // Committed recurring bills (Tagihan, e.g. kos rent) are paid as one lump;
         // feeding them through the daily run-rate would project a lumpy month far
@@ -167,7 +175,8 @@ public sealed class ExpenseAdviceService(
                 monthsToReach),
             Daily(date, foodSpend),
             new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance),
-            new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung, projectedSavings, projectedDeficit));
+            new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung, projectedSavings, projectedDeficit),
+            jajanTotal);
     }
 
     /// <summary>
@@ -323,6 +332,10 @@ public sealed class ExpenseAdviceService(
         "Manfaatkan cashback/point saat top-up atau belanja online — tapi jangan tergoda belanja ekstra demi reward.",
         "Catat pengeluaran harian tiap malam — sadar pos mana yang bocor sebelum bulan berakhir.",
     ];
+    /// <summary>Keterangan substrings that mark a snack/junk purchase (the user's
+    /// ledger convention). Used to split the "Makan" category into its discretionary
+    /// snack part vs real meals, so the jajan leak is visible and actionable.</summary>
+    private static readonly string[] SnackKeywords = ["jajan", "snack", "cemilan"];
     /// <summary>Fixed, health-and-money aligned tips shown when the day is over budget.</summary>
     private static List<string> Tips() =>
     [

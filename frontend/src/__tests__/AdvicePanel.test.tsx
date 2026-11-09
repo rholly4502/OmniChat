@@ -533,4 +533,33 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
 
     expect(screen.getByText(/diproyeksikan tercapai/)).toBeInTheDocument();
   });
+
+  it('flags the snack/junk share of food spend when jajan rows are present', async () => {
+    const payload = {
+      ...advicePayload,
+      categoryTrend: [
+        { kategori: 'Belanja', total: 300000 },
+        { kategori: 'Makan', total: 200000 },
+      ],
+      jajanTotal: 80000,
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload))));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const note = screen.getByText(/adalah jajan\/snack/);
+    expect(note.textContent).toContain('80.000');
+    expect(note.textContent).toContain('40%');
+  });
+
+  it('does not show the jajan callout when there is no snack spend', async () => {
+    const payload = { ...advicePayload, jajanTotal: 0 };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload))));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/jajan\/snack/)).not.toBeInTheDocument();
+  });
 });

@@ -830,4 +830,55 @@ public sealed class ExpenseAdviceServiceTests
         Assert.Equal(0, n.ProjectedSavings);
         Assert.Equal(3_100_000, n.ProjectedDeficit);
     }
+
+    [Fact]
+    public async Task JajanTotal_sumsSnackRowsLoggedUnderMakan()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 8);
+        void AddMakan(long nominal, string ket, string id)
+        {
+            var row = Row(d, "Makan", nominal, id);
+            row.Keterangan = ket;
+            repo.Rows.Add(row);
+        }
+        AddMakan(55_000, "Jajan", "a");
+        AddMakan(50_000, "Jajan", "b");
+        AddMakan(80_000, "jajan", "c");
+        AddMakan(23_000, "Makan siang", "d");
+        AddMakan(5_000, "Minuman", "e");
+        repo.Rows.Add(Row(d, "Transport", 60_000, "t"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(185_000, advice.JajanTotal);
+    }
+
+    [Fact]
+    public async Task JajanTotal_isZeroWhenNoSnackKeywordsPresent()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 8);
+        void AddMakan(long nominal, string ket, string id)
+        {
+            var row = Row(d, "Makan", nominal, id);
+            row.Keterangan = ket;
+            repo.Rows.Add(row);
+        }
+        AddMakan(30_000, "Makan siang", "a");
+        AddMakan(23_000, "Sate", "b");
+        AddMakan(15_000, "Ayam penyet", "c");
+        AddMakan(18_000, "Sup buah mangga", "d");
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Equal(0, advice.JajanTotal);
+    }
 }
+

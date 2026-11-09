@@ -340,6 +340,8 @@ export interface ExpenseAdvice {
   pcGoal: PcGoalDto;
   daily: DailySuggestionsDto;
   monthlyNabung: MonthlyNabungDto;
+  /** Sub-total of Makan spend that is snack/junk (keterangan matches a snack keyword). */
+  jajanTotal: number;
 }
 
 /** Fetch the daily Analisa & Saran report for a date (YYYY-MM-DD). */
