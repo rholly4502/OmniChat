@@ -216,18 +216,6 @@
     "ditemukan": "2026-08-14"
   },
   {
-    "id": "e2bf2916e7",
-    "judul": "Full Stack Developer (.NET + React), short-term MVP",
-    "perusahaan": "Darly Solutions (via soften.dev)",
-    "lokasi": "Remote",
-    "tipe": "Part-time / Freelance",
-    "gaji": "",
-    "link": "https://soften.dev/jobs/full-stack-developer-net-plus-react-287586",
-    "catatan": "",
-    "status": "new",
-    "ditemukan": "2026-10-19"
-  },
-  {
     "id": "611542a125",
     "judul": "Middle .Net Engineer (FullStack TypeScript/.NET)",
     "perusahaan": "Deviark (via soften.dev)",
@@ -540,18 +528,6 @@
     "ditemukan": "2026-11-08"
   },
   {
-    "id": "8025b1fea1",
-    "judul": ".NET Developer",
-    "perusahaan": "Forgotten Mines LLC",
-    "lokasi": "Remote Worldwide",
-    "tipe": "Part-time / Freelance",
-    "gaji": "(kompensasi berbasis kualitas hasil)",
-    "link": "https://www.forgottenmines.com/vacancies/net-developer-vacancy",
-    "catatan": "Part-time remote fleksibel (jam sendiri), evaluasi berbasis kemampuan bukan kredensial — cocok quick-win tanpa bentrok jam. Stack .NET/C# + cloud.",
-    "status": "new",
-    "ditemukan": "2026-11-08"
-  },
-  {
     "id": "76587ff915",
     "judul": "Fullstack Developer (.NET)",
     "perusahaan": "Recruiter via Glints",
@@ -574,5 +550,17 @@
     "catatan": "Pengalaman 1–3 thn (pas), employer besar & jelas. Stack C#/.NET, SQL/NoSQL, Azure, EF Core. Prioritas geografis Malaysia.",
     "status": "new",
     "ditemukan": "2026-11-08"
+  },
+  {
+    "id": "74a613caf9",
+    "judul": ".NET Developer",
+    "perusahaan": "PT Sinergi Informatika Semen Indonesia (SISI)",
+    "lokasi": "Jakarta Selatan (onsite)",
+    "tipe": "Kontrak",
+    "gaji": "Rp 6–6,5 jt/bulan",
+    "link": "https://glints.com/id/en/opportunities/jobs/net-developer/b9625921-6627-42e1-bba2-3ef1e9296a90",
+    "catatan": "Employer terverifikasi (anak usaha Semen Indonesia). 1–3 thn, pas level. ASP.NET C#/.NET Core + SQL Server. Lokal Jakarta.",
+    "status": "new",
+    "ditemukan": "2026-11-10"
   }
 ]
