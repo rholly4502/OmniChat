@@ -17,6 +17,7 @@ import { useAutoScroll } from './hooks/useAutoScroll';
 import { useModelCatalog } from './hooks/useModelCatalog';
 import { useApiHealth } from './hooks/useApiHealth';
 import { useChat } from './hooks/useChat';
+import { sumMessageUsage } from './messageUsage';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 import { useChatShortcuts } from './hooks/useChatShortcuts';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
@@ -182,7 +183,7 @@ export default function App() {
     const next = await deleteMessageFromActive(messageId);
     // null means the server refused; the transcript stays as it is.
     if (next && token === loadTokenRef.current) {
-      loadMessages(next, activeSessionId, baseUsageFor(activeSession));
+      loadMessages(next, activeSessionId, sumMessageUsage(next));
       return true;
     }
     return false;
