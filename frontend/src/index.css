@@ -512,3 +512,22 @@ input[type='time']::-webkit-calendar-picker-indicator {
 .pixel-overlay-fade {
   animation: pixel-overlay-fade 160ms steps(2, jump-none) both;
 }
+
+/* Interactive-control pointer affordance.
+   Tailwind v4 preflight no longer sets `cursor: pointer` on controls (it was
+   dropped in v3.4+), so without this every button/select/summary/checkbox label
+   shows the default arrow — a real affordance gap on every tab. The `button`
+   element selector is (0,0,1) so the Tailwind `disabled:cursor-not-allowed`
+   utility (0,2,0) still wins on disabled controls. Text-entry inputs keep the
+   default I-beam (not listed). Reduced-motion is unaffected (cursor is not an
+   animation). */
+button,
+select,
+summary,
+label,
+[role='button'],
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  cursor: pointer;
+}
