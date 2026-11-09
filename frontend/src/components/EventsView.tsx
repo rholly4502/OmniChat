@@ -65,7 +65,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
       </div>
 
       {open && (
-        <div id="events-filters" className="px-4 pb-2">
+        <div id="events-filters" className="px-4 pb-2 pixel-reveal">
           <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter aplikasi">
             <button
               type="button"

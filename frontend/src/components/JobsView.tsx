@@ -221,7 +221,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
       </div>
 
       {filtersOpen && (
-        <div id="jobs-filters">
+        <div id="jobs-filters" className="pixel-reveal">
       {/* Position / type filter (buttons) */}
       <div className="px-4 pb-2">
         <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter posisi">
