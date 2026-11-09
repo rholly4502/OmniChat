@@ -61,6 +61,11 @@ describe('ConversationAuditDialog', () => {
     expect(screen.getAllByText('Asisten').length).toBeGreaterThanOrEqual(2);
   });
 
+  it('renders a Waktu (timestamp) column header', () => {
+    renderOpen();
+    expect(screen.getByRole('columnheader', { name: 'Waktu' })).toBeInTheDocument();
+  });
+
   it('renders per-message token/cost columns and totals', () => {
     renderOpen();
     const text = (t: string) => screen.getAllByText(t);
@@ -167,7 +172,7 @@ describe('ConversationAuditDialog CSV export', () => {
     expect(blob).toBeInstanceOf(Blob);
     const csv = await blob.text();
     const lines = csv.split('\r\n');
-    expect(lines[0]).toContain('peran,pesan,prompt_tokens,completion_tokens,biaya_usd,umpan_balik');
+    expect(lines[0]).toContain('peran,pesan,prompt_tokens,completion_tokens,biaya_usd,umpan_balik,waktu');
     expect(lines[1]).toContain('1,Pengguna,Halo,,,');
     const asst = lines.find((l) => l.includes('Asisten,Hai! Ini balasan asisten') && l.includes('10,20'));
     expect(asst).toBeTruthy();

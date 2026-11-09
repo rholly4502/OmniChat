@@ -44,6 +44,16 @@ function csvField(value: string): string {
   return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
+/** Format an epoch-ms message timestamp as a compact, localized clock time. */
+function formatTimestamp(ts?: number): string {
+  if (!ts || !Number.isFinite(ts)) return '';
+  const d = new Date(ts);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  return sameDay ? time : `${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${time}`;
+}
+
 /**
  * Builds an RFC 4180 CSV of the audit table: one row per message with its role,
  * content preview, prompt/completion tokens, estimated cost and rating, then a
@@ -52,7 +62,7 @@ function csvField(value: string): string {
  */
 function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undefined): string {
   const msgs = session.messages;
-  const rows: string[][] = [['#', 'peran', 'pesan', 'prompt_tokens', 'completion_tokens', 'biaya_usd', 'umpan_balik']];
+  const rows: string[][] = [['#', 'peran', 'pesan', 'prompt_tokens', 'completion_tokens', 'biaya_usd', 'umpan_balik', 'waktu']];
   let totalPrompt = 0;
   let totalCompletion = 0;
   let totalUsd = 0;
@@ -74,10 +84,11 @@ function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undef
       String(cTok || ''),
       cost,
       feedback,
+      m.createdAt ? formatTimestamp(m.createdAt) : '',
     ]);
   });
   const totalUsdFixed = totalUsd.toFixed(6);
-  rows.push(['Total', '', '', String(totalPrompt), String(totalCompletion), String(totalUsdFixed), '']);
+  rows.push(['Total', '', '', String(totalPrompt), String(totalCompletion), String(totalUsdFixed), '', '']);
 
   const byModel = new Map<string, { promptTokens: number; completionTokens: number }>();
   for (const m of msgs) {
@@ -91,7 +102,7 @@ function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undef
   }
   for (const [mid, u] of sortModelEntriesByCost(Array.from(byModel.entries()))) {
     const cost = estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, mid).toFixed(6);
-    rows.push([labelFor(mid, modelOptions), '', '', String(u.promptTokens), String(u.completionTokens), cost, '']);
+    rows.push([labelFor(mid, modelOptions), '', '', String(u.promptTokens), String(u.completionTokens), cost, '', '']);
   }
 
   return '\uFEFF' + rows.map((r) => r.map(csvField).join(',')).join('\r\n') + '\r\n';
@@ -199,6 +210,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                   <th className="font-medium py-1 pr-2 text-right">In</th>
                   <th className="font-medium py-1 pr-2 text-right">Out</th>
                   <th className="font-medium py-1 pr-2 text-right">Biaya</th>
+                  <th className="font-medium py-1 pr-2 text-right">Waktu</th>
                   <th className="font-medium py-1 text-center w-12">Nilai</th>
                 </tr>
               </thead>
@@ -218,6 +230,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                       <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{usage ? formatTokens(usage.promptTokens) : '–'}</td>
                       <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{usage ? formatTokens(usage.completionTokens) : '–'}</td>
                       <td className="py-1.5 pr-2 text-right text-chill-accent font-mono">{cost !== null ? `≈${formatUsd(cost)}` : '–'}</td>
+                      <td className="py-1.5 pr-2 text-right text-chill-muted whitespace-nowrap">{formatTimestamp(m.createdAt)}</td>
                       <td className="py-1.5 text-center">
                         {m.feedback === 'up' ? (
                           <span aria-label="Disukai" className="text-chill-accent">
@@ -241,6 +254,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                   <td className="py-1.5 pr-2 text-right text-chill-text font-mono">{formatTokens(totalPrompt)}</td>
                   <td className="py-1.5 pr-2 text-right text-chill-text font-mono">{formatTokens(totalCompletion)}</td>
                   <td className="py-1.5 pr-2 text-right text-chill-accent font-mono">≈{formatUsd(totalUsd)}</td>
+                  <td />
                   <td />
                 </tr>
               </tfoot>
