@@ -478,6 +478,28 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </p>
                     </div>
                   )}
+                {advice.monthlyNabung.remaining > 0 && advice.remainingAllowance.daysLeft > 0 && (
+                  (() => {
+                    const neededPerDay = Math.ceil(advice.monthlyNabung.remaining / advice.remainingAllowance.daysLeft);
+                    const allowance = advice.remainingAllowance.perDayAllowance;
+                    const tension = allowance > 0 && neededPerDay > allowance;
+                    return (
+                      <div className={`relative overflow-hidden rounded-none border px-3 py-2 mt-2 ${tension ? 'border-chill-red/40 bg-chill-red/10' : 'border-chill-border bg-chill-elevated'}`}>
+                        <div aria-hidden="true" className={`absolute inset-x-0 top-0 h-[2px] ${tension ? 'bg-chill-red/40' : 'bg-chill-border'}`} />
+                        <div aria-hidden="true" className={`absolute inset-y-0 left-0 w-[2px] ${tension ? 'bg-chill-red/40' : 'bg-chill-border'}`} />
+                        <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                        <p className={`text-sm font-medium ${tension ? 'text-chill-red' : 'text-chill-text'}`}>
+                          Tempo nabung: perlu ±{formatRupiah(neededPerDay)}/hari selama {advice.remainingAllowance.daysLeft} hari ke depan untuk mencapai target {formatRupiah(advice.monthlyNabung.target)} bulan ini.
+                        </p>
+                        {tension && (
+                          <p className="mt-1 text-sm text-chill-red">
+                            Ini lebih besar dari sisa anggaran harian ±{formatRupiah(allowance)} — tekan pengeluaran atau pertimbangkan menurunkan target agar keduanya realistis.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()
+                )}
                 </div>
               )}
 

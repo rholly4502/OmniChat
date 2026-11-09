@@ -563,3 +563,46 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
     expect(screen.queryByText(/jajan\/snack/)).not.toBeInTheDocument();
   });
 });
+
+describe('AdvicePanel savings tempo (daily pacing)', () => {
+  it('renders a required daily-savings figure with a red feasibility warning when it exceeds the remaining spending allowance', async () => {
+    // default payload: remaining 2.300.000, daysLeft 1, perDayAllowance 200.000 -> 2,3jt/day > 200k -> tension
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const pace = screen.getByText((c: string) => c.includes('Tempo nabung') && c.includes('2.300.000') && c.includes('/hari'));
+    expect(pace.textContent!.replace(/\s/g, ' ')).toContain('1 hari');
+    const warn = screen.getByText(/lebih besar dari sisa anggaran harian/);
+    expect(warn.textContent!.replace(/\s/g, ' ')).toContain('200.000');
+    expect(warn.closest('div.rounded-none')).toBeTruthy();
+    expect(warn.closest('div[class*="border-chill-red"]')).toBeTruthy();
+  });
+
+  it('shows a neutral pacing line when the required daily saving fits within the allowance', async () => {
+    const payload = {
+      ...advicePayload,
+      monthlyNabung: { ...advicePayload.monthlyNabung, remaining: 150000 },
+      remainingAllowance: { ...advicePayload.remainingAllowance, daysLeft: 5, perDayAllowance: 40000 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const pace = screen.getByText((c: string) => c.includes('Tempo nabung') && c.includes('30.000'));
+    expect(screen.queryByText(/lebih besar dari sisa anggaran harian/)).not.toBeInTheDocument();
+    expect(pace.closest('div[class*="border-chill-red"]')).toBeNull();
+  });
+
+  it('hides the pacing line once the monthly savings target is reached', async () => {
+    const payload = { ...advicePayload, monthlyNabung: { ...advicePayload.monthlyNabung, remaining: 0 } };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/Tempo nabung:/)).not.toBeInTheDocument();
+  });
+});
