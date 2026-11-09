@@ -40,6 +40,19 @@ export function UnlockIcon({ size = 14 }: { size?: number }) {
 
 /** Chill Mode sun glyph (relaxed persona). Shared so the Sidebar toggle and the
     ChatHeader/MobileTopBar mode pills render one identical mark. */
+// AlertIcon (warning triangle) — replaces the ⚠ emoji, which renders
+// inconsistently across platforms and breaks the pixel2 all-SVG icon floor.
+// Same square stroke + crisp-edges register as the other chill icons.
+export function AlertIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true">
+      <path d="M12 3 2 20h20L12 3Z" />
+      <line x1="12" y1="9" x2="12" y2="15" />
+      <circle cx="12" cy="18" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function ChillIcon({ size = 14 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true">

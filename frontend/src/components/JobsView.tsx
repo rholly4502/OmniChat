@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 import { useJobs } from '../hooks/useJobs';
 import { ScanLoader } from './ScanLoader';
+import { AlertIcon } from './Icons';
 
 interface JobsViewProps {
   apiKey?: string;
@@ -416,7 +417,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     <span
                       className="inline-flex items-center gap-1 rounded-none border border-chill-red/50 bg-chill-red/15 px-2 py-0.5 text-xs font-semibold text-chill-red"
                     >
-                      ⚠ Perlu follow-up
+                      <AlertIcon size={14} />
+                      Perlu follow-up
                     </span>
                   )}
                   {o.followUpTanggal && !needsFollowUp(o) && (
