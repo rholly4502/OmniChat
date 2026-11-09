@@ -818,6 +818,31 @@ describe('Sidebar', () => {
       });
       expect(screen.queryByLabelText('Ekspor Kosong')).not.toBeInTheDocument();
     });
+
+    it('lists Salin (Markdown) in the menu when a copy handler is wired', () => {
+      const onCopySession = vi.fn();
+      renderSidebar({ sessions: [session], onExportSession: vi.fn(), onCopySession });
+      fireEvent.click(screen.getByLabelText('Ekspor Deploy'));
+
+      expect(screen.getByRole('menuitem', { name: 'Salin (Markdown)' })).toBeInTheDocument();
+    });
+
+    it('does not render the copy item when no copy handler is wired', () => {
+      renderSidebar({ sessions: [session], onExportSession: vi.fn() });
+      fireEvent.click(screen.getByLabelText('Ekspor Deploy'));
+
+      expect(screen.queryByRole('menuitem', { name: 'Salin (Markdown)' })).not.toBeInTheDocument();
+    });
+
+    it('calls onCopySession with the session and closes the menu', () => {
+      const onCopySession = vi.fn();
+      renderSidebar({ sessions: [session], onExportSession: vi.fn(), onCopySession });
+      fireEvent.click(screen.getByLabelText('Ekspor Deploy'));
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Salin (Markdown)' }));
+
+      expect(onCopySession).toHaveBeenCalledWith(session);
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    });
   });
 });
 

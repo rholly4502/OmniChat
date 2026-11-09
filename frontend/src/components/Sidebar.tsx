@@ -86,6 +86,8 @@ export interface SidebarProps {
   onToggleShowArchived?: () => void;
   /** Export a session in the requested format (default Markdown). */
   onExportSession?: (session: ChatSession, format?: ConversationExportFormat) => void;
+  /** Copy a session's transcript (Markdown) to the clipboard. */
+  onCopySession?: (session: ChatSession) => void | Promise<void>;
   /** Load the next page of older conversations. Called from the sidebar footer. */
   onLoadMore?: () => void;
   /** True when more older conversations exist under the current filter. */
@@ -164,6 +166,7 @@ export function Sidebar({
   showArchived = false,
   onToggleShowArchived,
   onExportSession,
+  onCopySession,
   onLoadMore,
   hasMore = false,
   settings,
@@ -547,6 +550,24 @@ export function Sidebar({
                             aria-label={`Format ekspor ${s.title}`}
                             className="absolute right-0 top-full z-30 mt-1 w-40 bg-chill-elevated border-2 border-chill-border pixel-shadow pixel-reveal"
                           >
+                            {onCopySession && (
+                              <>
+                                <button
+                                  key="copy"
+                                  type="button"
+                                  role="menuitem"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExportMenuFor(null);
+                                    void onCopySession(s);
+                                  }}
+                                  className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                                >
+                                  Salin (Markdown)
+                                </button>
+                                <div role="separator" className="border-t border-chill-border" />
+                              </>
+                            )}
                             {(Object.keys(EXPORT_FORMAT_LABELS) as ConversationExportFormat[]).map((fmt) => (
                               <button
                                 key={fmt}

@@ -377,6 +377,7 @@ export default function App() {
         showArchived={showArchived}
         onToggleShowArchived={() => setShowArchived((v) => !v)}
         onExportSession={exportSession}
+        onCopySession={(session) => { void copyTranscript(session); }}
         onLoadMore={loadMore}
         hasMore={hasMore}
         usageSummary={usageSummary}
