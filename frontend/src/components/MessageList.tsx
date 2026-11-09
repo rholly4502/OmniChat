@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CodeBlock } from './CodeBlock';
@@ -16,6 +16,23 @@ function formatMessageTime(ts?: number): string {
   const sameDay = d.toDateString() === today.toDateString();
   const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   return sameDay ? time : `${d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} ${time}`;
+}
+
+/** Same calendar day? (both epoch-ms timestamps). */
+function sameCalendarDay(a: number, b: number): boolean {
+  return new Date(a).toDateString() === new Date(b).toDateString();
+}
+
+/** Day label for a message timestamp: "Hari ini", "Kemarin", or a localized date. */
+function formatDayLabel(ts?: number): string {
+  if (!ts || !Number.isFinite(ts)) return '';
+  const d = new Date(ts);
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return 'Hari ini';
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return 'Kemarin';
+  return d.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'short' });
 }
 
 /** Escape regex metacharacters so a user query is matched literally. */
@@ -493,9 +510,23 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           </div>
         </div>
       )}
-      {messages.map((m, i) => (
+      {messages.map((m, i) => {
+        const prev = messages[i - 1];
+        const showDayDivider =
+          Boolean(m.createdAt) && (!prev?.createdAt || !sameCalendarDay(m.createdAt, prev.createdAt));
+        return (
+        <Fragment key={i}>
+          {showDayDivider && (
+            <div className="flex justify-center py-1 select-none" aria-hidden="true">
+              <span
+                data-testid="date-divider"
+                className="px-2 py-0.5 text-xs text-chill-muted bg-chill-elevated border border-chill-border rounded-none pixel-shadow-sm"
+              >
+                {formatDayLabel(m.createdAt)}
+              </span>
+            </div>
+          )}
         <div
-          key={i}
           data-msg-index={i}
           data-active={searchOpen && i === activeRowMi ? 'true' : undefined}
           className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}${searchOpen && i === activeRowMi ? ' outline outline-2 outline-chill-accent' : ''}`}
@@ -790,7 +821,9 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
             </div>
           )}
         </div>
-      ))}
+        </Fragment>
+      );
+      })}
       {awayFromBottom && messages.length > 0 && (
         <button
           type="button"

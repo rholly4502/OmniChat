@@ -1113,3 +1113,41 @@ describe('MessageList reasoning copy action', () => {
     expect(btn.className).toContain('min-w-[44px]');
   });
 });
+
+describe('MessageList day dividers', () => {
+  const DAY1 = new Date('2026-01-15T03:00:00Z').getTime();
+  const DAY2 = new Date('2026-01-16T03:00:00Z').getTime();
+
+  it('renders one date divider per distinct day group', () => {
+    const msgs: Message[] = [
+      { role: 'user', content: 'a', createdAt: DAY1 },
+      { role: 'assistant', content: 'b', createdAt: DAY2 },
+    ];
+    renderList({ messages: msgs });
+    expect(screen.getAllByTestId('date-divider')).toHaveLength(2);
+  });
+
+  it('does not repeat a divider for consecutive same-day messages', () => {
+    const msgs: Message[] = [
+      { role: 'user', content: 'a', createdAt: DAY1 },
+      { role: 'assistant', content: 'b', createdAt: DAY1 + 60_000 },
+    ];
+    renderList({ messages: msgs });
+    expect(screen.getAllByTestId('date-divider')).toHaveLength(1);
+  });
+
+  it('omits dividers when messages carry no timestamps', () => {
+    const msgs: Message[] = [
+      { role: 'user', content: 'a' },
+      { role: 'assistant', content: 'b' },
+    ];
+    renderList({ messages: msgs });
+    expect(screen.queryAllByTestId('date-divider')).toHaveLength(0);
+  });
+
+  it('labels today message messages "Hari ini"', () => {
+    const msgs: Message[] = [{ role: 'user', content: 'a', createdAt: Date.now() }];
+    renderList({ messages: msgs });
+    expect(screen.getByText('Hari ini')).toBeInTheDocument();
+  });
+});
