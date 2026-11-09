@@ -68,6 +68,18 @@ describe('pixel2 css consistency', () => {
     expect(block).toContain('var(--color-chill-accent)');
     expect(block).toContain('var(--color-chill-on-accent)');
   });
+
+  it('gives interactive controls a pointer cursor (Tailwind v4 preflight drops it)', () => {
+    // CLEAN strips comments, so anchor on the actual rule: the `button,`
+    // selector list through the `cursor: pointer;` declaration.
+    const body = CLEAN.match(/\nbutton,\nselect,\nsummary,\nlabel,\n[\s\S]*?cursor: pointer;/)?.[0] ?? '';
+    expect(body).toBeTruthy();
+    for (const sel of ['button', 'select', 'summary', 'label', "[role='button']",
+        "input[type='checkbox']", "input[type='radio']", "input[type='range']"]) {
+      expect(body).toContain(sel);
+    }
+    expect(body).toContain('cursor: pointer');
+  });
 });
 describe('pixel2 focus-mode page grid', () => {
   it('focus mode also quiets the expenses full-canvas checkerboard (pixel-grid-page)', () => {
