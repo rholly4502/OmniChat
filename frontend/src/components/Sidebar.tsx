@@ -990,7 +990,7 @@ export function Sidebar({
 
       <button
         onClick={onClear}
-        className="rounded-none mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+        className="rounded-none mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red active:translate-y-[2px] transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
           <polyline points="3 6 5 6 21 6" />

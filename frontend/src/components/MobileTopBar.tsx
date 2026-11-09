@@ -138,7 +138,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
             onClick={onOpenShortcuts}
             aria-label="Pintasan keyboard"
             title="Pintasan keyboard"
-            className="rounded-none inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-chill-muted transition hover:text-chill-accent active:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="rounded-none inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
           </button>
@@ -146,7 +146,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         <button
           onClick={onLogout}
           aria-label="Keluar"
-          className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none text-sm text-chill-muted transition hover:text-chill-accent active:text-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none text-sm text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           Keluar
         </button>
