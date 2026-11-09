@@ -1,4 +1,4 @@
-import type { RefObject } from 'react';
+import { useState, type RefObject } from 'react';
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { TypingIndicator } from './TypingIndicator';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
@@ -18,6 +18,8 @@ export interface MobileTopBarProps {
   isGuest?: boolean;
   /** Return to the login screen from a guest session. */
   onLogout?: () => void;
+  /** Copy the current (ephemeral) conversation transcript to the clipboard. Guest only. */
+  onCopyTranscript?: () => void;
   /** Cumulative token usage for the active conversation (server base + live). */
   usage?: TokenUsage;
   /**
@@ -74,7 +76,8 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenAudit, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, onCopyTranscript, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenAudit, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
+  const [copied, setCopied] = useState(false);
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -143,6 +146,21 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
             className="rounded-none inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+          </button>
+        )}
+        {onCopyTranscript && (
+          <button
+            type="button"
+            onClick={() => { setCopied(true); onCopyTranscript(); window.setTimeout(() => setCopied(false), 2000); }}
+            aria-label={copied ? 'Percakapan tersalin' : 'Salin percakapan'}
+            title={copied ? 'Percakapan tersalin' : 'Salin percakapan'}
+            className="rounded-none inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          >
+            {copied ? (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+            )}
           </button>
         )}
         <button

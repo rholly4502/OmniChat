@@ -27,6 +27,7 @@ import { ExpensesView } from './components/ExpensesView';
 import { JobsView } from './components/JobsView';
 import { EventsView } from './components/EventsView';
 import { describeApiError } from './errors';
+import { buildConversationMarkdown } from './conversationExport';
 import type { TokenUsage } from './types';
 import { DEFAULT_MODEL, CHILL_SYSTEM_PROMPT } from './constants';
 
@@ -152,6 +153,14 @@ export default function App() {
     // that is what turns this browser's draft into a stored conversation.
     onConversationId: adoptConversation,
   });
+
+  // Guest sessions are ephemeral (no sidebar, no stored history) so the only way a guest
+  // can keep a conversation is to copy its markdown transcript before leaving. Build it
+  // straight from the in-memory messages and write it to the clipboard.
+  const copyGuestTranscript = () => {
+    const md = buildConversationMarkdown(messages);
+    void navigator.clipboard?.writeText(md);
+  };
 
   // Sync message state to active session
   useEffect(() => {
@@ -318,7 +327,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} onOpenShortcuts={() => setShortcutsOpen(true)} chillMode={settings.chillMode} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} onOpenShortcuts={() => setShortcutsOpen(true)} chillMode={settings.chillMode} onCopyTranscript={copyGuestTranscript} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
           <MessageList
             messages={messages}
             streaming={streaming}

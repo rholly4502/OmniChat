@@ -376,3 +376,26 @@ describe('MobileTopBar audit button', () => {
     expect(screen.queryByRole('button', { name: 'Audit percakapan' })).not.toBeInTheDocument();
   });
 });
+
+describe('MobileTopBar guest copy-transcript', () => {
+  it('guest variant renders the copy button and flashes confirmation on click', () => {
+    const onCopyTranscript = vi.fn();
+    renderBar({ isGuest: true, onCopyTranscript });
+    const btn = screen.getByRole('button', { name: 'Salin percakapan' });
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('min-w-[44px]');
+    fireEvent.click(btn);
+    expect(onCopyTranscript).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Percakapan tersalin' })).toBeInTheDocument();
+  });
+
+  it('guest variant omits the copy button without a handler', () => {
+    renderBar({ isGuest: true });
+    expect(screen.queryByRole('button', { name: 'Salin percakapan' })).not.toBeInTheDocument();
+  });
+
+  it('admin variant never renders the guest copy button', () => {
+    renderBar({ onCopyTranscript: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Salin percakapan' })).not.toBeInTheDocument();
+  });
+});
