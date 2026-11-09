@@ -689,6 +689,79 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task SetBookmark_Returns204_WhenAnAdminSetsBookmark()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetMessageBookmarkAsync(id, messageId, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetBookmark(id, messageId, new MessageBookmarkRequest { IsBookmarked = true }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetMessageBookmarkAsync(id, messageId, ChatIdentity.AdminUserId, true, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetBookmark_Returns204_WhenClearingBookmark()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var messageId = Guid.CreateVersion7();
+
+        _repository
+            .Setup(r => r.SetMessageBookmarkAsync(id, messageId, ChatIdentity.AdminUserId, false, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        var result = await controller.SetBookmark(id, messageId, new MessageBookmarkRequest { IsBookmarked = false }, CancellationToken.None);
+
+        Assert.IsType<NoContentResult>(result);
+        _repository.Verify(
+            r => r.SetMessageBookmarkAsync(id, messageId, ChatIdentity.AdminUserId, false, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SetBookmark_Returns404_WhenTheMessageIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.SetMessageBookmarkAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var result = await controller.SetBookmark(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            new MessageBookmarkRequest { IsBookmarked = true },
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+    }
+
+    [Fact]
+    public async Task SetBookmark_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.SetBookmark(
+            Guid.CreateVersion7(),
+            Guid.CreateVersion7(),
+            new MessageBookmarkRequest { IsBookmarked = true },
+            CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result).StatusCode);
+        _repository.Verify(
+            r => r.SetMessageBookmarkAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
     public async Task DeleteMessage_Returns204_WhenTheMessageWasRemoved()
     {
         var controller = CreateController(ChatAccess.Admin);

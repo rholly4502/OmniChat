@@ -149,5 +149,16 @@ public interface IChatHistoryRepository
         string userId,
         MessageFeedback? feedback,
         CancellationToken cancellationToken = default);
-}
 
+    /// <summary>
+    /// Sets or clears the bookmark flag on one message inside the caller's conversation.
+    /// Returns <c>false</c> when the message does not exist or belongs to another user
+    /// (the same 404-shaped answer as a missing conversation).
+    /// </summary>
+    Task<bool> SetMessageBookmarkAsync(
+        Guid conversationId,
+        Guid messageId,
+        string userId,
+        bool isBookmarked,
+        CancellationToken cancellationToken = default);
+}

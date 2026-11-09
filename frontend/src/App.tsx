@@ -21,7 +21,7 @@ import { sumMessageUsage } from './messageUsage';
 import { useSidebarDrawer } from './hooks/useSidebarDrawer';
 import { useChatShortcuts } from './hooks/useChatShortcuts';
 import { isServerConversation, useServerHistory } from './hooks/useServerHistory';
-import { setMessageFeedback } from './historyApi';
+import { setMessageFeedback, setMessageBookmark } from './historyApi';
 import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
 import { JobsView } from './components/JobsView';
@@ -170,6 +170,21 @@ export default function App() {
     if (!sessionId || !isServerConversation(sessionId)) return false;
     try {
       await setMessageFeedback(sessionId, messageId, feedback, { apiKey });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** Persist a bookmark flag for a stored turn. Only meaningful for server conversations
+   * and when the message has already been filed (has an id). Returns false on any failure
+   * so the caller can roll the optimistic toggle back.
+   */
+  async function handleSetBookmark(messageId: string, isBookmarked: boolean): Promise<boolean> {
+    const sessionId = activeSessionId;
+    if (!sessionId || !isServerConversation(sessionId)) return false;
+    try {
+      await setMessageBookmark(sessionId, messageId, isBookmarked, { apiKey });
       return true;
     } catch {
       return false;
@@ -459,6 +474,7 @@ export default function App() {
               onEditMessage={editAndResend}
               onSetFeedback={handleSetFeedback}
               onDeleteMessage={handleDeleteMessage}
+              onSetBookmark={handleSetBookmark}
               onSelectSuggestion={handleSelectSuggestion}
             />
 

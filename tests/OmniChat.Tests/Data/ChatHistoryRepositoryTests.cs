@@ -273,6 +273,31 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task SetMessageBookmark_sets_and_clears_for_the_owner()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+        var message = await _repository.AppendMessageAsync(conversation.Id, "admin", new Message { Role = "assistant", Content = "jawaban" });
+
+        Assert.True(await _repository.SetMessageBookmarkAsync(conversation.Id, message.Id, "admin", true));
+        var stored = await _repository.GetConversationAsync(conversation.Id, "admin");
+        Assert.True(stored!.Messages[0].IsBookmarked);
+
+        Assert.True(await _repository.SetMessageBookmarkAsync(conversation.Id, message.Id, "admin", false));
+        stored = await _repository.GetConversationAsync(conversation.Id, "admin");
+        Assert.False(stored!.Messages[0].IsBookmarked);
+    }
+
+    [Fact]
+    public async Task SetMessageBookmark_returns_false_when_unowned_or_unknown()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation(userId: "guest-1"));
+        var message = await _repository.AppendMessageAsync(conversation.Id, "guest-1", new Message { Role = "assistant", Content = "jawaban" });
+
+        Assert.False(await _repository.SetMessageBookmarkAsync(conversation.Id, message.Id, "admin", true));
+        Assert.False(await _repository.SetMessageBookmarkAsync(conversation.Id, Guid.CreateVersion7(), "guest-1", true));
+    }
+
+    [Fact]
     public async Task PinConversation_marks_and_unmarks_a_conversation()
     {
         var conversation = await _repository.CreateConversationAsync(NewConversation());

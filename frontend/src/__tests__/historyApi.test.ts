@@ -9,6 +9,7 @@ import {
   pinConversation,
   renameConversation,
   setMessageFeedback,
+  setMessageBookmark,
   archiveConversation,
   updateConversationSettings,
 } from '../historyApi';
@@ -342,6 +343,35 @@ describe('setMessageFeedback', () => {
     const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
 
     await expect(setMessageFeedback('gone', 'm0', 'up', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+describe('setMessageBookmark', () => {
+  it('PUTs a JSON body to the per-message bookmark path', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await setMessageBookmark(SUMMARY.id, 'm0', true, { fetchImpl });
+
+    const [path, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(path).toBe(`${CONVERSATIONS_URL}/${SUMMARY.id}/messages/m0/bookmark`);
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toEqual(expect.objectContaining({ 'Content-Type': 'application/json' }));
+    expect(init.body).toBe(JSON.stringify({ isBookmarked: true }));
+  });
+
+  it('serializes a clear (false) flag too', async () => {
+    const fetchImpl = fetchReturning(emptyResponse());
+
+    await setMessageBookmark(SUMMARY.id, 'm0', false, { fetchImpl });
+
+    const [, init] = (fetchImpl as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls[0];
+    expect(init.body).toBe(JSON.stringify({ isBookmarked: false }));
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
+
+    await expect(setMessageBookmark('gone', 'm0', true, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
 });
 

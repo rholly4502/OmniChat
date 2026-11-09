@@ -296,6 +296,41 @@ public sealed class ConversationsController : ControllerBase
     }
 
     /// <summary>
+    /// Sets or clears the bookmark flag on one message of a conversation (audit).
+    /// </summary>
+    /// <param name="id">Conversation id.</param>
+    /// <param name="messageId">Message id within the conversation.</param>
+    /// <param name="request">Bookmark state to store.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Bookmark state applied.</response>
+    /// <response code="400">Malformed body.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPut("{id:guid}/messages/{messageId:guid}/bookmark")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetBookmark(
+        Guid id,
+        Guid messageId,
+        [FromBody] MessageBookmarkRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (!ModelState.IsValid)
+        {
+            return ValidationProblemObject();
+        }
+
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var applied = await _repository.SetMessageBookmarkAsync(id, messageId, owner, request.IsBookmarked, cancellationToken);
+        return applied ? NoContent() : ConversationNotFound(id);
+    }
+
+    /// <summary>
     /// Persists a per-conversation model and/or mode change so resuming the thread
     /// resumes with the setup it last used, even before the next turn is sent.
     /// </summary>

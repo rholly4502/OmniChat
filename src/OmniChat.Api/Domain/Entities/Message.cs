@@ -19,6 +19,8 @@ public class Message
 
     /// <summary>User rating of this turn (audit). Null means unrated.</summary>
     public MessageFeedback? Feedback { get; set; }
+    /// <summary>Whether the user bookmarked this turn (audit; a star in the transcript).</summary>
+    public bool IsBookmarked { get; set; }
 
     /// <summary>Input tokens billed to this specific assistant turn (from the stream's usage frame).</summary>
     public int PromptTokens { get; set; }

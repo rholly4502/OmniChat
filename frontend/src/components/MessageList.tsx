@@ -75,6 +75,12 @@ export interface MessageListProps {
    */
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
   /**
+   * Persist the bookmark flag for a stored turn (admin sessions only). Receives the server
+   * message id and the next flag; resolves true on success. When absent or when the message
+   * has no id, bookmarks stay local.
+   */
+  onSetBookmark?: (messageId: string, isBookmarked: boolean) => Promise<boolean>;
+  /**
    * Delete one stored turn (and everything newer) from the active conversation.
    * Receives the server message id; resolves true on success. When absent or
    * when the message has no id, no delete affordance is shown.
@@ -152,9 +158,10 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   };
 }
 
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSetBookmark, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
+  const [bookmarked, setBookmarked] = useState<Record<number, boolean>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [deleteArmedIndex, setDeleteArmedIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
@@ -219,6 +226,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     if (prevConversationKey.current !== conversationKey) {
       prevConversationKey.current = conversationKey;
       setFeedback({});
+      setBookmarked({});
       setCopiedIndex(null);
       setEditingIndex(null);
       setDraft('');
@@ -326,6 +334,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     if (msg.id && onSetFeedback) {
       const ok = await onSetFeedback(msg.id, next ?? null);
       if (!ok) setFeedback((f) => ({ ...f, [i]: current }));
+    }
+  };
+
+  /** Toggle the bookmark flag on a message, optimistically, rolling back on server failure. */
+  const toggleBookmark = async (i: number) => {
+    const msg = messages[i];
+    const current = bookmarked[i] ?? msg.bookmarked ?? false;
+    const next = !current;
+    setBookmarked((b) => ({ ...b, [i]: next }));
+    if (msg.id && onSetBookmark) {
+      const ok = await onSetBookmark(msg.id, next);
+      if (!ok) setBookmarked((b) => ({ ...b, [i]: current }));
     }
   };
 
@@ -581,6 +601,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           {formatMessageTime(m.createdAt)}
                         </span>
                       )}
+<ActionButton
+                        label="Tandai pesan"
+                        activeLabel="Ditandai"
+                        active={bookmarked[i] ?? m.bookmarked ?? false}
+                        onClick={() => { void toggleBookmark(i); }}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+                        }
+                        activeIcon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="text-chill-accent"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+                        }
+                      />
                       <ActionButton
                         label="Suka"
                         activeLabel="Disukai"
@@ -685,6 +717,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         )}
                       </div>
                       <div className="flex items-center">
+<ActionButton
+                        label="Tandai pesan"
+                        activeLabel="Ditandai"
+                        active={bookmarked[i] ?? m.bookmarked ?? false}
+                        onClick={() => { void toggleBookmark(i); }}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+                        }
+                        activeIcon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="text-chill-accent"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+                        }
+                      />
                         {onEditMessage && (
                           <ActionButton
                             label="Edit pesan"

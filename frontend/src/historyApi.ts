@@ -208,6 +208,27 @@ export async function setMessageFeedback(
 }
 
 /**
+ * Set or clear the bookmark flag on one stored turn. Resolves on 204. Only
+ * admin callers succeed; guests and drafts keep their local-only toggle.
+ */
+export async function setMessageBookmark(
+  conversationId: string,
+  messageId: string,
+  isBookmarked: boolean,
+  options: HistoryRequestOptions = {},
+): Promise<void> {
+  await request(
+    `${CONVERSATIONS_URL}/${conversationId}/messages/${messageId}/bookmark`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isBookmarked }),
+    },
+    options,
+  );
+}
+
+/**
  * Delete one message and every message newer than it (rewind to before this
  * turn). The conversation itself is kept. Resolves on 204. Only admin callers
  * succeed; drafts have no server row to delete.

@@ -214,6 +214,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<string>("Feedback")
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("IsBookmarked")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Model")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");

@@ -18,6 +18,7 @@ function renderList(overrides: {
   onRegenerate?: () => void;
   onEditMessage?: (index: number, newContent: string) => void;
   onSetFeedback?: (messageId: string, feedback: 'up' | 'down' | null) => Promise<boolean>;
+  onSetBookmark?: (messageId: string, isBookmarked: boolean) => Promise<boolean>;
   onDeleteMessage?: (messageId: string) => Promise<boolean>;
   onSelectSuggestion?: (prompt: string) => void;
   conversationKey?: string;
@@ -35,6 +36,7 @@ function renderList(overrides: {
       onRegenerate={overrides.onRegenerate}
       onEditMessage={overrides.onEditMessage}
       onSetFeedback={overrides.onSetFeedback}
+      onSetBookmark={overrides.onSetBookmark}
       onDeleteMessage={overrides.onDeleteMessage}
       onSelectSuggestion={overrides.onSelectSuggestion}
       conversationKey={overrides.conversationKey}
@@ -406,6 +408,69 @@ describe('MessageList', () => {
   });
 
   // ─── per-message cost footnote ──────────────────────────────────
+
+  // ─── message bookmarks (local + persisted) ─────────────────────
+  it('offers a bookmark toggle on assistant replies', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    expect(screen.getByRole('button', { name: 'Tandai pesan' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tandai pesan' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('offers a bookmark toggle on user turns', () => {
+    renderList({ messages: [{ role: 'user', content: 'halo' }] });
+    expect(screen.getByRole('button', { name: 'Tandai pesan' })).toBeInTheDocument();
+  });
+
+  it('toggles bookmark on click (local)', () => {
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai pesan' }));
+    const star = screen.getByRole('button', { name: 'Ditandai' });
+    expect(star).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(star);
+    expect(screen.queryByRole('button', { name: 'Ditandai' })).not.toBeInTheDocument();
+  });
+
+  it('persists bookmark via onSetBookmark when the message has a server id', async () => {
+    const onSetBookmark = vi.fn().mockResolvedValue(true);
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo' }],
+      onSetBookmark,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai pesan' }));
+    await waitFor(() => expect(onSetBookmark).toHaveBeenCalledWith('m0', true));
+    expect(screen.getByRole('button', { name: 'Ditandai' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('rolls the optimistic bookmark back when persisting fails', async () => {
+    const onSetBookmark = vi.fn().mockResolvedValue(false);
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo' }],
+      onSetBookmark,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai pesan' }));
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Ditandai' })).not.toBeInTheDocument(),
+    );
+    expect(onSetBookmark).toHaveBeenCalledWith('m0', true);
+  });
+
+  it('does not call onSetBookmark for a draft message without an id', () => {
+    const onSetBookmark = vi.fn();
+    renderList({
+      messages: [{ role: 'assistant', content: 'halo' }],
+      onSetBookmark,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai pesan' }));
+    expect(screen.getByRole('button', { name: 'Ditandai' })).toHaveAttribute('aria-pressed', 'true');
+    expect(onSetBookmark).not.toHaveBeenCalled();
+  });
+
+  it('reflects a bookmark already persisted on the server', () => {
+    renderList({
+      messages: [{ id: 'm0', role: 'assistant', content: 'halo', bookmarked: true }],
+    });
+    expect(screen.getByRole('button', { name: 'Ditandai' })).toHaveAttribute('aria-pressed', 'true');
+  });
   it('renders a token/cost footnote on an assistant reply with usage', () => {
     renderList({
       model: 'hermes',

@@ -11,6 +11,11 @@ export interface Message {
   /** Persisted rating for this stored turn ("up" | "down"); undefined when unrated. */
   feedback?: 'up' | 'down';
   /**
+   * Whether the user bookmarked this turn (shown as a filled star in the transcript).
+   * Local-only on drafts/guests; persisted for stored admin turns.
+   */
+  bookmarked?: boolean;
+  /**
    * Progress phase reported by the backend while an assistant reply is still being
    * produced. Absent on user turns, on finished replies and when the heartbeat is off.
    */
@@ -152,6 +157,8 @@ export interface ConversationMessage {
   createdAt: string;
   /** Persisted rating for this turn ("up" | "down"); undefined when unrated. */
   feedback?: 'up' | 'down';
+  /** Whether the user bookmarked this turn. */
+  bookmarked?: boolean;
   /** Input tokens billed to this assistant turn (from the stream's usage frame). */
   promptTokens?: number;
   /** Output tokens billed to this assistant turn (from the stream's usage frame). */

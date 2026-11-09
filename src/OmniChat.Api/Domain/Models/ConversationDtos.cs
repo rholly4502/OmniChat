@@ -74,7 +74,8 @@ public sealed record ConversationMessage(
     MessageFeedback? Feedback,
     int PromptTokens,
     int CompletionTokens,
-    string? Model)
+    string? Model,
+    bool IsBookmarked = false)
 {
     public static ConversationMessage From(Message message)
     {
@@ -88,7 +89,8 @@ public sealed record ConversationMessage(
             message.Feedback,
             message.PromptTokens,
             message.CompletionTokens,
-            message.Model);
+            message.Model,
+            message.IsBookmarked);
     }
 }
 
@@ -202,4 +204,13 @@ public sealed class MessageFeedbackRequest
     /// earlier rating. Any other string is rejected with a 400.
     /// </summary>
     public string? Feedback { get; set; }
+}
+
+/// <summary>Body of <c>PUT /api/conversations/{id}/messages/{messageId}/bookmark</c>.</summary>
+public sealed class MessageBookmarkRequest
+{
+    /// <summary>
+    /// The bookmark state to store. Bookmarked turns show a filled star in the transcript.
+    /// </summary>
+    public bool IsBookmarked { get; set; }
 }
