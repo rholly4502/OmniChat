@@ -42,6 +42,8 @@ export interface MobileTopBarProps {
   chillMode?: boolean;
   /** Open the aggregate chat stats dialog (mobile path to ChatStatsDialog). */
   onOpenStats?: () => void;
+  /** Open the per-conversation audit dialog (mobile path to ConversationAuditDialog). */
+  onOpenAudit?: () => void;
   /** Opens the keyboard-shortcut reference dialog. Optional; hidden when absent. */
   onOpenShortcuts?: () => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
@@ -72,7 +74,7 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenAudit, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -248,6 +250,18 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
             </span>
           ))}
+          {onOpenAudit && (
+            <button
+              type="button"
+              onClick={onOpenAudit}
+              aria-haspopup="dialog"
+              aria-label="Audit percakapan"
+              title="Audit percakapan"
+              className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-chill-muted transition hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9" /><polyline points="12 7 12 12 16 14" /></svg>
+            </button>
+          )}
         </>
       ) : activeView === 'expenses' ? (
         <span className="ml-auto inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-accent pixel-heading">

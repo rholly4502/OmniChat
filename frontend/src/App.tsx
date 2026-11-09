@@ -427,6 +427,7 @@ export default function App() {
           models={models}
           onModelChange={handleModelChange}
           onOpenStats={() => setStatsOpen(true)}
+          onOpenAudit={() => setAuditOpen(true)}
           onOpenShortcuts={() => setShortcutsOpen(true)}
           chillMode={settings.chillMode}
           activeView={activeView}

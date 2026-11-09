@@ -349,3 +349,30 @@ describe('MobileTopBar shortcuts button', () => {
     expect(screen.getByRole('button', { name: 'Pintasan keyboard' })).toBeInTheDocument();
   });
 });
+
+describe('MobileTopBar audit button', () => {
+  it('admin chat view renders the audit button and opens on click', () => {
+    const onOpenAudit = vi.fn();
+    renderBar({ activeView: 'chat', onOpenAudit });
+    const btn = screen.getByRole('button', { name: 'Audit percakapan' });
+    expect(btn).toHaveAttribute('aria-haspopup', 'dialog');
+    fireEvent.click(btn);
+    expect(onOpenAudit).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the audit button when no handler is provided', () => {
+    const { container } = renderBar({ activeView: 'chat' });
+    expect(screen.queryByRole('button', { name: 'Audit percakapan' })).not.toBeInTheDocument();
+    expect(container.textContent).not.toContain('Audit percakapan');
+  });
+
+  it('hides the audit button on non-chat views', () => {
+    renderBar({ activeView: 'expenses', onOpenAudit: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Audit percakapan' })).not.toBeInTheDocument();
+  });
+
+  it('guest variant never renders the audit button (no server session)', () => {
+    renderBar({ isGuest: true, onOpenAudit: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Audit percakapan' })).not.toBeInTheDocument();
+  });
+});
