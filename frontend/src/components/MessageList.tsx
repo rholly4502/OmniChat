@@ -159,7 +159,8 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
 }
 
 export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSetBookmark, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
-  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [jsonCopiedIndex, setJsonCopiedIndex] = useState<number | null>(null);
+  const [textCopiedIndex, setTextCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [bookmarked, setBookmarked] = useState<Record<number, boolean>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -227,7 +228,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       prevConversationKey.current = conversationKey;
       setFeedback({});
       setBookmarked({});
-      setCopiedIndex(null);
+      setJsonCopiedIndex(null);
+      setTextCopiedIndex(null);
       setEditingIndex(null);
       setDraft('');
       setDeleteArmedIndex(null);
@@ -283,11 +285,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
   };
 
-  const handleCopy = (text: string, index: number) => {
-    navigator.clipboard?.writeText(text).then(() => {
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    }).catch(() => {});
+  const flashCopy = (setter: (i: number | null) => void, index: number) => {
+    setter(index);
+    window.setTimeout(() => setter(null), 2000);
+  };
+
+  const handleCopyText = (text: string, index: number) => {
+    navigator.clipboard?.writeText(text).then(() => flashCopy(setTextCopiedIndex, index)).catch(() => {});
+  };
+
+  const handleCopyJson = (m: Message, index: number) => {
+    navigator.clipboard?.writeText(JSON.stringify(messageJsonRecord(m, model), null, 2))
+      .then(() => flashCopy(setJsonCopiedIndex, index)).catch(() => {});
   };
 
   /** Copy a turn's reasoning text to the clipboard and flash confirmation. */
@@ -591,6 +600,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         table: ({ children }) => <div className="overflow-x-auto"><table>{children}</table></div>,
                         img: (props) => <img {...props} loading="lazy" decoding="async" />,
                         pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
+                        a: (props) => <a {...props} target="_blank" rel="noopener noreferrer" />,
                       }}
                     >{m.content}</ReactMarkdown>
                   </div>
@@ -674,8 +684,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       <ActionButton
                         label="Salin sebagai JSON"
                         activeLabel="JSON tersalin"
-                        active={copiedIndex === i}
-                        onClick={() => handleCopy(JSON.stringify(messageJsonRecord(m, model), null, 2), i)}
+                        active={jsonCopiedIndex === i}
+                        onClick={() => handleCopyJson(m, i)}
                         icon={
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
                         }
@@ -683,8 +693,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                       <ActionButton
                         label="Salin pesan"
                         activeLabel="Pesan tersalin"
-                        active={copiedIndex === i}
-                        onClick={() => handleCopy(m.content, i)}
+                        active={textCopiedIndex === i}
+                        onClick={() => handleCopyText(m.content, i)}
                         icon={
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                         }
@@ -755,8 +765,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         <ActionButton
                           label="Salin sebagai JSON"
                           activeLabel="JSON tersalin"
-                          active={copiedIndex === i}
-                          onClick={() => handleCopy(JSON.stringify(messageJsonRecord(m, model), null, 2), i)}
+                          active={jsonCopiedIndex === i}
+                          onClick={() => handleCopyJson(m, i)}
                           icon={
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
                           }
@@ -764,8 +774,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         <ActionButton
                           label="Salin pesan"
                           activeLabel="Pesan tersalin"
-                          active={copiedIndex === i}
-                          onClick={() => handleCopy(m.content, i)}
+                          active={textCopiedIndex === i}
+                          onClick={() => handleCopyText(m.content, i)}
                           icon={
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                           }

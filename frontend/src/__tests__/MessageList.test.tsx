@@ -611,6 +611,26 @@ describe('MessageList user-message copy actions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
     expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
   });
+
+  it('opens markdown links in a new tab with noopener noreferrer', () => {
+    const { container } = renderList({
+      messages: [{ role: 'assistant', content: 'Baca [dokumen](https://example.com/docs) ya' }],
+    });
+    const a = container.querySelector('a');
+    expect(a).toBeTruthy();
+    expect(a?.getAttribute('href')).toBe('https://example.com/docs');
+    expect(a?.getAttribute('target')).toBe('_blank');
+    expect(a?.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  it('keeps JSON and plain-text copy confirmations independent', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
+    expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pesan tersalin' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
+  });
 });
 
 describe('MessageList focus-mode hooks', () => {
