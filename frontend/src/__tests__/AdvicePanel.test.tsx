@@ -543,7 +543,7 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
       ],
       jajanTotal: 80000,
     };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload))));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
     render(<AdvicePanel apiKey="secret" month="2026-05" />);
     fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
@@ -555,7 +555,7 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
 
   it('does not show the jajan callout when there is no snack spend', async () => {
     const payload = { ...advicePayload, jajanTotal: 0 };
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload))));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
     render(<AdvicePanel apiKey="secret" month="2026-05" />);
     fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
