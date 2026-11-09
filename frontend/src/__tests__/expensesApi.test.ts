@@ -78,6 +78,17 @@ describe('exportExpensesCsv', () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(exportExpensesCsv('2026-10', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
   });
+
+  it('includes category and search filters in the query string', async () => {
+    const blob = new Blob(['tanggal,nominal'], { type: 'text/csv' });
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, blob: async () => blob });
+    await exportExpensesCsv('2026-10', { apiKey: 'secret', fetchImpl }, { kategori: 'Makan', q: 'warteg' });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toContain('/export?month=2026-10');
+    expect(url).toContain('kategori=Makan');
+    expect(url).toContain('q=warteg');
+  });
 });
 
 
@@ -96,6 +107,17 @@ describe('exportExpensesPdf', () => {
   it('throws ApiError on a 401', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
     await expect(exportExpensesPdf('2026-10', { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+
+  it('includes category and search filters in the query string', async () => {
+    const blob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, blob: async () => blob });
+    await exportExpensesPdf('2026-10', { apiKey: 'secret', fetchImpl }, { kategori: 'Transport', q: 'ojek' });
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toContain('/export/pdf?month=2026-10');
+    expect(url).toContain('kategori=Transport');
+    expect(url).toContain('q=ojek');
   });
 });
 

@@ -286,6 +286,85 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
     }
 
     [Fact]
+    public async Task Export_withCategoryAndSearchFilter_returnsOnlyMatchingRows()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Belanja",
+                            Keterangan = "Belanja, grosir", Nominal = 300_000, SourceId = "a1b2e5" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "Warteg", Nominal = 20_000, SourceId = "a1b2c3" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 27), Waktu = "07:00", Kategori = "Makan",
+                            Keterangan = "Roti bakar", Nominal = 15_000, SourceId = "a1b2d4" },
+                    ], CancellationToken.None);
+            });
+
+            // Category filter narrows to Makan; the search still applies within it.
+            var response = await client.GetAsync("/api/expenses/export?month=2026-10&kategori=Makan&q=warteg");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.Contains("2026-10-28,12:30,Makan,Warteg,20000", body);
+            Assert.DoesNotContain("Roti bakar", body);
+            Assert.DoesNotContain("Belanja", body);
+
+            // Search-only filter over tanggal matches the 29th Belanja row.
+            var byDate = await client.GetAsync("/api/expenses/export?month=2026-10&q=2026-10-29");
+            var dateBody = await byDate.Content.ReadAsStringAsync();
+            Assert.Contains("Belanja", dateBody);
+            Assert.DoesNotContain("Warteg", dateBody);
+
+            // A no-match search yields only the CSV header row.
+            var none = await client.GetAsync("/api/expenses/export?month=2026-10&q=tidakada");
+            var noneBody = await none.Content.ReadAsStringAsync();
+            Assert.StartsWith("tanggal,waktu,kategori,keterangan,nominal", noneBody.TrimStart('﻿'));
+            Assert.Equal(2, noneBody.TrimStart('﻿').Split('\n').Length);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task ExportPdf_withCategoryFilter_excludesOtherRows()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Belanja",
+                            Keterangan = "Grosir", Nominal = 300_000, SourceId = "a1b2e5" },
+                        new Expense { Tanggal = new DateOnly(2026, 10, 28), Waktu = "12:30", Kategori = "Makan",
+                            Keterangan = "Warteg", Nominal = 20_000, SourceId = "a1b2c3" },
+                    ], CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/export/pdf?month=2026-10&kategori=Makan");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var bytes = await response.Content.ReadAsByteArrayAsync();
+            var text = System.Text.Encoding.ASCII.GetString(bytes);
+            Assert.Contains("Warteg", text);
+            Assert.DoesNotContain("Grosir", text);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
     public async Task ExportPdf_requiresApiKey()
     {
         var db = TempDb();

@@ -115,6 +115,31 @@ describe('ExpensesView', () => {
     expect(anchor.download).toBe('expenses-2026-10.csv');
   });
 
+  it('passes the active list filters to the CSV export URL', async () => {
+    let capturedUrl = '';
+    vi.stubGlobal('URL', { createObjectURL: vi.fn(() => 'blob:fake'), revokeObjectURL: vi.fn() });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        capturedUrl = String(url);
+        if (url.includes('/export')) {
+          return Promise.resolve({ ok: true, blob: async () => new Blob(['a,b'], { type: 'text/csv' }) });
+        }
+        return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+      }),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Filter kategori'), { target: { value: 'Makan' } });
+    fireEvent.change(screen.getByPlaceholderText('Cari transaksi…'), { target: { value: 'warteg' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(capturedUrl).toContain('/export?'));
+    expect(capturedUrl).toContain('kategori=Makan');
+    expect(capturedUrl).toContain('q=warteg');
+  });
+
   it('downloads the PDF report for the selected month', async () => {
     const createUrl = vi.fn(() => 'blob:fake');
     const revokeUrl = vi.fn();

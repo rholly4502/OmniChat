@@ -163,6 +163,8 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
     /// <summary>Monthly report as CSV (RFC 4180) for spreadsheet/archival use.</summary>
     /// <param name="month">Month key <c>YYYY-MM</c>.</param>
+    /// <param name="kategori">Optional category (exact) to filter the export to.</param>
+    /// <param name="q">Optional free-text search (keterangan/kategori/tanggal/waktu).</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
     /// <response code="200">CSV file download.</response>
     /// <response code="400">Invalid month key.</response>
@@ -172,14 +174,18 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export(
-        [FromQuery] string month, CancellationToken cancellationToken = default)
+        [FromQuery] string month,
+        [FromQuery] string? kategori = null,
+        [FromQuery] string? q = null,
+        CancellationToken cancellationToken = default)
     {
         if (!TryMonth(month, out _))
         {
             return InvalidMonth(month);
         }
 
-        var rows = await repository.ListAllForMonthAsync(month, cancellationToken);
+        var rows = ApplyExportFilter(
+            await repository.ListAllForMonthAsync(month, cancellationToken), kategori, q);
 
         var sb = new StringBuilder();
         sb.AppendLine("tanggal,waktu,kategori,keterangan,nominal");
@@ -202,6 +208,8 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
     /// <summary>Monthly report as PDF (single-page A4) for archival/print use.</summary>
     /// <param name="month">Month key <c>YYYY-MM</c>.</param>
+    /// <param name="kategori">Optional category (exact) to filter the export to.</param>
+    /// <param name="q">Optional free-text search (keterangan/kategori/tanggal/waktu).</param>
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
     /// <response code="200">PDF file download.</response>
     /// <response code="400">Invalid month key.</response>
@@ -211,14 +219,18 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ExportPdf(
-        [FromQuery] string month, CancellationToken cancellationToken = default)
+        [FromQuery] string month,
+        [FromQuery] string? kategori = null,
+        [FromQuery] string? q = null,
+        CancellationToken cancellationToken = default)
     {
         if (!TryMonth(month, out _))
         {
             return InvalidMonth(month);
         }
 
-        var rows = await repository.ListAllForMonthAsync(month, cancellationToken);
+        var rows = ApplyExportFilter(
+            await repository.ListAllForMonthAsync(month, cancellationToken), kategori, q);
         var bytes = ExpensePdfReport.Build(month, rows);
         return File(bytes, "application/pdf", $"expenses-{month}.pdf");
     }
@@ -490,6 +502,31 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
     /// <summary>Request shape for creating or updating one expense row.</summary>
     public sealed record ExpenseWriteRequest(string Tanggal, string? Waktu, string Kategori, string Keterangan, long Nominal);
+
+    /// <summary>
+    /// Applies the same category + free-text filter the frontend transaction list uses
+    /// (search/filter), so exporting a filtered view yields exactly the rows on screen.
+    /// Category matches exactly (case-insensitive); the text search is an ordinal
+    /// case-insensitive substring over keterangan, kategori, tanggal, and waktu.
+    /// </summary>
+    private static IReadOnlyList<Expense> ApplyExportFilter(IEnumerable<Expense> rows, string? kategori, string? q)
+    {
+        if (!string.IsNullOrWhiteSpace(kategori))
+        {
+            var cat = kategori.Trim();
+            rows = rows.Where(e => e.Kategori.Equals(cat, StringComparison.OrdinalIgnoreCase));
+        }
+        if (!string.IsNullOrWhiteSpace(q))
+        {
+            var needle = q.Trim();
+            rows = rows.Where(e =>
+                e.Keterangan.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
+                e.Kategori.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
+                e.Tanggal.ToString("yyyy-MM-dd").Contains(needle, StringComparison.OrdinalIgnoreCase) ||
+                e.Waktu.Contains(needle, StringComparison.OrdinalIgnoreCase));
+        }
+        return rows.ToList();
+    }
 
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
         private static string Csv(string value)

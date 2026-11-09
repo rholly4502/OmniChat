@@ -166,12 +166,29 @@ export async function getExpenseSisa(
   return (await res.json()) as ExpenseSisa;
 }
 
+/** Optional filters applied to an export download (mirrors the transaction-list filter). */
+export interface ExpenseExportFilter {
+  /** Exact category to include (case-insensitive match on the backend). */
+  kategori?: string;
+  /** Free-text search across keterangan/kategori/tanggal/waktu. */
+  q?: string;
+}
+
+/** Builds the query string for an export download, including optional filters. */
+function exportQuery(month: string, filter?: ExpenseExportFilter): string {
+  const params = new URLSearchParams({ month });
+  if (filter?.kategori) params.set('kategori', filter.kategori);
+  if (filter?.q) params.set('q', filter.q);
+  return params.toString();
+}
+
 /** Download the monthly expense report as CSV bytes (RFC 4180, UTF-8 with BOM). */
 export async function exportExpensesCsv(
   month: string,
   options: ExpensesRequestOptions = {},
+  filter?: ExpenseExportFilter,
 ): Promise<Blob> {
-  const res = await request(`${EXPENSES_URL}/export?month=${encodeURIComponent(month)}`, options);
+  const res = await request(`${EXPENSES_URL}/export?${exportQuery(month, filter)}`, options);
   return await res.blob();
 }
 
@@ -179,8 +196,9 @@ export async function exportExpensesCsv(
 export async function exportExpensesPdf(
   month: string,
   options: ExpensesRequestOptions = {},
+  filter?: ExpenseExportFilter,
 ): Promise<Blob> {
-  const res = await request(`${EXPENSES_URL}/export/pdf?month=${encodeURIComponent(month)}`, options);
+  const res = await request(`${EXPENSES_URL}/export/pdf?${exportQuery(month, filter)}`, options);
   return await res.blob();
 }
 

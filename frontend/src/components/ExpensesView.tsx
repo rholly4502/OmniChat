@@ -161,10 +161,12 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     setExporting(true);
     setExportError(null);
     try {
+      // Honor the active list filters so exporting yields exactly the rows on screen.
+      const filter = { kategori: categoryFilter || undefined, q: query.trim() || undefined };
       const blob =
         format === 'pdf'
-          ? await exportExpensesPdf(month, { apiKey })
-          : await exportExpensesCsv(month, { apiKey });
+          ? await exportExpensesPdf(month, { apiKey }, filter)
+          : await exportExpensesCsv(month, { apiKey }, filter);
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -301,6 +303,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
+        {(query || categoryFilter) && (
+          <span
+            title="CSV/PDF akan memuat transaksi sesuai filter aktif"
+            className="text-xs text-chill-muted uppercase tracking-wide pixel-heading"
+          >
+            Ekspor ikut filter aktif
+          </span>
+        )}
         <button
           type="button"
           onClick={() => handleExport('csv')}
