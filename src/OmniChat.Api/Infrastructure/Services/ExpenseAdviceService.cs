@@ -52,13 +52,35 @@ public sealed class ExpenseAdviceService(
             suggestions = Tips();
         }
 
+        // Load the prior month before building the trend: each spending category's
+        // comparison needs it, and the pace block below reuses the same rows.
+        var prevMonth = date.AddMonths(-1).ToString("yyyy-MM");
+        var prevRows = await repository.ListAllForMonthAsync(prevMonth, ct);
+
+        // Per-category spend last month (same month-prefix guard as the pace block so
+        // the comparison stays correct even if a repository returns rows outside the
+        // requested month). Shows how each spending category is tracking against the
+        // user's own history — not just the aggregate pace.
+        var prevPerKategori = prevRows
+            .Where(r => r.Tanggal.ToString("yyyy-MM") == prevMonth && r.Kategori != "Nabung")
+            .GroupBy(r => r.Kategori)
+            .ToDictionary(g => g.Key, g => g.Sum(r => r.Nominal));
+
         var perKategori = rows
             .GroupBy(r => r.Kategori)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Nominal));
+
         var categoryTrend = perKategori
             .Where(kv => kv.Key != "Nabung")
             .OrderByDescending(kv => kv.Value)
-            .Select(kv => new CategoryTrendItem(kv.Key, kv.Value))
+            .Select(kv =>
+            {
+                var prev = prevPerKategori.GetValueOrDefault(kv.Key);
+                var delta = kv.Value - prev;
+                // Percentage needs a baseline; a category new this month has none.
+                double? pct = prev > 0 ? Math.Round((double)delta / prev * 100, 1) : null;
+                return new CategoryTrendItem(kv.Key, kv.Value, prev, delta, pct);
+            })
             .ToList();
 
         // Snack/junk spend: ledger rows logged under "Makan" whose keterangan marks a
@@ -90,8 +112,6 @@ public sealed class ExpenseAdviceService(
         // Spend-pace baseline: cumulative non-Nabung spend through the same day-of-month
         // this month vs last month. Filtered by month prefix so the comparison stays
         // correct even if a repository returns rows outside the requested month.
-        var prevMonth = date.AddMonths(-1).ToString("yyyy-MM");
-        var prevRows = await repository.ListAllForMonthAsync(prevMonth, ct);
         var currentThroughDay = rows
             .Where(r => r.Tanggal.ToString("yyyy-MM") == month && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
             .Sum(r => r.Nominal);

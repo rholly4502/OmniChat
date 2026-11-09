@@ -20,7 +20,9 @@ public sealed class ExpenseAdviceServiceTests
         public Task<int> CountAsync(string month, CancellationToken ct) => Task.FromResult(Rows.Count);
 
         public Task<IReadOnlyList<Expense>> ListAllForMonthAsync(string month, CancellationToken ct) =>
-            Task.FromResult((IReadOnlyList<Expense>)Rows.OrderBy(r => r.Tanggal).ToList());
+            Task.FromResult((IReadOnlyList<Expense>)Rows
+                .Where(r => r.Tanggal.ToString("yyyy-MM") == month)
+                .OrderBy(r => r.Tanggal).ToList());
 
         public Task<(long Total, IReadOnlyDictionary<string, long> PerKategori)> GetTotalsAsync(string month, CancellationToken ct)
         {
@@ -345,6 +347,47 @@ public sealed class ExpenseAdviceServiceTests
         Assert.DoesNotContain(advice.CategoryTrend, c => c.Kategori == "Nabung");
         Assert.Single(advice.CategoryTrend);
         Assert.Equal("Makan", advice.CategoryTrend[0].Kategori);
+    }
+
+    [Fact]
+    public async Task CategoryTrend_carriesPreviousMonthComparison()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 520_000 },
+        };
+        // Previous month (October) baseline: Makan 40k, Belanja 50k. The large
+        // Nabung deposit must NOT count as spending in the previous-month baseline.
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 15), "Makan", 40_000, "p-makan"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 15), "Belanja", 50_000, "p-belanja"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 15), "Nabung", 5_000_000, "p-save"));
+        // Current month (November): Makan up, Belanja down, Transport is new this month.
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 28), "Makan", 60_000, "makan"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 28), "Belanja", 30_000, "belanja"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 28), "Transport", 20_000, "transport"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 11, 28), CancellationToken.None);
+
+        var makan = Assert.Single(advice.CategoryTrend, c => c.Kategori == "Makan");
+        Assert.Equal(60_000, makan.Total);
+        Assert.Equal(40_000, makan.PreviousTotal);
+        Assert.Equal(20_000, makan.Delta);
+        Assert.Equal(50.0, makan.PercentChange);
+
+        var belanja = Assert.Single(advice.CategoryTrend, c => c.Kategori == "Belanja");
+        Assert.Equal(30_000, belanja.Total);
+        Assert.Equal(50_000, belanja.PreviousTotal);
+        Assert.Equal(-20_000, belanja.Delta);
+        Assert.Equal(-40.0, belanja.PercentChange);
+
+        // A category absent last month has no percentage baseline (percent = null).
+        var transport = Assert.Single(advice.CategoryTrend, c => c.Kategori == "Transport");
+        Assert.Equal(20_000, transport.Total);
+        Assert.Equal(0, transport.PreviousTotal);
+        Assert.Equal(20_000, transport.Delta);
+        Assert.Null(transport.PercentChange);
+
+        Assert.DoesNotContain(advice.CategoryTrend, c => c.Kategori == "Nabung");
     }
 
     [Fact]

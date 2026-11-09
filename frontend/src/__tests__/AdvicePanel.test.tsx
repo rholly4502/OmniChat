@@ -606,3 +606,34 @@ describe('AdvicePanel savings tempo (daily pacing)', () => {
     expect(screen.queryByText(/Tempo nabung:/)).not.toBeInTheDocument();
   });
 });
+
+describe('AdvicePanel per-category month-over-month deltas', () => {
+  const comparisonPayload = {
+    ...advicePayload,
+    categoryTrend: [
+      { kategori: 'Belanja', total: 300000, previousTotal: 200000, delta: 100000, percentChange: 50 },
+      { kategori: 'Makan', total: 20000, previousTotal: 40000, delta: -20000, percentChange: -50 },
+      { kategori: 'Transport', total: 15000, previousTotal: 0, delta: 15000, percentChange: null },
+    ],
+  };
+
+  async function openAdvice(payload: unknown) {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+  }
+
+  it('renders an up/down delta line under each compared category', async () => {
+    await openAdvice(comparisonPayload);
+    expect(screen.getByText(/Lebih besar Rp\s*100\.000 \(50%\) vs bulan lalu/)).toBeInTheDocument();
+    expect(screen.getByText(/Lebih hemat Rp\s*20\.000 \(50%\) vs bulan lalu/)).toBeInTheDocument();
+    expect(screen.getByText('Baru di bulan ini')).toBeInTheDocument();
+  });
+
+  it('renders no delta lines when the payload omits comparison data', async () => {
+    await openAdvice(advicePayload);
+    expect(screen.queryByText(/vs bulan lalu/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Baru di bulan ini/)).not.toBeInTheDocument();
+  });
+});

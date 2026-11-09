@@ -390,6 +390,32 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                             <div className="mt-1">
                               <PixelProgress percent={(c.total / trendMax) * 100} />
                             </div>
+                            {(() => {
+                              const prev = c.previousTotal;
+                              if (prev === undefined || prev === null || c.total === 0) return null;
+                              // A category that had nothing last month has no baseline to call
+                              // it "up"/"down" — just mark it as new to the month.
+                              if (prev === 0) {
+                                return <p className="mt-1 text-xs text-chill-muted">Baru di bulan ini</p>;
+                              }
+                              const d = c.delta ?? c.total - prev;
+                              const pct = typeof c.percentChange === 'number' ? Math.abs(Math.round(c.percentChange)) : 0;
+                              if (d < 0) {
+                                return (
+                                  <p className="mt-1 text-xs text-chill-sage">
+                                    Lebih hemat {formatRupiah(-d)} ({pct}%) vs bulan lalu
+                                  </p>
+                                );
+                              }
+                              if (d > 0) {
+                                return (
+                                  <p className="mt-1 text-xs text-chill-red">
+                                    Lebih besar {formatRupiah(d)} ({pct}%) vs bulan lalu
+                                  </p>
+                                );
+                              }
+                              return <p className="mt-1 text-xs text-chill-muted">Sama dengan bulan lalu</p>;
+                            })()}
                           </li>
                         ))}
                       </ul>

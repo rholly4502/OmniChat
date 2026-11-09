@@ -1,7 +1,12 @@
 namespace OmniChat.Infrastructure.Services;
 
 /// <summary>One category with its month total (trend block of the advice).</summary>
-public sealed record CategoryTrendItem(string Kategori, long Total);
+public sealed record CategoryTrendItem(
+    string Kategori,
+    long Total,
+    long PreviousTotal,
+    long Delta,
+    double? PercentChange);
 
 /// <summary>End-of-month spend projection from the run-rate so far.</summary>
 public sealed record Projection(

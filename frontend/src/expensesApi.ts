@@ -231,10 +231,18 @@ export async function getExpenseTrend(
 
 /** Format an integer rupiah amount for display, e.g. "Rp 20.000". */
 
-/** One category with its month total (advice trend block). */
+/** One category with its month total (advice trend block), plus how it tracks
+    against the same category last month (previousTotal / delta / percentChange).
+    The comparison fields are optional so older payloads render without a line. */
 export interface CategoryTrendItem {
   kategori: string;
   total: number;
+  /** Same category's spend last month (0 when absent there). */
+  previousTotal?: number;
+  /** total - previousTotal. */
+  delta?: number;
+  /** Percent change vs last month (null when there was no baseline). */
+  percentChange?: number | null;
 }
 
 /** End-of-month spend projection from the run-rate so far. */
