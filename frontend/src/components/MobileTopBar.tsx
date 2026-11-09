@@ -161,7 +161,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
         onClick={onOpenSidebar}
         aria-expanded={sidebarOpen}
         aria-controls="chat-sidebar"
-        className="text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition-colors p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        className="text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition-colors p-2 -ml-1 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         aria-label="Open menu"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges">
@@ -239,7 +239,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               aria-haspopup="dialog"
               aria-label={`Penggunaan token: ${tokenLabel}${estimate ? `, perkiraan biaya ${estimate}` : ''}`}
               title="Statistik chat"
-              className="rounded-none inline-flex items-center gap-1 px-2 min-h-[44px] min-w-[44px] text-xs text-chill-muted transition hover:text-chill-accent active:bg-chill-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              className="rounded-none inline-flex items-center gap-1 px-2 min-h-[44px] min-w-[44px] text-xs text-chill-muted transition hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
             >
               <span aria-hidden="true" className="inline-flex"><BoltIcon size={12} /></span> {tokenLabel}{estimate ? ` · ≈${estimate}` : ''}
             </button>

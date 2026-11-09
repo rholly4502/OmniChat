@@ -194,7 +194,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
             data-stats-close
             onClick={onClose}
             aria-label="Tutup statistik"
-            className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true">
               <line x1="6" y1="6" x2="18" y2="18" />
@@ -228,7 +228,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               onClick={applyRange}
               disabled={scopedLoading}
               aria-label="Terapkan periode statistik"
-              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+              className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
               {scopedLoading ? 'Memuat…' : 'Terapkan'}
             </button>

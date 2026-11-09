@@ -250,7 +250,7 @@ export function Sidebar({
         <button
           ref={closeButtonRef}
           onClick={onClose}
-          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition-colors p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition-colors p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           aria-label="Close sidebar"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges">
@@ -382,7 +382,7 @@ export function Sidebar({
           onClick={onToggleShowArchived}
           aria-pressed={showArchived}
           aria-label={showArchived ? 'Sembunyikan arsip' : 'Tampilkan arsip'}
-          className="w-full flex items-center gap-2 min-h-[44px] rounded-none px-1 text-xs text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+          className="w-full flex items-center gap-2 min-h-[44px] rounded-none px-1 text-xs text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <span className={`inline-flex items-center justify-center w-4 h-4 border-2 border-chill-accent/60 ${showArchived ? 'bg-chill-accent' : 'bg-transparent'}`}>
             {showArchived && (
@@ -680,7 +680,7 @@ export function Sidebar({
               type="button"
               onClick={onLoadMore}
               aria-label="Muat lebih banyak percakapan"
-              className="w-full flex items-center justify-center gap-2 mt-1 min-h-[44px] rounded-none border border-chill-border bg-chill-surface text-sm text-chill-accent font-medium hover:bg-chill-elevated active:bg-chill-elevated transition pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              className="w-full flex items-center justify-center gap-2 mt-1 min-h-[44px] rounded-none border border-chill-border bg-chill-surface text-sm text-chill-accent font-medium hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] transition pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
               Muat lebih banyak
