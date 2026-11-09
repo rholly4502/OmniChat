@@ -99,8 +99,14 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
   const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
 
-  const today = new Date();
-  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  // Today's date, captured once per mount. Computing `new Date()` during render
+  // trips oxlint react(purity); freezing it lazily also keeps the follow-up
+  // deadline (`needsFollowUp`, the date input's `min`) stable across re-renders
+  // instead of drifting if the tab stays open across midnight.
+  const [todayISO] = useState(() => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  });
 
   /** Active (applied/interview/offer) && scheduled && overdue → needs follow-up. */
   const needsFollowUp = (o: Opportunity): boolean => {
