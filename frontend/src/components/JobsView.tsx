@@ -46,6 +46,38 @@ const TYPE_FILTERS = [
   { key: 'Part-time / Freelance', label: 'Part-time / Freelance' },
 ];
 
+type TierKey = 'high' | 'medium' | 'low';
+
+const TIER_ORDER: TierKey[] = ['high', 'medium', 'low'];
+
+/**
+ * Tier rekomendasi — menandai mana yang sebaiknya dicek duluan:
+ * - high: masih 'new' DAN (part-time / freelance ATAU lokasi Malaysia/Singapura) → target aktif
+ * - medium: masih 'new' lainnya
+ * - low: sudah diproses (applied/interview/offer/closed)
+ */
+function computeTier(o: Opportunity): TierKey {
+  if (o.status !== 'new') return 'low';
+  const tipe = (o.tipe || '').toLowerCase();
+  const lokasi = (o.lokasi || '').toLowerCase();
+  const partTime = tipe.includes('part-time');
+  const mySg = /\b(malaysia|singapura|singapore)\b/.test(lokasi);
+  if (partTime || mySg) return 'high';
+  return 'medium';
+}
+
+const TIER_META: Record<TierKey, { label: string; tone: string }> = {
+  high: { label: 'Prioritas', tone: 'bg-chill-red/15 text-chill-red border-chill-red/50' },
+  medium: { label: 'Standar', tone: 'bg-chill-indigo/15 text-chill-indigo border-chill-indigo/40' },
+  low: { label: '', tone: '' },
+};
+
+const TIER_FILTERS: { key: TierKey | ''; label: string }[] = [
+  { key: '', label: 'Semua' },
+  { key: 'high', label: 'Prioritas' },
+  { key: 'medium', label: 'Standar' },
+];
+
 function statusTone(status: string): string {
   switch (status) {
     case 'new': return 'bg-chill-accent/15 text-chill-accent border-chill-accent/40';
@@ -64,6 +96,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
+  const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
 
   const today = new Date();
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -98,6 +131,21 @@ export function JobsView({ apiKey }: JobsViewProps) {
     });
   };
 
+  const tierBadge = (o: Opportunity) => {
+    const t = computeTier(o);
+    if (t === 'low') return null;
+    return (
+      <span
+        className={`shrink-0 rounded-none border px-2 py-0.5 text-xs font-medium inline-flex items-center gap-1 ${TIER_META[t].tone}`}
+      >
+        <svg width="8" height="8" viewBox="0 0 8 8" aria-hidden="true" className="shrink-0">
+          <rect x="0" y="0" width="8" height="8" fill="currentColor" />
+        </svg>
+        {TIER_META[t].label}
+      </span>
+    );
+  };
+
   const statusCount = (s: string) =>
     opportunities.filter(
       (o) =>
@@ -110,10 +158,21 @@ export function JobsView({ apiKey }: JobsViewProps) {
         groupOf(o) === g && (statusFilter === '' || o.status === statusFilter)
     ).length;
 
+  const tierOk = (o: Opportunity) => tierFilter === '' || computeTier(o) === tierFilter;
+
+  const tierCount = (k: TierKey | '') =>
+    opportunities.filter(
+      (o) =>
+        (k === '' || computeTier(o) === k) &&
+        (statusFilter === '' || o.status === statusFilter) &&
+        (typeFilter === '' || groupOf(o) === typeFilter)
+    ).length;
+
   const filtered = opportunities.filter(
     (o) =>
       (statusFilter === '' || o.status === statusFilter) &&
-      (typeFilter === '' || groupOf(o) === typeFilter)
+      (typeFilter === '' || groupOf(o) === typeFilter) &&
+      tierOk(o)
   );
 
   const activeSummary =
@@ -213,6 +272,28 @@ export function JobsView({ apiKey }: JobsViewProps) {
         </div>
       </div>
 
+      {/* Prioritas filter */}
+      <div className="px-4 pb-2">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter prioritas">
+          {TIER_FILTERS.map((f) => (
+            <button
+              key={f.key || 'semua'}
+              type="button"
+              role="tab"
+              aria-selected={tierFilter === f.key}
+              onClick={() => setTierFilter(tierFilter === f.key ? '' : f.key)}
+              className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                tierFilter === f.key
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+              }`}
+            >
+              {f.label} ({tierCount(f.key)})
+            </button>
+          ))}
+        </div>
+      </div>
+
         </div>
       )}
       {error && (
@@ -251,7 +332,13 @@ export function JobsView({ apiKey }: JobsViewProps) {
         ) : (
           <div className="space-y-5">
             {GROUP_ORDER.filter((g) => filtered.some((o) => groupOf(o) === g)).map((g) => {
-              const items = filtered.filter((o) => groupOf(o) === g);
+              const items = filtered
+                .filter((o) => groupOf(o) === g)
+                .slice()
+                .sort(
+                  (a, b) =>
+                    TIER_ORDER.indexOf(computeTier(a)) - TIER_ORDER.indexOf(computeTier(b))
+                );
               return (
                 <section key={g} aria-labelledby={`group-${g}`}>
                   <div className="mb-2 border-l-2 border-chill-accent pl-2">
@@ -278,6 +365,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                   >
                     {statusLabel(o.status)}
                   </span>
+                  {tierBadge(o)}
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted">

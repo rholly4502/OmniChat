@@ -123,6 +123,29 @@ describe('JobsView', () => {
   });
 
 });
+
+describe('JobsView tiering (prioritas rekomendasi)', () => {
+  it('menandai part-time / Malaysia-Singapura yang masih baru sebagai Prioritas, lainnya Standar', () => {
+    const ptNew: Opportunity = { ...base, id: 10, judul: 'Part-time Blazor', tipe: 'Part-time / Freelance' };
+    const myNew: Opportunity = { ...base, id: 11, judul: '.NET KL', lokasi: 'Kuala Lumpur, Malaysia' };
+    const kontrakNew: Opportunity = { ...base, id: 12, judul: 'Kontrak Jakarta' };
+    mockState({ opportunities: [ptNew, myNew, kontrakNew] });
+    render(<JobsView />);
+    expect(screen.getAllByText('Prioritas').length).toBe(2);
+    expect(screen.getByText('Standar')).toBeTruthy();
+  });
+
+  it('menyaring hanya Prioritas saat tab Prioritas diklik', () => {
+    const ptNew: Opportunity = { ...base, id: 10, judul: 'Part-time Blazor', tipe: 'Part-time / Freelance' };
+    const kontrakNew: Opportunity = { ...base, id: 12, judul: 'Kontrak Jakarta' };
+    mockState({ opportunities: [ptNew, kontrakNew] });
+    render(<JobsView />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Prioritas (1)' }));
+    expect(screen.getByText('Part-time Blazor')).toBeTruthy();
+    expect(screen.queryByText('Kontrak Jakarta')).toBeNull();
+  });
+});
+
 describe('JobsView job card micro-interaction', () => {
   it('every opportunity card carries the shared hover register (transition + hover:bg-chill-elevated)', () => {
     mockState();
