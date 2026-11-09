@@ -62,7 +62,7 @@ function formatTimestamp(ts?: number): string {
  */
 function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undefined): string {
   const msgs = session.messages;
-  const rows: string[][] = [['#', 'peran', 'pesan', 'prompt_tokens', 'completion_tokens', 'biaya_usd', 'umpan_balik', 'waktu']];
+  const rows: string[][] = [['#', 'peran', 'pesan', 'model', 'prompt_tokens', 'completion_tokens', 'biaya_usd', 'umpan_balik', 'berpikir', 'ditandai', 'waktu']];
   let totalPrompt = 0;
   let totalCompletion = 0;
   let totalUsd = 0;
@@ -80,10 +80,13 @@ function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undef
       String(i + 1),
       roleLabel(m.role),
       preview(m.content),
+      labelFor(m.model ?? session.model, modelOptions),
       String(pTok || ''),
       String(cTok || ''),
       cost,
       feedback,
+      m.reasoning ? '1' : '',
+      m.bookmarked ? '1' : '',
       m.createdAt ? formatTimestamp(m.createdAt) : '',
     ]);
   });
@@ -207,11 +210,13 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                   <th className="font-medium py-1 pr-2 w-8">#</th>
                   <th className="font-medium py-1 pr-2 w-16">Peran</th>
                   <th className="font-medium py-1 pr-2">Pesan</th>
+                  <th className="font-medium py-1 pr-2">Model</th>
                   <th className="font-medium py-1 pr-2 text-right">In</th>
                   <th className="font-medium py-1 pr-2 text-right">Out</th>
                   <th className="font-medium py-1 pr-2 text-right">Biaya</th>
                   <th className="font-medium py-1 pr-2 text-right">Waktu</th>
                   <th className="font-medium py-1 text-center w-12">Nilai</th>
+                  <th className="font-medium py-1 text-center w-12">Lain</th>
                 </tr>
               </thead>
               <tbody>
@@ -226,6 +231,9 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                         <div className="text-chill-text truncate max-w-[180px] md:max-w-[260px]" title={m.content}>
                           {preview(m.content)}
                         </div>
+                      </td>
+                      <td className="py-1.5 pr-2 text-chill-muted">
+                        {m.model ? labelFor(m.model, modelOptions) : <span className="text-chill-muted">–</span>}
                       </td>
                       <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{usage ? formatTokens(usage.promptTokens) : '–'}</td>
                       <td className="py-1.5 pr-2 text-right text-chill-muted font-mono">{usage ? formatTokens(usage.completionTokens) : '–'}</td>
@@ -243,6 +251,20 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                         ) : (
                           <span aria-label="Belum dinilai" className="text-chill-muted">–</span>
                         )}
+                      </td>
+                      <td className="py-1.5 text-center">
+                        <span className="inline-flex items-center justify-center gap-1">
+                          {m.reasoning && (
+                            <span aria-label="Berisi cara berpikir" title="Berisi cara berpikir" className="text-chill-muted">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><circle cx="12" cy="12" r="10" /></svg>
+                            </span>
+                          )}
+                          {m.bookmarked && (
+                            <span aria-label="Ditandai" title="Ditandai" className="text-chill-accent">
+                              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+                            </span>
+                          )}
+                        </span>
                       </td>
                     </tr>
                   );

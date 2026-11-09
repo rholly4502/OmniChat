@@ -135,8 +135,8 @@ describe('ConversationAuditDialog', () => {
     expect(screen.getByText('Rincian per model')).toBeInTheDocument();
     // claude-sonnet appears in the meta header AND the per-model row
     expect(screen.getAllByText('Claude Sonnet').length).toBeGreaterThanOrEqual(2);
-    // unknown model resolved to its raw id label
-    expect(screen.getByText('claude-haiku')).toBeInTheDocument();
+    // unknown model resolved to its raw id label (table Model cell + per-model row)
+    expect(screen.getAllByText('claude-haiku').length).toBeGreaterThanOrEqual(1);
     // per-row totals: 10+20=30 and 2+4=6
     const onT = screen.getAllByText('30');
     expect(onT.length).toBeGreaterThanOrEqual(1);
@@ -172,8 +172,8 @@ describe('ConversationAuditDialog CSV export', () => {
     expect(blob).toBeInstanceOf(Blob);
     const csv = await blob.text();
     const lines = csv.split('\r\n');
-    expect(lines[0]).toContain('peran,pesan,prompt_tokens,completion_tokens,biaya_usd,umpan_balik,waktu');
-    expect(lines[1]).toContain('1,Pengguna,Halo,,,');
+    expect(lines[0]).toContain('peran,pesan,model,prompt_tokens,completion_tokens,biaya_usd,umpan_balik,berpikir,ditandai,waktu');
+    expect(lines[1]).toContain('1,Pengguna,Halo,Claude Sonnet');
     const asst = lines.find((l) => l.includes('Asisten,Hai! Ini balasan asisten') && l.includes('10,20'));
     expect(asst).toBeTruthy();
     expect(asst).toContain('up');
@@ -189,5 +189,50 @@ describe('ConversationAuditDialog CSV export', () => {
     const exportCsv = screen.getByRole('button', { name: 'Ekspor audit sebagai CSV' });
     expect(exportCsv).toHaveClass('active:bg-chill-elevated');
     expect(exportCsv).toHaveClass('transition');
+  });
+});
+
+describe('ConversationAuditDialog model/reasoning/bookmark attribution', () => {
+  const rich: ChatSession = {
+    id: 'sess-rich',
+    title: 'Kaya',
+    model: 'claude-sonnet',
+    mode: 'agent',
+    createdAt: 0,
+    updatedAt: 0,
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Beres',
+        usage: { promptTokens: 5, completionTokens: 3 },
+        model: 'claude-haiku',
+        reasoning: 'Pertimbangkan dulu.',
+        bookmarked: true,
+        createdAt: 2,
+      },
+    ],
+  };
+
+  it('renders a Model column and Lain indicators for reasoning + bookmark', () => {
+    renderOpen(vi.fn(), rich);
+    expect(screen.getAllByRole('columnheader', { name: 'Model' }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole('columnheader', { name: 'Lain' })).toBeInTheDocument();
+    expect(screen.getAllByText('claude-haiku').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByLabelText('Berisi cara berpikir')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ditandai')).toBeInTheDocument();
+  });
+
+  it('CSV export includes model, berpikir and ditandai columns', async () => {
+    downloadBlob.mockClear();
+    renderOpen(vi.fn(), rich);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor audit sebagai CSV' }));
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob] = downloadBlob.mock.calls[0];
+    const csv = await blob.text();
+    const lines = csv.split('\r\n');
+    expect(lines[0]).toContain('peran,pesan,model,prompt_tokens,completion_tokens,biaya_usd,umpan_balik,berpikir,ditandai,waktu');
+    const asst = lines.find((l) => l.includes('Asisten,Beres,claude-haiku,5,3'));
+    expect(asst).toBeTruthy();
+    expect(asst).toContain(',1,1');
   });
 });
