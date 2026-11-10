@@ -200,6 +200,13 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeIdx, setActiveIdx] = useState(0);
+  // --- Bookmark navigation -----------------------------------------------
+  // A sibling of the in-transcript search toolbar: step through every turn the
+  // reader has starred (bookmarked), so a long conversation can be navigated
+  // by its highlights. Same transient-state discipline as search — it is
+  // reset together with the other per-conversation UI state on a switch.
+  const [bookmarkNavOpen, setBookmarkNavOpen] = useState(false);
+  const [bmActiveIdx, setBmActiveIdx] = useState(0);
 
   const matchRefs = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -213,16 +220,39 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     return { rows, total };
   }, [messages, query]);
 
+  const bookmarkedRows = useMemo(() => {
+    const rows: number[] = [];
+    messages.forEach((msg, i) => {
+      if (bookmarked[i] ?? msg.bookmarked) rows.push(i);
+    });
+    return rows;
+  }, [messages, bookmarked]);
+
   const totalMatches = matchRefs.total;
   const activeRowMi = matchRefs.rows.length > 0
     ? matchRefs.rows[Math.min(activeIdx, matchRefs.rows.length - 1)].mi
     : -1;
+  const bmActiveRowMi = bookmarkedRows.length > 0
+    ? bookmarkedRows[Math.min(bmActiveIdx, bookmarkedRows.length - 1)]
+    : -1;
 
-  const openSearch = () => { setSearchOpen(true); setActiveIdx(0); };
+  const openSearch = () => { setSearchOpen(true); setBookmarkNavOpen(false); setActiveIdx(0); };
   const closeSearch = () => { setSearchOpen(false); setQuery(''); setActiveIdx(0); };
   const applyQuery = (value: string) => { setQuery(value); setActiveIdx(0); };
   const goPrev = () => setActiveIdx((a) => (a <= 0 ? matchRefs.rows.length - 1 : a - 1));
   const goNext = () => setActiveIdx((a) => (a >= matchRefs.rows.length - 1 ? 0 : a + 1));
+  const openBookmarkNav = () => {
+    if (bookmarkedRows.length === 0) return;
+    setSearchOpen(false);
+    setBookmarkNavOpen(true);
+    setBmActiveIdx(0);
+  };
+  const closeBookmarkNav = () => {
+    setBookmarkNavOpen(false);
+    setBmActiveIdx(0);
+  };
+  const goPrevBm = () => setBmActiveIdx((a) => (a <= 0 ? bookmarkedRows.length - 1 : a - 1));
+  const goNextBm = () => setBmActiveIdx((a) => (a >= bookmarkedRows.length - 1 ? 0 : a + 1));
 
   function scrollToRow(mi: number) {
     const el = scrollRef.current?.querySelector<HTMLElement>(`[data-msg-index="${mi}"]`);
@@ -233,6 +263,19 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     if (searchOpen && query.trim() && activeRowMi >= 0) scrollToRow(activeRowMi);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIdx, searchOpen]);
+
+  useEffect(() => {
+    if (!bookmarkNavOpen || bookmarkedRows.length === 0) return;
+    const mi = bookmarkedRows[Math.min(bmActiveIdx, bookmarkedRows.length - 1)];
+    scrollToRow(mi);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bmActiveIdx, bookmarkNavOpen]);
+
+  // If every bookmark is cleared while the navbar is open, close it rather than
+  // leaving an empty, dead toolbar pinned to the top of the transcript.
+  useEffect(() => {
+    if (bookmarkNavOpen && bookmarkedRows.length === 0) setBookmarkNavOpen(false);
+  }, [bookmarkedRows.length, bookmarkNavOpen]);
 
   /**
    * The transient UI state below is keyed by message *index*, so it must be
@@ -256,6 +299,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setSearchOpen(false);
       setQuery('');
       setActiveIdx(0);
+      setBookmarkNavOpen(false);
+      setBmActiveIdx(0);
     }
   }, [conversationKey]);
 
@@ -443,6 +488,23 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           </button>
         </div>
       )}
+      {bookmarkNavOpen && bookmarkedRows.length > 0 && (
+        <div className="sticky top-0 z-20 -mx-3 md:-mx-6 px-3 md:px-6 py-2 bg-chill-bg border-b border-chill-border flex items-center gap-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true" className="text-chill-accent shrink-0"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+          <span className="text-xs text-chill-muted select-none whitespace-nowrap tabular-nums" aria-live="polite" aria-label="Posisi navigasi tandai">
+            {bmActiveIdx + 1} dari {bookmarkedRows.length} pesan ditandai
+          </span>
+          <button type="button" onClick={goPrevBm} aria-label="Tandai sebelumnya" title="Tandai sebelumnya" className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] transition text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="15 18 9 12 15 6" /></svg>
+          </button>
+          <button type="button" onClick={goNextBm} aria-label="Tandai berikutnya" title="Tandai berikutnya" className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] transition text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+          </button>
+          <button type="button" onClick={closeBookmarkNav} aria-label="Tutup navigasi tandai" title="Tutup navigasi tandai" className="rounded-none inline-flex items-center justify-center min-h-[44px] min-w-[44px] transition text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+          </button>
+        </div>
+      )}
       {messages.length === 0 && (
         <div className="h-full flex flex-col items-center justify-center gap-3 px-4 text-center">
           {/* Decorative pixel-art terminal ornament (chill palette, hard-edged).
@@ -530,7 +592,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
         <div
           data-msg-index={i}
           data-active={searchOpen && i === activeRowMi ? 'true' : undefined}
-          className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}${searchOpen && i === activeRowMi ? ' outline outline-2 outline-chill-accent' : ''}`}
+          data-bm-active={bookmarkNavOpen && i === bmActiveRowMi ? 'true' : undefined}
+          className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}${(searchOpen && i === activeRowMi) || (bookmarkNavOpen && i === bmActiveRowMi) ? ' outline outline-2 outline-chill-accent' : ''}`}
         >
           {m.role === 'user' && editingIndex === i ? (
             /* Inline edit mode for a user turn. */
@@ -836,7 +899,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><polyline points="6 9 12 15 18 9" /></svg>
         </button>
       )}
-      {!searchOpen && (
+      {!searchOpen && !bookmarkNavOpen && bookmarkedRows.length > 0 && (
+        <button
+          type="button"
+          onClick={openBookmarkNav}
+          aria-label="Navigasi pesan ditandai"
+          title="Navigasi pesan ditandai"
+          className="absolute top-3 right-[52px] z-10 min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-none border-2 border-chill-border bg-chill-elevated text-chill-accent hover:text-chill-accent-hover hover:bg-chill-surface active:bg-chill-elevated active:translate-y-[2px] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M12 2l2.9 5.9 6.6.96-4.77 4.65 1.13 6.58L12 17.01 6.14 20.09l1.13-6.58L2.5 8.86l6.6-.96L12 2z" /></svg>
+        </button>
+      )}
+      {!searchOpen && !bookmarkNavOpen && (
         <button
           type="button"
           onClick={openSearch}

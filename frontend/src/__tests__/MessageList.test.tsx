@@ -1151,3 +1151,107 @@ describe('MessageList day dividers', () => {
     expect(screen.getByText('Hari ini')).toBeInTheDocument();
   });
 });
+
+describe('MessageList bookmark navigation', () => {
+  const msgset = (): Message[] => [
+    { role: 'user', content: 'a', bookmarked: true },
+    { role: 'assistant', content: 'b' },
+    { role: 'user', content: 'c', bookmarked: true },
+  ];
+
+  const openNav = () => {
+    fireEvent.click(screen.getByRole('button', { name: 'Navigasi pesan ditandai' }));
+  };
+
+  it('is hidden when no message is bookmarked', () => {
+    renderList({ messages: [{ role: 'user', content: 'a' }] });
+    expect(screen.queryByRole('button', { name: 'Navigasi pesan ditandai' })).not.toBeInTheDocument();
+  });
+
+  it('shows the floating toggle when at least one message is bookmarked', () => {
+    renderList({ messages: msgset() });
+    const btn = screen.getByRole('button', { name: 'Navigasi pesan ditandai' });
+    expect(btn).toBeInTheDocument();
+    expect(btn.className).toContain('min-h-[44px]');
+    expect(btn.className).toContain('min-w-[44px]');
+  });
+
+  it('opens the toolbar and reports the bookmark count', () => {
+    renderList({ messages: msgset() });
+    openNav();
+    expect(screen.getByText('1 dari 2 pesan ditandai')).toBeInTheDocument();
+    expect(screen.getByLabelText('Posisi navigasi tandai')).toBeInTheDocument();
+  });
+
+  it('steps through bookmarked rows and marks the active one', () => {
+    renderList({ messages: msgset() });
+    openNav();
+    const activeIndex = () => {
+      const rows = [...screen.getByLabelText('Chat messages').querySelectorAll('[data-msg-index]')];
+      return rows.filter((r) => r.getAttribute('data-bm-active') === 'true')
+        .map((r) => Number(r.getAttribute('data-msg-index')));
+    };
+    expect(activeIndex()).toEqual([0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai berikutnya' }));
+    expect(activeIndex()).toEqual([2]);
+    expect(screen.getByText('2 dari 2 pesan ditandai')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Tandai sebelumnya' }));
+    expect(activeIndex()).toEqual([0]);
+    expect(screen.getByText('1 dari 2 pesan ditandai')).toBeInTheDocument();
+  });
+
+  it('closes the toolbar and clears the highlight', () => {
+    renderList({ messages: msgset() });
+    openNav();
+    fireEvent.click(screen.getByRole('button', { name: 'Tutup navigasi tandai' }));
+    expect(screen.queryByLabelText('Posisi navigasi tandai')).not.toBeInTheDocument();
+    const rows = [...screen.getByLabelText('Chat messages').querySelectorAll('[data-msg-index]')];
+    expect(rows.every((r) => r.getAttribute('data-bm-active') !== 'true')).toBe(true);
+  });
+
+  it('auto-closes when every bookmark is cleared while the toolbar is open', () => {
+    renderList({ messages: [{ role: 'user', content: 'a', bookmarked: true }] });
+    openNav();
+    expect(screen.getByLabelText('Posisi navigasi tandai')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ditandai' }));
+    expect(screen.queryByLabelText('Posisi navigasi tandai')).not.toBeInTheDocument();
+  });
+
+  it('resets when the conversation key changes', () => {
+    const view = renderList({ messages: msgset(), conversationKey: 'conv-A' });
+    openNav();
+    expect(screen.getByLabelText('Posisi navigasi tandai')).toBeInTheDocument();
+    view.rerender(
+      <MessageList
+        messages={msgset()}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={createRef<HTMLDivElement>()}
+        conversationKey="conv-B"
+      />,
+    );
+    expect(screen.queryByLabelText('Posisi navigasi tandai')).not.toBeInTheDocument();
+  });
+
+  it('closes bookmark navigation when the search toolbar is opened via the shortcut', async () => {
+    const view = renderList({ messages: msgset(), conversationKey: 'k' });
+    openNav();
+    expect(screen.getByLabelText('Posisi navigasi tandai')).toBeInTheDocument();
+    view.rerender(
+      <MessageList
+        messages={msgset()}
+        streaming={false}
+        models={MODELS}
+        model="hermes"
+        useAgent
+        scrollRef={createRef<HTMLDivElement>()}
+        conversationKey="k"
+        searchSignal={1}
+      />,
+    );
+    await waitFor(() => expect(screen.queryByLabelText('Posisi navigasi tandai')).not.toBeInTheDocument());
+    expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+  });
+});
