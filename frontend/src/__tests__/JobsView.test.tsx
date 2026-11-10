@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { JobsView } from '../components/JobsView';
-import type { Opportunity } from '../jobsApi';
+import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 // Control useJobs from the test instead of exercising the real fetch path —
 // JobsView only renders the hook result, so a mocked hook keeps every state
@@ -200,5 +200,72 @@ describe('JobsView filter controls (pixel icon + micro-interaction)', () => {
 
     fireEvent.click(toggle); // expand again
     expect(chevronClass()).toContain('rotate-180');
+  });
+});
+
+describe('JobsView filter tablist keyboard navigation', () => {
+  const pills = (container: HTMLElement, label: string) =>
+    Array.from(
+      container.querySelectorAll(`div[aria-label="${label}"] button[role="tab"]`),
+    );
+
+  it('keeps only the selected tab in the tab order per group (roving tabindex)', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+    const type = pills(container, 'Filter posisi');
+    expect(type.length).toBe(4); // Semua + FTE + Kontrak + Part-time
+    expect(type[0].getAttribute('tabindex')).toBe('0');
+    for (let i = 1; i < type.length; i++) expect(type[i].getAttribute('tabindex')).toBe('-1');
+
+    const status = pills(container, 'Filter status');
+    expect(status[0].getAttribute('tabindex')).toBe('0'); // Semua
+    for (let i = 1; i < status.length; i++) expect(status[i].getAttribute('tabindex')).toBe('-1');
+
+    const tier = pills(container, 'Filter prioritas');
+    expect(tier[0].getAttribute('tabindex')).toBe('0');
+  });
+
+  it('ArrowRight selects and focuses the next type-filter pill', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+    const list = container.querySelector('div[aria-label="Filter posisi"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
+    const type = pills(container, 'Filter posisi');
+    expect(type[1].getAttribute('aria-selected')).toBe('true');
+    expect(type[1].getAttribute('tabindex')).toBe('0');
+    expect(type[0].getAttribute('tabindex')).toBe('-1');
+    expect(document.activeElement).toBe(type[1]);
+  });
+
+  it('ArrowLeft wraps from the first pill to the last', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+    const list = container.querySelector('div[aria-label="Filter posisi"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowLeft' });
+    const type = pills(container, 'Filter posisi');
+    expect(type[type.length - 1].getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(type[type.length - 1]);
+  });
+
+  it('Home/End jump to the first/last tier pill', () => {
+    mockState();
+    const { container } = render(<JobsView />);
+    const list = container.querySelector('div[aria-label="Filter prioritas"]')!;
+    fireEvent.keyDown(list, { key: 'End' });
+    const tier = pills(container, 'Filter prioritas');
+    expect(tier[tier.length - 1].getAttribute('aria-selected')).toBe('true');
+    fireEvent.keyDown(list, { key: 'Home' });
+    expect(pills(container, 'Filter prioritas')[0].getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('status group arrows call the status setter for the next status and move focus', () => {
+    const setStatusFilter = vi.fn();
+    mockState({ setStatusFilter });
+    const { container } = render(<JobsView />);
+    const list = container.querySelector('div[aria-label="Filter status"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
+    expect(setStatusFilter).toHaveBeenCalledWith(OPPORTUNITY_STATUSES[0]);
+    const status = pills(container, 'Filter status');
+    expect(document.activeElement).toBe(status[1]);
   });
 });

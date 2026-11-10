@@ -1,8 +1,25 @@
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 import { useJobs } from '../hooks/useJobs';
 import { ScanLoader } from './ScanLoader';
 import { AlertIcon } from './Icons';
+
+/**
+ * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
+ * currently selected key, return the tab index an arrow/Home/End key should move
+ * to. Returns -1 for non-navigation keys or an unknown current key (callers then
+ * bail without preventDefault, so Tab still works normally). Pure — no DOM/ref
+ * access, so each tablist handler applies the result against its own refs.
+ */
+function nextTabIndex(keys: readonly string[], current: string, key: string): number {
+  const idx = keys.indexOf(current);
+  if (idx < 0) return -1;
+  if (key === 'ArrowRight') return (idx + 1) % keys.length;
+  if (key === 'ArrowLeft') return (idx - 1 + keys.length) % keys.length;
+  if (key === 'Home') return 0;
+  if (key === 'End') return keys.length - 1;
+  return -1;
+}
 
 interface JobsViewProps {
   apiKey?: string;
@@ -79,6 +96,12 @@ const TIER_FILTERS: { key: TierKey | ''; label: string }[] = [
   { key: 'medium', label: 'Standar' },
 ];
 
+// Ordered keys per filter tablist, for the WAI-ARIA roving-tabindex nav
+// (nextTabIndex + the per-group handlers below).
+const TYPE_FILTER_KEYS = TYPE_FILTERS.map((f) => f.key);
+const STATUS_FILTER_KEYS = ['', ...OPPORTUNITY_STATUSES];
+const TIER_FILTER_KEYS = TIER_FILTERS.map((f) => f.key);
+
 function statusTone(status: string): string {
   switch (status) {
     case 'new': return 'bg-chill-accent/15 text-chill-accent border-chill-accent/40';
@@ -98,6 +121,38 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
   const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
+
+  // Roving-tabindex refs for the three filter tablists (type/status/tier).
+  // Only the selected tab in each list is in the tab order; arrow keys move
+  // focus + selection (WAI-ARIA tabs pattern, same as the view-switcher).
+  const typeTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const statusTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const tierTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Keyboard-navigation handlers (roving tabindex) built in the component body —
+  // refs are referenced here, not in JSX, so the tablist elements only receive a
+  // stable handler reference.
+  const handleTypeKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const next = nextTabIndex(TYPE_FILTER_KEYS, typeFilter, e.key);
+    if (next < 0) return;
+    e.preventDefault();
+    setTypeFilter(TYPE_FILTER_KEYS[next]);
+    typeTabRefs.current[next]?.focus();
+  };
+  const handleStatusKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const next = nextTabIndex(STATUS_FILTER_KEYS, statusFilter, e.key);
+    if (next < 0) return;
+    e.preventDefault();
+    setStatusFilter(STATUS_FILTER_KEYS[next]);
+    statusTabRefs.current[next]?.focus();
+  };
+  const handleTierKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const next = nextTabIndex(TIER_FILTER_KEYS, tierFilter, e.key);
+    if (next < 0) return;
+    e.preventDefault();
+    setTierFilter(TIER_FILTER_KEYS[next]);
+    tierTabRefs.current[next]?.focus();
+  };
 
   // Today's date, captured once per mount. Computing `new Date()` during render
   // trips oxlint react(purity); freezing it lazily also keeps the follow-up
@@ -224,13 +279,15 @@ export function JobsView({ apiKey }: JobsViewProps) {
         <div id="jobs-filters" className="pixel-reveal">
       {/* Position / type filter (buttons) */}
       <div className="px-4 pb-2">
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter posisi">
-          {TYPE_FILTERS.map((f) => (
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter posisi" onKeyDown={handleTypeKeyDown}>
+          {TYPE_FILTERS.map((f, i) => (
             <button
               key={f.key}
               type="button"
               role="tab"
               aria-selected={typeFilter === f.key}
+              tabIndex={typeFilter === f.key ? 0 : -1}
+              ref={(el) => { typeTabRefs.current[i] = el; }}
               onClick={() => setTypeFilter(typeFilter === f.key ? '' : f.key)}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 typeFilter === f.key
@@ -246,11 +303,13 @@ export function JobsView({ apiKey }: JobsViewProps) {
 
       {/* Pipeline filter */}
       <div className="px-4 pb-2">
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter status">
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter status" onKeyDown={handleStatusKeyDown}>
           <button
             type="button"
             role="tab"
             aria-selected={statusFilter === ''}
+            tabIndex={statusFilter === '' ? 0 : -1}
+            ref={(el) => { statusTabRefs.current[0] = el; }}
             onClick={() => setStatusFilter('')}
             className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
               statusFilter === ''
@@ -260,12 +319,14 @@ export function JobsView({ apiKey }: JobsViewProps) {
           >
             Semua ({opportunities.filter((o) => typeFilter === '' || groupOf(o) === typeFilter).length})
           </button>
-          {OPPORTUNITY_STATUSES.map((s) => (
+          {OPPORTUNITY_STATUSES.map((s, i) => (
             <button
               key={s}
               type="button"
               role="tab"
               aria-selected={statusFilter === s}
+              tabIndex={statusFilter === s ? 0 : -1}
+              ref={(el) => { statusTabRefs.current[i + 1] = el; }}
               onClick={() => setStatusFilter(statusFilter === s ? '' : s)}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 statusFilter === s
@@ -281,13 +342,15 @@ export function JobsView({ apiKey }: JobsViewProps) {
 
       {/* Prioritas filter */}
       <div className="px-4 pb-2">
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter prioritas">
-          {TIER_FILTERS.map((f) => (
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter prioritas" onKeyDown={handleTierKeyDown}>
+          {TIER_FILTERS.map((f, i) => (
             <button
               key={f.key || 'semua'}
               type="button"
               role="tab"
               aria-selected={tierFilter === f.key}
+              tabIndex={tierFilter === f.key ? 0 : -1}
+              ref={(el) => { tierTabRefs.current[i] = el; }}
               onClick={() => setTierFilter(tierFilter === f.key ? '' : f.key)}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 tierFilter === f.key
