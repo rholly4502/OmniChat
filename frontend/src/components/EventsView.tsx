@@ -1,7 +1,24 @@
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import type { PromoEvent } from '../eventsApi';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
+
+/**
+ * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
+ * currently selected key, return the tab index an arrow/Home/End key should move
+ * to. Returns -1 for non-navigation keys or an unknown current key (callers then
+ * bail without preventDefault, so Tab still works normally). Pure — no DOM/ref
+ * access, so the tablist handler applies the result against its own refs.
+ */
+function nextTabIndex(keys: readonly string[], current: string, key: string): number {
+  const idx = keys.indexOf(current);
+  if (idx < 0) return -1;
+  if (key === 'ArrowRight') return (idx + 1) % keys.length;
+  if (key === 'ArrowLeft') return (idx - 1 + keys.length) % keys.length;
+  if (key === 'Home') return 0;
+  if (key === 'End') return keys.length - 1;
+  return -1;
+}
 
 interface EventsViewProps {
   apiKey?: string;
@@ -24,6 +41,20 @@ export function EventsView({ apiKey }: EventsViewProps) {
   const [open, setOpen] = useState(true);
 
   const apps = appList(events);
+  // Filter pills are `Semua` (empty key) + one per app; order is the render order.
+  const appKeys = ['', ...apps];
+  const appTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Keyboard-navigation handler (roving tabindex) built in the component body —
+  // refs are referenced here, not in JSX, so the tablist only receives a stable
+  // handler reference.
+  const handleAppKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const next = nextTabIndex(appKeys, appFilter, e.key);
+    if (next < 0) return;
+    e.preventDefault();
+    setAppFilter(appKeys[next]);
+    appTabRefs.current[next]?.focus();
+  };
   const filtered = appFilter ? events.filter((e) => e.aplikasi === appFilter) : events;
   const groups = [...new Set(filtered.map((e) => e.aplikasi))].sort(
     (a, b) => (filtered.filter((e) => e.aplikasi === b).length) - (filtered.filter((e) => e.aplikasi === a).length),
@@ -66,11 +97,13 @@ export function EventsView({ apiKey }: EventsViewProps) {
 
       {open && (
         <div id="events-filters" className="px-4 pb-2 pixel-reveal">
-          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter aplikasi">
+          <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Filter aplikasi" onKeyDown={handleAppKeyDown}>
             <button
               type="button"
               role="tab"
               aria-selected={appFilter === ''}
+              tabIndex={appFilter === '' ? 0 : -1}
+              ref={(el) => { appTabRefs.current[0] = el; }}
               onClick={() => setAppFilter('')}
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 appFilter === ''
@@ -80,12 +113,14 @@ export function EventsView({ apiKey }: EventsViewProps) {
             >
               Semua ({events.length})
             </button>
-            {apps.map((a) => (
+            {apps.map((a, i) => (
               <button
                 key={a}
                 type="button"
                 role="tab"
                 aria-selected={appFilter === a}
+                tabIndex={appFilter === a ? 0 : -1}
+                ref={(el) => { appTabRefs.current[i + 1] = el; }}
                 onClick={() => setAppFilter(appFilter === a ? '' : a)}
                 className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                   appFilter === a

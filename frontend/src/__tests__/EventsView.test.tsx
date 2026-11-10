@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
 import type { PromoEvent } from '../eventsApi';
 
@@ -106,5 +106,78 @@ describe('EventsView', () => {
     expect(status.textContent).toContain('Memuat event');
     expect(status.querySelector('.pixel-scan')).toBeTruthy();
     expect(status.querySelector('.pixel-blink')).toBeNull();
+  });
+});
+
+describe('EventsView filter tablist keyboard navigation', () => {
+  const pills = (container: HTMLElement) =>
+    Array.from(
+      container.querySelectorAll('div[aria-label="Filter aplikasi"] button[role="tab"]'),
+    );
+
+  it('keeps only the selected tab in the tab order (roving tabindex)', () => {
+    mockState();
+    const { container } = render(<EventsView />);
+    const tabs = pills(container);
+    expect(tabs.length).toBe(3); // Semua + Gojek + Grab (both count 1, alpha order)
+    expect(tabs[0].getAttribute('tabindex')).toBe('0'); // Semua selected by default
+    for (let i = 1; i < tabs.length; i++) {
+      expect(tabs[i].getAttribute('tabindex')).toBe('-1');
+    }
+  });
+
+  it('ArrowRight selects and focuses the next app-filter pill', () => {
+    const setAppFilter = vi.fn();
+    mockState({ setAppFilter });
+    const { container } = render(<EventsView />);
+    const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
+    expect(setAppFilter).toHaveBeenCalledWith('Gojek'); // first app (alpha)
+    const tabs = pills(container);
+    expect(document.activeElement).toBe(tabs[1]);
+  });
+
+  it('ArrowLeft wraps from the first pill (Semua) to the last', () => {
+    const setAppFilter = vi.fn();
+    mockState({ setAppFilter });
+    const { container } = render(<EventsView />);
+    const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowLeft' });
+    expect(setAppFilter).toHaveBeenCalledWith('Grab'); // last app (alpha)
+    const tabs = pills(container);
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+  });
+
+  it('Home/End jump to the first/last pill', () => {
+    const setAppFilter = vi.fn();
+    mockState({ appFilter: 'Grab', setAppFilter });
+    const { container } = render(<EventsView />);
+    const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
+    fireEvent.keyDown(list, { key: 'Home' });
+    expect(setAppFilter).toHaveBeenLastCalledWith('');
+    fireEvent.keyDown(list, { key: 'End' });
+    expect(setAppFilter).toHaveBeenLastCalledWith('Grab');
+    const tabs = pills(container);
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]);
+  });
+
+  it('ArrowRight on the last pill wraps to Semua and moves focus', () => {
+    const setAppFilter = vi.fn();
+    mockState({ appFilter: 'Grab', setAppFilter });
+    const { container } = render(<EventsView />);
+    const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
+    fireEvent.keyDown(list, { key: 'ArrowRight' });
+    expect(setAppFilter).toHaveBeenCalledWith('');
+    const tabs = pills(container);
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it('non-navigation keys do not call the setter (Tab still works)', () => {
+    const setAppFilter = vi.fn();
+    mockState({ setAppFilter });
+    const { container } = render(<EventsView />);
+    const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
+    fireEvent.keyDown(list, { key: 'Tab' });
+    expect(setAppFilter).not.toHaveBeenCalled();
   });
 });
