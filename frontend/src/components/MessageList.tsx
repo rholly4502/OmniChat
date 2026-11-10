@@ -567,7 +567,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                   key={sg.id}
                   type="button"
                   onClick={() => onSelectSuggestion(sg.prompt)}
-                  className="rounded-none border-2 border-chill-border bg-chill-surface px-3 py-2 text-xs text-chill-text hover:border-chill-accent hover:text-chill-accent active:bg-chill-elevated transition min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  className="rounded-none border-2 border-chill-border bg-chill-surface px-3 py-2 text-xs text-chill-text hover:border-chill-accent hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none transition min-h-[44px] pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   data-testid={`suggestion-${sg.id}`}
                 >
                   {sg.label}
