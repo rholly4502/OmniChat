@@ -641,8 +641,8 @@ describe('Sidebar', () => {
     // Chat is the active tab (selected-state branch); Pengeluaran is inactive, so
     // it is the one that must expose the un-selected hover/press surface.
     const expensesTab = screen.getByRole('tab', { name: 'Pengeluaran' });
-    expect(expensesTab.className).toContain('hover:bg-chill-surface');
-    expect(expensesTab.className).toContain('active:bg-chill-surface');
+    expect(expensesTab.className).toContain('hover:bg-chill-elevated');
+    expect(expensesTab.className).toContain('active:bg-chill-elevated');
     expect(expensesTab.className).toContain('active:translate-y-[2px]');
     const chatTab = screen.getByRole('tab', { name: 'Chat' });
     expect(chatTab.className).toContain('pixel-shadow-sm');

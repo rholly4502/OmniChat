@@ -290,7 +290,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'chat'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
-              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent active:translate-y-[2px] border-transparent'
+              : 'text-chill-muted hover:bg-chill-elevated hover:text-chill-accent active:bg-chill-elevated active:text-chill-accent active:translate-y-[2px] border-transparent'
           }`}
         >
           Chat
@@ -305,7 +305,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'expenses'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
-              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent active:translate-y-[2px] border-transparent'
+              : 'text-chill-muted hover:bg-chill-elevated hover:text-chill-accent active:bg-chill-elevated active:text-chill-accent active:translate-y-[2px] border-transparent'
           }`}
         >
           Pengeluaran
@@ -320,7 +320,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'jobs'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
-              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent active:translate-y-[2px] border-transparent'
+              : 'text-chill-muted hover:bg-chill-elevated hover:text-chill-accent active:bg-chill-elevated active:text-chill-accent active:translate-y-[2px] border-transparent'
           }`}
         >
           Lowongan
@@ -335,7 +335,7 @@ export function Sidebar({
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'events'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
-              : 'text-chill-muted hover:bg-chill-surface hover:text-chill-accent active:bg-chill-surface active:text-chill-accent active:translate-y-[2px] border-transparent'
+              : 'text-chill-muted hover:bg-chill-elevated hover:text-chill-accent active:bg-chill-elevated active:text-chill-accent active:translate-y-[2px] border-transparent'
           }`}
         >
           Event
