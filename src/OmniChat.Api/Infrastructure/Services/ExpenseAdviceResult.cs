@@ -10,7 +10,8 @@ public sealed record CategoryTrendItem(
 
 /// <summary>End-of-month spend projection from the run-rate so far.</summary>
 public sealed record Projection(
-    long SpentSoFar, int DaysElapsed, int DaysInMonth, long ProjectedTotal, long Anggaran, long ProjectedOver);
+    long SpentSoFar, int DaysElapsed, int DaysInMonth, long ProjectedTotal, long Anggaran, long ProjectedOver,
+    long FixedCommitted, long Discretionary);
 
 /// <summary>One PC-goal part and its price.</summary>
 public sealed record PartItem(string Name, long Price);

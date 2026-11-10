@@ -178,7 +178,7 @@ public sealed class ExpenseAdviceService(
             overBy,
             suggestions,
             categoryTrend,
-            new Projection(total, daysElapsed, daysInMonth, projectedTotal, anggaran, projectedOver),
+            new Projection(total, daysElapsed, daysInMonth, projectedTotal, anggaran, projectedOver, fixedCommitted, discretionary),
             pace,
             new PcGoal(
                 [
