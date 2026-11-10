@@ -27,7 +27,7 @@ import { ExpensesView } from './components/ExpensesView';
 import { JobsView } from './components/JobsView';
 import { EventsView } from './components/EventsView';
 import { describeApiError } from './errors';
-import { buildConversationMarkdown } from './conversationExport';
+import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat } from './conversationExport';
 import type { TokenUsage } from './types';
 import { DEFAULT_MODEL, CHILL_SYSTEM_PROMPT } from './constants';
 
@@ -160,6 +160,28 @@ export default function App() {
   const copyGuestTranscript = () => {
     const md = buildConversationMarkdown(messages);
     void navigator.clipboard?.writeText(md);
+  };
+
+  /** Download the ephemeral guest conversation as a file (PDF/CSV/JSON/Markdown). */
+  const exportGuestConversation = (format: ConversationExportFormat) => {
+    const md = safeFilenameSlug('Percakapan');
+    const meta = { model, mode: 'direct' as const, promptTokens: usage?.promptTokens, completionTokens: usage?.completionTokens };
+    if (format === 'json') {
+      const blob = new Blob([buildConversationJson(messages, 'Percakapan', meta)], { type: 'application/json;charset=utf-8' });
+      downloadBlob(blob, `${md}.json`);
+      return;
+    }
+    if (format === 'csv') {
+      const blob = new Blob(['\uFEFF' + buildConversationCsv(messages, meta)], { type: 'text/csv;charset=utf-8' });
+      downloadBlob(blob, `${md}.csv`);
+      return;
+    }
+    if (format === 'pdf') {
+      void buildConversationPdf(messages, 'Percakapan', meta).then((blob) => downloadBlob(blob, `${md}.pdf`));
+      return;
+    }
+    const blob = new Blob([buildConversationMarkdown(messages, 'Percakapan', meta)], { type: 'text/markdown;charset=utf-8' });
+    downloadBlob(blob, `${md}.md`);
   };
 
   // Sync message state to active session
@@ -327,7 +349,7 @@ export default function App() {
       <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}>
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
         <main className="flex-1 flex flex-col min-w-0">
-          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} onOpenShortcuts={() => setShortcutsOpen(true)} chillMode={settings.chillMode} onCopyTranscript={copyGuestTranscript} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
+          <MobileTopBar isGuest onLogout={logout} useAgent={false} usage={usage} streamingEstimate={streamingEstimate} model={model} modelLabel={catalog.direct.find((m) => m.id === model)?.label} models={catalog.direct} onModelChange={setModel} onOpenShortcuts={() => setShortcutsOpen(true)} chillMode={settings.chillMode} onCopyTranscript={copyGuestTranscript} onExport={exportGuestConversation} streaming={streaming} status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined} />
           <MessageList
             messages={messages}
             streaming={streaming}

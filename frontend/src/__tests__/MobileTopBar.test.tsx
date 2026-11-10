@@ -399,3 +399,38 @@ describe('MobileTopBar guest copy-transcript', () => {
     expect(screen.queryByRole('button', { name: 'Salin percakapan' })).not.toBeInTheDocument();
   });
 });
+
+describe('MobileTopBar guest export menu', () => {
+  it('renders an export menu when a handler is provided', () => {
+    const onExport = vi.fn();
+    renderBar({ isGuest: true, onExport });
+    const btn = screen.getByRole('button', { name: 'Ekspor percakapan' });
+    expect(btn.className).toContain('min-h-[44px]');
+    fireEvent.click(btn);
+    expect(screen.getByRole('menu')).toBeInTheDocument();
+    // All four formats are offered.
+    expect(screen.getByRole('menuitem', { name: 'Markdown' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'JSON' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'CSV' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'PDF' })).toBeInTheDocument();
+  });
+
+  it('invokes the handler with the chosen format and closes the menu', () => {
+    const onExport = vi.fn();
+    renderBar({ isGuest: true, onExport });
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor percakapan' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'CSV' }));
+    expect(onExport).toHaveBeenCalledExactlyOnceWith('csv');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+  });
+
+  it('omits the export menu without a handler', () => {
+    renderBar({ isGuest: true });
+    expect(screen.queryByRole('button', { name: 'Ekspor percakapan' })).not.toBeInTheDocument();
+  });
+
+  it('admin variant never renders the guest export menu', () => {
+    renderBar({ onExport: vi.fn() });
+    expect(screen.queryByRole('button', { name: 'Ekspor percakapan' })).not.toBeInTheDocument();
+  });
+});

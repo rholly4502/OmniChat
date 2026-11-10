@@ -1,8 +1,9 @@
-import { useState, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { BotIcon, BoltIcon, ChillIcon } from './Icons';
 import { TypingIndicator } from './TypingIndicator';
 import { estimateUsd, formatTokens, formatUsd } from '../tokenCost';
 import type { ModelOption, TokenUsage } from '../types';
+import { EXPORT_FORMAT_LABELS, type ConversationExportFormat } from '../conversationExport';
 
 /** Props accepted by {@link MobileTopBar}. */
 export interface MobileTopBarProps {
@@ -20,6 +21,11 @@ export interface MobileTopBarProps {
   onLogout?: () => void;
   /** Copy the current (ephemeral) conversation transcript to the clipboard. Guest only. */
   onCopyTranscript?: () => void;
+  /**
+   * Download the current (ephemeral) conversation in the given format. Guest only.
+   * When absent the export menu is hidden (only copy-to-clipboard remains).
+   */
+  onExport?: (format: ConversationExportFormat) => void;
   /** Cumulative token usage for the active conversation (server base + live). */
   usage?: TokenUsage;
   /**
@@ -76,8 +82,21 @@ export interface MobileTopBarProps {
  * The safe-area top padding keeps the bar clear of an iPhone notch, and the
  * button carries `min-w-[44px] min-h-[44px]` so it stays a valid touch target.
  */
-export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, onCopyTranscript, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenAudit, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
+export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonRef, isGuest, onLogout, onCopyTranscript, onExport, usage, model, modelLabel, models, onModelChange, activeView, chillMode, onOpenStats, onOpenAudit, onOpenShortcuts, title, streamingEstimate = 0, streaming = false, status }: MobileTopBarProps) {
   const [copied, setCopied] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement | null>(null);
+  // Close the export format menu on outside click or Escape (guest parity with ChatHeader).
+  useEffect(() => {
+    if (!exportOpen) return;
+    const close = (e: MouseEvent | KeyboardEvent) => {
+      if (e instanceof KeyboardEvent && e.key === 'Escape') { setExportOpen(false); return; }
+      if (exportMenuRef.current && !exportMenuRef.current.contains(e.target as Node)) setExportOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', close);
+    return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', close); };
+  }, [exportOpen]);
   const total = (usage?.promptTokens ?? 0) + (usage?.completionTokens ?? 0) + streamingEstimate;
   const estimate = total > 0 && model ? formatUsd(estimateUsd({ promptTokens: usage?.promptTokens ?? 0, completionTokens: (usage?.completionTokens ?? 0) + streamingEstimate }, model)) : '';
   const tokenLabel = total > 0 ? `${formatTokens(total)} token` : '';
@@ -162,6 +181,40 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
             )}
           </button>
+        )}
+        {onExport && (
+          <div className="relative inline-flex" ref={exportMenuRef}>
+            <button
+              type="button"
+              onClick={() => setExportOpen((o) => !o)}
+              aria-label="Ekspor percakapan"
+              aria-haspopup="menu"
+              aria-expanded={exportOpen}
+              title="Ekspor percakapan"
+              className="rounded-none inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+            </button>
+            {exportOpen && (
+              <div
+                role="menu"
+                aria-label="Format ekspor"
+                className="absolute right-0 top-full z-30 mt-1 w-40 bg-chill-elevated border-2 border-chill-border pixel-shadow pixel-reveal"
+              >
+                {(Object.keys(EXPORT_FORMAT_LABELS) as ConversationExportFormat[]).map((fmt) => (
+                  <button
+                    key={fmt}
+                    type="button"
+                    role="menuitem"
+                    onClick={() => { setExportOpen(false); onExport(fmt); }}
+                    className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  >
+                    {EXPORT_FORMAT_LABELS[fmt]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
         <button
           onClick={onLogout}
