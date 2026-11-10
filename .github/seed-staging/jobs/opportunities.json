@@ -562,5 +562,17 @@
     "catatan": "Employer terverifikasi (anak usaha Semen Indonesia). 1–3 thn, pas level. ASP.NET C#/.NET Core + SQL Server. Lokal Jakarta.",
     "status": "new",
     "ditemukan": "2026-11-10"
+  },
+  {
+    "id": "a0f1de2330",
+    "judul": "Fullstack Developer (C# .NET & RTC)",
+    "perusahaan": "Talenta IT (outsourcing, utk Sun Life)",
+    "lokasi": "South Jakarta (onsite)",
+    "tipe": "Kontrak (3-6 bln)",
+    "gaji": "±Rp10 jt/bulan (estimasi)",
+    "link": "https://talenta-it.com/proyek/217-fullstack-developer-c-net-rtc",
+    "catatan": "C#/.NET + SignalR/WebSocket + SQL Server; klien Sun Life (asuransi); kontrak 3-6 bln onsite Jakarta Selatan.",
+    "status": "new",
+    "ditemukan": "2026-11-10"
   }
 ]
