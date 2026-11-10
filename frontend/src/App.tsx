@@ -319,7 +319,10 @@ export default function App() {
   async function handleForkSession(id: string): Promise<boolean> {
     if (streaming) return false;
     const next = await forkSession(id);
-    if (next) loadMessages(next, null, { promptTokens: 0, completionTokens: 0 });
+    // A fork inherits the source's transcript, so seed the live usage counter
+    // with the copied turns' per-message usage — matching the sidebar row and
+    // the audit dialog rather than starting at zero.
+    if (next) loadMessages(next, null, sumMessageUsage(next));
     return next !== null;
   }
 

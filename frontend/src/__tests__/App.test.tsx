@@ -26,6 +26,7 @@ function setupFetchMock(opts?: {
   modelsOk?: boolean;
   modelsData?: unknown;
   conversations?: unknown[];
+  forkResult?: unknown;
 }) {
   const fetchMock = vi.fn().mockImplementation((url: string | URL) => {
     const urlStr = String(url);
@@ -42,6 +43,11 @@ function setupFetchMock(opts?: {
         status: 200,
         json: () => Promise.resolve(opts?.modelsData ?? MOCK_CATALOG),
       });
+    }
+    if (urlStr.includes('/fork')) {
+      if (opts?.forkResult && opts?.forkResult !== undefined) {
+        return Promise.resolve({ ok: true, status: 201, json: () => Promise.resolve(opts.forkResult) });
+      }
     }
     if (urlStr.includes('/api/conversations')) {
       const idMatch = urlStr.match(/\/api\/conversations\/([0-9a-f-]+)$/);
@@ -611,6 +617,48 @@ describe('App', () => {
 
     const select = (await screen.findByRole('combobox', { name: /^Model$/ })) as HTMLSelectElement;
     expect(select.value).toBe('test-agent');
+  });
+
+  it('fork seeds the live usage counter with the inherited transcript cost', async () => {
+    const conv = {
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      title: 'Deploy',
+      mode: 'agent',
+      model: 'test-agent',
+      createdAt: '2026-10-25T09:00:00+00:00',
+      updatedAt: '2026-10-25T10:00:00+00:00',
+      isPinned: false,
+      promptTokens: 40,
+      completionTokens: 20,
+      totalTokens: 60,
+      messages: [
+        { id: 'm1', role: 'user', content: 'halo', createdAt: '2026-10-25T09:00:00+00:00' },
+        { id: 'm2', role: 'assistant', content: 'hai', promptTokens: 40, completionTokens: 20, model: 'test-agent', createdAt: '2026-10-25T09:01:00+00:00' },
+      ],
+    };
+    const forked = {
+      ...conv,
+      id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+      title: 'Salinan dari Deploy',
+      isPinned: false,
+    };
+    setupFetchMock({ conversations: [conv], forkResult: forked });
+    render(<App />);
+
+    // Open the conversation first so its transcript is cached (the fork button
+    // only appears on server conversations that have messages).
+    await screen.findByText('Deploy');
+    fireEvent.click(screen.getByTitle('Deploy'));
+    const forkBtn = await screen.findByLabelText('Duplikat Deploy');
+    fireEvent.click(forkBtn);
+
+    // A fork inherits the source transcript, so the live usage counter should be
+    // seeded with the copied turns' per-message usage (40 + 20 = 60 tokens),
+    // not reset to zero.
+    await waitFor(() => {
+      const labels = screen.getAllByLabelText(/Penggunaan token: /);
+      expect(labels.some((el) => el.getAttribute('aria-label')!.includes('60 token'))).toBe(true);
+    });
   });
 
 });
