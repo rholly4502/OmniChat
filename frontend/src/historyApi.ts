@@ -93,6 +93,19 @@ export async function getConversation(
   return (await res.json()) as ConversationDetail;
 }
 
+/**
+ * Duplicate a conversation into a fresh, independent thread with the same
+ * transcript (unpinned, unarchived, feedback/bookmarks reset). Returns the
+ * forked conversation with its full transcript, ready to be opened.
+ */
+export async function forkConversation(
+  id: string,
+  options: HistoryRequestOptions = {},
+): Promise<ConversationDetail> {
+  const res = await request(`${CONVERSATIONS_URL}/${id}/fork`, { method: 'POST' }, options);
+  return (await res.json()) as ConversationDetail;
+}
+
 /** Delete a conversation and its messages. Resolves on 204. */
 export async function deleteConversation(
   id: string,

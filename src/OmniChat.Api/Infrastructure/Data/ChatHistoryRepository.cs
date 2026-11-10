@@ -542,6 +542,53 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         return true;
     }
 
+    public async Task<Conversation?> ForkConversationAsync(Guid id, string userId, CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        var source = await db.Conversations
+            .Include(c => c.Messages.OrderBy(m => m.CreatedAt))
+            .SingleOrDefaultAsync(c => c.Id == id && c.UserId == userId, cancellationToken);
+
+        if (source is null) return null;
+
+        var now = DateTimeOffset.UtcNow;
+        var copy = new Conversation
+        {
+            UserId = userId,
+            Title = $"Salinan dari {source.Title}",
+            Mode = source.Mode,
+            Model = source.Model,
+            CreatedAt = now,
+            UpdatedAt = now,
+            PromptTokens = source.PromptTokens,
+            CompletionTokens = source.CompletionTokens,
+        };
+
+        foreach (var message in source.Messages)
+        {
+            copy.Messages.Add(new Message
+            {
+                // A fork starts with the source's transcript, but the user's
+                // ratings/bookmarks belong to the source thread — a fresh copy
+                // begins unrated and unbookmarked.
+                Role = message.Role,
+                Content = message.Content,
+                Feedback = null,
+                IsBookmarked = false,
+                PromptTokens = message.PromptTokens,
+                CompletionTokens = message.CompletionTokens,
+                Model = message.Model,
+                Reasoning = message.Reasoning,
+                CreatedAt = message.CreatedAt,
+            });
+        }
+
+        db.Conversations.Add(copy);
+        await db.SaveChangesAsync(cancellationToken);
+        return copy;
+    }
+
     private static void RequireOwner(string userId)
     {
         if (string.IsNullOrWhiteSpace(userId))

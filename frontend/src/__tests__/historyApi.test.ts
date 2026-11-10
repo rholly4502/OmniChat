@@ -12,6 +12,7 @@ import {
   setMessageBookmark,
   archiveConversation,
   updateConversationSettings,
+  forkConversation,
 } from '../historyApi';
 import { ApiError } from '../api';
 
@@ -480,5 +481,30 @@ describe('updateConversationSettings', () => {
       `${CONVERSATIONS_URL}/${id}/settings`,
       expect.objectContaining({ headers: expect.objectContaining({ 'X-Api-Key': 'k' }) }),
     );
+  });
+});
+
+describe('forkConversation', () => {
+  it('POSTs to the fork path and returns the forked detail', async () => {
+    const forked = { ...SUMMARY, id: '22222222-2222-2222-2222-222222222222', title: 'Salinan dari Rencana deploy', messages: [] };
+    const fetchImpl = fetchReturning(jsonResponse(forked, { status: 201 }));
+
+    const detail = await forkConversation(SUMMARY.id, { fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/${SUMMARY.id}/fork`,
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(detail.id).toBe(forked.id);
+    expect(detail.title).toBe('Salinan dari Rencana deploy');
+  });
+
+  it('throws ApiError when the source is not owned', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 404 }));
+
+    const err = await forkConversation('missing', { fetchImpl }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(404);
   });
 });

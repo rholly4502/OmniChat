@@ -90,6 +90,7 @@ export default function App() {
     selectSession,
     deleteSession,
     deleteMessageFromActive,
+    forkSession,
     renameSession,
     pinSession,
     archiveSession,
@@ -314,6 +315,14 @@ export default function App() {
     return archiveSession(id, archived);
   }
 
+  /** Duplicate a stored conversation into a fresh thread and open the copy. */
+  async function handleForkSession(id: string): Promise<boolean> {
+    if (streaming) return false;
+    const next = await forkSession(id);
+    if (next) loadMessages(next, null, { promptTokens: 0, completionTokens: 0 });
+    return next !== null;
+  }
+
   /** Validate the draft, clear it, then hand the text to the chat hook. */
   async function send() {
     if (!input.trim() || streaming) return;
@@ -421,6 +430,7 @@ export default function App() {
         onRenameSession={handleRenameSession}
         onPinSession={handlePinSession}
         onArchiveSession={handleArchiveSession}
+        onForkSession={handleForkSession}
         showArchived={showArchived}
         onToggleShowArchived={() => setShowArchived((v) => !v)}
         onExportSession={exportSession}

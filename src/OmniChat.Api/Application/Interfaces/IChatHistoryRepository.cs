@@ -115,6 +115,19 @@ public interface IChatHistoryRepository
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Creates an independent copy of a conversation — a fresh thread with the same
+    /// transcript and per-message usage — so an experiment can branch from an
+    /// existing chat without mutating the original. The copy starts unpinned,
+    /// unarchived, and with a fresh title; per-message feedback and bookmarks are
+    /// reset (they belong to the source thread). Returns <c>null</c> when the
+    /// source does not exist or does not belong to <paramref name="userId"/>.
+    /// </summary>
+    Task<Conversation?> ForkConversationAsync(
+        Guid id,
+        string userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Accumulates upstream token usage onto a conversation. Returns <c>false</c> when the
     /// conversation does not exist or does not belong to <paramref name="userId"/>.
     /// </summary>

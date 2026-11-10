@@ -1122,3 +1122,44 @@ describe('Sidebar view-switcher keyboard navigation', () => {
     expect(onSelectView).not.toHaveBeenCalled();
   });
 });
+describe('Sidebar fork/duplicate', () => {
+  it('shows a duplicate button on server conversations with messages and fires it', () => {
+    const onForkSession = vi.fn().mockResolvedValue(true);
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onForkSession,
+    });
+
+    const fork = screen.getByLabelText('Duplikat Deploy');
+    fireEvent.click(fork);
+    expect(onForkSession).toHaveBeenCalledWith(A);
+  });
+
+  it('hides the duplicate button for a local draft', () => {
+    renderSidebar({
+      sessions: [{ id: 'draft_1', title: 'Obrolan Baru', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 'draft_1',
+      onForkSession: vi.fn(),
+    });
+
+    expect(screen.queryByLabelText('Duplikat Obrolan Baru')).not.toBeInTheDocument();
+  });
+
+  it('gives the duplicate button a focus-visible ring and a 44px hit area', () => {
+    const A = '11111111-1111-1111-1111-111111111111';
+    renderSidebar({
+      sessions: [{ id: A, title: 'Deploy', messages: ['x'], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: A,
+      onForkSession: vi.fn(),
+    });
+
+    const fork = screen.getByLabelText('Duplikat Deploy');
+    expect(fork.className).toContain('min-h-[44px]');
+    expect(fork.className).toContain('min-w-[44px]');
+    expect(fork.className).toContain('focus-visible:ring-2');
+    expect(fork.className).toContain('focus-visible:ring-chill-accent/60');
+  });
+
+});

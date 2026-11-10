@@ -801,4 +801,50 @@ public class ConversationsControllerTests
             r => r.DeleteMessageAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
+
+    [Fact]
+    public async Task Fork_Returns201_WithTheForkedConversation()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var id = Guid.CreateVersion7();
+        var forked = Conversation("Salinan dari Percakapan baru");
+
+        _repository
+            .Setup(r => r.ForkConversationAsync(id, ChatIdentity.AdminUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(forked);
+
+        var result = await controller.Fork(id, CancellationToken.None);
+
+        var created = Assert.IsType<ObjectResult>(result.Result);
+        Assert.Equal(StatusCodes.Status201Created, created.StatusCode);
+        var detail = Assert.IsAssignableFrom<ConversationDetail>(created.Value);
+        Assert.Equal("Salinan dari Percakapan baru", detail.Title);
+    }
+
+    [Fact]
+    public async Task Fork_Returns404_WhenTheSourceIsNotOwned()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+
+        _repository
+            .Setup(r => r.ForkConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Conversation?)null);
+
+        var result = await controller.Fork(Guid.CreateVersion7(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result.Result).StatusCode);
+    }
+
+    [Fact]
+    public async Task Fork_Returns404_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.Fork(Guid.CreateVersion7(), CancellationToken.None);
+
+        Assert.Equal(StatusCodes.Status404NotFound, Assert.IsType<ObjectResult>(result.Result).StatusCode);
+        _repository.Verify(
+            r => r.ForkConversationAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

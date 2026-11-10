@@ -933,4 +933,51 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
         Assert.Equal(0, summary.TotalUpFeedback);
         Assert.Equal(1, summary.TotalDownFeedback);
     }
+
+    [Fact]
+    public async Task ForkConversation_copies_transcript_into_a_fresh_thread()
+    {
+        var source = await _repository.CreateConversationAsync(NewConversation());
+        var userMsg = await _repository.AppendMessageAsync(source.Id, "admin", new Message { Role = "user", Content = "halo" });
+        var assistantMsg = await _repository.AppendMessageAsync(source.Id, "admin", new Message { Role = "assistant", Content = "jawaban", PromptTokens = 12, CompletionTokens = 8, Model = "hermes-default", Reasoning = "berpikir" });
+        await _repository.SetMessageFeedbackAsync(source.Id, assistantMsg.Id, "admin", MessageFeedback.Up);
+        await _repository.SetMessageBookmarkAsync(source.Id, assistantMsg.Id, "admin", true);
+
+        var forked = await _repository.ForkConversationAsync(source.Id, "admin");
+
+        Assert.NotNull(forked);
+        Assert.NotEqual(source.Id, forked!.Id);
+        Assert.Equal("Salinan dari Percakapan baru", forked.Title);
+        Assert.Equal("agent", forked.Mode);
+        Assert.Equal("hermes-default", forked.Model);
+        Assert.Equal("admin", forked.UserId);
+        Assert.False(forked.IsPinned);
+        Assert.False(forked.IsArchived);
+        Assert.Equal(2, forked.Messages.Count);
+
+        var ordered = forked.Messages.OrderBy(m => m.CreatedAt).ToList();
+        Assert.Equal("halo", ordered[0].Content);
+        Assert.Equal("jawaban", ordered[1].Content);
+        Assert.Equal(12, ordered[1].PromptTokens);
+        Assert.Equal(8, ordered[1].CompletionTokens);
+        Assert.Equal("hermes-default", ordered[1].Model);
+        Assert.Equal("berpikir", ordered[1].Reasoning);
+        // Feedback/bookmarks belong to the source thread — the copy starts clean.
+        Assert.Null(ordered[1].Feedback);
+        Assert.False(ordered[1].IsBookmarked);
+        // The source row is untouched.
+        var sourceStill = await _repository.GetConversationAsync(source.Id, "admin");
+        Assert.Equal(2, sourceStill!.Messages.Count);
+        Assert.Equal(MessageFeedback.Up, sourceStill.Messages.Single(m => m.Role == "assistant").Feedback);
+    }
+
+    [Fact]
+    public async Task ForkConversation_returns_null_when_source_is_owned_by_another_user()
+    {
+        var source = await _repository.CreateConversationAsync(NewConversation("admin"));
+
+        var forked = await _repository.ForkConversationAsync(source.Id, "guest");
+
+        Assert.Null(forked);
+    }
 }

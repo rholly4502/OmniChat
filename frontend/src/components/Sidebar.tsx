@@ -80,6 +80,8 @@ export interface SidebarProps {
   onPinSession?: (id: string, pinned: boolean) => Promise<boolean>;
   /** Archive/unarchive a server conversation. */
   onArchiveSession?: (id: string, archived: boolean) => Promise<boolean>;
+  /** Duplicate a server conversation into a fresh thread. */
+  onForkSession?: (id: string) => void | Promise<boolean>;
   /** Show archived conversations in the history list. */
   showArchived?: boolean;
   /** Toggle the archived-conversation visibility. */
@@ -163,6 +165,7 @@ export function Sidebar({
   onRenameSession,
   onPinSession,
   onArchiveSession,
+  onForkSession,
   showArchived = false,
   onToggleShowArchived,
   onExportSession,
@@ -659,6 +662,20 @@ export function Sidebar({
                           <path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8" />
                           <line x1="10" y1="12" x2="14" y2="12" />
                         </svg>
+                      </button>
+                    )}
+                    {onForkSession && isServerConversation(s.id) && s.messages.length > 0 && (
+                      <button
+                        type="button"
+                        title="Duplikat sesi"
+                        aria-label={`Duplikat ${s.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void onForkSession?.(s.id);
+                        }}
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center hover:text-chill-accent active:bg-chill-elevated rounded-none transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M6 3h12" /><path d="M6 3v15l-3 3v-18h3" /><path d="M18 3v9l-3 3" /><path d="M6 12h12" /></svg>
                       </button>
                     )}
                     {onRenameSession && isServerConversation(s.id) && (

@@ -101,6 +101,38 @@ public sealed class ConversationsController : ControllerBase
     }
 
     /// <summary>
+    /// Duplicates a conversation into a fresh, independent thread with the same
+    /// transcript, so an experiment can branch from an existing chat without
+    /// mutating the original. The copy is unpinned/unarchived and its per-message
+    /// feedback/bookmarks are reset.
+    /// </summary>
+    /// <param name="id">Source conversation id.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="201">The forked conversation and its transcript.</response>
+    /// <response code="404">Unknown id, someone else's conversation, or a guest caller.</response>
+    [HttpPost("{id:guid}/fork")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ConversationDetail>> Fork(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        var forked = await _repository.ForkConversationAsync(id, owner, cancellationToken);
+        if (forked is null)
+        {
+            return ConversationNotFound(id);
+        }
+
+        return StatusCode(StatusCodes.Status201Created, ConversationDetail.From(forked));
+    }
+
+    /// <summary>
     /// Aggregates the caller's token usage across every stored conversation. An admin
     /// uses this as the usage/audit overview; a guest gets the empty shape (200), so the
     /// frontend can render the same panel in both states without a branch.

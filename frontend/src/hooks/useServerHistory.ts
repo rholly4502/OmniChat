@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ChatSession, ConversationUsageSummary, Message } from '../types';
-import { archiveConversation, deleteConversation, deleteMessage, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings } from '../historyApi';
+import { archiveConversation, deleteConversation, deleteMessage, getConversation, getConversationUsage, listConversations, pinConversation, renameConversation, updateConversationSettings, forkConversation } from '../historyApi';
 import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat, type ConversationExportMeta } from '../conversationExport';
 
 /** Title every conversation carries until the server derives one from the first prompt. */
@@ -52,6 +52,8 @@ export interface ServerHistoryOptions {
   deleteImpl?: typeof deleteConversation;
   /** Injected for tests; default to the real client. */
   deleteMessageImpl?: typeof deleteMessage;
+  /** Injected for tests; default to the real client. */
+  forkImpl?: typeof forkConversation;
   renameImpl?: typeof renameConversation;
   pinImpl?: typeof pinConversation;
   /** Injected for tests; default to the real client. */
@@ -76,6 +78,8 @@ export interface ServerHistoryResult {
   deleteSession: (id: string) => Promise<Message[] | null>;
   /** Delete `messageId` from the active server conversation (and everything newer). */
   deleteMessageFromActive: (messageId: string) => Promise<Message[] | null>;
+  /** Duplicate `id` into a fresh thread and make the copy active. */
+  forkSession: (id: string) => Promise<Message[] | null>;
   /** Rename `id`; resolves true when the server accepted the new title. */
   renameSession: (id: string, title: string) => Promise<boolean>;
   /** Pin/unpin `id`; resolves true when the server applied the state. */
@@ -123,7 +127,7 @@ function sortSessions(sessions: ChatSession[]): ChatSession[] {
 }
 
 export function useServerHistory(options: ServerHistoryOptions): ServerHistoryResult {
-  const { apiKey, search, modelFilter, modeFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl } = options;
+  const { apiKey, search, modelFilter, modeFilter, dateFrom, dateTo, listDebounceMs = 300, listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl, forkImpl } = options;
   // Starts at 2: `draft_1` is the initial state below, and reusing that id
   // would make a brand-new chat collide with the one it replaces.
   const nextDraftId = useRef(2);
@@ -146,10 +150,10 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   // Injected clients are held in a ref so an inline arrow function (a new
   // identity on every render) cannot retrigger the fetch effect forever.
-  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl });
+  const impls = useRef({ list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl, fork: forkImpl });
   useEffect(() => {
-    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl };
-  }, [listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl]);
+    impls.current = { list: listImpl, get: getImpl, remove: deleteImpl, rename: renameImpl, pin: pinImpl, archive: archiveImpl, update: updateImpl, usage: usageImpl, deleteMessage: deleteMessageImpl, fork: forkImpl };
+  }, [listImpl, getImpl, deleteImpl, deleteMessageImpl, renameImpl, pinImpl, archiveImpl, updateImpl, usageImpl, forkImpl]);
 
   /**
    * The id the UI should treat as active. Derived rather than corrected in an
@@ -398,6 +402,56 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     [apiKey],
   );
 
+  /** Duplicate `id` into a fresh thread and make the copy active. */
+  const forkSession = useCallback(
+    async (id: string): Promise<Message[] | null> => {
+      if (!isServerConversation(id)) return null;
+
+      const fork = impls.current.fork ?? forkConversation;
+      let detail;
+      try {
+        detail = await fork(id, { apiKey: apiKey || undefined });
+      } catch {
+        // The server still holds the source; the sidebar row is left untouched.
+        return null;
+      }
+
+      const messages: Message[] = detail.messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        id: m.id,
+        feedback: m.feedback,
+        createdAt: Date.parse(m.createdAt) || undefined,
+        usage: m.promptTokens || m.completionTokens
+          ? { promptTokens: m.promptTokens ?? 0, completionTokens: m.completionTokens ?? 0 }
+          : undefined,
+        model: m.model,
+        reasoning: m.reasoning,
+      }));
+
+      const forked: ChatSession = {
+        id: detail.id,
+        title: detail.title,
+        messages,
+        createdAt: Date.parse(detail.createdAt) || Date.now(),
+        updatedAt: Date.parse(detail.updatedAt) || Date.now(),
+        isPinned: false,
+        isArchived: false,
+        promptTokens: detail.promptTokens,
+        completionTokens: detail.completionTokens,
+        totalTokens: detail.totalTokens,
+        model: detail.model,
+        mode: detail.mode,
+        preview: messages[messages.length - 1]?.content,
+      };
+
+      setSessions((prev) => sortSessions([...prev, forked]));
+      setActiveSessionId(forked.id);
+      return messages;
+    },
+    [apiKey],
+  );
+
   const renameSession = useCallback(
     async (id: string, title: string): Promise<boolean> => {
       if (!isServerConversation(id)) return false;
@@ -604,6 +658,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
     selectSession,
     deleteSession,
     deleteMessageFromActive,
+    forkSession,
     renameSession,
     pinSession,
     archiveSession,

@@ -925,3 +925,46 @@ describe('useServerHistory', () => {
     // The user turn never carries reasoning.
     expect(list[0].reasoning).toBeUndefined();
   });
+
+describe('useServerHistory forkSession', () => {
+  it('duplicates a stored conversation, opens the copy, and loads its transcript', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const forkedId = '33333333-3333-3333-3333-333333333333';
+    const forkImpl = vi.fn().mockResolvedValue(
+      detail(forkedId, 'Salinan dari Deploy', ['halo', 'hai']),
+    );
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, forkImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let messages: unknown;
+    await act(async () => {
+      messages = await result.current.forkSession(A);
+    });
+
+    expect(forkImpl).toHaveBeenCalledWith(A, expect.objectContaining({ apiKey: 'k' }));
+    expect(result.current.activeSessionId).toBe(forkedId);
+    expect(result.current.sessions.map((s) => s.id)).toContain(forkedId);
+    const forked = result.current.sessions.find((s) => s.id === forkedId);
+    expect(forked?.title).toBe('Salinan dari Deploy');
+    expect(forked?.messages).toHaveLength(2);
+    expect((messages as Array<Record<string, unknown>>)[1]).toMatchObject({ role: 'assistant' });
+  });
+
+  it('keeps the source row and returns null when the server refuses', async () => {
+    const listImpl = vi.fn().mockResolvedValue([summary(A, 'Deploy')]);
+    const forkImpl = vi.fn().mockRejectedValue(new Error('404'));
+
+    const { result } = renderHook(() => useServerHistory(deps({ listImpl, forkImpl })));
+    await waitFor(() => expect(result.current.sessions).toHaveLength(2));
+
+    let next: unknown = 'unset';
+    await act(async () => {
+      next = await result.current.forkSession(A);
+    });
+
+    expect(next).toBeNull();
+    expect(result.current.sessions.map((s) => s.id)).toContain(A);
+    expect(result.current.activeSessionId).not.toBe(A);
+  });
+});
