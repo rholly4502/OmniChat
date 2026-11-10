@@ -1089,3 +1089,36 @@ describe('Sidebar history date grouping', () => {
     expect(screen.getByText('Biasa')).toBeInTheDocument();
   });
 });
+
+
+describe('Sidebar view-switcher keyboard navigation', () => {
+  it('keeps only the active tab in the tab order and moves selection with arrow/home/end keys', () => {
+    const onSelectView = vi.fn();
+    renderSidebar({ activeView: 'chat', onSelectView });
+
+    const tablist = screen.getByRole('tablist', { name: 'Pilih tampilan' });
+    const chat = screen.getByRole('tab', { name: 'Chat' });
+    const expenses = screen.getByRole('tab', { name: 'Pengeluaran' });
+
+    // Roving tabindex: only the selected tab is Tab-reachable.
+    expect(chat).toHaveAttribute('tabindex', '0');
+    expect(expenses).toHaveAttribute('tabindex', '-1');
+
+    fireEvent.keyDown(tablist, { key: 'ArrowRight' });
+    expect(onSelectView).toHaveBeenLastCalledWith('expenses');
+
+    fireEvent.keyDown(tablist, { key: 'ArrowLeft' });
+    expect(onSelectView).toHaveBeenLastCalledWith('events');
+
+    fireEvent.keyDown(tablist, { key: 'Home' });
+    expect(onSelectView).toHaveBeenLastCalledWith('chat');
+
+    fireEvent.keyDown(tablist, { key: 'End' });
+    expect(onSelectView).toHaveBeenLastCalledWith('events');
+
+    // A key that is not a navigation key does not select anything.
+    onSelectView.mockClear();
+    fireEvent.keyDown(tablist, { key: 'Enter' });
+    expect(onSelectView).not.toHaveBeenCalled();
+  });
+});
