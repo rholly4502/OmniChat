@@ -875,6 +875,51 @@ describe('MessageList in-transcript search', () => {
     expect(screen.getByText(/Token hemat/)).toBeInTheDocument();
   });
 
+  it('searches reasoning text in addition to visible content', () => {
+    const msgs: Message[] = [
+      { role: 'assistant', content: 'Jawaban singkat.', reasoning: 'Rencana token dibahas di sini.' },
+      { role: 'user', content: 'oke terima kasih' },
+    ];
+    renderList({ messages: msgs });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'rencana' } });
+    expect(screen.getByText('1 dari 1 pesan')).toBeInTheDocument();
+    const rows = [...screen.getByLabelText('Chat messages').querySelectorAll('[data-msg-index]')];
+    const active = rows
+      .filter((r) => r.getAttribute('data-active') === 'true')
+      .map((r) => Number(r.getAttribute('data-msg-index')));
+    expect(active).toEqual([0]);
+  });
+
+  it('shows a match-count chip on every matching bubble (both roles)', () => {
+    const { container } = renderList({ messages: msgset() });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    const chips = container.querySelectorAll('[data-testid="match-count"]');
+    expect(chips.length).toBe(3);
+    chips.forEach((c) => expect(c.textContent).toContain('1 hasil'));
+  });
+
+  it('counts multiple matches within a single message', () => {
+    const { container } = renderList({
+      messages: [{ role: 'assistant', content: 'Token A dan token B keduanya token.' }],
+    });
+    openSearch();
+    fireEvent.change(screen.getByLabelText('Cari pesan'), { target: { value: 'token' } });
+    const chip = container.querySelector('[data-testid="match-count"]');
+    expect(chip).not.toBeNull();
+    expect(chip!.textContent).toContain('3 hasil');
+  });
+
+  it('hides match-count chips unless the toolbar is open with a query', () => {
+    const { container } = renderList({ messages: msgset() });
+    // toolbar closed -> no chips
+    expect(container.querySelectorAll('[data-testid="match-count"]').length).toBe(0);
+    openSearch();
+    // toolbar open but query empty -> still no chips
+    expect(container.querySelectorAll('[data-testid="match-count"]').length).toBe(0);
+  });
+
   it('resets search state when the conversation key changes', async () => {
     const { rerender } = renderList({ messages: msgset(), conversationKey: 'conv-A' });
     openSearch();

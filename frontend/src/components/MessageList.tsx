@@ -214,11 +214,19 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
     const rows: { mi: number; count: number }[] = [];
     let total = 0;
     messages.forEach((msg, mi) => {
-      const c = (msg.content.toLowerCase().match(new RegExp(escapeRegExp(q), 'g')) || []).length;
+      const haystack = `${msg.content}\n${msg.reasoning ?? ''}`;
+      const c = (haystack.toLowerCase().match(new RegExp(escapeRegExp(q), 'g')) || []).length;
       if (c > 0) { rows.push({ mi, count: c }); total += c; }
     });
     return { rows, total };
   }, [messages, query]);
+
+  /** Per-message match counts keyed by message index (search toolbar only). */
+  const countByMessage = useMemo(() => {
+    const map: Record<number, number> = {};
+    for (const r of matchRefs.rows) map[r.mi] = r.count;
+    return map;
+  }, [matchRefs]);
 
   const bookmarkedRows = useMemo(() => {
     const rows: number[] = [];
@@ -575,6 +583,8 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       )}
       {messages.map((m, i) => {
         const prev = messages[i - 1];
+        /** Live per-message match count while the search toolbar is open. */
+        const mCount = searchOpen && query.trim() ? (countByMessage[i] ?? 0) : 0;
         const showDayDivider =
           Boolean(m.createdAt) && (!prev?.createdAt || !sameCalendarDay(m.createdAt ?? 0, prev.createdAt ?? 0));
         return (
@@ -706,6 +716,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           {formatMessageTime(m.createdAt)}
                         </span>
                       )}
+                      {mCount > 0 && (
+                        <span
+                          data-testid="match-count"
+                          aria-label={`${mCount} hasil di pesan ini`}
+                          className="inline-flex items-center px-1.5 py-0.5 text-xs leading-none text-chill-accent bg-chill-elevated border border-chill-border rounded-none select-none"
+                        >
+                          {mCount} hasil
+                        </span>
+                      )}
 <ActionButton
                         label="Tandai pesan"
                         activeLabel="Ditandai"
@@ -818,6 +837,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                         {m.createdAt && (
                           <span className="focus-hidden" aria-label={`Dikirim ${formatMessageTime(m.createdAt)}`}>
                             {formatMessageTime(m.createdAt)}
+                          </span>
+                        )}
+                        {mCount > 0 && (
+                          <span
+                            data-testid="match-count"
+                            aria-label={`${mCount} hasil di pesan ini`}
+                            className="inline-flex items-center px-1.5 py-0.5 text-xs leading-none text-chill-accent bg-chill-elevated border border-chill-border rounded-none select-none"
+                          >
+                            {mCount} hasil
                           </span>
                         )}
                       </div>
