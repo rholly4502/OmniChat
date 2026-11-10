@@ -42,3 +42,13 @@ reference the refs inside the event-handler function body, pass only the handler
 ## Scope note
 EventsView also has a `role="tablist"` filter group with the same gap; left for a
 future cycle to keep this one surgical. JobsView's three groups are the unit here.
+
+## Deploy status (2026-11-10, 20:50 UTC)
+Pushed to `main` (`038ffa4f`). **CI green**, but the **Deploy to VPS** workflow is
+red — and has been for the last 5 pushes (including `3119711f`, `55101d05`,
+`e73da6e6`, `5cc87416` before this cycle). The `Deploy via SSH` step fails after
+exactly ~20s, which equals the ssh `ConnectTimeout=20`, i.e. the VPS SSH endpoint is
+currently unreachable from GitHub Actions runners (a transport/network outage, not a
+code failure). Feature is committed on `main` but **not yet live** (live bundle still
+serves the previous build). It will deploy automatically once the VPS SSH is reachable
+again and the next push/rerun goes through.
