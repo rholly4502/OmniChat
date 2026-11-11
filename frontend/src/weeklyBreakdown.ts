@@ -40,10 +40,12 @@ function addDays(d: Date, n: number): Date {
 
 /**
  * Splits a month's transactions into Monday-starting calendar weeks and totals each
- * week's spend. Savings deposits (kategori "Nabung") are excluded to match the
- * backend's day/trend-total semantics, so a deposit never misappears as a heavy
- * spending week. Deterministic from the data — no wall-clock dependence except the
- * (injected) `today` used to highlight the current week.
+ * week's spend. Savings deposits (kategori "Nabung") and committed lump bills
+ * (kategori "Tagihan", e.g. rent) are excluded to match the backend's day-total
+ * semantics (ExpenseAdviceService) and the DailySpendChart — a deposit never
+ * misappears as a heavy spending week, and a single rent bill never dwarfs the
+ * bar scale of every other week. Deterministic from the data — no wall-clock
+ * dependence except the (injected) `today` used to highlight the current week.
  */
 export function computeWeeklyBreakdown(items: ExpenseItem[], month: string, today: Date = wibNow()): WeeklyBreakdown {
   const [y, m] = month.split('-').map(Number);
@@ -52,7 +54,7 @@ export function computeWeeklyBreakdown(items: ExpenseItem[], month: string, toda
 
   const totals = new Map<string, number>();
   for (const it of items) {
-    if (it.kategori === 'Nabung') continue;
+    if (it.kategori === 'Nabung' || it.kategori === 'Tagihan') continue;
     const wk = iso(mondayOf(parseTanggal(it.tanggal)));
     totals.set(wk, (totals.get(wk) ?? 0) + it.nominal);
   }

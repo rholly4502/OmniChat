@@ -38,6 +38,16 @@ describe('computeWeeklyBreakdown', () => {
     expect(r.weeks.find((w) => w.key === '2026-11-02')?.total).toBe(15000);
   });
 
+  it('excludes Tagihan committed lump bills from week totals, matching day-total semantics', () => {
+    // Backend dayTotal (ExpenseAdviceService) and DailySpendChart exclude Nabung AND
+    // Tagihan; the weekly view must match so a rent bill doesn't dwarf the bar scale.
+    const r = computeWeeklyBreakdown(
+      [item('2026-11-03', 20000), item('2026-11-02', 1300000, 'Tagihan')],
+      '2026-11',
+    );
+    expect(r.weeks.find((w) => w.key === '2026-11-02')?.total).toBe(20000);
+  });
+
   it('covers every calendar week overlapping the month, in order, including empty weeks', () => {
     const r = computeWeeklyBreakdown([item('2026-11-18', 9000)], '2026-11');
     expect(r.weeks.map((w) => w.key)).toEqual([
