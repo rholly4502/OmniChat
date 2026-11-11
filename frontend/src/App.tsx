@@ -124,6 +124,26 @@ export default function App() {
   const catalog = useModelCatalog(apiKey);
   const backendStatus = useApiHealth();
   const models = effectiveUseAgent ? catalog.agent : catalog.direct;
+
+  // A guest has no credential and is pinned to the direct bridge, so the active
+  // model must come from the direct catalog — not the agent-scoped default
+  // (`DEFAULT_MODEL` is an agent id). Otherwise the guest top bar hides the
+  // model selector (`modelInCatalog` fails) and the direct request would carry a
+  // model id the provider does not know. Re-home the guest onto the first direct
+  // model whenever the current selection falls outside that catalog.
+  useEffect(() => {
+    if (!isGuest) return;
+    const firstDirect = catalog.direct[0]?.id;
+    if (!firstDirect) return;
+    if (catalog.direct.some((m) => m.id === model)) return;
+    // The direct catalog arrives asynchronously (defaults first, then the fetched
+    // list). Re-homing the guest model here is the one justified setState-in-effect:
+    // the value legitimately depends on an external async source, and there is no
+    // event handler that carries it. This is not a cascading render — the update
+    // only fires when the model is genuinely absent from the direct catalog.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setModel(firstDirect);
+  }, [isGuest, catalog.direct, model]);
   // History spans both modes, so the filter dropdown must offer every model a
   // conversation could have run on — not just the active mode's catalog.
   const historyModels = [...catalog.agent, ...catalog.direct].filter(

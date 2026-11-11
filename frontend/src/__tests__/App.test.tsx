@@ -596,6 +596,27 @@ describe('App', () => {
     expect(screen.getByText(/Guest · Direct/)).toBeInTheDocument();
   });
 
+  it('guest re-homes the active model onto the direct catalog (not the agent default)', async () => {
+    localStorage.removeItem('omnichat_api_key');
+    // Direct catalog only has 'test-direct'; the admin default ('hermes') is an
+    // agent-only id that must never reach the direct bridge or the guest UI.
+    const MOCK_DIRECT_ONLY = {
+      agent: [{ id: 'hermes', label: 'Hermes (Default)' }, { id: 'test-agent', label: 'Test Agent Model' }],
+      direct: [{ id: 'test-direct', label: 'Test Direct Model' }],
+    };
+    setupFetchMock({ modelsData: MOCK_DIRECT_ONLY });
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Lanjut sebagai tamu' }));
+
+    // The guest top bar now shows a model selector (was suppressed because the
+    // stale agent default wasn't in the direct catalog), and its value must be a
+    // valid direct-catalog option — never the agent default ('hermes').
+    const select = (await screen.findByRole('combobox', { name: 'Ganti model' })) as HTMLSelectElement;
+    const optionIds = Array.from(select.options).map((o) => o.value);
+    expect(optionIds).toContain(select.value);
+    expect(select.value).not.toBe('hermes');
+  });
+
   it('resumes a conversation with the model that conversation last used', async () => {
     const conv = {
       id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
