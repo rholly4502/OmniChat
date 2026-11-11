@@ -5,6 +5,7 @@ import { getConversation, getConversationUsage, listAllConversations, type Conve
 import { buildAllConversationsCsv, buildAllConversationsJson, downloadBlob } from '../conversationExport';
 import type { ConversationExportRecord } from '../conversationExport';
 import type { ConversationUsageSummary, ModelOption } from '../types';
+import { ScanLoader } from './ScanLoader';
 
 /** Props accepted by {@link ChatStatsDialog}. */
 export interface ChatStatsDialogProps {
@@ -231,7 +232,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               aria-label="Terapkan periode statistik"
               className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition hover:bg-chill-surface active:bg-chill-surface active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
-              {scopedLoading ? 'Memuat…' : 'Terapkan'}
+              {scopedLoading ? (<><ScanLoader blocks={4} /> <span>Memuat…</span></>) : 'Terapkan'}
             </button>
             {(rangeFrom || rangeTo) && (
               <button
@@ -333,7 +334,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               aria-label="Ekspor semua percakapan sebagai JSON"
               className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
-              {exporting === 'json' ? 'Mengekspor…' : 'JSON'}
+              {exporting === 'json' ? (<><ScanLoader blocks={4} /> <span>Mengekspor…</span></>) : 'JSON'}
             </button>
             <button
               type="button"
@@ -342,7 +343,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               aria-label="Ekspor semua percakapan sebagai CSV"
               className="rounded-none min-h-[44px] px-3 inline-flex items-center justify-center text-sm text-chill-text border border-chill-border bg-chill-elevated transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
             >
-              {exporting === 'csv' ? 'Mengekspor…' : 'CSV'}
+              {exporting === 'csv' ? (<><ScanLoader blocks={4} /> <span>Mengekspor…</span></>) : 'CSV'}
             </button>
           </div>
           {exportError && (

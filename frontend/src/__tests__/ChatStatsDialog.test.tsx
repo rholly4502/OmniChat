@@ -256,6 +256,24 @@ describe('ChatStatsDialog period filter', () => {
     await waitFor(() => expect(screen.queryByText(/Periode 2026-10-01/)).not.toBeInTheDocument());
     expect(screen.getAllByText('2k').length).toBeGreaterThanOrEqual(1);
   });
+
+  it('apply button shows pixel loading feedback while fetching a scoped window', async () => {
+    let release!: (v: unknown) => void;
+    const gate = new Promise((res) => { release = res; });
+    getUsageMock.mockReturnValueOnce(gate as never);
+
+    const { ChatStatsDialog: Dialog } = await import('../components/ChatStatsDialog');
+    render(<Dialog open onClose={vi.fn()} usage={USAGE} modelOptions={MODELS} apiKey="k" />);
+    fireEvent.change(screen.getByLabelText('Tanggal awal periode statistik'), { target: { value: '2026-10-01' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Terapkan periode statistik' }));
+
+    const btn = screen.getByRole('button', { name: 'Terapkan periode statistik' });
+    expect(btn.querySelector('.pixel-scan')).not.toBeNull();
+    expect(btn.textContent).toContain('Memuat');
+
+    release({ totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} });
+    await waitFor(() => expect(getUsageMock).toHaveBeenCalledTimes(1));
+  });
 });
 
 
