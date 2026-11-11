@@ -63,9 +63,17 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
         if (!string.IsNullOrWhiteSpace(search))
         {
             var term = search.Trim();
+            // Free-text search matches the title, the conversation's model id, and —
+            // inside message bodies — the text, the model that produced a turn, and the
+            // reasoning (chain-of-thought) text. Reasoning is content too: a reader who
+            // remembers what the model "thought" should be able to find it.
             query = query.Where(c =>
                 c.Title.Contains(term) ||
-                c.Messages.Any(m => m.Content.Contains(term)));
+                c.Model.Contains(term) ||
+                c.Messages.Any(m =>
+                    m.Content.Contains(term) ||
+                    (m.Reasoning != null && m.Reasoning.Contains(term)) ||
+                    (m.Model != null && m.Model.Contains(term))));
         }
 
         if (!string.IsNullOrWhiteSpace(model))

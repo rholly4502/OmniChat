@@ -389,6 +389,46 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task ListConversations_search_matches_conversation_model_id()
+    {
+        var sonnet = await _repository.CreateConversationAsync(NewConversation());
+        sonnet.Model = "claude-sonnet";
+        await _db.SaveChangesAsync();
+        await _repository.CreateConversationAsync(NewConversation()); // hermes-default
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "claude");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(sonnet.Id, only.Id);
+    }
+
+    [Fact]
+    public async Task ListConversations_search_matches_per_message_model_attribution()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conversation.Id, "admin", new Message { Role = "assistant", Content = "jawaban", Model = "gpt-4o" });
+        var other = await _repository.CreateConversationAsync(NewConversation());
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "gpt-4o");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(conversation.Id, only.Id);
+    }
+
+    [Fact]
+    public async Task ListConversations_search_matches_reasoning_text()
+    {
+        var conversation = await _repository.CreateConversationAsync(NewConversation());
+        await _repository.AppendMessageAsync(conversation.Id, "admin", new Message { Role = "assistant", Content = "jawaban", Reasoning = "berpikir tentang anggaran" });
+        var other = await _repository.CreateConversationAsync(NewConversation());
+
+        var listed = await _repository.ListConversationsAsync("admin", search: "anggaran");
+
+        var only = Assert.Single(listed);
+        Assert.Equal(conversation.Id, only.Id);
+    }
+
+    [Fact]
     public async Task ListConversations_blank_search_returns_everything()
     {
         await _repository.CreateConversationAsync(NewConversation());
