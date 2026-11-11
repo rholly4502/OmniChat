@@ -29,15 +29,18 @@ function dailyBudgetFor(anggaran: number | null, days: number): number | null {
 /**
  * Intra-month spending chart: one bar per day of the viewed month, scaled to the
  * busiest day, with a stepped pixel-dash reference line at the daily budget (when a monthly
- * budget is set). Savings deposits (kategori "Nabung") are excluded to match the
- * backend's day-total semantics.
+ * budget is set). Savings deposits (kategori "Nabung") and committed lump bills
+ * (kategori "Tagihan", e.g. rent) are excluded to match the backend's day-total
+ * semantics (ExpenseAdviceService) — a rent day is a committed bill, not a
+ * discretionary spend that should flag the day over its daily budget or dominate
+ * the bar scale.
  */
 export function DailySpendChart({ items, month, anggaran, hari }: Props) {
   const dim = daysInMonth(month);
 
   const byDay = new Map<number, number>();
   for (const it of items) {
-    if (it.kategori === 'Nabung') continue;
+    if (it.kategori === 'Nabung' || it.kategori === 'Tagihan') continue;
     const day = Number(it.tanggal.slice(8, 10));
     if (Number.isFinite(day)) byDay.set(day, (byDay.get(day) ?? 0) + it.nominal);
   }

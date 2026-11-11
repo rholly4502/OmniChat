@@ -95,6 +95,61 @@ describe('DailySpendChart', () => {
   });
 });
 
+describe('DailySpendChart Tagihan (committed bills) exclusion', () => {
+  it('excludes Tagihan rows from day totals, matching backend day-total semantics', () => {
+    // Backend dayTotal (ExpenseAdviceService) excludes Nabung AND Tagihan; the
+    // chart must mirror that. A rent row must not appear as a bar at all.
+    const { container } = render(
+      <DailySpendChart
+        items={[
+          item('2026-11-02', 1000000, 'Tagihan'),
+          item('2026-11-02', 20000),
+        ]}
+        month="2026-11"
+        anggaran={3900000}
+      />,
+    );
+    const bars = barsOf(container);
+    // only the 20k Makan bar remains; the 1M Tagihan rent is excluded
+    expect(bars).toHaveLength(1);
+    // formatRupiah emits a non-breaking space (U+00A0) — normalize before compare
+    const norm = (t: string) => t.replace(/\s/g, ' ');
+    expect(norm(bars[0].title)).toContain('Rp 20.000');
+    expect(bars[0].className).toContain('bg-chill-accent');
+    expect(bars[0].className).not.toContain('bg-chill-red');
+  });
+
+  it('shows the empty state when a month has only Tagihan/Nabung rows', () => {
+    render(
+      <DailySpendChart
+        items={[item('2026-11-02', 1000000, 'Tagihan')]}
+        month="2026-11"
+        anggaran={3900000}
+      />,
+    );
+    expect(screen.getByText('Belum ada pengeluaran harian yang tercatat.')).toBeInTheDocument();
+  });
+
+  it('does not flag a day over budget when the only big row is Tagihan', () => {
+    // Daily budget for 3.9M/30 = 130k. A 1M rent would falsely flag red if it
+    // counted; with Tagihan excluded the day has no discretionary spend at all.
+    const { container } = render(
+      <DailySpendChart
+        items={[
+          item('2026-11-02', 1000000, 'Tagihan'),
+          item('2026-11-02', 50000),
+        ]}
+        month="2026-11"
+        anggaran={3900000}
+      />,
+    );
+    const bars = barsOf(container);
+    expect(bars).toHaveLength(1);
+    expect(bars[0].className).toContain('bg-chill-accent');
+    expect(bars[0].className).not.toContain('bg-chill-red');
+  });
+});
+
 describe('DailySpendChart partial-month target (Hari)', () => {
   it('prorates the daily-budget reference to the active-day count', () => {
     // October is a partial month: anggaran 520.000 over 4 declared days -> daily
