@@ -116,3 +116,39 @@ export async function updateOpportunityFollowUp(
     throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
   }
 }
+
+/** Base path of the authenticated CV download service. */
+export const CV_URL = '/api/cv';
+
+/** List available CV file names. */
+export async function listCvFiles(
+  options: JobsRequestOptions = {},
+): Promise<string[]> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(CV_URL, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return (await res.json()) as string[];
+}
+
+/** Download one CV PDF, returning the raw file blob (caller triggers the browser download). */
+export async function downloadCvFile(
+  fileName: string,
+  options: JobsRequestOptions = {},
+): Promise<Blob> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${CV_URL}/${encodeURIComponent(fileName)}`, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return res.blob();
+}

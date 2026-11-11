@@ -115,7 +115,7 @@ function statusTone(status: string): string {
 
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
 export function JobsView({ apiKey }: JobsViewProps) {
-  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft } = useJobs(apiKey);
+  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
@@ -307,6 +307,30 @@ export function JobsView({ apiKey }: JobsViewProps) {
           Lowongan relevan (.NET, ±2 tahun) yang dikurasi otomatis · kontrak berakhir 30 Des
         </p>
       </div>
+
+      {cvFiles.length > 0 && (
+        <div className="px-4 pb-0">
+          <div className="flex flex-wrap items-center gap-2 border border-chill-border bg-chill-surface px-3 py-2">
+            <span className="text-xs font-medium text-chill-text">CV siap pakai:</span>
+            {cvFiles.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => void downloadCv(f)}
+                className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text transition hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[36px]"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
+                  <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+                </svg>
+                {f}
+              </button>
+            ))}
+            {cvError && (
+              <span className="text-xs text-chill-red">{cvError}</span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Toggle area filter (minimize di layar kecil) */}
       <div className="px-4 pb-2">

@@ -50,8 +50,14 @@ describe('useJobs', () => {
 
   it('sends the API key on the request', async () => {
     renderHook(() => useJobs('secret-key'));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(fetchMock).toHaveBeenCalledWith(JOBS_URL, expect.objectContaining({ headers: { 'X-Api-Key': 'secret-key' } }));
+    await waitFor(() => expect(fetchMock.mock.calls.length).toBeGreaterThanOrEqual(1));
+    const keySent = fetchMock.mock.calls.some(
+      ([url, init]) =>
+        url === JOBS_URL &&
+        (init as RequestInit).headers !== undefined &&
+        ((init as RequestInit).headers as Record<string, string>)['X-Api-Key'] === 'secret-key',
+    );
+    expect(keySent).toBe(true);
   });
 
   it('surfaces a localized error and keeps the list empty on a 401', async () => {

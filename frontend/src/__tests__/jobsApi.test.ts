@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -118,5 +118,39 @@ describe('generateLamaranDraft', () => {
     await generateLamaranDraft(3, { fetchImpl: fetchMock as unknown as typeof fetch, signal });
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(init.signal).toBe(signal);
+  });
+});
+
+describe('listCvFiles', () => {
+  it('GETs the CV list with auth header and returns file names', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse(['a.pdf', 'b.pdf']));
+    const out = await listCvFiles({ apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    expect(out).toEqual(['a.pdf', 'b.pdf']);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(CV_URL);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({ 'X-Api-Key': 'k' });
+  });
+
+  it('throws ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
+    await expect(listCvFiles({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('downloadCvFile', () => {
+  it('fetches the encoded PDF blob with auth and returns the Blob', async () => {
+    const blob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(blob) });
+    const out = await downloadCvFile('Rholly-CV-EN-MYSG.pdf', { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${CV_URL}/${encodeURIComponent('Rholly-CV-EN-MYSG.pdf')}`);
+    expect(init.headers).toEqual({ 'X-Api-Key': 'k' });
+    expect(out).toBe(blob);
+  });
+
+  it('throws ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(404));
+    await expect(downloadCvFile('x.pdf', { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
   });
 });

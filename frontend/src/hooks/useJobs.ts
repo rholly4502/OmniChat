@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { generateLamaranDraft, listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type LamaranDraft, type Opportunity } from '../jobsApi';
+import { downloadCvFile, generateLamaranDraft, listCvFiles, listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type LamaranDraft, type Opportunity } from '../jobsApi';
 
 export interface UseJobsResult {
   opportunities: Opportunity[];
@@ -14,6 +14,10 @@ export interface UseJobsResult {
   updatingId: number | null;
   generatingId: number | null;
   generateDraft: (id: number) => Promise<LamaranDraft | null>;
+  cvFiles: string[];
+  cvError: string | null;
+  /** Downloads one CV PDF via the authenticated endpoint; resolves to the file name on success. */
+  downloadCv: (name: string) => Promise<string | null>;
 }
 
 /** Loads the curated job-opportunity list, with an optional pipeline status filter. */
@@ -86,5 +90,42 @@ export function useJobs(apiKey?: string): UseJobsResult {
     }
   }, [apiKey]);
 
-  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft };
+  const [cvFiles, setCvFiles] = useState<string[]>([]);
+  const [cvError, setCvError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!apiKey) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const files = await listCvFiles({ apiKey });
+        if (!cancelled) { setCvFiles(files); setCvError(null); }
+      } catch (err) {
+        if (!cancelled) {
+          setCvError(err instanceof ApiError ? `Gagal memuat CV (${err.status}).` : 'Gagal memuat CV.');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [apiKey]);
+
+  const downloadCv = useCallback(async (name: string): Promise<string | null> => {
+    if (!apiKey) return null;
+    try {
+      const blob = await downloadCvFile(name, { apiKey });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      return name;
+    } catch {
+      return null;
+    }
+  }, [apiKey]);
+
+  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv };
 }

@@ -48,6 +48,9 @@ function mockState(overrides: Partial<MockJobsState> = {}) {
     statusFilter: '',
     setStatusFilter: vi.fn(),
     reload: vi.fn(),
+    cvFiles: [] as string[],
+    cvError: null as string | null,
+    downloadCv: vi.fn(),
   };
   useJobsMock.useJobs.mockReturnValue({ ...defaults, ...overrides });
 }
