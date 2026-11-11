@@ -890,6 +890,31 @@ describe('useServerHistory', () => {
     expect(result.current.hasMore).toBe(false);
   });
 
+  it('loadMore carries the active model and mode filters onto the next page', async () => {
+    const page1 = Array.from({ length: 50 }, (_, i) => summary(`${i+1}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Sesi ${i}`));
+    const page2 = Array.from({ length: 5 }, (_, i) => summary(`b${i}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Dulu ${i}`));
+    const listImpl = vi.fn()
+      .mockResolvedValueOnce(page1)
+      .mockResolvedValueOnce(page2);
+    const usageImpl = vi.fn().mockResolvedValue(EMPTY_USAGE);
+
+    const { result } = renderHook(() => useServerHistory(deps({
+      listImpl,
+      usageImpl,
+      modelFilter: 'claude-sonnet',
+      modeFilter: 'direct',
+    })));
+    await waitFor(() => expect(result.current.sessions.length).toBeGreaterThan(50));
+
+    // First page applies both filters.
+    expect(listImpl.mock.calls[0][3]).toEqual({ model: 'claude-sonnet', mode: 'direct', from: undefined, to: undefined });
+
+    await act(async () => { await result.current.loadMore(); });
+    // The next page must keep the same filters — dropping the mode filter here
+    // would mix in conversations from the other mode.
+    expect(listImpl.mock.calls[1][3]).toEqual({ model: 'claude-sonnet', mode: 'direct', from: undefined, to: undefined });
+  });
+
   it('loadMore does not duplicate rows already in the list', async () => {
     const page1 = Array.from({ length: 50 }, (_, i) => summary(`${i+1}`.padStart(8, '0') + '-1111-1111-1111-111111111111', `Sesi ${i}`));
     const dup = summary('00000001-1111-1111-1111-111111111111', 'Sesi 0');

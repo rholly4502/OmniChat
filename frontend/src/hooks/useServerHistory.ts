@@ -605,7 +605,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
 
   /** Load the next page of older conversations and append them to the list. */
   const loadMore = useCallback(async () => {
-    const { search, modelFilter, dateFrom, dateTo } = filtersRef.current;
+    const { search, modelFilter, modeFilter, dateFrom, dateTo } = filtersRef.current;
     const list = impls.current.list ?? listConversations;
     const nextOffset = listOffset;
     try {
@@ -613,7 +613,7 @@ export function useServerHistory(options: ServerHistoryOptions): ServerHistoryRe
         { apiKey: apiKey || undefined },
         PAGE_SIZE,
         search,
-        { model: modelFilter, from: dateFrom, to: dateTo },
+        { model: modelFilter, mode: modeFilter, from: dateFrom, to: dateTo },
         nextOffset,
       );
       setSessions((prev) => {
