@@ -19,3 +19,6 @@ core.*
 workspace/*.db
 workspace/*.db-shm
 workspace/*.db-wal
+
+# CV files (personal data — never commit to this public repo)
+cv/

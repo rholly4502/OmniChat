@@ -147,6 +147,8 @@ builder.Services.AddHttpClient("LLMClient", client =>
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
 builder.Services.AddScoped<ILamaranDraftService, LamaranDraftService>();
+builder.Services.Configure<CvOptions>(builder.Configuration.GetSection(CvOptions.SectionName));
+builder.Services.AddScoped<ICvService, CvService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 builder.Services.Configure<ExpenseAdviceOptions>(builder.Configuration.GetSection(ExpenseAdviceOptions.SectionName));
 builder.Services.AddScoped<IExpenseAdviceService, ExpenseAdviceService>();

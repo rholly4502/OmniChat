@@ -51,14 +51,19 @@ public sealed class LamaranDraftService : ILamaranDraftService
         // pribadi satu-user milik Rholly sendiri. Jangan di-hardcode ke data sensitif lain.
         var profil = """
             Nama: Rholly
-            Peran: .NET Developer (Astra via vendor), ±2 tahun pengalaman komersial.
-            Stack inti: C# / .NET 8 & 10, ASP.NET Core Web API, EF Core, SQL Server &
-            migrasi DB produksi (batch, rollback aman), testing (xUnit), Git, Clean
-            Architecture, RabbitMQ, Redis, PostgreSQL.
+            Peran: .NET Developer (Astra / AGIT via vendor), ±2 tahun pengalaman komersial
+            di industri otomotif (four-wheeler).
+            Stack inti: C#, .NET Framework 4.5, .NET 6, .NET 8, .NET 10, ASP.NET Core
+            Web API, EF Core, SQL Server (+ performance tuning & sinkronisasi batch jutaan
+            baris), PostgreSQL, Redis, RabbitMQ, Elasticsearch, Docker, Git, xUnit, Clean
+            Architecture.
             Bukti unggulan: OmniChat — aplikasi web full-stack (.NET 10 + React/Tailwind)
-            dibangun end-to-end, pipeline CI/CD, seed otomatis, deployment live. Pengalaman
-            migrasi data produksi SQL Server ber-batch dengan rollback aman.
-            Bahasa: Indonesia (native), Inggris (kerja/tulis cukup).
+            dibangun end-to-end, pipeline CI/CD, seed otomatis, deployment live. PSS4W —
+            background job sinkronisasi data roda empat Astra (penanganan race condition,
+            tuning query berat, jutaan baris per batch). Migrasi data produksi SQL Server
+            ber-batch dengan rollback aman.
+            Bahasa: Indonesia (native), Inggris (intermediate; baca/tulis kuat, berbicara
+            berkembang).
             Kendala: ±2 tahun → jangan klaim senioritas 5+ tahun.
             """;
 
