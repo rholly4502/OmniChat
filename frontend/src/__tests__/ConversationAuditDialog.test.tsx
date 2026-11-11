@@ -96,6 +96,34 @@ describe('ConversationAuditDialog', () => {
     expect(screen.getByLabelText('Tidak disukai')).toBeInTheDocument();
   });
 
+  it('renders a tally of up/down ratings and bookmarks in the meta strip', () => {
+    renderOpen();
+    // SESSION: one 'up', one 'down', no bookmarks → tallies 1 and 1; bookmark hidden.
+    const up = screen.getByTitle('Disukai');
+    expect(up).toBeInTheDocument();
+    expect(up.textContent).toContain('1');
+    const down = screen.getByTitle('Tidak disukai');
+    expect(down).toBeInTheDocument();
+    expect(down.textContent).toContain('1');
+    expect(screen.queryByTitle('Ditandai')).not.toBeInTheDocument();
+  });
+
+  it('shows a bookmark tally when the conversation has bookmarked turns', () => {
+    const bm: ChatSession = {
+      ...SESSION,
+      messages: [
+        { role: 'user', content: 'Halo', createdAt: 1 },
+        { role: 'assistant', content: 'Balasan', bookmarked: true, createdAt: 2 },
+      ],
+    };
+    renderOpen(vi.fn(), bm);
+    // The bookmark appears both as a per-row indicator (aria-label) and as the
+    // meta-strip tally (title). Assert the tally carries the count.
+    const marks = screen.getAllByTitle('Ditandai');
+    expect(marks.length).toBeGreaterThanOrEqual(1);
+    expect(marks.some((el) => el.textContent?.includes('1'))).toBe(true);
+  });
+
   it('close button and Escape invoke onClose', () => {
     const onClose = vi.fn();
     renderOpen(onClose);
