@@ -103,7 +103,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop, mode
             type="button"
             onClick={onSend}
             disabled={!input.trim()}
-            className="bg-chill-accent text-chill-on-accent hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[3px] active:shadow-none disabled:opacity-40 rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70"
+            className="bg-chill-accent text-chill-on-accent hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[3px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-chill-accent rounded-none px-4 md:px-6 text-sm font-semibold transition min-h-[44px] shrink-0 flex items-center pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70"
           >
             Kirim
           </button>

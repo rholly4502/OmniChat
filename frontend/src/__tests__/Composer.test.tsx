@@ -162,3 +162,25 @@ describe('Composer draft token/cost estimate', () => {
     expect(screen.queryByText(/≈ .* tok/)).not.toBeInTheDocument();
   });
 });
+
+
+describe('Composer disabled Send state (inactive contrast)', () => {
+  it('a disabled primary button suppresses hover/shadow so it reads inactive', () => {
+    // Empty draft -> Send is disabled. It must not look pressable: no raised
+    // pixel shadow and no hover-lighten while disabled, while its base accent
+    // still renders so the inactive look comes from the explicit disabled
+    // variants, not from a missing base style.
+    renderComposer({ input: '   ' });
+    const send = screen.getByText('Kirim');
+    expect(send).toBeDisabled();
+    const cls = send.className;
+    expect(cls).toContain('disabled:opacity-40');
+    expect(cls).toContain('disabled:cursor-not-allowed');
+    expect(cls).toContain('disabled:shadow-none');
+    expect(cls).toContain('disabled:hover:bg-chill-accent');
+    // Base accent + square edge + hard shadow still present for the enabled state.
+    expect(cls).toContain('bg-chill-accent');
+    expect(cls).toContain('pixel-shadow');
+    expect(cls).toContain('rounded-none');
+  });
+});
