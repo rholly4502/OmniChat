@@ -747,7 +747,7 @@ export function Sidebar({
       {byModelEntries.length > 0 && (
         <>
         <details className="group space-y-2 bg-chill-surface/70 border border-chill-border rounded-none p-2.5">
-          <summary className="list-none text-sm font-semibold text-chill-text cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+          <summary className="list-none text-sm font-semibold text-chill-text hover:text-chill-accent transition-colors cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
               Penggunaan
@@ -958,7 +958,7 @@ export function Sidebar({
       {/* Advanced Parameters & } ; System Prompt */}
       {settings && (
         <details className="group space-y-2 bg-chill-surface/70 border border-chill-border rounded-none p-2.5">
-          <summary className="list-none text-sm font-semibold text-chill-text cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
+          <summary className="list-none text-sm font-semibold text-chill-text hover:text-chill-accent transition-colors cursor-pointer flex items-center justify-between select-none min-h-[44px] gap-1 px-1 -mx-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60">
             <span className="flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
               Parameter & Persona

@@ -189,6 +189,32 @@ input[type='range']::-moz-range-thumb {
   box-shadow: 2px 2px 0 0 rgb(0 0 0 / 0.35);
 }
 
+/* Step both thumbs' colour/shadow in hard beats (same stepped 80ms register as
+   the pixel checkbox) so hover/press never snaps instantly. */
+input[type='range']::-webkit-slider-thumb,
+input[type='range']::-moz-range-thumb {
+  transition: background-color 80ms step-end, box-shadow 80ms step-end;
+}
+
+/* Hover / press feedback for the range thumbs (Temperature / Max Tokens):
+   the same accent -> accent-hover -> accent-active shade ladder every button
+   uses, so the sliders read as interactive instead of static. No new
+   colours; a plain colour/border change, so reduced-motion leaves it intact. */
+input[type='range']::-webkit-slider-thumb:hover {
+  background: var(--color-chill-accent-hover);
+}
+input[type='range']::-webkit-slider-thumb:active {
+  background: var(--color-chill-accent-active);
+  box-shadow: none;
+}
+input[type='range']::-moz-range-thumb:hover {
+  background: var(--color-chill-accent-hover);
+}
+input[type='range']::-moz-range-thumb:active {
+  background: var(--color-chill-accent-active);
+  box-shadow: none;
+}
+
 /* Range sliders keyboard focus: `appearance: none` (above) strips the browser's
    default focus indicator, so a keyboard user got no visible cue on the
    Temperature / Max Tokens controls. Give them the same hard square ring the

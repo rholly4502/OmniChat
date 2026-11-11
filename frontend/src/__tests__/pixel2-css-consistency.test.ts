@@ -111,4 +111,19 @@ describe('pixel2 range-slider focus ring', () => {
     const rule = CLEAN.match(/input\[type='range'\]:focus-visible\s*\{([^}]*)\}/)?.[1] ?? '';
     expect(rule).toContain('color-mix(in srgb, var(--color-chill-accent) 60%, transparent)');
   });
+
+  it('range thumbs get the button hover/press shade ladder (accent-hover/active)', () => {
+    // The sliders are interactive controls; without this they would be the only
+    // controls on the app with no hover/press feedback. The ladder reuses the
+    // same accent -> hover -> active tokens as every button — no new colours.
+    const webkit = CLEAN.match(/input\[type='range'\]::-webkit-slider-thumb:hover\s*\{([^}]*)\}/)?.[1] ?? '';
+    const moz = CLEAN.match(/input\[type='range'\]::-moz-range-thumb:active\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(webkit).toContain('var(--color-chill-accent-hover)');
+    expect(moz).toContain('var(--color-chill-accent-active)');
+    expect(moz).toContain('box-shadow: none');
+    // Stepped transition so the feedback doesn't snap instantly (checkbox register).
+    const trans = CLEAN.match(/input\[type='range'\]::-webkit-slider-thumb,\ninput\[type='range'\]::-moz-range-thumb\s*\{([^}]*)\}/)?.[1] ?? '';
+    expect(trans).toContain('transition: background-color 80ms step-end');
+  });
 });
+
