@@ -368,6 +368,8 @@ export interface ExpenseAdvice {
   monthlyNabung: MonthlyNabungDto;
   /** Sub-total of Makan spend that is snack/junk (keterangan matches a snack keyword). */
   jajanTotal: number;
+  /** This month's largest controllable discretionary (non-food, non-fixed) leak, if any. */
+  biggestLeak: { kategori: string; total: number; tip: string } | null;
 }
 
 /** Fetch the daily Analisa & Saran report for a date (YYYY-MM-DD). */

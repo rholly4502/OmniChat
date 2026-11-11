@@ -923,5 +923,62 @@ public sealed class ExpenseAdviceServiceTests
 
         Assert.Equal(0, advice.JajanTotal);
     }
+
+    [Fact]
+    public async Task BiggestLeak_highlightsTopDiscretionaryCategory()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 11);
+        // Makan (food) + a fixed Tagihan bill + a large Transport leak.
+        repo.Rows.Add(Row(d, "Makan", 23_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "z"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Transport", 60_000, "b"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 3), "Transport", 100_000, "c"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 6), "Transport", 50_000, "d"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 7), "Transport", 50_000, "e"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 10), "Transport", 100_000, "f"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.NotNull(advice.BiggestLeak);
+        Assert.Equal("Transport", advice.BiggestLeak!.Kategori);
+        Assert.Equal(360_000, advice.BiggestLeak.Total);
+        Assert.False(string.IsNullOrWhiteSpace(advice.BiggestLeak.Tip));
+    }
+
+    [Fact]
+    public async Task BiggestLeak_isNullWhenOnlyFoodAndFixedBills()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 11);
+        repo.Rows.Add(Row(d, "Makan", 50_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "z"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Null(advice.BiggestLeak);
+    }
+
+    [Fact]
+    public async Task BiggestLeak_isNullWhenDiscretionarySpendBelowThreshold()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 11);
+        repo.Rows.Add(Row(d, "Makan", 50_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 5), "Transport", 20_000, "t"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.Null(advice.BiggestLeak);
+    }
 }
 

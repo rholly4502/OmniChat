@@ -68,6 +68,7 @@ const advicePayload = {
     projectedSavings: 0,
     projectedDeficit: 3100000,
   },
+  biggestLeak: null,
 };
 
 afterEach(() => {
@@ -561,6 +562,32 @@ describe('AdvicePanel daily-menu affordability vs remaining allowance (eval)', (
     await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
 
     expect(screen.queryByText(/jajan\/snack/)).not.toBeInTheDocument();
+  });
+
+  it('shows the biggest controllable leak callout when one is present', async () => {
+    const payload = {
+      ...advicePayload,
+      biggestLeak: { kategori: 'Transport', total: 360000, tip: 'Batasi top-up OVO/e-money & ojek jadi sekali seminggu.' },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(payload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const note = screen.getByText('Bocor terbesar:', { exact: true }).closest('p')!;
+    expect(note.textContent!.replace(/\s/g, ' ')).toContain('Transport');
+    expect(note.textContent!.replace(/\s/g, ' ')).toContain('360.000');
+    expect(note.textContent).toContain('360.000');
+    expect(note.textContent).toContain('Batasi top-up OVO/e-money');
+  });
+
+  it('does not show the biggest-leak callout when there is none', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/Bocor terbesar/)).not.toBeInTheDocument();
   });
 });
 

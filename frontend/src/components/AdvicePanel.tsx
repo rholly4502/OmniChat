@@ -449,6 +449,19 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                       </div>
                     );
                   })()}
+                  {advice.biggestLeak && (() => {
+                    const k = advice.biggestLeak;
+                    return (
+                      <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated px-3 py-2 mt-2">
+                        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-border" />
+                        <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-border" />
+                        <p className="text-sm text-chill-text">
+                          <span className="font-medium text-chill-accent">Bocor terbesar:</span>{' '}
+                          {k.kategori} ±{formatRupiah(k.total)} bulan ini — {k.tip}
+                        </p>
+                      </div>
+                    );
+                  })()}
                   <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-elevated p-3 pixel-shadow-sm">
                     {/* Shared hard-edge bevel (panel frame register): chunky light top+left
                         edges frame the end-of-month projection as the headline number of the

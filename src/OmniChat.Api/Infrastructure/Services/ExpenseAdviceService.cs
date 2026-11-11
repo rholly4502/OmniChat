@@ -196,7 +196,8 @@ public sealed class ExpenseAdviceService(
             Daily(date, foodSpend),
             new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance),
             new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung, projectedSavings, projectedDeficit),
-            jajanTotal);
+            jajanTotal,
+            FindBiggestLeak(categoryTrend));
     }
 
     /// <summary>
@@ -352,6 +353,36 @@ public sealed class ExpenseAdviceService(
         "Manfaatkan cashback/point saat top-up atau belanja online — tapi jangan tergoda belanja ekstra demi reward.",
         "Catat pengeluaran harian tiap malam — sadar pos mana yang bocor sebelum bulan berakhir.",
     ];
+    /// <summary>
+    /// The largest controllable discretionary leak this month: the non-food,
+    /// non-fixed category (Transport, Belanja, Hiburan, Lain, …) with the highest
+    /// total, surfaced with a concrete way to cut it. Food (Makan) is handled by the
+    /// dedicated jajan sub-total, and fixed bills (Tagihan) are not controllable day
+    /// to day, so both are excluded. Below the threshold the figure is noise and no
+    /// insight is produced.
+    /// </summary>
+    private static BiggestLeak? FindBiggestLeak(IReadOnlyList<CategoryTrendItem> trend)
+    {
+        var top = trend
+            .Where(c => c.Kategori != "Makan" && c.Kategori != "Tagihan" && c.Kategori != "Nabung")
+            .OrderByDescending(c => c.Total)
+            .FirstOrDefault();
+        if (top is null || top.Total < 50_000)
+        {
+            return null;
+        }
+
+        var tip = top.Kategori switch
+        {
+            "Transport" => "Batasi top-up OVO/e-money & ojek jadi sekali seminggu, dan pilih jalan kaki/angkot untuk jarak dekat.",
+            "Belanja" => "Terapkan daftar belanja & tunggu 24 jam sebelum membeli barang non-kebutuhan.",
+            "Hiburan" => "Ganti sebagian dengan aktivitas gratis (jalan kaki, podcast, senam di kos).",
+            "Lain" => "Rincikan pengeluaran ini supaya bisa ditekan minggu depan.",
+            _ => "Cek pos ini mingguan supaya tidak membengkak.",
+        };
+        return new BiggestLeak(top.Kategori, top.Total, tip);
+    }
+
     /// <summary>Keterangan substrings that mark a snack/junk purchase (the user's
     /// ledger convention). Used to split the "Makan" category into its discretionary
     /// snack part vs real meals, so the jajan leak is visible and actionable.</summary>

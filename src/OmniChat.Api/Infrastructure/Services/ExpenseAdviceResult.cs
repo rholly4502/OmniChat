@@ -75,6 +75,11 @@ public sealed record MonthlyNabung(
     long ProjectedSavings,
     long ProjectedDeficit);
 
+/// <summary>This month's largest controllable discretionary (non-food, non-fixed)
+/// spending leak, with a concrete way to cut it. Picked from the trend categories,
+/// so it is always backed by the actual ledger.</summary>
+public sealed record BiggestLeak(string Kategori, long Total, string Tip);
+
 /// <summary>
 /// Full payload served by <c>GET /api/expenses/advice?date=YYYY-MM-DD</c>.
 /// </summary>
@@ -93,4 +98,5 @@ public sealed record ExpenseAdvice(
     DailySuggestions Daily,
     RemainingAllowance RemainingAllowance,
     MonthlyNabung MonthlyNabung,
-    long JajanTotal);
+    long JajanTotal,
+    BiggestLeak? BiggestLeak);
