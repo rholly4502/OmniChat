@@ -571,6 +571,43 @@ describe('MessageList', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Salin sebagai JSON' }));
     expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
   });
+
+  it('copies an assistant reply as Markdown', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({
+      messages: [{
+        role: 'assistant',
+        content: 'halo',
+        reasoning: 'pikir 1\npikir 2',
+      }],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin Markdown' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith([
+      '### Asisten', '',
+      'halo', '',
+      '> **Berpikir:**', '',
+      '> pikir 1',
+      '> pikir 2',
+    ].join('\n'));
+  });
+
+  it('shows a transient Markdown-copied confirmation', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin Markdown' }));
+    expect(await screen.findByRole('button', { name: 'Markdown tersalin' })).toBeInTheDocument();
+  });
+
+  it('keeps JSON, plain-text and Markdown copy confirmations independent', async () => {
+    navigator.clipboard.writeText = vi.fn().mockResolvedValue(undefined);
+    renderList({ messages: [{ role: 'assistant', content: 'halo' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin Markdown' }));
+    expect(await screen.findByRole('button', { name: 'Markdown tersalin' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'JSON tersalin' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Pesan tersalin' })).not.toBeInTheDocument();
+  });
 });
 
 describe('MessageList user-message copy actions', () => {
@@ -630,6 +667,15 @@ describe('MessageList user-message copy actions', () => {
     expect(await screen.findByRole('button', { name: 'JSON tersalin' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pesan tersalin' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Salin pesan' })).toBeInTheDocument();
+  });
+
+  it('copies a user message as Markdown', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    navigator.clipboard.writeText = writeText;
+    renderList({ messages: [{ role: 'user', content: 'hai' }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Salin Markdown' }));
+    await vi.waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith(['### Pengguna', '', 'hai', ''].join('\n'));
   });
 });
 

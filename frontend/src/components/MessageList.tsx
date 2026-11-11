@@ -176,9 +176,27 @@ function messageJsonRecord(m: Message, fallbackModel: string): unknown {
   };
 }
 
+/**
+ * Render one turn as Markdown source, mirroring the per-message section emitted
+ * by buildConversationMarkdown so a copied message matches what a full
+ * transcript export would produce for the same turn.
+ */
+function messageMarkdown(m: Message): string {
+  const roleLabel = m.role === 'user' ? 'Pengguna' : 'Asisten';
+  const NL = String.fromCharCode(10);
+  const parts = ['### ' + roleLabel, '', m.content, ''];
+  if (m.reasoning) {
+    parts.push('> **Berpikir:**', '');
+    parts.push(...m.reasoning.split(NL).map((ln: string) => '> ' + ln));
+  }
+  return parts.join(NL);
+}
+
+
 export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSetBookmark, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
   const [jsonCopiedIndex, setJsonCopiedIndex] = useState<number | null>(null);
   const [textCopiedIndex, setTextCopiedIndex] = useState<number | null>(null);
+  const [mdCopiedIndex, setMdCopiedIndex] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<Record<number, 'up' | 'down' | undefined>>({});
   const [bookmarked, setBookmarked] = useState<Record<number, boolean>>({});
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -299,6 +317,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
       setBookmarked({});
       setJsonCopiedIndex(null);
       setTextCopiedIndex(null);
+      setMdCopiedIndex(null);
       setEditingIndex(null);
       setDraft('');
       setDeleteArmedIndex(null);
@@ -368,6 +387,12 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
   const handleCopyJson = (m: Message, index: number) => {
     navigator.clipboard?.writeText(JSON.stringify(messageJsonRecord(m, model), null, 2))
       .then(() => flashCopy(setJsonCopiedIndex, index)).catch(() => {});
+  };
+
+  /** Copy a turn's Markdown source to the clipboard and flash confirmation. */
+  const handleCopyMarkdown = (m: Message, index: number) => {
+    navigator.clipboard?.writeText(messageMarkdown(m))
+      .then(() => flashCopy(setMdCopiedIndex, index)).catch(() => {});
   };
 
   /** Copy a turn's reasoning text to the clipboard and flash confirmation. */
@@ -816,6 +841,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
                         }
                       />
+                      <ActionButton
+                        label="Salin Markdown"
+                        activeLabel="Markdown tersalin"
+                        active={mdCopiedIndex === i}
+                        onClick={() => handleCopyMarkdown(m, i)}
+                        icon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M8 9h8M8 13h5" /></svg>
+                        }
+                        activeIcon={
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                        }
+                      />
                     </div>
                   </div>
                 </div>
@@ -901,6 +938,18 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           onClick={() => handleCopyText(m.content, i)}
                           icon={
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><rect x="9" y="9" width="13" height="13" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                          }
+                          activeIcon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                          }
+                        />
+                        <ActionButton
+                          label="Salin Markdown"
+                          activeLabel="Markdown tersalin"
+                          active={mdCopiedIndex === i}
+                          onClick={() => handleCopyMarkdown(m, i)}
+                          icon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M4 4h16v16H4z" /><path d="M8 9h8M8 13h5" /></svg>
                           }
                           activeIcon={
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
