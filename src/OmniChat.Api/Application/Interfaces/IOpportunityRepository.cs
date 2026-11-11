@@ -12,6 +12,9 @@ public interface IOpportunityRepository
     /// <summary>All opportunities, optionally filtered by pipeline status, newest-first.</summary>
     Task<IReadOnlyList<Opportunity>> ListAsync(string? status, CancellationToken cancellationToken);
 
+    /// <summary>Loads a single opportunity by id, or null when it does not exist.</summary>
+    Task<Opportunity?> GetByIdAsync(long id, CancellationToken cancellationToken);
+
     /// <summary>Inserts opportunities whose non-empty <see cref="Opportunity.SourceId"/> is not already present.</summary>
     Task<int> InsertMissingAsync(IEnumerable<Opportunity> opportunities, CancellationToken cancellationToken);
 

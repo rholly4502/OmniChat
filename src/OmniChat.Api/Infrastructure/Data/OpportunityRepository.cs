@@ -22,6 +22,14 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<Opportunity?> GetByIdAsync(
+        long id, CancellationToken cancellationToken)
+    {
+        return await db.Opportunities
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+    }
+
     public async Task<int> InsertMissingAsync(
         IEnumerable<Opportunity> opportunities, CancellationToken cancellationToken)
     {

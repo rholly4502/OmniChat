@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, listOpportunities, updateOpportunityFollowUp, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -92,5 +92,31 @@ describe('updateOpportunityFollowUp', () => {
   it('throws ApiError on non-2xx', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404, headers: { get: () => null } });
     await expect(updateOpportunityFollowUp(7, '2026-11-20', { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('generateLamaranDraft', () => {
+  it('POSTs the draft endpoint with auth header and returns the draft', async () => {
+    const draft = { coverLetter: 'Subject: Application for .NET Developer\n\nDear Hiring Manager,\n\n...', model: 'hermes' };
+    const fetchMock = vi.fn().mockResolvedValue(okResponse(draft));
+    const out = await generateLamaranDraft(3, { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    expect(out).toEqual(draft);
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/3/lamaran-draft`);
+    expect(init.method).toBe('POST');
+    expect(init.headers).toEqual({ 'X-Api-Key': 'k' });
+  });
+
+  it('throws ApiError when the gateway reports a failure', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(502));
+    await expect(generateLamaranDraft(3, { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 502 });
+  });
+
+  it('propagates the abort signal', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse({ coverLetter: 'x', model: 'hermes' }));
+    const signal = new AbortController().signal;
+    await generateLamaranDraft(3, { fetchImpl: fetchMock as unknown as typeof fetch, signal });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(init.signal).toBe(signal);
   });
 });

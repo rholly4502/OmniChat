@@ -10,7 +10,7 @@ public class JobsControllerTests
 {
     private readonly Mock<IOpportunityRepository> _repository = new();
 
-    private JobsController CreateController() => new(_repository.Object);
+    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object);
 
     private static Opportunity Opportunity(string status = "new", string? sourceId = null) => new()
     {

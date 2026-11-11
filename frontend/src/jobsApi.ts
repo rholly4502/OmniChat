@@ -73,6 +73,32 @@ export async function updateOpportunityStatus(
   }
 }
 
+/** A generated cover-letter draft, as returned by `POST /api/jobs/{id}/lamaran-draft`. */
+export interface LamaranDraft {
+  coverLetter: string;
+  model: string;
+}
+
+/**
+ * Generate a first-draft cover letter for one opportunity by calling the Hermes
+ * gateway. The returned draft is for review, not auto-submission.
+ */
+export async function generateLamaranDraft(
+  id: number,
+  options: JobsRequestOptions = {},
+): Promise<LamaranDraft> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${JOBS_URL}/${id}/lamaran-draft`, {
+    method: 'POST',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return (await res.json()) as LamaranDraft;
+}
+
 /** Set/clear a follow-up target date for one opportunity. 204 on success. */
 export async function updateOpportunityFollowUp(
   id: number,

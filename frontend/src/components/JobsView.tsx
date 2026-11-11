@@ -115,12 +115,49 @@ function statusTone(status: string): string {
 
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
 export function JobsView({ apiKey }: JobsViewProps) {
-  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId } = useJobs(apiKey);
+  const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
   const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
+  const [draftById, setDraftById] = useState<Record<number, string>>({});
+  const [draftErrorById, setDraftErrorById] = useState<Record<number, string>>({});
+  const [draftOpenById, setDraftOpenById] = useState<Record<number, boolean>>({});
+  const [copiedDraft, setCopiedDraft] = useState<number | null>(null);
+
+  const handleGenerateDraft = async (o: Opportunity) => {
+    try {
+      const draft = await generateDraft(o.id);
+      if (draft) {
+        setDraftById((m) => ({ ...m, [o.id]: draft.coverLetter }));
+        setDraftErrorById((m) => { const n = { ...m }; delete n[o.id]; return n; });
+        setDraftOpenById((m) => ({ ...m, [o.id]: true }));
+      }
+    } catch {
+      setDraftErrorById((m) => ({ ...m, [o.id]: 'Gagal membuat draft. Coba lagi.' }));
+      setDraftOpenById((m) => ({ ...m, [o.id]: true }));
+    }
+  };
+
+  const copyDraft = async (id: number) => {
+    const text = draftById[id] ?? '';
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    setCopiedDraft(id);
+    window.setTimeout(() => setCopiedDraft((c) => (c === id ? null : c)), 1500);
+  };
 
   // Roving-tabindex refs for the three filter tablists (type/status/tier).
   // Only the selected tab in each list is in the tab order; arrow keys move
@@ -500,8 +537,51 @@ export function JobsView({ apiKey }: JobsViewProps) {
                       </button>
                     ))}
                   </span>
+                  <button
+                    type="button"
+                    disabled={generatingId === o.id}
+                    onClick={() => void handleGenerateDraft(o)}
+                    className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${generatingId === o.id ? 'border-chill-border bg-chill-surface text-chill-muted cursor-wait' : 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'}`}
+                  >
+                    {generatingId === o.id ? 'Menyusun…' : (draftById[o.id] ? 'Buat ulang draft' : 'Buat draft lamaran')}
+                  </button>
                 </div>
 
+                {draftOpenById[o.id] && (
+                  <div className="mt-3 border border-chill-border bg-chill-surface p-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="text-xs font-semibold text-chill-text">Draft lamaran (draf untuk direview)</span>
+                      {draftById[o.id] && (
+                        <button
+                          type="button"
+                          onClick={() => void copyDraft(o.id)}
+                          className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                        >
+                          {copiedDraft === o.id ? 'Tersalin ✓' : 'Salin'}
+                        </button>
+                      )}
+                    </div>
+                    {draftErrorById[o.id] && (
+                      <p className="text-xs text-chill-red mb-2">{draftErrorById[o.id]}</p>
+                    )}
+                    {generatingId === o.id ? (
+                      <p className="flex items-center gap-2 text-xs text-chill-muted py-2" role="status">
+                        <ScanLoader />
+                        Mengirim ke gateway AI…
+                      </p>
+                    ) : draftById[o.id] ? (
+                      <textarea
+                        value={draftById[o.id]}
+                        onChange={(e) => setDraftById((m) => ({ ...m, [o.id]: e.target.value }))}
+                        aria-label={`Draft lamaran untuk ${o.judul}`}
+                        rows={10}
+                        className="w-full rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-base text-chill-text leading-relaxed min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-y"
+                      />
+                    ) : (
+                      <p className="text-xs text-chill-muted">Klik tombol di atas untuk membuat draft.</p>
+                    )}
+                  </div>
+                )}
                 <div className="mt-3 border-t border-chill-border pt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
                   {needsFollowUp(o) && (
                     <span

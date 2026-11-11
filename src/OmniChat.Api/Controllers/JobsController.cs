@@ -12,7 +12,9 @@ namespace OmniChat.Api.Controllers;
 [ApiController]
 [Route("api/jobs")]
 [Tags("Jobs")]
-public sealed class JobsController(IOpportunityRepository repository) : ControllerBase
+public sealed class JobsController(
+    IOpportunityRepository repository,
+    ILamaranDraftService lamaranDraftService) : ControllerBase
 {
     /// <summary>All curated opportunities (newest first), optionally filtered by status.</summary>
     /// <param name="status">Optional pipeline filter: new, applied, interview, offer, closed.</param>
@@ -87,6 +89,39 @@ public sealed class JobsController(IOpportunityRepository repository) : Controll
 
         var updated = await repository.UpdateFollowUpAsync(id, tanggal, cancellationToken);
         return updated ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
+    }
+
+    /// <summary>
+    /// Generates a first-draft cover letter for one opportunity by calling the Hermes
+    /// gateway with Rholly's profile and the opportunity details. The result is a draft
+    /// for Rholly to review — never an auto-submission.
+    /// </summary>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Draft cover letter generated.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No opportunity with this id.</response>
+    /// <response code="502">The AI gateway could not produce a draft.</response>
+    [HttpPost("{id}/lamaran-draft")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status502BadGateway)]
+    public async Task<IActionResult> GenerateLamaranDraft(
+        long id,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var draft = await lamaranDraftService.GenerateAsync(id, cancellationToken);
+            return draft is null
+                ? NotFound(new { message = $"Lowongan {id} tidak ditemukan." })
+                : Ok(draft);
+        }
+        catch (InvalidOperationException)
+        {
+            return StatusCode(StatusCodes.Status502BadGateway, new { message = "Gagal membuat draft lamaran: gateway AI tidak tersedia." });
+        }
     }
 }
 

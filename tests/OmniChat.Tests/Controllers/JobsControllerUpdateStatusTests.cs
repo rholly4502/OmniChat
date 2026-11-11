@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using OmniChat.Api.Controllers;
+using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Data;
 using OmniChat.Domain.Entities;
 
@@ -25,7 +27,7 @@ public class JobsControllerUpdateStatusTests
             seed.SaveChanges();
         }
         db = new ChatDbContext(options);
-        return (new JobsController(new OpportunityRepository(db)), db, dbPath);
+        return (new JobsController(new OpportunityRepository(db), new Mock<ILamaranDraftService>().Object), db, dbPath);
     }
 
     [Fact]

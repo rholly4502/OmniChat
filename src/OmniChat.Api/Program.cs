@@ -146,6 +146,7 @@ builder.Services.AddHttpClient("LLMClient", client =>
 
 // Register Clean Architecture Services
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ILamaranDraftService, LamaranDraftService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 builder.Services.Configure<ExpenseAdviceOptions>(builder.Configuration.GetSection(ExpenseAdviceOptions.SectionName));
 builder.Services.AddScoped<IExpenseAdviceService, ExpenseAdviceService>();

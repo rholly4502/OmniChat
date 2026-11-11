@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type Opportunity } from '../jobsApi';
+import { generateLamaranDraft, listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type LamaranDraft, type Opportunity } from '../jobsApi';
 
 export interface UseJobsResult {
   opportunities: Opportunity[];
@@ -12,6 +12,8 @@ export interface UseJobsResult {
   updateStatus: (id: number, status: string) => Promise<void>;
   updateFollowUp: (id: number, tanggal: string | null) => Promise<void>;
   updatingId: number | null;
+  generatingId: number | null;
+  generateDraft: (id: number) => Promise<LamaranDraft | null>;
 }
 
 /** Loads the curated job-opportunity list, with an optional pipeline status filter. */
@@ -22,6 +24,7 @@ export function useJobs(apiKey?: string): UseJobsResult {
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [generatingId, setGeneratingId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -73,5 +76,15 @@ export function useJobs(apiKey?: string): UseJobsResult {
     }
   }, [apiKey]);
 
-  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId };
+  const generateDraft = useCallback(async (id: number): Promise<LamaranDraft | null> => {
+    if (!apiKey) return null;
+    setGeneratingId(id);
+    try {
+      return await generateLamaranDraft(id, { apiKey });
+    } finally {
+      setGeneratingId(null);
+    }
+  }, [apiKey]);
+
+  return { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft };
 }
