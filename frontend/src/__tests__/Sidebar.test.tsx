@@ -173,10 +173,47 @@ describe('Sidebar', () => {
     expect(screen.getByText(/X-Api-Key aktif/)).toBeInTheDocument();
   });
 
-  it('clears the conversation through onClear', () => {
+  it('arms a confirmation before clearing the conversation', () => {
     const { props } = renderSidebar();
     fireEvent.click(screen.getByText(/Clear chat/));
+    // First tap must only arm; the conversation must survive until confirmed.
+    expect(props.onClear).not.toHaveBeenCalled();
+    expect(screen.getByText('Bersihkan chat?')).toBeInTheDocument();
+  });
+
+  it('clears the conversation only after confirming', () => {
+    const { props } = renderSidebar();
+    fireEvent.click(screen.getByText(/Clear chat/));
+    fireEvent.click(screen.getByLabelText('Konfirmasi bersihkan chat'));
     expect(props.onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the conversation alone when clear is cancelled', () => {
+    const { props } = renderSidebar();
+    fireEvent.click(screen.getByText(/Clear chat/));
+    fireEvent.click(screen.getByLabelText('Batal bersihkan chat'));
+    expect(props.onClear).not.toHaveBeenCalled();
+    expect(screen.queryByText('Bersihkan chat?')).not.toBeInTheDocument();
+    expect(screen.getByText(/Clear chat/)).toBeInTheDocument();
+  });
+
+  it('disarms the clear confirmation on Escape', () => {
+    const { props } = renderSidebar();
+    fireEvent.click(screen.getByText(/Clear chat/));
+    fireEvent.keyDown(screen.getByLabelText('Batal bersihkan chat'), { key: 'Escape' });
+    expect(props.onClear).not.toHaveBeenCalled();
+    expect(screen.queryByText('Bersihkan chat?')).not.toBeInTheDocument();
+  });
+
+  it('sizes the clear confirmation at 44px high, text-sm', () => {
+    renderSidebar();
+    fireEvent.click(screen.getByText(/Clear chat/));
+    const confirm = screen.getByLabelText('Konfirmasi bersihkan chat');
+    const cancel = screen.getByLabelText('Batal bersihkan chat');
+    expect(confirm.className).toContain('min-h-[44px]');
+    expect(cancel.className).toContain('min-h-[44px]');
+    expect(confirm.className).toContain('text-sm');
+    expect(confirm.className).not.toContain('text-xs');
   });
 
   it('closes through onClose and focuses the close button it was given', () => {

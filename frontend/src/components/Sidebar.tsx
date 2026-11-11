@@ -193,6 +193,9 @@ export function Sidebar({
   // when the user confirms. A 44px bin sits next to the session label, so a
   // single mistap used to destroy a whole conversation with no undo.
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  /** Two-step clear: arming the "Clear chat" button shows an inline confirm row, so a
+   * single mistap cannot wipe a whole conversation (same no-undo ruling as delete). */
+  const [pendingClear, setPendingClear] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [statsOpen, setStatsOpen] = useState(false);
@@ -1029,18 +1032,56 @@ export function Sidebar({
         </details>
       )}
 
-      <button
-        onClick={onClear}
-        className="rounded-none mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red active:translate-y-[2px] transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
-          <path d="M10 11v6" />
-          <path d="M14 11v6" />
-        </svg>
-        Clear chat
-      </button>
+      {!pendingClear ? (
+        <button
+          type="button"
+          onClick={() => setPendingClear(true)}
+          aria-label="Bersihkan percakapan"
+          className="rounded-none mt-auto text-sm text-chill-muted hover:text-chill-red active:text-chill-red active:translate-y-[2px] transition text-left py-3 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" className="shrink-0 mr-1.5 -mt-0.5" aria-hidden="true">
+            <polyline points="3 6 5 6 21 6" />
+            <path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+          Clear chat
+        </button>
+      ) : (
+        <div
+          className="mt-auto flex items-center justify-between gap-1 pl-1 pr-1"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              setPendingClear(false);
+            }
+          }}
+        >
+          <span className="truncate text-sm text-chill-text">Bersihkan chat?</span>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setPendingClear(false)}
+              aria-label="Batal bersihkan chat"
+              className="min-h-[44px] min-w-[52px] rounded-none border-2 border-chill-border px-2 text-sm text-chill-text transition hover:bg-chill-surface hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              Batal
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPendingClear(false);
+                onClear();
+              }}
+              aria-label="Konfirmasi bersihkan chat"
+              className="min-h-[44px] min-w-[52px] rounded-none bg-chill-red text-chill-on-red px-2 text-sm font-medium transition hover:bg-chill-red-hover active:bg-chill-red-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+            >
+              Bersihkan
+            </button>
+          </div>
+        </div>
+      )}
       <BackendStatus status={backendStatus} />
     </aside>
   );

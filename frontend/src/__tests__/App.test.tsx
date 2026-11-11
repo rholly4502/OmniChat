@@ -363,8 +363,9 @@ describe('App', () => {
       expect(transcript.getByText('Hello')).toBeInTheDocument();
     });
 
-    // Click clear chat
+    // Click clear chat, then confirm the destructive action (two-step)
     fireEvent.click(screen.getByText(/Clear chat/));
+    fireEvent.click(screen.getByLabelText('Konfirmasi bersihkan chat'));
 
     // Messages should be cleared — empty state should reappear
     await waitFor(() => {
