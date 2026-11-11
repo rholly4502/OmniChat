@@ -8,6 +8,8 @@ export interface ChatShortcutOptions {
   onOpenSearch?: () => void;
   /** Start a new chat (admin only — guests have no sessions). */
   onNewSession?: () => void;
+  /** Copy the current conversation transcript as Markdown. */
+  onCopyTranscript?: () => void;
 }
 
 /**
@@ -33,6 +35,7 @@ function isModalOpen(): boolean {
  *  - `/` or `Ctrl+K`  → focus the composer
  *  - `Ctrl+Shift+F`    → open the in-transcript search toolbar
  *  - `Ctrl+N`          → start a new chat (admin only)
+ *  - `Ctrl+Alt+C`      → copy the current conversation transcript as Markdown
  *
  * Every shortcut is guarded: it is ignored while the user is typing in an
  * input/textarea/select, and while any dialog is open (so it never hijacks
@@ -67,6 +70,10 @@ export function useChatShortcuts(options: ChatShortcutOptions): void {
       if (mod && !e.shiftKey && key === 'n') {
         e.preventDefault();
         options.onNewSession?.();
+      }
+      if (mod && e.altKey && !e.shiftKey && key === 'c') {
+        e.preventDefault();
+        options.onCopyTranscript?.();
       }
     };
 

@@ -766,4 +766,26 @@ describe('App keyboard shortcuts', () => {
       expect(document.querySelector('[data-msg-index]')).toBeNull();
     });
   });
+
+  it('Ctrl+Alt+C copies the conversation transcript as Markdown', async () => {
+    const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
+    // The clipboard mock is shared across the whole file (test-setup assigns it
+    // once), so drop any calls recorded by earlier tests in this suite.
+    writeText.mockClear();
+    render(<App />);
+    const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+    setter.call(composer, 'halo');
+    composer.dispatchEvent(new Event('input', { bubbles: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Kirim' }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Kirim' })).toBeInTheDocument();
+    });
+    fireWindowKey({ key: 'c', ctrlKey: true, altKey: true });
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    // The admin copy path builds markdown from the stored session transcript.
+    expect(String(writeText.mock.calls[0][0])).toContain('halo');
+  });
 });

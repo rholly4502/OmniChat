@@ -18,6 +18,8 @@ describe('ShortcutsDialog', () => {
     expect(screen.getAllByText('Fokus kolom ketik').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Cari di percakapan saat ini')).toBeInTheDocument();
     expect(screen.getByText('Buka chat baru')).toBeInTheDocument();
+    expect(screen.getByText('Salin percakapan sebagai Markdown')).toBeInTheDocument();
+    expect(screen.getByText('Ctrl + Alt + C')).toBeInTheDocument();
     expect(screen.getByText('Kirim pesan')).toBeInTheDocument();
     expect(screen.getByText(/\(admin\)/)).toBeInTheDocument();
     expect(screen.getAllByText('Ctrl + K').length).toBeGreaterThanOrEqual(1);

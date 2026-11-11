@@ -10,11 +10,13 @@ describe('useChatShortcuts', () => {
   let composer: () => void;
   let open: () => void;
   let news: () => void;
+  let copy: () => void;
 
   beforeEach(() => {
     composer = vi.fn();
     open = vi.fn();
     news = vi.fn();
+    copy = vi.fn();
   });
 
   afterEach(() => {
@@ -47,6 +49,20 @@ describe('useChatShortcuts', () => {
     expect(news).toHaveBeenCalledTimes(1);
   });
 
+  it('copies the transcript on Ctrl+Alt+C', () => {
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onCopyTranscript: copy }));
+    fireKey({ key: 'c', ctrlKey: true, altKey: true });
+    expect(copy).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not copy plain C, Ctrl+C, or Ctrl+Shift+C', () => {
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onCopyTranscript: copy }));
+    fireKey({ key: 'c' });
+    fireKey({ key: 'c', ctrlKey: true });
+    fireKey({ key: 'c', ctrlKey: true, shiftKey: true });
+    expect(copy).not.toHaveBeenCalled();
+  });
+
   it('does not fire when typing in an input (target guard)', () => {
     renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news }));
     const input = document.createElement('input');
@@ -58,7 +74,7 @@ describe('useChatShortcuts', () => {
   });
 
   it('does not fire while a dialog is open', () => {
-    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news }));
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onCopyTranscript: copy }));
     const dialog = document.createElement('div');
     dialog.setAttribute('role', 'dialog');
     document.body.appendChild(dialog);
@@ -66,6 +82,8 @@ describe('useChatShortcuts', () => {
     expect(composer).not.toHaveBeenCalled();
     fireKey({ key: 'n', ctrlKey: true });
     expect(news).not.toHaveBeenCalled();
+    fireKey({ key: 'c', ctrlKey: true, altKey: true });
+    expect(copy).not.toHaveBeenCalled();
   });
 
   it('ignores plain keys and non-matching shortcuts', () => {
@@ -75,5 +93,6 @@ describe('useChatShortcuts', () => {
     expect(composer).not.toHaveBeenCalled();
     expect(open).not.toHaveBeenCalled();
     expect(news).not.toHaveBeenCalled();
+    expect(copy).not.toHaveBeenCalled();
   });
 });

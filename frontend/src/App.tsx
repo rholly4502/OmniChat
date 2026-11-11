@@ -340,12 +340,21 @@ export default function App() {
   }
 
   // Global keyboard shortcuts: `/` or Ctrl+K focus the composer, Ctrl+Shift+F
-  // opens in-transcript search, Ctrl+N starts a new chat (admin only). The
+  // opens in-transcript search, Ctrl+N starts a new chat (admin only), and
+  // Ctrl+Alt+C copies the current conversation transcript as Markdown. The
   // hook itself guards against typing targets and open dialogs.
+  const handleShortcutCopyTranscript = () => {
+    if (isGuest) {
+      copyGuestTranscript();
+    } else if (activeSession) {
+      void copyTranscript(activeSession);
+    }
+  };
   useChatShortcuts({
     onFocusComposer: () => composerRef.current?.focus(),
     onOpenSearch: () => setSearchSignal((n) => n + 1),
     onNewSession: () => { if (!isGuest) void handleNewSession(); },
+    onCopyTranscript: handleShortcutCopyTranscript,
   });
 
   // A valid credential is the front door of the workspace: without one there is

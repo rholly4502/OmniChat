@@ -20,6 +20,7 @@ const SHORTCUTS: ShortcutRow[] = [
   { keys: 'Ctrl + K', action: 'Fokus kolom ketik' },
   { keys: 'Ctrl + Shift + F', action: 'Cari di percakapan saat ini' },
   { keys: 'Ctrl + N', action: 'Buka chat baru', adminOnly: true },
+  { keys: 'Ctrl + Alt + C', action: 'Salin percakapan sebagai Markdown' },
   { keys: 'Enter', action: 'Kirim pesan' },
   { keys: 'Shift + Enter', action: 'Baris baru di kolom ketik' },
   { keys: 'Esc', action: 'Tutup dialog / sidebar' },
