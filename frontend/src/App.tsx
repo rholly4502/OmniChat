@@ -355,6 +355,7 @@ export default function App() {
     onOpenSearch: () => setSearchSignal((n) => n + 1),
     onNewSession: () => { if (!isGuest) void handleNewSession(); },
     onCopyTranscript: handleShortcutCopyTranscript,
+    onRegenerate: () => { if (!streaming) void regenerate(); },
   });
 
   // A valid credential is the front door of the workspace: without one there is

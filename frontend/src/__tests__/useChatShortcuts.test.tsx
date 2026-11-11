@@ -11,12 +11,14 @@ describe('useChatShortcuts', () => {
   let open: () => void;
   let news: () => void;
   let copy: () => void;
+  let regen: () => void;
 
   beforeEach(() => {
     composer = vi.fn();
     open = vi.fn();
     news = vi.fn();
     copy = vi.fn();
+    regen = vi.fn();
   });
 
   afterEach(() => {
@@ -53,6 +55,29 @@ describe('useChatShortcuts', () => {
     renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onCopyTranscript: copy }));
     fireKey({ key: 'c', ctrlKey: true, altKey: true });
     expect(copy).toHaveBeenCalledTimes(1);
+  });
+
+  it('regenerates on Alt+R', () => {
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onRegenerate: regen }));
+    fireKey({ key: 'r', altKey: true });
+    expect(regen).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not regenerate on plain R, Ctrl+R, or Ctrl+Alt+R', () => {
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onRegenerate: regen }));
+    fireKey({ key: 'r' });
+    fireKey({ key: 'r', ctrlKey: true });
+    fireKey({ key: 'r', ctrlKey: true, altKey: true });
+    expect(regen).not.toHaveBeenCalled();
+  });
+
+  it('does not regenerate while a dialog is open', () => {
+    renderHook(() => useChatShortcuts({ onFocusComposer: composer, onOpenSearch: open, onNewSession: news, onRegenerate: regen }));
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    document.body.appendChild(dialog);
+    fireKey({ key: 'r', altKey: true });
+    expect(regen).not.toHaveBeenCalled();
   });
 
   it('does not copy plain C, Ctrl+C, or Ctrl+Shift+C', () => {

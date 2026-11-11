@@ -10,6 +10,11 @@ export interface ChatShortcutOptions {
   onNewSession?: () => void;
   /** Copy the current conversation transcript as Markdown. */
   onCopyTranscript?: () => void;
+  /**
+   * Re-run the last turn (regenerate). No-op while streaming or when there is
+   * nothing to regenerate — the chat hook's own guard decides that.
+   */
+  onRegenerate?: () => void;
 }
 
 /**
@@ -36,6 +41,7 @@ function isModalOpen(): boolean {
  *  - `Ctrl+Shift+F`    → open the in-transcript search toolbar
  *  - `Ctrl+N`          → start a new chat (admin only)
  *  - `Ctrl+Alt+C`      → copy the current conversation transcript as Markdown
+ *  - `Alt+R`           → regenerate the last reply
  *
  * Every shortcut is guarded: it is ignored while the user is typing in an
  * input/textarea/select, and while any dialog is open (so it never hijacks
@@ -74,6 +80,10 @@ export function useChatShortcuts(options: ChatShortcutOptions): void {
       if (mod && e.altKey && !e.shiftKey && key === 'c') {
         e.preventDefault();
         options.onCopyTranscript?.();
+      }
+      if (!mod && e.altKey && !e.shiftKey && key === 'r') {
+        e.preventDefault();
+        options.onRegenerate?.();
       }
     };
 
