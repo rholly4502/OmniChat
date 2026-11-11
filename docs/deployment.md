@@ -55,11 +55,12 @@ docker compose up -d --build
 
 ## Container Image Notes
 
-- **Health check needs `curl`.** The `mcr.microsoft.com/dotnet/aspnet` runtime image does **not** bundle
-  `curl` (or `wget`). The backend `Dockerfile` therefore installs `curl` in the runtime stage so the
-  `docker-compose.yml` healthcheck (`curl -f http://localhost:5184/health`) — and the image's own
-  `HEALTHCHECK` — pass. Without it the backend stays `unhealthy` and the frontend, which waits on
-  `depends_on: backend: condition: service_healthy`, never starts.
+- **Health probe uses static BusyBox `wget`.** The `mcr.microsoft.com/dotnet/aspnet` runtime image does **not** bundle
+  `curl` (or `wget`). The backend `Dockerfile` copies the static BusyBox binary and symlinks `wget`, so both
+  the `docker-compose.yml` healthcheck (`wget -q --spider http://127.0.0.1:5184/health`) — and the image's own
+  `HEALTHCHECK` — pass. This deliberately avoids `apt-get install curl`: the Ubuntu mirrors were unresolvable
+  on the VPS build host and broke deploys. Without a probe the backend stays `unhealthy` and the frontend,
+  which waits on `depends_on: backend: condition: service_healthy`, never starts.
 - **`.dockerignore`.** A root `.dockerignore` keeps `.env` (secrets), `node_modules/`, `bin/`, `obj/` and
   `.git/` out of the build context, so credentials never reach an image layer and image builds stay lean.
 - **Reproducible frontend image.** The frontend build stage uses `npm ci` from

@@ -52,7 +52,7 @@ services:
       # mounted read-only so the authenticated /api/cv endpoint can serve them.
       - /opt/cv:/app/cv:ro
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5184/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

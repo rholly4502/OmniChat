@@ -126,18 +126,22 @@ public class DeploymentConfigTests
     [Fact]
     public void RuntimeImage_InstallsTheHealthcheckClient()
     {
-        // mcr.microsoft.com/dotnet/aspnet does NOT bundle curl (dotnet-docker#2379),
-        // yet the docker-compose backend healthcheck runs `curl -f`. The runtime
-        // stage must install curl or the container is permanently "unhealthy"
-        // and dependents (frontend: depends_on: service_healthy) never start.
+        // mcr.microsoft.com/dotnet/aspnet does NOT bundle curl or wget
+        // (dotnet-docker#2379). The backend runtime used to apt-get install curl,
+        // but the Ubuntu mirrors were unresolvable on the VPS build host, which
+        // broke deploys. The runtime now copies the static BusyBox binary and
+        // uses `wget` for the healthcheck (same approach as the frontend image).
         var compose = Read("docker-compose.yml");
         var dockerfile = Read("Dockerfile");
 
-        var composeHealthcheckUsesCurl = compose.Contains("healthcheck") && compose.Contains("curl");
-        Assert.True(composeHealthcheckUsesCurl, "Expected the compose backend healthcheck to use curl (keeps this guard meaningful).");
+        var composeHealthcheckUsesWget = compose.Contains("healthcheck") && compose.Contains("wget");
+        Assert.True(composeHealthcheckUsesWget, "Expected the compose backend healthcheck to use wget (keeps this guard meaningful).");
 
-        Assert.Contains("curl", dockerfile);
-        Assert.Contains("install", dockerfile);
+        // The Dockerfile must supply the probe binary without apt: copy the static
+        // BusyBox binary and symlink wget. No apt-get may remain in the image.
+        Assert.Contains("busybox", dockerfile);
+        Assert.Contains("wget", dockerfile);
+        Assert.DoesNotContain("apt-get", dockerfile);
     }
 
     [Fact]
