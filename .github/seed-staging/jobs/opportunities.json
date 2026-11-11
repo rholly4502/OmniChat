@@ -574,5 +574,17 @@
     "catatan": "C#/.NET + SignalR/WebSocket + SQL Server; klien Sun Life (asuransi); kontrak 3-6 bln onsite Jakarta Selatan.",
     "status": "new",
     "ditemukan": "2026-11-10"
+  },
+  {
+    "id": "31ea48aa90",
+    "judul": "C# Engineer for AI Training",
+    "perusahaan": "OpenTrain",
+    "lokasi": "Remote (worldwide, open Indonesia)",
+    "tipe": "Part-time / Kontrak",
+    "gaji": "$35-65/jam",
+    "link": "https://www.opentrain.ai/jobs/c-ai-training-engineer--cmrcm43930000pw3livl6r7yo/",
+    "catatan": "AI training engineer - C#/.NET expertise menulis/review respons teknis AI (ASP.NET Core, Web API, SQL). Remote worldwide termasuk Indonesia, kontrak part-time 20+ jam/mgg, intermediate (2+ th), $35-65/jam. Cocok quick-win pelengkap.",
+    "status": "new",
+    "ditemukan": "2026-11-11"
   }
 ]
