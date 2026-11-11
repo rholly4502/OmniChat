@@ -406,6 +406,15 @@ export default function App() {
       onTouchEnd={onTouchEnd}
       onTouchCancel={onTouchEnd}
     >
+      {/* WCAG 2.4.1 Bypass Blocks: first focusable element — keyboard users can jump
+       straight past the sidebar/header to the main content. Visually hidden until
+       focused; pixel2-styled (square, chill tokens) when it appears. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[60] focus:rounded-none focus:border-2 focus:border-chill-accent focus:bg-chill-elevated focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-chill-accent focus:outline-none focus:ring-2 focus:ring-chill-accent/60"
+      >
+        Lompat ke konten
+      </a>
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-chill-accent opacity-[0.04] pixel-grid" />
       {sidebarOpen && <SidebarOverlay onClose={closeDrawer} />}
 
@@ -467,7 +476,7 @@ export default function App() {
         backendStatus={backendStatus}
       />
 
-      <main className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
+      <main id="main-content" className="flex-1 flex flex-col min-w-0" aria-hidden={sidebarOpen}>
         <MobileTopBar
           sidebarOpen={sidebarOpen}
           onOpenSidebar={openDrawer}

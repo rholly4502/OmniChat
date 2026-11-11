@@ -789,3 +789,32 @@ describe('App keyboard shortcuts', () => {
     expect(String(writeText.mock.calls[0][0])).toContain('halo');
   });
 });
+
+describe('App skip-to-content link', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    // A stored key keeps the app unlocked so the workspace renders.
+    localStorage.setItem('omnichat_api_key', 'test-key');
+    setupFetchMock();
+  });
+
+  it('provides a keyboard-reachable skip link to the main content (WCAG 2.4.1)', () => {
+    render(<App />);
+
+    // The skip link is the first focusable element and targets the main region.
+    const skip = screen.getByRole('link', { name: /Lompat ke konten/ });
+    expect(skip).toHaveAttribute('href', '#main-content');
+    expect(document.getElementById('main-content')).not.toBeNull();
+
+    // Visually hidden until focused: sr-only when idle, revealed on focus.
+    expect(skip.className).toContain('sr-only');
+    skip.focus();
+    expect(skip).toHaveFocus();
+    expect(skip.className).toContain('focus:not-sr-only');
+
+    // Pixel2/styling discipline: square corners + chill tokens only.
+    expect(skip.className).toContain('focus:rounded-none');
+    expect(skip.className).toContain('focus:border-chill-accent');
+    expect(skip.className).toContain('focus:bg-chill-elevated');
+  });
+});
