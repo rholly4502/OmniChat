@@ -27,6 +27,7 @@ export interface Opportunity {
   followUpTanggal?: string | null; // YYYY-MM-DD
   ditemukan: string; // YYYY-MM-DD (WIB)
   sourceId?: string | null;
+  skor?: number | null;
 }
 
 /** Pipeline filter values shown to the user. */

@@ -25,6 +25,9 @@ public class Opportunity
     /// <summary>Optional salary range as free text.</summary>
     public string? Gaji { get; set; }
 
+    /// <summary>Fit score 0-100 from the agent rubric (null = not scored).</summary>
+    public int? Skor { get; set; }
+
     /// <summary>Source URL (job posting / company page).</summary>
     public string? Link { get; set; }
 

@@ -61,6 +61,29 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         return await db.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<int> UpdateSkorBySourceAsync(
+        IReadOnlyDictionary<string, int?> scores, CancellationToken cancellationToken)
+    {
+        if (scores.Count == 0) return 0;
+
+        var keys = scores.Keys.ToList();
+        var rows = await db.Opportunities
+            .Where(o => o.SourceId != null && keys.Contains(o.SourceId))
+            .ToListAsync(cancellationToken);
+
+        var changed = 0;
+        foreach (var row in rows)
+        {
+            if (row.SourceId is not null && scores.TryGetValue(row.SourceId, out var skor))
+            {
+                row.Skor = skor;
+                changed++;
+            }
+        }
+        await db.SaveChangesAsync(cancellationToken);
+        return changed;
+    }
+
     public async Task<bool> UpdateStatusAsync(
         long id, string status, CancellationToken cancellationToken)
     {

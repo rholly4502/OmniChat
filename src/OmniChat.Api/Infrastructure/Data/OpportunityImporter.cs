@@ -67,12 +67,20 @@ public sealed class OpportunityImporter(IOpportunityRepository repository)
                 Link = item.TryGetProperty("link", out var lk) ? lk.GetString() : null,
                 Catatan = item.TryGetProperty("catatan", out var ct) ? ct.GetString() : null,
                 Status = item.TryGetProperty("status", out var st) ? st.GetString() ?? "new" : "new",
+                Skor = item.TryGetProperty("skor", out var sk) && sk.ValueKind == System.Text.Json.JsonValueKind.Number
+                    ? (int?)sk.GetInt32() : null,
                 Ditemukan = ditemukan,
                 SourceId = idEl.GetString()?.Trim(),
             });
         }
 
         var inserted = await repository.InsertMissingAsync(opportunities, cancellationToken);
+
+        var scores = opportunities
+            .Where(o => o.Skor.HasValue && !string.IsNullOrWhiteSpace(o.SourceId))
+            .ToDictionary(o => o.SourceId!.Trim(), o => o.Skor);
+        await repository.UpdateSkorBySourceAsync(scores, cancellationToken);
+
         return new OpportunityImportResult(inserted, skipped);
     }
 }

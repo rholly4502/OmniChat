@@ -281,6 +281,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("Skor")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("SourceId")
                         .HasColumnType("TEXT");
 

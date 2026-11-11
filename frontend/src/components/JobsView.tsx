@@ -208,6 +208,26 @@ export function JobsView({ apiKey }: JobsViewProps) {
     );
   };
 
+  const scoreTone = (n: number | null): string => {
+    if (n == null) return 'bg-chill-surface text-chill-muted border-chill-border';
+    if (n >= 75) return 'bg-chill-emerald/15 text-chill-emerald border-chill-emerald/40';
+    if (n >= 50) return 'bg-chill-indigo/15 text-chill-indigo border-chill-indigo/40';
+    return 'bg-chill-red/15 text-chill-red border-chill-red/50';
+  };
+
+  const scoreBadge = (o: Opportunity) => {
+    if (o.skor == null) return null;
+    return (
+      <span
+        title={`Cocok ${o.skor}/100`}
+        className={`shrink-0 rounded-none border px-2 py-0.5 text-xs font-semibold inline-flex items-center gap-1 ${scoreTone(o.skor)}`}
+      >
+        {o.skor}
+        <span className="text-xs font-medium opacity-80">/100</span>
+      </span>
+    );
+  };
+
   const statusCount = (s: string) =>
     opportunities.filter(
       (o) =>
@@ -436,6 +456,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     {statusLabel(o.status)}
                   </span>
                   {tierBadge(o)}
+                  {scoreBadge(o)}
                 </div>
 
                 <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted">
