@@ -637,3 +637,42 @@ describe('AdvicePanel per-category month-over-month deltas', () => {
     expect(screen.queryByText(/Baru di bulan ini/)).not.toBeInTheDocument();
   });
 });
+
+describe('AdvicePanel month-change refetch (eval)', () => {
+  const mayPayload = { ...advicePayload, date: '2026-05-31', month: '2026-05' };
+  const junePayload = { ...advicePayload, date: '2026-06-30', month: '2026-06' };
+
+  it('re-fetches advice when the viewed month changes while the panel stays open', async () => {
+    const fetchMock = vi.fn();
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(mayPayload))
+      .mockResolvedValueOnce(jsonResponse(junePayload));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText('Saran Harian · 2026-05-31')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // Change the viewed month while the panel is open — must refetch for June.
+    rerender(<AdvicePanel apiKey="secret" month="2026-06" />);
+    await waitFor(() => expect(screen.getByText('Saran Harian · 2026-06-30')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText('Saran Harian · 2026-05-31')).not.toBeInTheDocument();
+  });
+
+  it('does not refetch when the month is unchanged but the panel re-renders', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(mayPayload));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { rerender } = render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText('Saran Harian · 2026-05-31')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    rerender(<AdvicePanel apiKey="secret" month="2026-05" />);
+    await waitFor(() => expect(screen.getByText('Saran Harian · 2026-05-31')).toBeInTheDocument());
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+

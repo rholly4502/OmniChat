@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { formatRupiah, getExpenseAdvice } from '../expensesApi';
 import type { ExpenseAdvice } from '../expensesApi';
 import { ApiError } from '../api';
@@ -77,28 +77,43 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [advice, setAdvice] = useState<ExpenseAdvice | null>(null);
 
-  async function toggle() {
-    const next = !open;
-    setOpen(next);
-    if (!next) return;
+  // Fetch advice whenever the panel is open. Keyed on [open, month, apiKey] so it
+  // also re-fetches when the viewed month changes while the panel stays open —
+  // otherwise the previous month's analysis would linger under the new month's
+  // header. The API-key guard and error handling live here, so the toggle only
+  // flips the open state.
+  useEffect(() => {
+    if (!open) return;
 
-    if (!apiKey) {
-      setError('API key diperlukan untuk Analisa & Saran.');
-      setAdvice(null);
-      return;
-    }
+    let cancelled = false;
+    (async () => {
+      if (!apiKey) {
+        setError('API key diperlukan untuk Analisa & Saran.');
+        setAdvice(null);
+        return;
+      }
 
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await getExpenseAdvice(analyseDate(month), { apiKey });
-      setAdvice(data);
-    } catch (err) {
-      setError(err instanceof ApiError ? `Gagal memuat analisa (${err.status}).` : 'Gagal memuat analisa.');
-      setAdvice(null);
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await getExpenseAdvice(analyseDate(month), { apiKey });
+        if (!cancelled) setAdvice(data);
+      } catch (err) {
+        if (cancelled) return;
+        setError(err instanceof ApiError ? `Gagal memuat analisa (${err.status}).` : 'Gagal memuat analisa.');
+        setAdvice(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, month, apiKey]);
+
+  function toggle() {
+    setOpen((v) => !v);
   }
 
   return (
