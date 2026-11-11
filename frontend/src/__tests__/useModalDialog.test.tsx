@@ -42,6 +42,19 @@ describe('useModalDialog', () => {
     expect(document.activeElement?.hasAttribute('data-close')).toBe(true);
   });
 
+  it('restores focus to the opener when the dialog closes', () => {
+    const onClose = vi.fn();
+    // Simulate a real opener button that has focus before the dialog opens.
+    const opener = document.createElement('button');
+    document.body.appendChild(opener);
+    opener.focus();
+    const { rerender } = render(<Harness open onClose={onClose} />);
+    expect(document.activeElement?.hasAttribute('data-close')).toBe(true);
+    rerender(<Harness open={false} onClose={onClose} />);
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
   it('closes on Escape', () => {
     const onClose = vi.fn();
     render(<Harness open onClose={onClose} />);

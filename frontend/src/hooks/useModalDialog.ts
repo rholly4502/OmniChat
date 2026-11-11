@@ -26,6 +26,11 @@ export function useModalDialog(
     if (!open) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    // Remember what had focus before the dialog took it, so we can return it on
+    // close (ARIA dialog pattern / WCAG 2.4.3 Focus Order). The opener button is
+    // still focused here because the close control is focused below, after we
+    // capture it.
+    const prevActive = document.activeElement as HTMLElement | null;
     const panel = panelRef.current;
     panel?.querySelector<HTMLButtonElement>(closeSelector)?.focus();
 
@@ -54,6 +59,13 @@ export function useModalDialog(
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = prevOverflow;
+      // Return focus to whatever opened the dialog (ARIA dialog pattern /
+      // WCAG 2.4.3). Only restore if the element is still in the document — the
+      // opener may have been removed (e.g. the view switched) while the dialog
+      // was open, in which case focusing a detached node is a no-op.
+      if (prevActive?.isConnected) {
+        prevActive.focus();
+      }
     };
   }, [open, onClose, closeSelector]);
 
