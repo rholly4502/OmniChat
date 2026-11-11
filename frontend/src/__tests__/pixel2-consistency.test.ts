@@ -299,3 +299,33 @@ describe('pixel2 advice frame grammar', () => {
     expect(nabung).toContain('bg-chill-accent/15');
   });
 });
+
+
+describe('pixel2 disclosure toggle press feedback', () => {
+  it('every <summary> toggle presses (active:translate-y) like the buttons', () => {
+    const offenders: string[] = [];
+    for (const file of sourceFiles(SRC)) {
+      const text = readFileSync(file, 'utf8');
+      const re = /<summary\b/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text)) !== null) {
+        let i = re.lastIndex;
+        let quote: string | null = null;
+        let braceDepth = 0;
+        for (; i < text.length; i++) {
+          const ch = text[i];
+          if (quote) { if (ch === quote) quote = null; continue; }
+          if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+          if (ch === '{') braceDepth++;
+          else if (ch === '}') braceDepth--;
+          else if (ch === '>' && braceDepth === 0) break;
+        }
+        const attrs = text.slice(m.index, i + 1);
+        if (!attrs.includes('active:translate-y-[2px]')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${text.slice(0, m.index).split('\n').length} summary missing active press - ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
