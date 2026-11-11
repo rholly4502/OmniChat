@@ -317,7 +317,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                 key={f}
                 type="button"
                 onClick={() => void downloadCv(f)}
-                className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text transition hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[36px]"
+                className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text transition hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
                   <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />

@@ -188,6 +188,20 @@ describe('pixel2 chill consistency', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('jobs view keeps every CV download button on the 44px touch floor', () => {
+    // The CV download chip is an interactive control that must meet the same
+    // 44px touch floor as the expenses/advice buttons. It previously slipped
+    // through at 36px because the floor guard was scoped to expenses/advice.
+    const jv = readFileSync(resolve(SRC, 'components/JobsView.tsx'), 'utf8');
+    const buttons = buttonTags(jv).filter((b) => b.attrs.includes('downloadCv'));
+    expect(buttons.length).toBeGreaterThan(0);
+    for (const { attrs, line } of buttons) {
+      const cls = /\bclassName=(?:"([^"]*)"|\{`([^`]*)`\})/.exec(attrs);
+      const classes = (cls?.[1] ?? cls?.[2] ?? '').split(/\s+/);
+      expect(classes, `JobsView:${line}`).toContain('min-h-[44px]');
+    }
+  });
+
   it('every <select> hides the native drop-down arrow (appearance-none + pixel chevron)', () => {
     const offenders: string[] = [];
     for (const file of files) {
