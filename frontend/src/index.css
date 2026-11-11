@@ -109,6 +109,17 @@ pre.code-block-pre {
   outline: 2px solid var(--color-chill-accent);
   outline-offset: 2px;
 }
+
+/* Global keyboard-focus fallback: every interactive control that does not
+   already draw an explicit `focus-visible:ring` + `outline-none` gets the
+   same hard square chill-accent outline as md-body links / range inputs /
+   checkboxes. :where() keeps specificity at zero, so elements with their
+   own ring treatment are untouched. Mouse clicks do not trigger focus-visible,
+   so this only appears for keyboard navigation. */
+:where(button, a, select, input, textarea, summary, [role='button'], [role='tab'], [role='menuitem'], [role='switch']):focus-visible {
+  outline: 2px solid var(--color-chill-accent);
+  outline-offset: 2px;
+}
 .md-body blockquote {
   border-left: 3px solid var(--color-chill-border);
   padding-left: 1em;
