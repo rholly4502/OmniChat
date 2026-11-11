@@ -73,4 +73,20 @@ describe('pixel2 press shadow consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('every clickable button (non-disabled) carries a press-feedback active: state', () => {
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of buttonTags(readFileSync(file, 'utf8'))) {
+        // Clickable = wired to an onClick handler. Disabled buttons get no press
+        // feedback by design (they are not actionable), so exclude them.
+        if (!attrs.includes('onClick')) continue;
+        if (attrs.includes('disabled')) continue;
+        if (!/\bactive:/.test(attrs)) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} clickable button missing active: press feedback — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });

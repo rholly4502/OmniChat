@@ -528,7 +528,7 @@ export function Sidebar({
                     onClick={() => onSelectSession?.(s.id)}
                     aria-current={isActive ? 'true' : undefined}
                     title={s.title}
-                    className="flex flex-col items-start justify-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                    className="flex flex-col items-start justify-center text-left flex-1 min-w-0 min-h-[44px] cursor-pointer rounded-none transition active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   >
                     <span className="w-full flex items-center gap-1.5 min-w-0">
                       <span className="truncate flex-1 min-w-0">{s.title}</span>
