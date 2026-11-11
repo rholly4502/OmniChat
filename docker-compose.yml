@@ -48,9 +48,9 @@ services:
     volumes:
       # SQLite lives on a named volume so history survives rebuilds and redeploys.
       - omnichat_data:/data
-      # Rholly's CVs: a host folder OUTSIDE the public repo (git-ignored), mounted
-      # read-only so the authenticated /api/cv endpoint can serve them.
-      - ${PWD}/cv:/app/cv:ro
+      # Rholly's CVs: a host folder OUTSIDE the public repo (e.g. /opt/cv, git-ignored),
+      # mounted read-only so the authenticated /api/cv endpoint can serve them.
+      - /opt/cv:/app/cv:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5184/health"]
       interval: 30s
