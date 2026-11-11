@@ -409,6 +409,42 @@ describe('Sidebar', () => {
     expect(screen.queryByText(/≈/)).not.toBeInTheDocument();
   });
 
+  it('shows a model badge on a session row when the model is recorded', () => {
+    const { container } = renderSidebar({
+      sessions: [{
+        id: 's1', title: 'Deploy', messages: [],
+        createdAt: 1, updatedAt: 1,
+        model: 'claude-sonnet', mode: 'direct',
+      }],
+      activeSessionId: 's1',
+    });
+    // claude-sonnet is not in the catalog -> falls back to the raw model id.
+    // The badge is aria-hidden (decorative), so it is asserted by its title.
+    const chip = container.querySelector('[title="Model: claude-sonnet"]');
+    expect(chip).not.toBeNull();
+    expect(chip?.textContent).toContain('claude-sonnet');
+  });
+
+  it('resolves the badge label through the catalog when the session model is known', () => {
+    const { container } = renderSidebar({
+      sessions: [{
+        id: 's1', title: 'Agent Sesi', messages: [],
+        createdAt: 1, updatedAt: 1,
+        model: 'hermes', mode: 'agent',
+      }],
+      activeSessionId: 's1',
+    });
+    expect(container.querySelector('[title="Model: Hermes (Default)"]')).not.toBeNull();
+  });
+
+  it('omits the model badge when a session has no recorded model', () => {
+    const { container } = renderSidebar({
+      sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],
+      activeSessionId: 's1',
+    });
+    expect(container.querySelector('[title^="Model:"]')).toBeNull();
+  });
+
   it('keeps every sidebar label at or above the 12px legibility floor', () => {
     const { container } = renderSidebar({
       sessions: [{ id: 's1', title: 'Session 1', messages: [], createdAt: 1, updatedAt: 1 }],

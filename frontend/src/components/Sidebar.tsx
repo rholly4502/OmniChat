@@ -441,6 +441,7 @@ export function Sidebar({
                 )}
                 {group.sessions.map((s) => {
                   const isActive = s.id === activeSessionId;
+                  const modelLabel = (historyModels ?? models)?.find((m) => m.id === s.model)?.label ?? s.model;
               return (
                 <div
                   key={s.id}
@@ -531,6 +532,16 @@ export function Sidebar({
                   >
                     <span className="w-full flex items-center gap-1.5 min-w-0">
                       <span className="truncate flex-1 min-w-0">{s.title}</span>
+                      {s.model && (
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0 inline-flex items-center gap-1 text-xs leading-none text-chill-muted rounded-none border border-chill-border bg-chill-surface pl-[3px] pr-1 py-0.5 select-none"
+                          title={`Model: ${modelLabel}`}
+                        >
+                          {s.mode !== 'direct' ? <BotIcon size={11} /> : <BoltIcon size={11} />}
+                          <span className="max-w-[9ch] truncate">{modelLabel}</span>
+                        </span>
+                      )}
                       {typeof s.totalTokens === 'number' && s.totalTokens > 0 && (() => {
                         const total = s.totalTokens ?? 0;
                         const cost = s.model
