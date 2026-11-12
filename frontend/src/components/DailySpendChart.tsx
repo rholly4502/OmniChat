@@ -86,11 +86,13 @@ export function DailySpendChart({ items, month, anggaran, hari }: Props) {
             const over = budget !== null && total > budget;
             const height = total > 0 ? Math.max(4, Math.round((total / chartMax) * 100)) : 0;
             return (
-              <div key={day} data-testid={`day-${day}`} className="flex-1 min-w-0 h-full flex items-end justify-center">
+              <div key={day} data-testid={`day-${day}`} className={`flex-1 min-w-0 h-full flex items-end justify-center ${total > 0 ? 'group cursor-pointer' : ''}`}>
                 {total > 0 ? (
                   <div
-                    className={`relative w-full max-w-[10px] md:max-w-[16px] border ${
-                      over ? 'bg-chill-red/70 border-chill-red' : 'bg-chill-accent border-chill-accent/60'
+                    className={`relative w-full max-w-[10px] md:max-w-[16px] border transition-colors ${
+                      over
+                        ? 'bg-chill-red/70 border-chill-red group-hover:bg-chill-red-hover group-hover:border-chill-red'
+                        : 'bg-chill-accent border-chill-accent/60 group-hover:bg-chill-accent-hover group-hover:border-chill-accent'
                     }`}
                     style={{ height: `${height}%` }}
                     title={`${day} ${month}: ${formatRupiah(total)}`}

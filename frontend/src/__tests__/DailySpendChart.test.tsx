@@ -205,3 +205,36 @@ describe('DailySpendChart day-axis', () => {
     expect(labels).toEqual(['1', '5', '10', '15', '20', '25', '28']);
   });
 });
+
+describe('DailySpendChart hover affordance', () => {
+  it('marks active spend bars as hoverable and adds chill-token hover feedback', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-11-02', 20000)]} month="2026-11" anggaran={3900000} />,
+    );
+    const dayCol = container.querySelector('[data-testid="day-2"]') as HTMLElement;
+    // the bar wrapper is the group + cursor-pointer surface
+    expect(dayCol.className).toContain('cursor-pointer');
+    const bars = barsOf(container);
+    expect(bars).toHaveLength(1);
+    // accent register hover: sibling of DailyUsageChart's group-hover feedback
+    expect(bars[0].className).toContain('group-hover:bg-chill-accent-hover');
+    expect(bars[0].className).toContain('group-hover:border-chill-accent');
+  });
+
+  it('adds red-register hover feedback to over-budget days', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-11-02', 250000)]} month="2026-11" anggaran={3000000} />,
+    );
+    expect(barsOf(container)[0].className).toContain('group-hover:bg-chill-red-hover');
+    expect(barsOf(container)[0].className).toContain('group-hover:border-chill-red');
+  });
+
+  it('keeps zero-spend stub days non-hoverable', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-11-02', 20000)]} month="2026-11" anggaran={3900000} />,
+    );
+    const stub = container.querySelector('[data-testid="day-3"]') as HTMLElement;
+    expect(stub.className).not.toContain('group');
+    expect(stub.className).not.toContain('cursor-pointer');
+  });
+});
