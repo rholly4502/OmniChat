@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { ConversationAuditDialog } from '../components/ConversationAuditDialog';
 import type { ChatSession, ModelOption } from '../types';
 
@@ -262,6 +262,68 @@ describe('ConversationAuditDialog model/reasoning/bookmark attribution', () => {
     const asst = lines.find((l) => l.includes('Asisten,Beres,claude-haiku,5,3'));
     expect(asst).toBeTruthy();
     expect(asst).toContain(',1,1');
+  });
+});
+
+describe('ConversationAuditDialog message expand/collapse', () => {
+  const longMsg: ChatSession = {
+    id: 'sess-long',
+    title: 'Panjang',
+    model: 'claude-sonnet',
+    mode: 'agent',
+    createdAt: 0,
+    updatedAt: 0,
+    messages: [
+      { role: 'user', content: 'Halo', createdAt: 1 },
+      {
+        role: 'assistant',
+        content: 'Ini adalah balasan yang sangat panjang sehingga melebihi ambang preview 72 karakter dan harus bisa dibaca utuh setelah diperluas — kalimat ini sengaja dibuat jauh lebih panjang dari batas truncation.',
+        reasoning: 'Pertimbangkan dulu dengan hati-hati.',
+        usage: { promptTokens: 10, completionTokens: 20 },
+        model: 'claude-sonnet',
+        createdAt: 2,
+      },
+    ],
+  };
+
+  it('shows a truncated preview by default and a toggle button per row', () => {
+    renderOpen(vi.fn(), longMsg);
+    // The full content is not present until expanded.
+    expect(screen.queryByText(/melebihi ambang preview 72 karakter/)).not.toBeInTheDocument();
+    const btns = screen.getAllByRole('button', { name: 'Tampilkan pesan lengkap' });
+    expect(btns.length).toBeGreaterThanOrEqual(1);
+    expect(btns[0]).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('expands to full content (and reasoning) and collapses again', () => {
+    renderOpen(vi.fn(), longMsg);
+    // The toggle lives in the assistant row that carries the long preview; the
+    // first row (user 'Halo') has its own toggle, so scope by row not by index.
+    const asstRow = screen.getByText(/Ini adalah balasan yang sangat panjang/).closest('tr');
+    expect(asstRow).not.toBeNull();
+    const expand = within(asstRow as HTMLElement).getByRole('button', { name: 'Tampilkan pesan lengkap' });
+    fireEvent.click(expand);
+    expect(screen.getByText(/melebihi ambang preview 72 karakter/)).toBeInTheDocument();
+    expect(screen.getByText('Cara berpikir')).toBeInTheDocument();
+    expect(screen.getByText('Pertimbangkan dulu dengan hati-hati.')).toBeInTheDocument();
+    const collapse = within(asstRow as HTMLElement).getByRole('button', { name: 'Sembunyikan pesan lengkap' });
+    expect(collapse).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(collapse);
+    expect(screen.queryByText(/melebihi ambang preview 72 karakter/)).not.toBeInTheDocument();
+  });
+
+  it('keeps export (CSV/JSON) unaffected by expansion state', async () => {
+    downloadBlob.mockClear();
+    renderOpen(vi.fn(), longMsg);
+    const asstRow = screen.getByText(/Ini adalah balasan yang sangat panjang/).closest('tr');
+    fireEvent.click(within(asstRow as HTMLElement).getByRole('button', { name: 'Tampilkan pesan lengkap' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor audit sebagai CSV' }));
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob] = downloadBlob.mock.calls[0];
+    const csv = await blob.text();
+    const lines = csv.split('\r\n');
+    const asst = lines.find((l) => l.includes('Asisten,Ini adalah balasan yang sangat panjang') && l.includes('10,20'));
+    expect(asst).toBeTruthy();
   });
 });
 

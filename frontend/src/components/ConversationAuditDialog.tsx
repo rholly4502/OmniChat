@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
 import { downloadBlob, safeFilenameSlug } from '../conversationExport';
@@ -188,6 +189,11 @@ function buildAuditJson(session: ChatSession, modelOptions: ModelOption[] | unde
  */
 export function ConversationAuditDialog({ open, onClose, session, modelOptions }: ConversationAuditDialogProps) {
   const panelRef = useModalDialog(open, onClose, '[data-audit-close]');
+  /** Per-row expand state (message index -> expanded) so a full message can be
+   * read in the audit view — the default row shows only a 72-char preview and
+   * the full text is otherwise hidden behind a hover-only `title` tooltip,
+   * which is inaccessible on touch/keyboard. */
+  const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
 
   if (!open || !session) return null;
 
@@ -331,9 +337,37 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                       <td className="py-1.5 pr-2 text-chill-muted">{i + 1}</td>
                       <td className="py-1.5 pr-2 text-chill-muted">{roleLabel(m.role)}</td>
                       <td className="py-1.5 pr-2">
-                        <div className="text-chill-text truncate max-w-[180px] md:max-w-[260px]" title={m.content}>
-                          {preview(m.content)}
-                        </div>
+                        {expandedRows[i] ? (
+                          <div className="max-w-[340px] md:max-w-[420px]">
+                            <div className="text-chill-text text-xs leading-relaxed whitespace-pre-wrap break-words pixel-reveal">
+                              {m.content}
+                            </div>
+                            {m.reasoning && (
+                              <div className="mt-1.5 border-t border-chill-border pt-1.5">
+                                <div className="text-xs text-chill-muted font-medium mb-0.5">Cara berpikir</div>
+                                <div className="text-chill-muted text-xs leading-relaxed whitespace-pre-wrap break-words">
+                                  {m.reasoning}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-chill-text truncate max-w-[180px] md:max-w-[260px]" title={m.content}>
+                            {preview(m.content)}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setExpandedRows((prev) => ({ ...prev, [i]: !prev[i] }))}
+                          aria-expanded={Boolean(expandedRows[i])}
+                          aria-label={expandedRows[i] ? 'Sembunyikan pesan lengkap' : 'Tampilkan pesan lengkap'}
+                          className="mt-1 rounded-none inline-flex items-center gap-1 min-h-[44px] px-1 text-xs text-chill-accent font-medium transition hover:text-chill-accent-hover active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                        >
+                          <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`transition-transform ${expandedRows[i] ? 'rotate-180' : ''}`}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                          {expandedRows[i] ? 'Sembunyikan' : 'Lihat lengkap'}
+                        </button>
                       </td>
                       <td className="py-1.5 pr-2 text-chill-muted">
                         {m.model ? labelFor(m.model, modelOptions) : <span className="text-chill-muted">–</span>}
