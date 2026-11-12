@@ -85,7 +85,7 @@ function StatCard({ label, value, icon, tone = 'default' }: { label: string; val
   const valueClass =
     tone === 'accent' ? 'text-chill-accent' : tone === 'emerald' ? 'text-chill-sage' : tone === 'red' ? 'text-chill-red' : 'text-chill-text';
   return (
-    <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden">
+    <div className="rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow relative overflow-hidden pixel-reveal">
       {/* Hard top-left bevel (pixel meter register): a chunky light edge - no soft gradient. */}
       <PanelFrame />
       <div className="relative flex items-start gap-3">
