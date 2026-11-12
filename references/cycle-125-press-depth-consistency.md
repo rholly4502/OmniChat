@@ -1,6 +1,6 @@
 # Cycle 125 — ExpensesView transaction-row press depth consistency (2026-11-12)
 
-Commit `9116e18`. Frontend-only; backend untouched. CI + Deploy green; live bundle
+Commit `ab1d474`. Frontend-only; backend untouched. CI + Deploy green; live bundle
 hash matches local dist.
 
 ## Gap found
