@@ -4,6 +4,7 @@ import {
   deleteConversation,
   getConversation,
   getConversationUsage,
+  getConversationDailyUsage,
   listAllConversations,
   listConversations,
   pinConversation,
@@ -449,6 +450,73 @@ describe('getConversationUsage', () => {
 
     expect(fetchImpl).toHaveBeenCalledWith(
       `${CONVERSATIONS_URL}/usage`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+});
+
+describe('getConversationDailyUsage', () => {
+  it('requests /usage/daily and returns the parsed rows', async () => {
+    const rows = [
+      { date: '2026-10-01', promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+      { date: '2026-10-02', promptTokens: 200, completionTokens: 80, totalTokens: 280 },
+    ];
+    const fetchImpl = fetchReturning(jsonResponse(rows));
+
+    const got = await getConversationDailyUsage({ fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage/daily`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(got).toEqual(rows);
+  });
+
+  it('sends the API key as X-Api-Key', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([]));
+
+    await getConversationDailyUsage({ apiKey: 'secret', fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ headers: { 'X-Api-Key': 'secret' } }),
+    );
+  });
+
+  it('returns an empty list for a non-array payload', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({ not: 'an array' }));
+
+    await expect(getConversationDailyUsage({ fetchImpl })).resolves.toEqual([]);
+  });
+
+  it('throws ApiError when the server refuses', async () => {
+    const fetchImpl = fetchReturning(jsonResponse({}, { status: 429, retryAfter: '15' }));
+
+    const err = await getConversationDailyUsage({ fetchImpl }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(ApiError);
+    expect((err as ApiError).status).toBe(429);
+    expect((err as ApiError).retryAfter).toBe('15');
+  });
+
+  it('appends a from/to window when filters are supplied', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([]));
+
+    await getConversationDailyUsage({ fetchImpl }, { from: '2026-10-01', to: '2026-10-31' });
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage/daily?from=2026-10-01&to=2026-10-31`,
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('does not add query params when the window is empty', async () => {
+    const fetchImpl = fetchReturning(jsonResponse([]));
+
+    await getConversationDailyUsage({ fetchImpl }, {});
+
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `${CONVERSATIONS_URL}/usage/daily`,
       expect.objectContaining({ method: 'GET' }),
     );
   });

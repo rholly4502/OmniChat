@@ -1,5 +1,5 @@
 import { ApiError } from './api';
-import type { ConversationDetail, ConversationSummary, ConversationUsageSummary } from './types';
+import type { ConversationDayUsage, ConversationDetail, ConversationSummary, ConversationUsageSummary } from './types';
 
 /** Base path of the read-side history API (see `ConversationsController`). */
 export const CONVERSATIONS_URL = '/api/conversations';
@@ -277,6 +277,25 @@ export async function getConversationUsage(
     return { totalPromptTokens: 0, totalCompletionTokens: 0, totalTokens: 0, conversationCount: 0, totalUpFeedback: 0, totalDownFeedback: 0, byModel: {} };
   }
   return payload as ConversationUsageSummary;
+}
+
+/**
+ * Fetch per-day token usage across all of the caller's conversations (the daily
+ * view of the aggregate summary). An admin sees real rows; a guest gets the
+ * empty list, so the chart renders the same either way.
+ */
+export async function getConversationDailyUsage(
+  options: HistoryRequestOptions = {},
+  filters: ConversationListFilters = {},
+): Promise<ConversationDayUsage[]> {
+  const parts: string[] = [];
+  if (filters.from) parts.push(`from=${encodeURIComponent(filters.from)}`);
+  if (filters.to) parts.push(`to=${encodeURIComponent(filters.to)}`);
+  const qs = parts.length > 0 ? `?${parts.join('&')}` : '';
+  const res = await request(`${CONVERSATIONS_URL}/usage/daily${qs}`, { method: 'GET' }, options);
+  const payload = (await res.json()) as unknown;
+  if (!Array.isArray(payload)) return [];
+  return payload as ConversationDayUsage[];
 }
 
 /**

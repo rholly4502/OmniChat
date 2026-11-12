@@ -118,6 +118,7 @@ describe('ChatStatsDialog bulk export', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.doMock('../historyApi', () => ({
+      getConversationDailyUsage: getDailyUsageMock.mockResolvedValue([]),
       listAllConversations: vi.fn().mockResolvedValue([
         { id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z', updatedAt: '2026-11-01T00:00:00Z', mode: 'agent', model: 'hermes', isPinned: false },
         { id: 'c2', title: 'B', createdAt: '2026-11-02T00:00:00Z', updatedAt: '2026-11-02T00:00:00Z', mode: 'direct', model: 'gpt', isPinned: false },
@@ -179,13 +180,14 @@ describe('ChatStatsDialog bulk export', () => {
 });
 
 
-const { getUsageMock } = vi.hoisted(() => ({ getUsageMock: vi.fn() }));
+const { getUsageMock, getDailyUsageMock } = vi.hoisted(() => ({ getUsageMock: vi.fn(), getDailyUsageMock: vi.fn() }));
 
 describe('ChatStatsDialog period filter', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.doMock('../historyApi', () => ({
       getConversationUsage: getUsageMock,
+      getConversationDailyUsage: getDailyUsageMock.mockResolvedValue([]),
       listAllConversations: vi.fn().mockResolvedValue([]),
       getConversation: vi.fn(),
     }));
@@ -193,6 +195,7 @@ describe('ChatStatsDialog period filter', () => {
 
   afterEach(() => {
     getUsageMock.mockClear();
+    getDailyUsageMock.mockClear();
   });
 
   it('renders the period filter controls', async () => {
@@ -283,6 +286,7 @@ describe('ChatStatsDialog filtered bulk export', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.doMock('../historyApi', () => ({
+      getConversationDailyUsage: getDailyUsageMock.mockResolvedValue([]),
       listAllConversations: filteredListMock,
       getConversation: vi.fn().mockResolvedValue({
         id: 'c1', title: 'A', createdAt: '2026-11-01T00:00:00Z',

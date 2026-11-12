@@ -496,6 +496,47 @@ public sealed class ChatHistoryRepository(ChatDbContext db) : IChatHistoryReposi
             byModel);
     }
 
+    public async Task<IReadOnlyList<ConversationDayUsage>> GetDailyUsageAsync(
+        string userId,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        RequireOwner(userId);
+
+        // Messages carry the per-turn token usage; group them by the calendar day
+        // (UTC) they were created on. The window filters on the message's own
+        // CreatedAt — not the parent conversation's UpdatedAt — so a day is counted
+        // when the turn actually happened.
+        var msgQuery = db.Messages
+            .AsNoTracking()
+            .Where(m => m.Conversation != null && m.Conversation.UserId == userId);
+
+        if (from.HasValue)
+        {
+            var fromUtc = from.Value.ToUniversalTime();
+            msgQuery = msgQuery.Where(m => m.CreatedAt >= fromUtc);
+        }
+        if (to.HasValue)
+        {
+            var toExclusive = to.Value.ToUniversalTime().AddDays(1);
+            msgQuery = msgQuery.Where(m => m.CreatedAt < toExclusive);
+        }
+
+        var rows = await msgQuery
+            .Select(m => new { m.CreatedAt, m.PromptTokens, m.CompletionTokens })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(r => DateOnly.FromDateTime(r.CreatedAt.UtcDateTime))
+            .OrderBy(g => g.Key)
+            .Select(g => new ConversationDayUsage(
+                g.Key,
+                g.Sum(r => r.PromptTokens),
+                g.Sum(r => r.CompletionTokens)))
+            .ToList();
+    }
+
     public async Task<bool> SetMessageFeedbackAsync(
         Guid conversationId,
         Guid messageId,

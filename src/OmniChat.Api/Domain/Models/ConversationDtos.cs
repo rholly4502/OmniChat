@@ -168,6 +168,16 @@ public sealed record ConversationModelUsage(int PromptTokens, int CompletionToke
 }
 
 /// <summary>
+/// Token subtotals for a single calendar day across all of a caller's stored
+/// conversations. Used by the per-day usage trend (the daily view of the
+/// aggregate summary), so a user can see how much they used on a given day.
+/// </summary>
+public sealed record ConversationDayUsage(DateOnly Date, int PromptTokens, int CompletionTokens)
+{
+    public int TotalTokens => PromptTokens + CompletionTokens;
+}
+
+/// <summary>
 /// Aggregate token usage across all of a caller's stored conversations. An admin
 /// uses this as the audit overview; a guest always sees the empty shape, exactly
 /// as a guest never sees history rows.

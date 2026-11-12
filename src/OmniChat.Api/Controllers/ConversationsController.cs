@@ -163,6 +163,34 @@ public sealed class ConversationsController : ControllerBase
         return Ok(summary);
     }
 
+    /// <summary>
+    /// Returns a per-day token usage breakdown across all of the caller's stored
+    /// conversations, oldest day first. This is the daily view of the aggregate
+    /// summary: each row carries that day's prompt/completion/total tokens, so a
+    /// user can see how much they used on a given day. An admin sees real rows; a
+    /// guest gets an empty list, exactly as a guest never sees history rows.
+    /// </summary>
+    /// <param name="from">Inclusive lower bound on the message's created date.</param>
+    /// <param name="to">Inclusive upper bound (calendar day) on the message's created date.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Per-day usage rows (possibly empty).</response>
+    [HttpGet("usage/daily")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<ConversationDayUsage>>> DailyUsage(
+        [FromQuery] DateTimeOffset? from = null,
+        [FromQuery] DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        var owner = AdminOwnerId();
+        if (owner is null)
+        {
+            return Ok(Array.Empty<ConversationDayUsage>());
+        }
+
+        var rows = await _repository.GetDailyUsageAsync(owner, from, to, cancellationToken);
+        return Ok(rows);
+    }
+
     /// <summary>Renames a conversation.</summary>
     /// <param name="id">Conversation id.</param>
     /// <param name="request">New title.</param>

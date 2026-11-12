@@ -194,6 +194,18 @@ export interface ConversationUsageSummary {
   byModel: Record<string, ConversationModelUsage>;
 }
 
+/** One token-usage row for a single calendar day (the daily usage trend). */
+export interface ConversationDayUsage {
+  /** Calendar day (ISO `yyyy-MM-dd`). */
+  date: string;
+  /** Prompt tokens billed that day. */
+  promptTokens: number;
+  /** Completion tokens billed that day. */
+  completionTokens: number;
+  /** Prompt + completion tokens billed that day. */
+  totalTokens: number;
+}
+
 export interface ConversationDetail extends ConversationSummary {
   messages: ConversationMessage[];
 }

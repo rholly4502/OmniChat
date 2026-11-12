@@ -578,6 +578,63 @@ public class ConversationsControllerTests
     }
 
     [Fact]
+    public async Task DailyUsage_ReturnsRows_ForAnAdminCaller()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var rows = new[]
+        {
+            new ConversationDayUsage(new DateOnly(2026, 10, 1), 100, 50),
+            new ConversationDayUsage(new DateOnly(2026, 10, 2), 200, 80),
+        };
+
+        _repository
+            .Setup(r => r.GetDailyUsageAsync(ChatIdentity.AdminUserId, null, null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rows);
+
+        var result = await controller.DailyUsage(cancellationToken: CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var payload = Assert.IsAssignableFrom<IReadOnlyList<ConversationDayUsage>>(ok.Value);
+        Assert.Equal(2, payload.Count);
+        Assert.Equal(150, payload[0].TotalTokens);
+        Assert.Equal(280, payload[1].TotalTokens);
+    }
+
+    [Fact]
+    public async Task DailyUsage_ReturnsEmptyList_ForAGuest_WithoutTouchingTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Guest);
+
+        var result = await controller.DailyUsage(cancellationToken: CancellationToken.None);
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var payload = Assert.IsAssignableFrom<IReadOnlyList<ConversationDayUsage>>(ok.Value);
+        Assert.Empty(payload);
+        _repository.Verify(
+            r => r.GetDailyUsageAsync(It.IsAny<string>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task DailyUsage_ForwardsFromAndToWindowToTheRepository()
+    {
+        var controller = CreateController(ChatAccess.Admin);
+        var from = new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero);
+        var to = new DateTimeOffset(2026, 10, 31, 0, 0, 0, TimeSpan.Zero);
+        var rows = Array.Empty<ConversationDayUsage>();
+
+        _repository
+            .Setup(r => r.GetDailyUsageAsync(ChatIdentity.AdminUserId, from, to, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(rows);
+
+        await controller.DailyUsage(from: from, to: to, cancellationToken: CancellationToken.None);
+
+        _repository.Verify(
+            r => r.GetDailyUsageAsync(ChatIdentity.AdminUserId, from, to, It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
     public async Task SetFeedback_Returns204_WhenAnAdminSetsUpRating()
     {
         var controller = CreateController(ChatAccess.Admin);

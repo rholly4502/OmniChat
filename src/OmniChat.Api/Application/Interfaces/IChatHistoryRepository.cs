@@ -144,6 +144,18 @@ public interface IChatHistoryRepository
         DateTimeOffset? to = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Aggregates a caller's message-level token usage into per-day rows, oldest
+    /// day first, for the inclusive [from, to] window (when supplied). Messages
+    /// of other users are excluded. A caller with no matching messages gets an
+    /// empty list.
+    /// </summary>
+    Task<IReadOnlyList<ConversationDayUsage>> GetDailyUsageAsync(
+        string userId,
+        DateTimeOffset? from = null,
+        DateTimeOffset? to = null,
+        CancellationToken cancellationToken = default);
+
     Task<bool> AddConversationUsageAsync(
         Guid conversationId,
         string userId,

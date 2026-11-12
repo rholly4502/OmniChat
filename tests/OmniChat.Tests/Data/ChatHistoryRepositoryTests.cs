@@ -975,6 +975,73 @@ public sealed class ChatHistoryRepositoryTests : IDisposable
     }
 
     [Fact]
+    public async Task GetDailyUsage_groups_message_tokens_by_day()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+
+        // Two turns on the same day, one on another day. AppendMessageAsync stamps
+        // CreatedAt = now, so the day is pinned afterwards via the context (same
+        // pattern as the usage-window feedback test).
+        var a = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "a", PromptTokens = 10, CompletionTokens = 5 });
+        var b = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "b", PromptTokens = 20, CompletionTokens = 5 });
+        var c = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "c", PromptTokens = 100, CompletionTokens = 50 });
+
+        var aE = await _db.Messages.SingleAsync(m => m.Id == a.Id);
+        var bE = await _db.Messages.SingleAsync(m => m.Id == b.Id);
+        var cE = await _db.Messages.SingleAsync(m => m.Id == c.Id);
+        aE.CreatedAt = new DateTimeOffset(2026, 10, 1, 10, 0, 0, TimeSpan.Zero);
+        bE.CreatedAt = new DateTimeOffset(2026, 10, 1, 11, 0, 0, TimeSpan.Zero);
+        cE.CreatedAt = new DateTimeOffset(2026, 10, 3, 9, 0, 0, TimeSpan.Zero);
+        await _db.SaveChangesAsync();
+
+        var rows = await _repository.GetDailyUsageAsync("admin");
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(new DateOnly(2026, 10, 1), rows[0].Date);
+        Assert.Equal(30, rows[0].PromptTokens);
+        Assert.Equal(10, rows[0].CompletionTokens);
+        Assert.Equal(40, rows[0].TotalTokens);
+        Assert.Equal(new DateOnly(2026, 10, 3), rows[1].Date);
+        Assert.Equal(150, rows[1].TotalTokens);
+    }
+
+    [Fact]
+    public async Task GetDailyUsage_excludes_other_users_messages()
+    {
+        var mine = await _repository.CreateConversationAsync(NewConversation("admin"));
+        var theirs = await _repository.CreateConversationAsync(NewConversation("guest"));
+
+        await _repository.AppendMessageAsync(mine.Id, "admin", new Message { Role = "assistant", Content = "milik admin", PromptTokens = 10, CompletionTokens = 5 });
+        await _repository.AppendMessageAsync(theirs.Id, "guest", new Message { Role = "assistant", Content = "milik tamu", PromptTokens = 999, CompletionTokens = 999 });
+
+        var rows = await _repository.GetDailyUsageAsync("admin");
+
+        var row = Assert.Single(rows);
+        Assert.Equal(15, row.TotalTokens);
+    }
+
+    [Fact]
+    public async Task GetDailyUsage_respects_a_from_window_on_message_createdAt()
+    {
+        var conv = await _repository.CreateConversationAsync(NewConversation());
+
+        var lama = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "lama", PromptTokens = 10, CompletionTokens = 5 });
+        var baru = await _repository.AppendMessageAsync(conv.Id, "admin", new Message { Role = "assistant", Content = "baru", PromptTokens = 100, CompletionTokens = 50 });
+
+        var lamaE = await _db.Messages.SingleAsync(m => m.Id == lama.Id);
+        var baruE = await _db.Messages.SingleAsync(m => m.Id == baru.Id);
+        lamaE.CreatedAt = new DateTimeOffset(2026, 9, 1, 10, 0, 0, TimeSpan.Zero);
+        baruE.CreatedAt = new DateTimeOffset(2026, 10, 1, 10, 0, 0, TimeSpan.Zero);
+        await _db.SaveChangesAsync();
+
+        var rows = await _repository.GetDailyUsageAsync("admin", new DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero));
+
+        var row = Assert.Single(rows);
+        Assert.Equal(new DateOnly(2026, 10, 1), row.Date);
+        Assert.Equal(150, row.TotalTokens);
+    }
+
+    [Fact]
     public async Task ForkConversation_copies_transcript_into_a_fresh_thread()
     {
         var source = await _repository.CreateConversationAsync(NewConversation());

@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useModalDialog } from '../hooks/useModalDialog';
 import { estimateUsd, formatTokens, formatUsd, sortModelEntriesByCost } from '../tokenCost';
-import { getConversation, getConversationUsage, listAllConversations, type ConversationListFilters } from '../historyApi';
+import { getConversation, getConversationDailyUsage, getConversationUsage, listAllConversations, type ConversationListFilters } from '../historyApi';
 import { buildAllConversationsCsv, buildAllConversationsJson, downloadBlob } from '../conversationExport';
 import type { ConversationExportRecord } from '../conversationExport';
-import type { ConversationUsageSummary, ModelOption } from '../types';
+import type { ConversationDayUsage, ConversationUsageSummary, ModelOption } from '../types';
 import { ScanLoader } from './ScanLoader';
+import { DailyUsageChart } from './DailyUsageChart';
 
 /** Props accepted by {@link ChatStatsDialog}. */
 export interface ChatStatsDialogProps {
@@ -72,6 +73,9 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
   const [scopedUsage, setScopedUsage] = useState<ConversationUsageSummary | null>(null);
   const [scopedLoading, setScopedLoading] = useState(false);
   const [scopedError, setScopedError] = useState<string | null>(null);
+  const [dailyRows, setDailyRows] = useState<ConversationDayUsage[]>([]);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailyError, setDailyError] = useState<string | null>(null);
 
   // The summary shown is the scoped one when a window is active, else the lifetime prop.
   const displayUsage = scopedUsage ?? usage;
@@ -115,6 +119,33 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
     setScopedUsage(null);
     setScopedError(null);
   }
+
+  // Daily trend: fetch the per-day usage for the active window (or lifetime when
+  // no range is set). Refetch whenever the dialog opens or the window changes,
+  // so the chart always mirrors what the summary cards show.
+  useEffect(() => {
+    if (!open) return;
+    let stale = false;
+    // The loading flag is an intentional synchronous set during a fetch started
+    // by the dialog opening / window change; it is not a cascading render.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setDailyLoading(true);
+    setDailyError(null);
+    const filters: { from?: string; to?: string } = {};
+    if (rangeFrom) filters.from = rangeFrom;
+    if (rangeTo) filters.to = rangeTo;
+    getConversationDailyUsage({ apiKey }, filters)
+      .then((rows) => {
+        if (!stale) setDailyRows(rows);
+      })
+      .catch(() => {
+        if (!stale) setDailyError('Gagal memuat tren penggunaan harian.');
+      })
+      .finally(() => {
+        if (!stale) setDailyLoading(false);
+      });
+    return () => { stale = true; };
+  }, [open, rangeFrom, rangeTo, apiKey]);
 
   /** Export every stored conversation as one JSON or CSV document. */
   async function exportAllConversations(format: 'json' | 'csv') {
@@ -316,6 +347,20 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
                 })}
               </tbody>
             </table>
+          )}
+        </div>
+
+        <div className="border-t border-chill-border pt-2 space-y-2">
+          <div className="text-xs text-chill-muted font-medium">Tren penggunaan harian</div>
+          {dailyLoading ? (
+            <div className="flex items-center gap-2 text-xs text-chill-muted"><ScanLoader blocks={4} /> <span>Memuat…</span></div>
+          ) : dailyError ? (
+            <p className="text-xs text-chill-red" role="alert">{dailyError}</p>
+          ) : (
+            <DailyUsageChart
+              rows={dailyRows}
+              rangeLabel={rangeFrom || rangeTo ? `${rangeFrom || '…'} s.d. ${rangeTo || '…'}` : undefined}
+            />
           )}
         </div>
 

@@ -472,6 +472,33 @@ public class DeploymentConfigTests
         Assert.Contains("filters.to", frontendApi);
     }
 
+    [Fact]
+    public void ConversationUsage_SupportsADailyTrendView()
+    {
+        // Tahap 3 cost/status deepening: the usage view has a per-day variant that
+        // answers "how much did I use on a given day" by grouping the message-level
+        // token counts by their created date. The contract spans the domain record,
+        // the repository method (message-day grouping, windowed), the controller
+        // endpoint, the frontend client, and the chart component that renders it.
+        var domain = Read("src/OmniChat.Api/Domain/Models/ConversationDtos.cs");
+        var repoInterface = Read("src/OmniChat.Api/Application/Interfaces/IChatHistoryRepository.cs");
+        var controller = Read("src/OmniChat.Api/Controllers/ConversationsController.cs");
+        var repo = Read("src/OmniChat.Api/Infrastructure/Data/ChatHistoryRepository.cs");
+        var frontendApi = Read("frontend/src/historyApi.ts");
+        var frontendTypes = Read("frontend/src/types.ts");
+        var chart = Read("frontend/src/components/DailyUsageChart.tsx");
+
+        Assert.Contains("ConversationDayUsage", domain);
+        Assert.Contains("GetDailyUsageAsync", repoInterface);
+        Assert.Contains("usage/daily", controller);
+        Assert.Contains("GetDailyUsageAsync", repo);
+        Assert.Contains("DateOnly.FromDateTime", repo);
+        Assert.Contains("getConversationDailyUsage", frontendApi);
+        Assert.Contains("ConversationDayUsage", frontendTypes);
+        Assert.Contains("Tren penggunaan harian", Read("frontend/src/components/ChatStatsDialog.tsx"));
+        Assert.Contains("DailyUsageChart", chart);
+    }
+
     // ── Milestone 15: ProblemDetails standardization ──
 
     [Fact]
