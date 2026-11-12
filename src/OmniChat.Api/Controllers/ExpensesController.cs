@@ -123,6 +123,47 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         return Ok(new { month, targetNabung = target.TargetNabung, anggaran = target.Anggaran, catatan = target.Catatan });
     }
 
+    /// <summary>Creates or updates the monthly budget & savings target from the web UI.
+    /// The ledger's <c>target.json</c> is the seed source; this lets the operator adjust a
+    /// month's figures without re-seeding. Upsert preserves an existing partial-month
+    /// <c>Hari</c> count (proration basis) — only the editable figures change.</summary>
+    /// <param name="request">The target fields for a month.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">The updated target.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpPut("target")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateTarget(
+        [FromBody] TargetWriteRequest request, CancellationToken cancellationToken)
+    {
+        if (!TryMonth(request.Month, out _))
+        {
+            return InvalidMonth(request.Month);
+        }
+
+        var problem = ValidateTarget(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var catatan = string.IsNullOrWhiteSpace(request.Catatan) ? null : request.Catatan.Trim();
+        await repository.UpsertTargetAsync(
+            new ExpenseTarget
+            {
+                Month = request.Month,
+                Anggaran = request.Anggaran,
+                TargetNabung = request.TargetNabung,
+                Catatan = catatan,
+            },
+            cancellationToken);
+
+        return Ok(new { month = request.Month, targetNabung = request.TargetNabung, anggaran = request.Anggaran, catatan });
+    }
+
     /// <summary>Cash-on-hand: total income (pemasukan) minus total spend, across all months.</summary>
     /// <response code="200">All-time income, spend, and remaining cash.</response>
     /// <response code="401">Missing or invalid API key.</response>
@@ -502,6 +543,61 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
     /// <summary>Request shape for creating or updating one expense row.</summary>
     public sealed record ExpenseWriteRequest(string Tanggal, string? Waktu, string Kategori, string Keterangan, long Nominal);
+    /// <summary>Request shape for creating or updating a month's budget/savings target.</summary>
+    public sealed record TargetWriteRequest(string Month, long Anggaran, long TargetNabung, string? Catatan);
+
+    /// <summary>Validates a target write request, returning a 400 ProblemDetails or null when valid.</summary>
+    private ObjectResult? ValidateTarget(TargetWriteRequest request)
+    {
+        if (request.Anggaran < 0)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'anggaran' must be zero or a positive amount.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        if (request.TargetNabung < 0)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'targetNabung' must be zero or a positive amount.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        if (request.Catatan?.Trim().Length > 200)
+        {
+            return new ObjectResult(new ProblemDetails
+            {
+                Title = "Validation Failed",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = "'catatan' must be 200 characters or fewer.",
+                Instance = HttpContext.Request.Path,
+            })
+            {
+                StatusCode = StatusCodes.Status400BadRequest,
+                ContentTypes = { ProblemDetailsResponse.ContentType },
+            };
+        }
+
+        return null;
+    }
+
+
 
     /// <summary>
     /// Applies the same category + free-text filter the frontend transaction list uses

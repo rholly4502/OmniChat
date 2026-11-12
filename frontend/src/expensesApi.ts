@@ -60,6 +60,16 @@ export interface ExpenseWritePayload {
   nominal: number;
 }
 
+/** Fields that can be written for a month's budget/savings target. */
+export interface TargetWritePayload {
+  /** YYYY-MM (WIB). */
+  month: string;
+  /** Monthly spending cap in rupiah (excluding savings), ≥ 0. */
+  anggaran: number;
+  /** Amount to set aside that month, ≥ 0. */
+  targetNabung: number;
+}
+
 function authHeaders(apiKey?: string): Record<string, string> {
   return apiKey ? { 'X-Api-Key': apiKey } : {};
 }
@@ -82,7 +92,7 @@ async function request(path: string, options: ExpensesRequestOptions): Promise<R
 async function requestJson(
   path: string,
   method: 'POST' | 'PUT' | 'DELETE',
-  body?: ExpenseWritePayload,
+  body?: ExpenseWritePayload | TargetWritePayload,
   options: ExpensesRequestOptions = {},
 ): Promise<Response> {
   const doFetch = options.fetchImpl ?? fetch;
@@ -126,6 +136,15 @@ export async function updateExpense(
 /** Delete an expense row (operator only). */
 export async function deleteExpense(id: number, options: ExpensesRequestOptions = {}): Promise<void> {
   await requestJson(`${EXPENSES_URL}/${id}`, 'DELETE', undefined, options);
+}
+
+/** Create or update a month's budget/savings target (operator only). Returns it. */
+export async function updateExpenseTarget(
+  payload: TargetWritePayload,
+  options: ExpensesRequestOptions = {},
+): Promise<{ month: string; anggaran: number; targetNabung: number }> {
+  const res = await requestJson(`${EXPENSES_URL}/target`, 'PUT', payload, options);
+  return (await res.json()) as { month: string; anggaran: number; targetNabung: number };
 }
 
 /** Fetch one page of transactions for a month, newest first. */

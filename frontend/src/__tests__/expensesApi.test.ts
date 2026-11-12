@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ApiError } from '../api';
-import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, getExpenseAdvice, createExpense, updateExpense, deleteExpense, EXPENSES_URL } from '../expensesApi';
+import { listExpenses, getExpenseSummary, formatRupiah, exportExpensesCsv, exportExpensesPdf, getExpenseTrend, getExpenseAdvice, createExpense, updateExpense, deleteExpense, updateExpenseTarget, EXPENSES_URL } from '../expensesApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -251,5 +251,34 @@ describe('deleteExpense', () => {
   it('throws ApiError on a 404', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 404 }));
     await expect(deleteExpense(999, { fetchImpl })).rejects.toBeInstanceOf(ApiError);
+  });
+});
+
+
+describe('updateExpenseTarget', () => {
+  it('PUTs the target payload with the API key and parses the response', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({ month: '2026-11', anggaran: 400000, targetNabung: 250000 }),
+    );
+    const result = await updateExpenseTarget(
+      { month: '2026-11', anggaran: 400000, targetNabung: 250000 },
+      { apiKey: 'secret', fetchImpl },
+    );
+
+    const url = String(fetchImpl.mock.calls[0][0]);
+    expect(url).toBe(`${EXPENSES_URL}/target`);
+    const init = fetchImpl.mock.calls[0][1] as RequestInit;
+    expect(init.method).toBe('PUT');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'secret' });
+    expect(JSON.parse(String(init.body))).toEqual({ month: '2026-11', anggaran: 400000, targetNabung: 250000 });
+    expect(result.anggaran).toBe(400000);
+    expect(result.targetNabung).toBe(250000);
+  });
+
+  it('throws ApiError on a 401', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('', { status: 401 }));
+    await expect(
+      updateExpenseTarget({ month: '2026-11', anggaran: 400000, targetNabung: 250000 }, { fetchImpl }),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 });

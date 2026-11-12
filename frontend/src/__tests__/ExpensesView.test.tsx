@@ -966,3 +966,61 @@ describe('ExpensesView — Hari ini figure', () => {
     expect(screen.queryByText('Hari ini')).not.toBeInTheDocument();
   });
 });
+
+
+describe('ExpensesView budget editor', () => {
+  it('opens prefilled, saves changes via PUT and reloads', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+      if (url.includes('/target') && init?.method === 'PUT') {
+        return jsonResponse({ month: currentMonthKey(), anggaran: 300000, targetNabung: 150000 });
+      }
+      return url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Atur anggaran' }));
+
+    const anggaranInput = screen.getByLabelText('Anggaran') as HTMLInputElement;
+    const nabungInput = screen.getByLabelText('Target Nabung') as HTMLInputElement;
+    expect(anggaranInput.value).toBe('520000');
+    expect(nabungInput.value).toBe('467000');
+
+    fireEvent.change(anggaranInput, { target: { value: '300000' } });
+    fireEvent.change(nabungInput, { target: { value: '150000' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => {
+      const putCall = fetchMock.mock.calls.find(
+        (c) => String(c[0]).includes('/target') && (c[1] as RequestInit)?.method === 'PUT',
+      );
+      expect(putCall).toBeTruthy();
+      expect(JSON.parse(String((putCall![1] as RequestInit).body))).toEqual({
+        month: currentMonthKey(),
+        anggaran: 300000,
+        targetNabung: 150000,
+      }, { timeout: 5000 });
+    }, { timeout: 5000 });
+  });
+
+  it('shows a validation error for a negative budget', async () => {
+    const fetchMock = vi.fn((url: string) =>
+      url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    render(<ExpensesView apiKey="secret" />);
+
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Atur anggaran' }));
+    fireEvent.change(screen.getByLabelText('Anggaran'), { target: { value: '-5' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    expect(await screen.findByText('Anggaran harus bilangan bulat ≥ 0.')).toBeInTheDocument();
+    // No PUT should have been issued for a validation failure.
+    const putCall = fetchMock.mock.calls.find(
+      (c) => String(c[0]).includes('/target') && (c[1] as RequestInit)?.method === 'PUT',
+    );
+    expect(putCall).toBeUndefined();
+  });
+});

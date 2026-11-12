@@ -6,6 +6,7 @@ import {
   createExpense,
   updateExpense,
   deleteExpense,
+  updateExpenseTarget,
   type ExpenseWritePayload,
 } from '../expensesApi';
 import { ApiError } from '../api';
@@ -136,6 +137,11 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [categoryFilter, setCategoryFilter] = useState('');
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [dupWarning, setDupWarning] = useState<{ payload: ExpenseWritePayload; match: ExpenseItem } | null>(null);
+  const [showTargetForm, setShowTargetForm] = useState(false);
+  const [targetAnggaran, setTargetAnggaran] = useState('');
+  const [targetNabung, setTargetNabung] = useState('');
+  const [targetSaving, setTargetSaving] = useState(false);
+  const [targetError, setTargetError] = useState<string | null>(null);
   const formRef = useRef<HTMLDivElement>(null);
 
   // When the edit form opens (mobile), scroll it into view so the save/cancel
@@ -257,6 +263,42 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       setDeleteError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  function openTargetForm() {
+    setTargetAnggaran(summary?.anggaran != null ? String(summary.anggaran) : '');
+    setTargetNabung(summary?.targetNabung != null ? String(summary.targetNabung) : '');
+    setTargetError(null);
+    setShowTargetForm(true);
+  }
+
+  async function handleSaveTarget() {
+    if (!apiKey) {
+      setTargetError('API key diperlukan untuk mengatur anggaran.');
+      return;
+    }
+    const anggaran = Number(targetAnggaran);
+    const nabung = Number(targetNabung);
+    if (!Number.isInteger(anggaran) || anggaran < 0) {
+      setTargetError('Anggaran harus bilangan bulat ≥ 0.');
+      return;
+    }
+    if (!Number.isInteger(nabung) || nabung < 0) {
+      setTargetError('Target nabung harus bilangan bulat ≥ 0.');
+      return;
+    }
+    setTargetSaving(true);
+    setTargetError(null);
+    try {
+      await updateExpenseTarget({ month, anggaran, targetNabung: nabung }, { apiKey });
+      setShowTargetForm(false);
+      setSavedNote('Anggaran & target nabung tersimpan.');
+      reload();
+    } catch (err) {
+      setTargetError(err instanceof ApiError ? `Gagal menyimpan anggaran (${err.status}).` : 'Gagal menyimpan anggaran.');
+    } finally {
+      setTargetSaving(false);
     }
   }
 
@@ -540,6 +582,66 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 percent={(summary!.total / summary!.anggaran!) * 100}
                 tone={summary!.total > summary!.anggaran! ? 'red' : 'accent'}
               />
+            )}
+
+            {!allTime && (
+              <div className="relative overflow-hidden rounded-none border border-chill-border bg-chill-surface px-3 py-2.5 pixel-shadow-sm">
+                <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-elevated" />
+                <div aria-hidden="true" className="absolute left-0 bottom-0 h-2 w-2 bg-black/25" />
+                <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-elevated" />
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <span className="text-xs font-medium uppercase tracking-wider text-chill-muted">Anggaran bulan ini</span>
+                  <button
+                    type="button"
+                    onClick={() => (showTargetForm ? setShowTargetForm(false) : openTargetForm())}
+                    aria-expanded={showTargetForm}
+                    className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition min-h-[44px] hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  >
+                    {showTargetForm ? 'Batal' : 'Atur anggaran'}
+                  </button>
+                </div>
+                {showTargetForm && (
+                  <div className="mt-3 space-y-3">
+                    <label className="block text-xs text-chill-muted">
+                      Anggaran
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={targetAnggaran}
+                        onChange={(e) => setTargetAnggaran(e.target.value)}
+                        placeholder="mis. 600000"
+                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
+                      />
+                    </label>
+                    <label className="block text-xs text-chill-muted">
+                      Target Nabung
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        value={targetNabung}
+                        onChange={(e) => setTargetNabung(e.target.value)}
+                        placeholder="mis. 300000"
+                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
+                      />
+                    </label>
+                    {targetError && (
+                      <p role="alert" className="rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 text-sm text-chill-red">
+                        {targetError}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleSaveTarget}
+                      disabled={targetSaving}
+                      className="rounded-none border border-chill-accent bg-chill-accent px-4 py-2 text-sm font-medium text-chill-bg transition min-h-[44px] hover:bg-chill-accent/90 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:shadow-none"
+                    >
+                      {targetSaving ? 'Menyimpan…' : 'Simpan'}
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
 
             {remBudget && (

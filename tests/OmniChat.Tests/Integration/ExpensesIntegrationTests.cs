@@ -767,4 +767,107 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
         finally { File.Delete(db); }
     }
 
+    [Fact]
+    public async Task TargetUpdate_requiresApiKey()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = NewClient(db);
+            var response = await client.PutAsJsonAsync("/api/expenses/target",
+                new { month = "2026-11", anggaran = 500000, targetNabung = 300000 });
+
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task TargetUpdate_invalidMonth_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.PutAsJsonAsync("/api/expenses/target",
+                new { month = "not-a-month", anggaran = 500000, targetNabung = 300000 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task TargetUpdate_negativeValues_returns400()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.PutAsJsonAsync("/api/expenses/target",
+                new { month = "2026-11", anggaran = -100, targetNabung = 300000 });
+
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task TargetUpdate_withApiKey_updatesExistingTarget()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.UpsertTargetAsync(
+                    new ExpenseTarget { Month = "2026-11", TargetNabung = 467_000, Anggaran = 520_000, Hari = 30 },
+                    CancellationToken.None);
+            });
+
+            var response = await client.PutAsJsonAsync("/api/expenses/target",
+                new { month = "2026-11", anggaran = 400_000, targetNabung = 250_000 });
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            Assert.Equal("2026-11", root.GetProperty("month").GetString());
+            Assert.Equal(400_000, root.GetProperty("anggaran").GetInt64());
+            Assert.Equal(250_000, root.GetProperty("targetNabung").GetInt64());
+
+            // GET target reflects the updated figures.
+            var get = await client.GetAsync("/api/expenses/target?month=2026-11");
+            Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+            using var getJson = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+            Assert.Equal(400_000, getJson.RootElement.GetProperty("anggaran").GetInt64());
+            Assert.Equal(250_000, getJson.RootElement.GetProperty("targetNabung").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
+    public async Task TargetUpdate_withApiKey_createsWhenUnset()
+    {
+        var db = TempDb();
+        try
+        {
+            var client = Authorized(NewClient(db));
+            var response = await client.PutAsJsonAsync("/api/expenses/target",
+                new { month = "2026-11", anggaran = 500_000, targetNabung = 300_000 });
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var get = await client.GetAsync("/api/expenses/target?month=2026-11");
+            Assert.Equal(HttpStatusCode.OK, get.StatusCode);
+            using var getJson = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
+            Assert.Equal(500_000, getJson.RootElement.GetProperty("anggaran").GetInt64());
+            Assert.Equal(300_000, getJson.RootElement.GetProperty("targetNabung").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
 }
