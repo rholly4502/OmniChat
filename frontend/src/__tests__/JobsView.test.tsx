@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { JobsView } from '../components/JobsView';
 import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
@@ -51,6 +51,7 @@ function mockState(overrides: Partial<MockJobsState> = {}) {
     cvFiles: [] as string[],
     cvError: null as string | null,
     downloadCv: vi.fn(),
+    generateDraft: vi.fn().mockResolvedValue({ coverLetter: 'Subject: Application…', model: 'hermes' }),
   };
   useJobsMock.useJobs.mockReturnValue({ ...defaults, ...overrides });
 }
@@ -270,5 +271,51 @@ describe('JobsView filter tablist keyboard navigation', () => {
     expect(setStatusFilter).toHaveBeenCalledWith(OPPORTUNITY_STATUSES[0]);
     const status = pills(container, 'Filter status');
     expect(document.activeElement).toBe(status[1]);
+  });
+});
+
+describe('JobsView paket lamaran (auto-prep + gate review)', () => {
+  it('menampilkan data isian form & lampiran CV setelah draft dibuat, dan gate menunggu konfirmasi', async () => {
+    mockState({ cvFiles: ['Rholly-CV-EN-MYSG.pdf'] });
+    render(<JobsView />);
+
+    fireEvent.click(screen.getAllByText('Buat draft lamaran')[0]);
+    await waitFor(() => expect(screen.getByText('Paket lamaran')).toBeTruthy());
+
+    // Data isian form dari profil.
+    expect(screen.getByText('Rholly Kurnia Putra')).toBeTruthy();
+    expect(screen.getByText('rholly4502@gmail.com')).toBeTruthy();
+    expect(screen.getByText('Lampiran CV:')).toBeTruthy();
+    expect(screen.getAllByText('Rholly-CV-EN-MYSG.pdf').length).toBeGreaterThan(0);
+
+    // Gate: tombol buka lowongan tetap disabled sebelum konfirmasi.
+    const openBtn = screen.getByRole('button', { name: /Buka halaman lowongan/ });
+    expect((openBtn as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(screen.getByRole('checkbox'));
+    expect((screen.getByRole('button', { name: /Buka halaman lowongan/ }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('membuka halaman lowongan hanya setelah konfirmasi review', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null);
+    try {
+      mockState({ cvFiles: [] });
+      render(<JobsView />);
+
+      fireEvent.click(screen.getAllByText('Buat draft lamaran')[0]);
+      await waitFor(() => expect(screen.getByText('Paket lamaran')).toBeTruthy());
+
+      fireEvent.click(screen.getByRole('checkbox'));
+      fireEvent.click(screen.getByRole('button', { name: /Buka halaman lowongan/ }));
+
+      expect(openSpy).toHaveBeenCalledTimes(1);
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://example.com/job',
+        '_blank',
+        'noopener,noreferrer',
+      );
+    } finally {
+      openSpy.mockRestore();
+    }
   });
 });

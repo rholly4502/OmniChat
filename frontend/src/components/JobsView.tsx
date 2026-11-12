@@ -44,6 +44,15 @@ function groupOf(o: Opportunity): string {
 }
 
 const GROUP_ORDER = ['FTE', 'Kontrak', 'Part-time / Freelance', ''];
+
+/** Data isian form yang diisi-otomatis saat menyiapkan paket lamaran (dari profil Rholly). */
+const APPLICANT_PROFILE: ReadonlyArray<{ label: string; value: string }> = [
+  { label: 'Nama', value: 'Rholly Kurnia Putra' },
+  { label: 'Email', value: 'rholly4502@gmail.com' },
+  { label: 'No. HP', value: '+62 821-9783-9273' },
+  { label: 'GitHub', value: 'github.com/rholly4502' },
+  { label: 'Zona waktu', value: 'Indonesia (WIB, UTC+7)' },
+];
 const GROUP_LABEL: Record<string, string> = {
   FTE: 'FTE — pengganti utama',
   Kontrak: 'Kontrak — pengganti utama',
@@ -125,6 +134,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [draftErrorById, setDraftErrorById] = useState<Record<number, string>>({});
   const [draftOpenById, setDraftOpenById] = useState<Record<number, boolean>>({});
   const [copiedDraft, setCopiedDraft] = useState<number | null>(null);
+  const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
 
   const handleGenerateDraft = async (o: Opportunity) => {
     try {
@@ -157,6 +167,12 @@ export function JobsView({ apiKey }: JobsViewProps) {
     }
     setCopiedDraft(id);
     window.setTimeout(() => setCopiedDraft((c) => (c === id ? null : c)), 1500);
+  };
+
+  const openLowongan = (o: Opportunity) => {
+    if (o.link) {
+      window.open(o.link, '_blank', 'noopener,noreferrer');
+    }
   };
 
   // Roving-tabindex refs for the three filter tablists (type/status/tier).
@@ -604,6 +620,70 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     ) : (
                       <p className="text-xs text-chill-muted">Klik tombol di atas untuk membuat draft.</p>
                     )}
+
+                    {/* Paket lamaran (auto-prep + gate review) */}
+                    <div className="mt-4 border-t border-chill-border pt-3">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="text-xs font-semibold text-chill-text">Paket lamaran</span>
+                        <span className="text-xs text-chill-muted">Diisi otomatis — review sebelum kirim</span>
+                      </div>
+
+                      <div className="grid grid-cols-1 gap-1.5 mb-3">
+                        {APPLICANT_PROFILE.map((f) => (
+                          <div key={f.label} className="flex items-baseline gap-2 text-xs">
+                            <span className="w-24 shrink-0 text-chill-muted">{f.label}</span>
+                            <span className="text-chill-text">{f.value}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {cvFiles.length > 0 && (
+                        <div className="mb-3">
+                          <span className="text-xs text-chill-muted block mb-1">Lampiran CV:</span>
+                          <div className="flex flex-wrap gap-2">
+                            {cvFiles.map((f) => (
+                              <button
+                                key={f}
+                                type="button"
+                                onClick={() => void downloadCv(f)}
+                                className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-elevated px-2.5 py-1 text-xs text-chill-text transition hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
+                                  <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+                                </svg>
+                                {f}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {o.link && (
+                        <div className="flex flex-col gap-2">
+                          <label className="flex items-start gap-2 text-xs text-chill-muted cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={!!paketConfirmedById[o.id]}
+                              onChange={(e) => setPaketConfirmedById((m) => ({ ...m, [o.id]: e.target.checked }))}
+                              className="mt-0.5 h-4 w-4 accent-chill-accent"
+                            />
+                            <span>Saya sudah mereview draft & data di atas. Kirim lamaran manual ke halaman lowongan.</span>
+                          </label>
+                          <button
+                            type="button"
+                            disabled={!paketConfirmedById[o.id]}
+                            onClick={() => openLowongan(o)}
+                            className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${
+                              paketConfirmedById[o.id]
+                                ? 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'
+                                : 'border-chill-border bg-chill-surface text-chill-muted opacity-60 cursor-not-allowed'
+                            }`}
+                          >
+                            Buka halaman lowongan →
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 <div className="mt-3 border-t border-chill-border pt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
