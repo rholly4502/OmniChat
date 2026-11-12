@@ -635,5 +635,17 @@
     "status": "new",
     "ditemukan": "2026-11-11",
     "skor": 97
+  },
+  {
+    "id": "5e44e468ee",
+    "judul": "Software Engineer (.NET)",
+    "perusahaan": "Profescipta",
+    "lokasi": "Remote (Indonesia only)",
+    "tipe": "Kontrak (Remote)",
+    "gaji": "omit",
+    "link": "https://www.linkedin.com/posts/amanizulfaizah_hiring-softwareengineer-dotnet-activity-7493891405002563584-i_Nl",
+    "catatan": "Stack cocok: C#/.NET, REST/SOAP/Minimal API, RabbitMQ/Kafka/Service Bus, SQL Server/PostgreSQL/MongoDB/Redis, Clean Architecture. Remote Indonesia only.",
+    "status": "new",
+    "ditemukan": "2026-11-12"
   }
 ]
