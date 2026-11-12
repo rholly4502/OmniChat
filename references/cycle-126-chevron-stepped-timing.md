@@ -1,6 +1,6 @@
 # Cycle 126 — chevron rotation stepped-timing consistency (2026-11-12)
 
-Commit `REPLACE_SHA`. Frontend-only; backend untouched. CI + Deploy green; live
+Commit `8fae011`. Frontend-only; backend untouched. CI + Deploy green; live
 bundle hash matches local dist.
 
 ## Gap found
