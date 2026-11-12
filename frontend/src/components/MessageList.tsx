@@ -697,7 +697,7 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           width="10" height="6" viewBox="0 0 24 24" fill="none"
                           stroke="currentColor" strokeWidth="3" strokeLinecap="square"
                           shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"
-                          className={`shrink-0 transition-transform ${openReasoningIndex === i ? 'rotate-180' : ''}`}
+                          className={`shrink-0 transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] ${openReasoningIndex === i ? 'rotate-180' : ''}`}
                         >
                           <polyline points="6 9 12 15 18 9" />
                         </svg>

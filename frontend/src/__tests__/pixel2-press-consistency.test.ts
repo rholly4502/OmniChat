@@ -89,4 +89,25 @@ describe('pixel2 press shadow consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('every rotated chevron uses the stepped pixel timing (no smooth tween)', () => {
+    // The pixel2 register rotates chevrons in hard beats (steps(3,jump-none) /
+    // steps(2,jump-none)). A bare `rotate-180` with transition-transform (or
+    // worse, no timing at all) tweens smoothly — the one animation inconsistency
+    // the register bans. Scans source because jsdom can't compute timing funcs.
+    const offenders: string[] = [];
+    for (const file of files) {
+      const text = readFileSync(file, 'utf8');
+      for (const m of text.matchAll(/rotate-180/g)) {
+        const line = text.slice(0, m.index).split('\n').length;
+        const lineText = text.split('\n')[line - 1];
+        // The rotate utility must be paired with a stepped timing function in the
+        // same tag. A step timing is detectable by `steps(` on the line.
+        if (!/steps\(/.test(lineText)) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} rotate-180 without stepped timing — ${lineText.trim()}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
 });

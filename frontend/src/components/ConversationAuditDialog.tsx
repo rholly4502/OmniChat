@@ -363,7 +363,7 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
                           aria-label={expandedRows[i] ? 'Sembunyikan pesan lengkap' : 'Tampilkan pesan lengkap'}
                           className="mt-1 rounded-none inline-flex items-center gap-1 min-h-[44px] px-1 text-xs text-chill-accent font-medium transition hover:text-chill-accent-hover active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                         >
-                          <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`transition-transform ${expandedRows[i] ? 'rotate-180' : ''}`}>
+                          <svg width="10" height="6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] ${expandedRows[i] ? 'rotate-180' : ''}`}>
                             <polyline points="6 9 12 15 18 9" />
                           </svg>
                           {expandedRows[i] ? 'Sembunyikan' : 'Lihat lengkap'}
