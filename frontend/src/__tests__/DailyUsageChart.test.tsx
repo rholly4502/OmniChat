@@ -48,3 +48,26 @@ describe('DailyUsageChart', () => {
     expect(screen.getByText('Belum ada penggunaan harian yang tercatat.')).toBeInTheDocument();
   });
 });
+
+describe('DailyUsageChart hover affordance', () => {
+  it('marks active-day bars as hoverable and adds chill-token hover feedback', () => {
+    render(<DailyUsageChart rows={rows} />);
+    const col = screen.getByTestId('usage-day-2026-10-01');
+    const bar = col.querySelector('div.group.cursor-pointer');
+    expect(bar).not.toBeNull();
+    const segments = Array.from(bar!.children as HTMLCollectionOf<HTMLElement>);
+    const output = segments.find((el) => el.className.includes('bg-chill-accent') && !el.className.includes('/40'));
+    const input = segments.find((el) => el.className.includes('bg-chill-accent/40'));
+    expect(output!.className).toContain('group-hover:bg-chill-accent-hover');
+    expect(output!.className).toContain('group-hover:border-chill-accent');
+    expect(output!.className).toContain('transition-colors');
+    expect(input!.className).toContain('group-hover:bg-chill-accent/60');
+    expect(input!.className).toContain('transition-colors');
+  });
+
+  it('keeps zero-activity stub days non-hoverable', () => {
+    render(<DailyUsageChart rows={rows} />);
+    const stub = screen.getByTestId('usage-day-2026-10-03');
+    expect(stub.querySelector('div.group.cursor-pointer')).toBeNull();
+  });
+});
