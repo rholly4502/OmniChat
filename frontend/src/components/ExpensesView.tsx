@@ -862,7 +862,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
           onClick={onEdit}
           disabled={busy}
           aria-label={`Edit ${item.keterangan || item.kategori}`}
-          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:shadow-none"
+          className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-accent hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:shadow-none"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
             <path d="M4 20h4L19 9l-4-4L4 16v4ZM13.5 7.5l4 4" />
@@ -874,7 +874,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
             onClick={() => setConfirming(true)}
             disabled={busy}
             aria-label={`Hapus ${item.keterangan || item.kategori}`}
-            className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50 disabled:shadow-none"
+            className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-red hover:border-chill-red/50 active:bg-chill-red/10 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50 disabled:shadow-none"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
               <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
@@ -887,7 +887,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
               onClick={onDelete}
               disabled={busy}
               aria-label={`Yakin hapus ${item.keterangan || item.kategori}`}
-              className="rounded-none border border-chill-red/70 bg-chill-red/20 w-11 h-11 inline-flex items-center justify-center text-chill-red text-xs font-semibold transition hover:bg-chill-red/30 active:bg-chill-red/40 hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50 disabled:shadow-none"
+              className="rounded-none border border-chill-red/70 bg-chill-red/20 w-11 h-11 inline-flex items-center justify-center text-chill-red text-xs font-semibold transition hover:bg-chill-red/30 active:bg-chill-red/40 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60 disabled:opacity-50 disabled:shadow-none"
             >
               Yakin?
             </button>
@@ -896,7 +896,7 @@ function TransactionRow({ item, onEdit, onDelete, busy }: TransactionRowProps) {
               onClick={() => setConfirming(false)}
               disabled={busy}
               aria-label="Batal hapus"
-              className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-text hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[1px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:shadow-none"
+              className="rounded-none border border-chill-border w-11 h-11 inline-flex items-center justify-center text-chill-muted transition hover:text-chill-text hover:border-chill-accent/50 active:bg-chill-elevated hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:shadow-none"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4">
                 <path d="M6 6l12 12M18 6L6 18" />

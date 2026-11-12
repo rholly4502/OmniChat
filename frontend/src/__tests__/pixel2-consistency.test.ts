@@ -270,6 +270,23 @@ describe('pixel2 chill consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('never uses the 1px press depth (active must be 2px or 3px)', () => {
+    // The pixel press language is standardised: icon/standard buttons press
+    // `active:translate-y-[2px]`, primary CTAs press `[3px]`. A shallower
+    // `[1px]` press is the one drift that slips past every rendered test (it
+    // is a valid class, so it renders fine) while quietly feeling different
+    // from every other control. Pinned here so it cannot come back.
+    const offenders: string[] = [];
+    const re = /active:translate-y-\[1px\]/g;
+    for (const file of files) {
+      const clean = stripComments(readFileSync(file, 'utf8'));
+      clean.split('\n').forEach((line, i) => {
+        if (line.match(re)) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${line.trim()}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
 });
 
 describe('pixel2 global square-corner floor', () => {
