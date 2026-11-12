@@ -980,5 +980,33 @@ public sealed class ExpenseAdviceServiceTests
 
         Assert.Null(advice.BiggestLeak);
     }
+
+    [Fact]
+    public async Task DailySuggestions_avgDailyMakan_isMakanTotalOverElapsedDays()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-10", Anggaran = 520_000, TargetNabung = 467_000 },
+        };
+        // Day-of-month 31; Makan total 90_000 → average 90_000 / 31 ≈ 2_903.
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Makan", 60_000, "m1"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Makan", 30_000, "m2"));
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Transport", 50_000, "t"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        Assert.Equal(2_903, advice.Daily.AvgDailyMakan);
+    }
+
+    [Fact]
+    public async Task DailySuggestions_avgDailyMakan_zeroWhenNoMakanRows()
+    {
+        var repo = new FakeExpenseRepository();
+        repo.Rows.Add(Row(new DateOnly(2026, 10, 31), "Transport", 50_000, "t"));
+
+        var advice = await NewService(repo).BuildAsync(new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        Assert.Equal(0, advice.Daily.AvgDailyMakan);
+    }
 }
 

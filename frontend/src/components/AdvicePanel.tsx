@@ -302,6 +302,32 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
                     );
                   })()
                 )}
+                {advice.daily.biayaMax > 0 && advice.daily.avgDailyMakan > 0 && (
+                  (() => {
+                    const avg = advice.daily.avgDailyMakan;
+                    const hi = advice.daily.biayaMax;
+                    if (avg > hi) {
+                      return (
+                        <div className="relative overflow-hidden rounded-none border border-chill-red/40 bg-chill-red/10 px-3 py-2 mt-1">
+                          <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-red/40" />
+                          <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-red/40" />
+                          <p className="text-sm text-chill-red font-medium">
+                            Rata-rata makan bulan ini ±{formatRupiah(avg)}/hari lebih tinggi dari rencana hemat ±{formatRupiah(hi)} ({formatRupiah(avg - hi)}/hari) — kebiasaan, bukan cuma hari ini.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="relative overflow-hidden rounded-none border border-chill-sage/40 bg-chill-sage/10 px-3 py-2 mt-1">
+                        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-sage/40" />
+                        <div aria-hidden="true" className="absolute inset-y-0 left-0 w-[2px] bg-chill-sage/40" />
+                        <p className="text-sm text-chill-sage">
+                          Rata-rata makan bulan ini ±{formatRupiah(avg)}/hari masih dalam rencana hemat ±{formatRupiah(hi)}.
+                        </p>
+                      </div>
+                    );
+                  })()
+                )}
                 {advice.daily.malamSederhana && (
                   <div className="relative overflow-hidden rounded-none border border-chill-accent/40 bg-chill-accent/10 px-3 py-2 mt-1">
                     <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-chill-accent/40" />

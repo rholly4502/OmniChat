@@ -264,6 +264,48 @@ describe('AdvicePanel daily suggestions (P1-6)', () => {
     expect(screen.queryByText(/melebihi rencana hemat/)).not.toBeInTheDocument();
   });
 
+  it('flags when the month-average daily makan spend runs over the frugal plan', async () => {
+    const habitPayload = {
+      ...advicePayload,
+      daily: { ...advicePayload.daily, avgDailyMakan: 45000 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(habitPayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const habit = screen.getByText(/Rata-rata makan bulan ini/);
+    const text = habit.textContent?.replace(/\s/g, ' ') ?? '';
+    expect(text).toContain('lebih tinggi dari rencana hemat');
+    expect(text).toContain('15.000'); // 45.000 - 30.000 (avg - biayaMax)
+    expect(habit.closest('div.rounded-none')).toBeTruthy();
+    expect(habit.closest('div[class*="border-chill-red"]')).toBeTruthy();
+  });
+
+  it('confirms when the month-average daily makan spend stays within the frugal plan', async () => {
+    const habitPayload = {
+      ...advicePayload,
+      daily: { ...advicePayload.daily, avgDailyMakan: 20000 },
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(habitPayload)));
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    const habit = screen.getByText(/Rata-rata makan bulan ini/);
+    expect(habit.textContent?.replace(/\s/g, ' ')).toContain('masih dalam rencana hemat');
+    expect(habit.closest('div[class*="border-chill-sage"]')).toBeTruthy();
+  });
+
+  it('hides the month-average food comparison when no makan history exists yet', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(advicePayload))); // avgDailyMakan absent
+    render(<AdvicePanel apiKey="secret" month="2026-05" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Analisa & Saran' }));
+    await waitFor(() => expect(screen.getByText(/Over budget/)).toBeInTheDocument());
+
+    expect(screen.queryByText(/Rata-rata makan bulan ini/)).not.toBeInTheDocument();
+  });
+
   it('shows no food comparison when no food spend is recorded for the day', async () => {
     const zeroPayload = { ...advicePayload, daily: { ...advicePayload.daily, foodSpend: 0 } };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(zeroPayload)));

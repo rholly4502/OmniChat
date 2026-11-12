@@ -148,6 +148,13 @@ public sealed class ExpenseAdviceService(
         // eating has already run past the planned frugal range.
         var foodSpend = rows.Where(r => r.Tanggal == date && r.Kategori == "Makan").Sum(r => r.Nominal);
 
+        // Month-to-date average daily Makan spend vs the frugal menu plan — a habit-level
+        // signal the single-day check misses: if the menu range spans ±25–42k, an average
+        // above the top of that range means eating runs structurally over plan, not just one
+        // heavy day. Exposed so the UI can surface it next to today's spend.
+        var makanTotal = rows.Where(r => r.Kategori == "Makan").Sum(r => r.Nominal);
+        var avgDailyMakan = daysElapsed > 0 ? (long)Math.Round(makanTotal / (double)daysElapsed) : 0;
+
         // Remaining-day envelope: the static DailyBudget assumes a uniform spend from day
         // 1, which is rarely true (a lumpy sewa-kos bill early on makes it meaningless).
         // What actually matters is how much is left vs how many days remain — the per-day
@@ -193,7 +200,7 @@ public sealed class ExpenseAdviceService(
                 remaining,
                 potentialSavingPerMonth,
                 monthsToReach),
-            Daily(date, foodSpend),
+            Daily(date, foodSpend, avgDailyMakan),
             new RemainingAllowance(anggaran, currentThroughDay, remainingBudget, daysLeft, perDayAllowance),
             new MonthlyNabung(nabungTarget, nabungThisMonth, percentNabung, remainingNabung, projectedSavings, projectedDeficit),
             jajanTotal,
@@ -208,7 +215,7 @@ public sealed class ExpenseAdviceService(
     /// (Min/Max) rides along with the display estimate so the UI can compare a day's actual
     /// food spend ({paramref name="foodSpend"/}) against the plan.
     /// </summary>
-    private static DailySuggestions Daily(DateOnly date, long foodSpend)
+    private static DailySuggestions Daily(DateOnly date, long foodSpend, long avgDailyMakan)
     {
         var day = date.DayNumber;
         // Decoupled rotations: each pool advances at its own stride and period, so a
@@ -230,7 +237,8 @@ public sealed class ExpenseAdviceService(
             foodSpend,
             min,
             max,
-            malamSederhana);
+            malamSederhana,
+            avgDailyMakan);
     }
 
     /// <summary>Complete frugal, weight-loss-aligned kos menu sets, rotated by day.</summary>

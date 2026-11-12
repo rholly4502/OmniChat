@@ -295,6 +295,10 @@ export interface DailySuggestionsDto {
   /** When today's actual "Makan" spend already exceeds the planned menu range, a
       concrete cheap dinner alternative for the rest of the day (null otherwise). */
   malamSederhana: string | null;
+  /** Month-to-date average daily "Makan" spend (makan total / elapsed days) — the
+      habit-level counterpart to `foodSpend`, used to flag eating that runs
+      structurally over the frugal menu plan rather than just one heavy day. */
+  avgDailyMakan: number;
 }
 
 /** Spend-pace comparison against the same day-of-month in the prior month. */

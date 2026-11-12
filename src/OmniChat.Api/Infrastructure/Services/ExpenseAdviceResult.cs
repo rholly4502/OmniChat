@@ -39,7 +39,8 @@ public sealed record DailySuggestions(
     long FoodSpend,
     int BiayaMin,
     int BiayaMax,
-    string? MalamSederhana);
+    string? MalamSederhana,
+    long AvgDailyMakan);
 
 /// <summary>Spend-pace comparison: cumulative non-Nabung spend through the same
 /// day-of-month, this month vs last month. A factual baseline for whether the month
