@@ -1,6 +1,6 @@
 # Cycle 127 — HistoryFilters date-input hover affordance (2026-11-12)
 
-Small frontend-only micro-interaction fix. Commit `PLACEHOLDER`.
+Small frontend-only micro-interaction fix. Commit `7c467f5`.
 
 ## What changed
 
