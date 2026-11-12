@@ -567,7 +567,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                         type="button"
                         disabled={updatingId === o.id}
                         onClick={() => updateStatus(o.id, s)}
-                        className={`rounded-none border px-2.5 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${
+                        className={`rounded-none border px-2.5 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] disabled:active:translate-y-0 ${
                           updatingId === o.id
                             ? 'opacity-50 cursor-wait border-chill-border text-chill-muted bg-chill-surface'
                             : 'border-chill-border bg-chill-surface text-chill-muted hover:bg-chill-elevated hover:text-chill-text'
@@ -581,7 +581,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                     type="button"
                     disabled={generatingId === o.id}
                     onClick={() => void handleGenerateDraft(o)}
-                    className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${generatingId === o.id ? 'border-chill-border bg-chill-surface text-chill-muted cursor-wait' : 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'}`}
+                    className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] disabled:active:translate-y-0 ${generatingId === o.id ? 'border-chill-border bg-chill-surface text-chill-muted cursor-wait' : 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'}`}
                   >
                     {generatingId === o.id ? 'Menyusun…' : (draftById[o.id] ? 'Buat ulang draft' : 'Buat draft lamaran')}
                   </button>
@@ -673,7 +673,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                             type="button"
                             disabled={!paketConfirmedById[o.id]}
                             onClick={() => openLowongan(o)}
-                            className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] ${
+                            className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] disabled:active:translate-y-0 ${
                               paketConfirmedById[o.id]
                                 ? 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'
                                 : 'border-chill-border bg-chill-surface text-chill-muted opacity-60 cursor-not-allowed'
@@ -712,7 +712,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                         type="button"
                         disabled={updatingId === o.id}
                         onClick={() => saveFollowUp(o)}
-                        className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px]"
+                        className="rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-chill-accent/10 disabled:active:bg-chill-accent/10 disabled:active:translate-y-0"
                       >
                         Simpan
                       </button>

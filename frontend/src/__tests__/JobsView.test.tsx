@@ -319,3 +319,38 @@ describe('JobsView paket lamaran (auto-prep + gate review)', () => {
     }
   });
 });
+
+describe('JobsView disabled-state contrast (no misleading press feedback)', () => {
+  it('status buttons drop the press-slide while a status update is in flight', () => {
+    mockState({ opportunities: [base], updatingId: 1 });
+    render(<JobsView />);
+    const group = screen.getByRole('group', { name: 'Ubah status' });
+    const buttons = Array.from(group.querySelectorAll('button'));
+    expect(buttons.length).toBeGreaterThan(0);
+    buttons.forEach((b) => {
+      expect((b as HTMLButtonElement).disabled).toBe(true);
+      expect(b.className).toContain('disabled:active:translate-y-0');
+      expect(b.className).toContain('cursor-wait');
+    });
+  });
+
+  it('generate-draft button drops the press-slide while generating', () => {
+    mockState({ opportunities: [base], generatingId: 1, generateDraft: vi.fn() });
+    render(<JobsView />);
+    const gen = screen.getByRole('button', { name: /Menyusun…/ }) as HTMLButtonElement;
+    expect(gen.disabled).toBe(true);
+    expect(gen.className).toContain('disabled:active:translate-y-0');
+    expect(gen.className).toContain('cursor-wait');
+  });
+
+  it('follow-up save button shows a distinct disabled state while a save is in flight', () => {
+    mockState({ opportunities: [base], updatingId: 1 });
+    render(<JobsView />);
+    fireEvent.click(screen.getByRole('button', { name: /Atur follow-up/ }));
+    const simpan = screen.getByRole('button', { name: 'Simpan' }) as HTMLButtonElement;
+    expect(simpan.disabled).toBe(true);
+    expect(simpan.className).toContain('disabled:opacity-50');
+    expect(simpan.className).toContain('disabled:cursor-not-allowed');
+    expect(simpan.className).toContain('disabled:active:translate-y-0');
+  });
+});
