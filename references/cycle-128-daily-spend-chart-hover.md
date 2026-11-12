@@ -26,4 +26,4 @@ mirroring the existing `DailyUsageChart hover affordance` suite.
 - `npx vitest run` → 66 files / 1108 tests pass (incl. new trio)
 - `npm run lint` → clean; `npm run build` → success
 - `dotnet test tests/OmniChat.Tests` → 657/657 pass (no backend/UI-data change)
-- Push triggers CI + auto-deploy; live bundle hash re-verified
+- Push `85cc071`; CI + Deploy green; live bundle `index-hCGtTNDJ.js` matches local dist (hover classes present in live bundle)
