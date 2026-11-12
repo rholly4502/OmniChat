@@ -85,7 +85,7 @@ export default function LoginScreen({ onSubmit, busy, error, onEnterGuest }: Log
             value={key}
             onChange={(e) => setKey(e.target.value)}
             placeholder="Masukkan API key Anda"
-            className="mt-2 w-full rounded-none border border-chill-border bg-chill-bg px-3.5 py-2.5 text-base md:text-sm text-chill-text outline-none transition placeholder:text-chill-muted focus:border-chill-accent/40 focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            className="mt-2 w-full rounded-none border border-chill-border bg-chill-bg px-3.5 py-2.5 text-base md:text-sm hover:border-chill-accent/60 text-chill-text outline-none transition placeholder:text-chill-muted focus:border-chill-accent/40 focus-visible:ring-2 focus-visible:ring-chill-accent/60"
           />
 
           <button

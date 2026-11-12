@@ -615,7 +615,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                         onChange={(e) => setDraftById((m) => ({ ...m, [o.id]: e.target.value }))}
                         aria-label={`Draft lamaran untuk ${o.judul}`}
                         rows={10}
-                        className="w-full rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-base text-chill-text leading-relaxed min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-y"
+                        className="w-full rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-base text-chill-text leading-relaxed hover:border-chill-accent/60 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-y"
                       />
                     ) : (
                       <p className="text-xs text-chill-muted">Klik tombol di atas untuk membuat draft.</p>
@@ -706,7 +706,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
                         min={todayISO}
                         onChange={(e) => setFollowUpDraft((m) => ({ ...m, [o.id]: e.target.value }))}
                         aria-label="Tanggal follow-up"
-                        className="rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-base text-chill-text min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 [color-scheme:dark]"
+                        className="rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-base text-chill-text hover:border-chill-accent/60 min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 [color-scheme:dark]"
                       />
                       <button
                         type="button"

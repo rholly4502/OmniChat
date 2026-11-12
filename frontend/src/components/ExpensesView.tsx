@@ -376,7 +376,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             aria-label="Bulan pengeluaran"
             value={month}
             onChange={(e) => e.target.value && setMonth(e.target.value)}
-            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            className="bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
         {(query || categoryFilter) && (
@@ -611,7 +611,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                         value={targetAnggaran}
                         onChange={(e) => setTargetAnggaran(e.target.value)}
                         placeholder="mis. 600000"
-                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
+                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
                       />
                     </label>
                     <label className="block text-xs text-chill-muted">
@@ -623,7 +623,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                         value={targetNabung}
                         onChange={(e) => setTargetNabung(e.target.value)}
                         placeholder="mis. 300000"
-                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
+                        className="mt-1 w-full bg-chill-surface border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text tabular-nums pixel-shadow-sm [color-scheme:dark]"
                       />
                     </label>
                     {targetError && (
@@ -815,7 +815,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder="Cari transaksi…"
-                      className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
+                      className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm"
                     />
                   </label>
                   <label className="sm:w-52 relative">
@@ -1109,7 +1109,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
             type="date"
             value={tanggal}
             onChange={(e) => setTanggal(e.target.value)}
-            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
         <label className="relative flex flex-col gap-1 text-xs text-chill-muted">
@@ -1138,7 +1138,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
             value={nominal}
             onChange={(e) => setNominal(e.target.value)}
             placeholder="20000"
-            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-chill-muted">
@@ -1147,7 +1147,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
             type="time"
             value={waktu}
             onChange={(e) => setWaktu(e.target.value)}
-            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </label>
       </div>
@@ -1159,7 +1159,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
           value={keterangan}
           onChange={(e) => setKeterangan(e.target.value)}
           placeholder="Mis. Makan warteg"
-          className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
         />
       </label>
       {(localError || error) && (

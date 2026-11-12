@@ -85,7 +85,7 @@ export function Composer({ input, onInputChange, streaming, onSend, onStop, mode
           onKeyDown={handleKeyDown}
           placeholder={streaming ? 'Menunggu respons…' : 'Ketik pesan…'}
           disabled={streaming}
-          className="flex-1 bg-chill-surface border-2 border-chill-border rounded-none px-3.5 md:px-4 py-2.5 text-base md:text-sm outline-none placeholder:text-chill-muted focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/50 disabled:opacity-50 min-h-[44px] max-h-[180px] resize-none leading-relaxed transition-[border-color,box-shadow] pixel-shadow-sm"
+          className="flex-1 bg-chill-surface border-2 border-chill-border rounded-none px-3.5 md:px-4 py-2.5 text-base md:text-sm outline-none placeholder:text-chill-muted hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/50 disabled:opacity-50 min-h-[44px] max-h-[180px] resize-none leading-relaxed transition-[border-color,box-shadow] pixel-shadow-sm"
         />
         {streaming ? (
           <button
