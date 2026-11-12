@@ -644,7 +644,14 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <section aria-label="Total per kategori">
               <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-3 pixel-heading">Total per Kategori</h3>
               {Object.keys(summary!.perKategori).length === 0 ? (
-                <p className="text-sm text-chill-muted">Belum ada pengeluaran tercatat di bulan ini.</p>
+                <p className="flex items-center gap-2 text-sm text-chill-muted">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 text-chill-accent">
+                    <rect x="4" y="10" width="4" height="9" />
+                    <rect x="10" y="6" width="4" height="13" />
+                    <rect x="16" y="13" width="4" height="6" />
+                  </svg>
+                  <span>Belum ada pengeluaran tercatat di bulan ini.</span>
+                </p>
               ) : (
                 <CategoryBreakdown perKategori={summary!.perKategori} />
               )}

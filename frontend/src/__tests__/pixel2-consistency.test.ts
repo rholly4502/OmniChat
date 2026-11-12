@@ -346,3 +346,21 @@ describe('pixel2 disclosure toggle press feedback', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+
+describe('pixel2 expenses empty-state register', () => {
+  it('"Total per Kategori" empty state carries the icon+text register (parity with transaction list)', () => {
+    const src = readFileSync(join(SRC, 'components/ExpensesView.tsx'), 'utf8');
+    const idx = src.indexOf('Belum ada pengeluaran tercatat di bulan ini.');
+    expect(idx).toBeGreaterThan(-1);
+    const pStart = src.lastIndexOf('<p', idx);
+    const pTag = src.slice(pStart, src.indexOf('>', pStart));
+    // Must sit in the shared inline empty-state row (icon + text), not a bare <p>.
+    expect(pTag).toContain('flex items-center gap-2');
+    // The bar-chart icon must precede the text inside that row.
+    const rowEnd = src.indexOf('</p>', idx);
+    const row = src.slice(pStart, rowEnd);
+    expect(row).toMatch(/<svg[\s\S]*?<\/svg>/);
+  });
+
+});
