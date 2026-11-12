@@ -107,6 +107,12 @@ export interface MessageListProps {
   /** Insert a quick-start suggestion into the composer (empty state only). */
   onSelectSuggestion?: (prompt: string) => void;
   /**
+   * Insert a message as a quoted reply in the composer — clicking the quote
+   * affordance prefills the draft with a blockquote of that turn's text so the
+   * user can answer inline. Optional; when absent no quote button is rendered.
+   */
+  onQuote?: (content: string) => void;
+  /**
    * Stable identity of the conversation being shown. When it changes the local
    * per-message UI state (feedback, copy/edit affordances, edit draft) resets,
    * so a rating or in-progress edit never leaks onto a different conversation's
@@ -193,7 +199,7 @@ function messageMarkdown(m: Message): string {
 }
 
 
-export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSetBookmark, onSelectSuggestion, conversationKey, searchSignal }: MessageListProps) {
+export function MessageList({ messages, streaming, models, model, useAgent, scrollRef, onRegenerate, onEditMessage, onSetFeedback, onDeleteMessage, onSetBookmark, onSelectSuggestion, onQuote, conversationKey, searchSignal }: MessageListProps) {
   const [jsonCopiedIndex, setJsonCopiedIndex] = useState<number | null>(null);
   const [textCopiedIndex, setTextCopiedIndex] = useState<number | null>(null);
   const [mdCopiedIndex, setMdCopiedIndex] = useState<number | null>(null);
@@ -820,6 +826,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                           }
                         />
                       )}
+                      {onQuote && (
+                        <ActionButton
+                          label="Kutip pesan"
+                          onClick={() => onQuote(m.content)}
+                          icon={
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                            }
+                        />
+                      )}
                       <ActionButton
                         label="Salin sebagai JSON"
                         activeLabel="JSON tersalin"
@@ -920,6 +935,15 @@ export function MessageList({ messages, streaming, models, model, useAgent, scro
                             activeIcon={
                               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" className="text-chill-accent" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
                             }
+                          />
+                        )}
+                        {onQuote && (
+                          <ActionButton
+                            label="Kutip pesan"
+                            onClick={() => onQuote(m.content)}
+                            icon={
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" shapeRendering="crispEdges" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                              }
                           />
                         )}
                         <ActionButton

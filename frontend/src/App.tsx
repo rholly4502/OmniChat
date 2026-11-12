@@ -359,6 +359,12 @@ export default function App() {
     setInput(prompt);
   }
 
+  /** Insert a quoted reply into the composer (per-message "Kutip pesan"). */
+  function handleQuote(content: string) {
+    setInput(`> ${content}\n\n`);
+    composerRef.current?.focus();
+  }
+
   // Global keyboard shortcuts: `/` or Ctrl+K focus the composer, Ctrl+Shift+F
   // opens in-transcript search, Ctrl+N starts a new chat (admin only), and
   // Ctrl+Alt+C copies the current conversation transcript as Markdown. The
@@ -404,6 +410,7 @@ export default function App() {
             onRegenerate={regenerate}
             onEditMessage={editAndResend}
             onSelectSuggestion={handleSelectSuggestion}
+            onQuote={handleQuote}
           />
           <Composer
             input={input}
@@ -560,6 +567,7 @@ export default function App() {
               onDeleteMessage={handleDeleteMessage}
               onSetBookmark={handleSetBookmark}
               onSelectSuggestion={handleSelectSuggestion}
+              onQuote={handleQuote}
             />
 
             <Composer

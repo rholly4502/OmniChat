@@ -21,6 +21,7 @@ function renderList(overrides: {
   onSetBookmark?: (messageId: string, isBookmarked: boolean) => Promise<boolean>;
   onDeleteMessage?: (messageId: string) => Promise<boolean>;
   onSelectSuggestion?: (prompt: string) => void;
+  onQuote?: (content: string) => void;
   conversationKey?: string;
   searchSignal?: number;
 } = {}) {
@@ -39,6 +40,7 @@ function renderList(overrides: {
       onSetBookmark={overrides.onSetBookmark}
       onDeleteMessage={overrides.onDeleteMessage}
       onSelectSuggestion={overrides.onSelectSuggestion}
+      onQuote={overrides.onQuote}
       conversationKey={overrides.conversationKey}
       searchSignal={overrides.searchSignal}
     />
@@ -1344,5 +1346,33 @@ describe('MessageList bookmark navigation', () => {
     );
     await waitFor(() => expect(screen.queryByLabelText('Posisi navigasi tandai')).not.toBeInTheDocument());
     expect(screen.getByLabelText('Cari pesan')).toBeInTheDocument();
+  });
+});
+
+describe('MessageList quote action (Kutip pesan)', () => {
+  it('calls onQuote with the message content on assistant turns', () => {
+    const onQuote = vi.fn();
+    renderList({
+      messages: [{ id: 'a1', role: 'assistant', content: 'Halo dunia' }],
+      onQuote,
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Kutip pesan' }));
+    expect(onQuote).toHaveBeenCalledTimes(1);
+    expect(onQuote).toHaveBeenCalledWith('Halo dunia');
+  });
+
+  it('renders the quote button on user turns too', () => {
+    renderList({
+      messages: [{ id: 'u1', role: 'user', content: 'Pertanyaan saya' }],
+      onQuote: vi.fn(),
+    });
+    expect(screen.getByRole('button', { name: 'Kutip pesan' })).toBeInTheDocument();
+  });
+
+  it('hides quote buttons when no handler is provided', () => {
+    renderList({
+      messages: [{ id: 'a1', role: 'assistant', content: 'Halo' }],
+    });
+    expect(screen.queryByRole('button', { name: 'Kutip pesan' })).not.toBeInTheDocument();
   });
 });
