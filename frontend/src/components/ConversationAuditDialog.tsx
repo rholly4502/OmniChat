@@ -112,6 +112,73 @@ function buildAuditCsv(session: ChatSession, modelOptions: ModelOption[] | undef
 }
 
 /**
+ * Builds the structured JSON of the per-conversation audit: one object per
+ * message with its role, content preview, model, prompt/completion tokens,
+ * estimated cost, rating, reasoning/bookmark flags and timestamp, plus an
+ * overall total and per-model subtotals. Mirror of {@link buildAuditCsv} in
+ * JSON form — the lossless counterpart to the CSV download.
+ */
+function buildAuditJson(session: ChatSession, modelOptions: ModelOption[] | undefined): string {
+  const msgs = session.messages;
+  const rows = msgs.map((m, i) => {
+    const usage = m.usage;
+    const cost = usage ? estimateUsd(usage, m.model ?? session.model ?? '') : null;
+    return {
+      no: i + 1,
+      peran: roleLabel(m.role),
+      pesan: preview(m.content),
+      model: labelFor(m.model ?? session.model, modelOptions) || null,
+      prompt_tokens: usage?.promptTokens ?? 0,
+      completion_tokens: usage?.completionTokens ?? 0,
+      biaya_usd: cost !== null ? Number(cost.toFixed(6)) : null,
+      umpan_balik: m.feedback === 'up' ? 'up' : m.feedback === 'down' ? 'down' : null,
+      berpikir: Boolean(m.reasoning),
+      ditandai: Boolean(m.bookmarked),
+      waktu: m.createdAt ? formatTimestamp(m.createdAt) : null,
+    };
+  });
+
+  const totalPrompt = msgs.reduce((sum, m) => sum + (m.usage?.promptTokens ?? 0), 0);
+  const totalCompletion = msgs.reduce((sum, m) => sum + (m.usage?.completionTokens ?? 0), 0);
+  const totalUsd = msgs.reduce(
+    (sum, m) => sum + (m.usage ? estimateUsd(m.usage, m.model ?? session.model ?? '') : 0),
+    0,
+  );
+
+  const byModel = new Map<string, { promptTokens: number; completionTokens: number }>();
+  for (const m of msgs) {
+    if (!m.usage) continue;
+    const mid = m.model ?? session.model ?? '';
+    if (!mid) continue;
+    const cur = byModel.get(mid) ?? { promptTokens: 0, completionTokens: 0 };
+    cur.promptTokens += m.usage.promptTokens ?? 0;
+    cur.completionTokens += m.usage.completionTokens ?? 0;
+    byModel.set(mid, cur);
+  }
+  const perModel = Array.from(byModel.entries()).map(([mid, u]) => ({
+    model: labelFor(mid, modelOptions),
+    prompt_tokens: u.promptTokens,
+    completion_tokens: u.completionTokens,
+    biaya_usd: Number(estimateUsd({ promptTokens: u.promptTokens, completionTokens: u.completionTokens }, mid).toFixed(6)),
+  }));
+
+  return JSON.stringify(
+    {
+      judul: session.title,
+      model: labelFor(session.model, modelOptions) || null,
+      mode: session.mode === 'agent' ? 'agent' : session.mode === 'direct' ? 'direct' : null,
+      dibuat: session.createdAt ? new Date(session.createdAt).toISOString() : null,
+      diperbarui: session.updatedAt ? new Date(session.updatedAt).toISOString() : null,
+      total: { prompt_tokens: totalPrompt, completion_tokens: totalCompletion, biaya_usd: Number(totalUsd.toFixed(6)) },
+      per_model: perModel,
+      pesan: rows,
+    },
+    null,
+    2,
+  );
+}
+
+/**
  * Per-conversation audit dialog: a compact, pixel-themed table of every turn in
  * one conversation with its prompt/completion tokens, estimated cost, rating and
  * timestamp. This is the per-conversation counterpart to the global
@@ -169,6 +236,20 @@ export function ConversationAuditDialog({ open, onClose, session, modelOptions }
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-chill-text pixel-heading truncate">Audit · {session.title}</h2>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() =>
+                downloadBlob(
+                  new Blob([buildAuditJson(session, modelOptions)], { type: 'application/json;charset=utf-8' }),
+                  `${safeFilenameSlug(session.title)}-audit.json`,
+                )
+              }
+              aria-label="Ekspor audit sebagai JSON"
+              title="Ekspor audit sebagai JSON"
+              className="rounded-none min-h-[44px] min-w-[44px] inline-flex items-center justify-center text-chill-muted hover:text-chill-accent active:bg-chill-elevated transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true"><path d="M8 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1" /><path d="M8 5h8v4H8z" /><line x1="8" y1="13" x2="16" y2="13" /><line x1="8" y1="16" x2="13" y2="16" /></svg>
+            </button>
             <button
               type="button"
               onClick={() =>

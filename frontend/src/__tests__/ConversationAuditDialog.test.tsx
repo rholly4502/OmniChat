@@ -264,3 +264,67 @@ describe('ConversationAuditDialog model/reasoning/bookmark attribution', () => {
     expect(asst).toContain(',1,1');
   });
 });
+
+describe('ConversationAuditDialog JSON export', () => {
+  const jsonRich: ChatSession = {
+    id: 'sess-json-rich',
+    title: 'Kaya',
+    model: 'claude-sonnet',
+    mode: 'agent',
+    createdAt: 0,
+    updatedAt: 0,
+    messages: [
+      {
+        role: 'assistant',
+        content: 'Beres',
+        usage: { promptTokens: 5, completionTokens: 3 },
+        model: 'claude-haiku',
+        reasoning: 'Pertimbangkan dulu.',
+        bookmarked: true,
+        createdAt: 2,
+      },
+    ],
+  };
+
+  it('exports a well-formed JSON with per-message rows, total and per-model subtotals', async () => {
+    downloadBlob.mockClear();
+    renderOpen();
+    const btn = screen.getByRole('button', { name: 'Ekspor audit sebagai JSON' });
+    expect(btn).toBeInTheDocument();
+    fireEvent.click(btn);
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob, filename] = downloadBlob.mock.calls[0];
+    expect(filename).toBe('deploy-audit.json');
+    expect(blob).toBeInstanceOf(Blob);
+    const raw = await blob.text();
+    const json = JSON.parse(raw);
+    expect(json.judul).toBe('Deploy');
+    expect(json.model).toBe('Claude Sonnet');
+    expect(json.mode).toBe('agent');
+    expect(json.pesan).toHaveLength(4);
+    expect(json.pesan[0]).toMatchObject({ no: 1, peran: 'Pengguna', pesan: 'Halo' });
+    const asst = json.pesan.find((r) => r.peran === 'Asisten' && r.pesan.includes('Hai! Ini balasan asisten'));
+    expect(asst).toBeTruthy();
+    expect(asst.prompt_tokens).toBe(10);
+    expect(asst.completion_tokens).toBe(20);
+    expect(asst.umpan_balik).toBe('up');
+    expect(json.total.prompt_tokens).toBe(14);
+    expect(json.total.completion_tokens).toBe(22);
+    expect(json.per_model.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('JSON export includes model, berpikir and ditandai fields', async () => {
+    downloadBlob.mockClear();
+    renderOpen(vi.fn(), jsonRich);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor audit sebagai JSON' }));
+    expect(downloadBlob).toHaveBeenCalledTimes(1);
+    const [blob] = downloadBlob.mock.calls[0];
+    const raw = await blob.text();
+    const json = JSON.parse(raw);
+    expect(json.pesan).toHaveLength(1);
+    const row = json.pesan[0];
+    expect(row).toMatchObject({ model: 'claude-haiku', berpikir: true, ditandai: true });
+    expect(row.prompt_tokens).toBe(5);
+    expect(row.completion_tokens).toBe(3);
+  });
+});
