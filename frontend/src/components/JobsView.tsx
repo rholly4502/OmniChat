@@ -660,12 +660,12 @@ export function JobsView({ apiKey }: JobsViewProps) {
 
                       {o.link && (
                         <div className="flex flex-col gap-2">
-                          <label className="flex items-start gap-2 text-xs text-chill-muted cursor-pointer">
+                          <label className="flex items-start gap-2 text-xs text-chill-muted cursor-pointer transition-colors hover:text-chill-accent">
                             <input
                               type="checkbox"
                               checked={!!paketConfirmedById[o.id]}
                               onChange={(e) => setPaketConfirmedById((m) => ({ ...m, [o.id]: e.target.checked }))}
-                              className="mt-0.5 h-4 w-4 accent-chill-accent"
+                              className="mt-0.5 h-4 w-4 pixel-checkbox"
                             />
                             <span>Saya sudah mereview draft & data di atas. Kirim lamaran manual ke halaman lowongan.</span>
                           </label>

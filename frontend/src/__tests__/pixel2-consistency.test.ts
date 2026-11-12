@@ -381,3 +381,33 @@ describe('pixel2 expenses empty-state register', () => {
   });
 
 });
+
+
+describe('pixel2 checkbox register consistency', () => {
+  it('every <input type="checkbox"> carries the pixel-checkbox class', () => {
+    const offenders: string[] = [];
+    for (const file of sourceFiles(SRC)) {
+      const text = readFileSync(file, 'utf8');
+      const re = /<input\b/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text)) !== null) {
+        let i = re.lastIndex;
+        let quote: string | null = null;
+        let braceDepth = 0;
+        for (; i < text.length; i++) {
+          const ch = text[i];
+          if (quote) { if (ch === quote) quote = null; continue; }
+          if (ch === '"' || ch === "'" || ch === '`') { quote = ch; continue; }
+          if (ch === '{') braceDepth++;
+          else if (ch === '}') braceDepth--;
+          else if (ch === '>' && braceDepth === 0) break;
+        }
+        const attrs = text.slice(m.index, i + 1);
+        if (attrs.includes('type="checkbox"') && !attrs.includes('pixel-checkbox')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${text.slice(0, m.index).split('\n').length} checkbox missing pixel-checkbox — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
