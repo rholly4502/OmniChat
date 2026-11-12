@@ -202,6 +202,23 @@ describe('pixel2 chill consistency', () => {
     }
   });
 
+  it('every bordered standalone <select> gives hover border feedback (matches sidebar model select)', () => {
+    // The sidebar model select sets hover:border-chill-accent/60; the standalone
+    // form/filter selects (expenses category + form, history filters) previously
+    // had none — hovering them gave zero affordance. Inline header selects are
+    // borderless on purpose, so this applies only to selects that carry a border.
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of selectTags(readFileSync(file, 'utf8'))) {
+        if (!attrs.includes('border border-chill-border')) continue;
+        if (!attrs.includes('hover:border-chill-accent/60')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} bordered select missing hover border — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
   it('every <select> hides the native drop-down arrow (appearance-none + pixel chevron)', () => {
     const offenders: string[] = [];
     for (const file of files) {

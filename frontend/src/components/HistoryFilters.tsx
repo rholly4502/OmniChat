@@ -63,7 +63,7 @@ export function HistoryFilters({
         <select
           value={modelFilter}
           onChange={(e) => onModelFilterChange(e.target.value)}
-          className="w-full appearance-none pr-9 cursor-pointer bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
+          className="w-full appearance-none pr-9 cursor-pointer bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] transition-colors pixel-shadow-sm [color-scheme:dark]"
           aria-label="Filter model"
         >
           <option value="">Semua model</option>
@@ -82,7 +82,7 @@ export function HistoryFilters({
         <select
           value={modeFilter}
           onChange={(e) => onModeFilterChange(e.target.value)}
-          className="w-full appearance-none pr-9 cursor-pointer bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
+          className="w-full appearance-none pr-9 cursor-pointer bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] transition-colors pixel-shadow-sm [color-scheme:dark]"
           aria-label="Filter mode"
         >
           <option value="">Semua mode</option>

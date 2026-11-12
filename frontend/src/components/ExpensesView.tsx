@@ -683,7 +683,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                     <select
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value)}
-                      className="w-full appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+                      className="w-full appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text transition-colors pixel-shadow-sm [color-scheme:dark]"
                     >
                       <option value="">Semua kategori</option>
                       {CATEGORY_ORDER.map((c) => (
@@ -971,7 +971,7 @@ function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormPr
           <select
             value={kategori}
             onChange={(e) => setKategori(e.target.value)}
-            className="appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            className="appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text transition-colors pixel-shadow-sm [color-scheme:dark]"
           >
             {CATEGORY_ORDER.map((c) => (
               <option key={c} value={c}>
