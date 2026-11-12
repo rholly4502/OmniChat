@@ -896,3 +896,73 @@ describe('findDuplicateExpense', () => {
     expect(findDuplicateExpense(p, rows, 2)).toEqual(rows[0]);
   });
 });
+
+describe('ExpensesView — Hari ini figure', () => {
+  it('shows today\'s discretionary spend vs today\'s budget, excluding Nabung/Tagihan', async () => {
+    const month = currentMonthKey();
+    const today = wibTodayTest();
+    const summary = {
+      month,
+      total: 30000,
+      perKategori: { Makan: 15000, Nabung: 50000 },
+      targetNabung: 467000,
+      anggaran: 520000,
+      sisaAnggaran: 500000,
+    };
+    const page = {
+      month,
+      page: 1,
+      pageSize: 200,
+      total: 3,
+      items: [
+        { id: 1, tanggal: today, waktu: '12:30', kategori: 'Makan', keterangan: 'Warteg', nominal: 15000 },
+        { id: 2, tanggal: today, waktu: '20:00', kategori: 'Nabung', keterangan: 'Tabungan', nominal: 50000 },
+        { id: 3, tanggal: today, waktu: '08:00', kategori: 'Tagihan', keterangan: 'Sewa', nominal: 1300000 },
+      ],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => (url.includes('/summary') ? jsonResponse(summary) : jsonResponse(page))),
+    );
+    render(<ExpensesView apiKey="secret" />);
+
+    await waitFor(() => expect(screen.getByText('Hari ini')).toBeInTheDocument());
+    // Read the whole "Sisa per hari" box and assert on its text — the id-ID
+    // currency formatter uses non-breaking spaces, so exact-string matchers are
+    // brittle; substring assertions are stable.
+    const todayBox = screen.getByText('Hari ini').closest('div.pixel-shadow-sm') ?? screen.getByText('Hari ini').closest('div');
+    expect(todayBox?.textContent).toContain('15.000'); // only the Makan row counts
+    expect(todayBox?.textContent).toContain('17.333'); // 520000 / 30 hari
+    // Nabung (Rp50k) and Tagihan (Rp1.3jt) must be excluded from today's spend.
+    expect(todayBox?.textContent).not.toContain('65.000');
+    expect(todayBox?.textContent).not.toContain('1.365.000');
+  });
+
+  it('renders no today figure when the month has no budget set', async () => {
+    const month = currentMonthKey();
+    const today = wibTodayTest();
+    const summary = {
+      month,
+      total: 20000,
+      perKategori: { Makan: 20000 },
+      targetNabung: null,
+      anggaran: null,
+      sisaAnggaran: null,
+    };
+    const page = {
+      month,
+      page: 1,
+      pageSize: 200,
+      total: 1,
+      items: [{ id: 1, tanggal: today, waktu: '', kategori: 'Makan', keterangan: 'X', nominal: 20000 }],
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => (url.includes('/summary') ? jsonResponse(summary) : jsonResponse(page))),
+    );
+    render(<ExpensesView apiKey="secret" />);
+
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+    expect(screen.queryByText('Hari ini')).not.toBeInTheDocument();
+  });
+});

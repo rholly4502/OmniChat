@@ -283,6 +283,20 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     summary?.anggaran != null && summary.anggaran > 0
       ? remainingDailyBudget(month, summary.sisaAnggaran ?? 0)
       : null;
+
+  // Today's discretionary spend (non-Nabung, non-Tagihan) vs today's budget — the
+  // actionable daily figure that previously required expanding Analisa & Saran.
+  // Same exclusion semantics as the day-total used by the advice/daily/weekly views;
+  // only meaningful for the live month (where remBudget is non-null).
+  const todayKey = wibToday();
+  const todaySpend = items
+    .filter((it) => it.tanggal === todayKey && it.kategori !== 'Nabung' && it.kategori !== 'Tagihan')
+    .reduce((sum, it) => sum + it.nominal, 0);
+  const todayEffDays = summary?.hari && summary.hari > 0 ? summary.hari : daysInMonthKey(month);
+  const todayBudget =
+    summary?.anggaran != null && summary.anggaran > 0
+      ? Math.max(1, Math.round(summary.anggaran / todayEffDays))
+      : null;
   const normalizedQuery = query.trim().toLowerCase();
   const filteredItems = items.filter((item) => {
     if (categoryFilter && item.kategori !== categoryFilter) return false;
@@ -545,6 +559,23 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                     </span>
                   )}
                 </div>
+                {todayBudget !== null && (
+                  <>
+                    <div className="mt-2 flex items-center justify-between gap-3 text-sm">
+                      <span className="text-chill-text">Hari ini</span>
+                      <span className="tabular-nums text-chill-muted">
+                        {formatRupiah(todaySpend)} dari ±{formatRupiah(todayBudget)}
+                      </span>
+                    </div>
+                    <div className="mt-1.5">
+                      <PixelProgress
+                        percent={(todaySpend / Math.max(1, todayBudget)) * 100}
+                        tone={todaySpend > todayBudget ? 'red' : 'accent'}
+                      />
+                    </div>
+                  </>
+                )}
+
               </div>
             )}
 
@@ -923,6 +954,12 @@ interface ExpenseFormProps {
 function wibToday(): string {
   const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
   return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** Days in a YYYY-MM month key. */
+function daysInMonthKey(month: string): number {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
 }
 
 function ExpenseForm({ initial, saving, error, onSave, onCancel }: ExpenseFormProps) {
