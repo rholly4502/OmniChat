@@ -18,6 +18,18 @@ const MODEL_RATES: Record<string, { input: number; output: number }> = {
   'claude-opus-4': { input: 0.015, output: 0.075 },
   'deepseek-chat': { input: 0.00027, output: 0.0011 },
   'gemini-2.0-flash': { input: 0.0001, output: 0.0004 },
+  'gpt-4.5': { input: 0.00125, output: 0.01 },
+  'gpt-4.5-mini': { input: 0.00025, output: 0.002 },
+  'gpt-5': { input: 0.00125, output: 0.01 },
+  'gpt-5-mini': { input: 0.00025, output: 0.002 },
+  'claude-sonnet-4': { input: 0.003, output: 0.015 },
+  'claude-sonnet-4.5': { input: 0.003, output: 0.015 },
+  'claude-haiku-4': { input: 0.001, output: 0.005 },
+  'claude-opus-4.5': { input: 0.005, output: 0.025 },
+  'gemini-2.5-pro': { input: 0.00125, output: 0.01 },
+  'gemini-2.5-flash': { input: 0.0003, output: 0.0025 },
+  'deepseek-reasoner': { input: 0.00055, output: 0.00219 },
+  'deepseek-v3': { input: 0.00027, output: 0.0011 },
 };
 
 /** Conservative fallback for unknown models. */

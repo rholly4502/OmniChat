@@ -7,6 +7,7 @@ import {
   formatUsd,
   sortModelEntriesByCost,
 } from '../tokenCost';
+import { DEFAULT_AGENT_MODELS, DEFAULT_DIRECT_MODELS } from '../constants';
 import type { TokenUsage } from '../types';
 
 const usage: TokenUsage = { promptTokens: 1000, completionTokens: 1000 };
@@ -127,5 +128,24 @@ describe('sortModelEntriesByCost immutability', () => {
     expect(JSON.stringify(entries)).toBe(before);
     expect(entries[0][0]).toBe('b');
     expect(entries[1][0]).toBe('a');
+  });
+});
+
+describe('catalog pricing coverage', () => {
+  it('every default catalog model resolves to a real price (never generic fallback)', () => {
+    const catalogs = [...DEFAULT_AGENT_MODELS, ...DEFAULT_DIRECT_MODELS];
+    expect(catalogs.length).toBeGreaterThan(0);
+    for (const m of catalogs) {
+      const rate = getModelRate(m.id);
+      // Fallback means the estimate silently ignores the real model price.
+      expect(rate.source).not.toBe('fallback');
+    }
+  });
+
+  it('covers current-generation model families that producers commonly add', () => {
+    const known = ['gpt-4.5', 'gpt-5', 'claude-sonnet-4.5', 'claude-opus-4.5', 'gemini-2.5-pro', 'deepseek-reasoner'];
+    for (const id of known) {
+      expect(getModelRate(id).source).toBe('known');
+    }
   });
 });

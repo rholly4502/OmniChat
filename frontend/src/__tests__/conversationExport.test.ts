@@ -59,6 +59,7 @@ describe('buildConversationCsv', () => {
     expect(body).toContain('prompt_tokens,10');
     expect(body).toContain('completion_tokens,5');
     expect(body).toContain('total_tokens,15');
+    expect(body).toContain('estimated_usd,$0.0001'); // claude-sonnet (10/1000)*0.003 + (5/1000)*0.015 = 0.000105
   });
 
   it('adds no summary footer when metadata is absent', () => {
@@ -89,7 +90,9 @@ describe('buildConversationJson', () => {
     const doc = JSON.parse(buildConversationJson(MSGS, 'Judul', { model: 'gpt-4o', mode: 'direct', promptTokens: 8, completionTokens: 2 }));
     expect(doc.model).toBe('gpt-4o');
     expect(doc.mode).toBe('direct');
-    expect(doc.usage).toEqual({ promptTokens: 8, completionTokens: 2, totalTokens: 10 });
+    expect(doc.usage).toEqual({ promptTokens: 8, completionTokens: 2, totalTokens: 10, estimatedUsd: expect.any(Number) });
+    // gpt-4o (0.0025 in / 0.01 out) => 8*0.0025 + 2*0.01 = 0.02 + 0.02 = 0.04
+    expect(doc.usage.estimatedUsd).toBeCloseTo(0.00004, 9); // $(8/1000)*0.0025 + (2/1000)*0.01
   });
 
   it('omits usage metadata when usage is absent', () => {
@@ -157,6 +160,7 @@ describe('buildConversationMarkdown', () => {
     expect(md).toContain('Model: claude-sonnet');
     expect(md).toContain('Agent (Hermes)');
     expect(md).toContain('Penggunaan: 15 token (10 in / 5 out)');
+    expect(md).toContain('≈ $0.0001');
   });
 });
 

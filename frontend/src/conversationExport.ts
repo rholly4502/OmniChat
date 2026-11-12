@@ -1,3 +1,4 @@
+import { estimateUsd, formatUsd } from './tokenCost';
 import type { Message } from './types';
 
 /** Export formats offered on a conversation. */
@@ -79,6 +80,7 @@ export function buildConversationCsv(messages: Message[], meta: ConversationExpo
     summary.push(['prompt_tokens', String(meta.promptTokens ?? 0)]);
     summary.push(['completion_tokens', String(meta.completionTokens ?? 0)]);
     summary.push(['total_tokens', String(total)]);
+    summary.push(['estimated_usd', formatUsd(estimateUsd({ promptTokens: meta.promptTokens ?? 0, completionTokens: meta.completionTokens ?? 0 }, meta.model ?? 'hermes'))]);
   }
   const body = rows.map((r) => r.map(csvField).join(',')).join('\r\n');
   if (!summary.length) return CSV_BOM + body + '\r\n';
@@ -99,6 +101,7 @@ export function buildConversationJson(messages: Message[], title = 'Percakapan',
       promptTokens: meta.promptTokens ?? 0,
       completionTokens: meta.completionTokens ?? 0,
       totalTokens: (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0),
+      estimatedUsd: estimateUsd({ promptTokens: meta.promptTokens ?? 0, completionTokens: meta.completionTokens ?? 0 }, meta.model ?? 'hermes'),
     };
   }
   return JSON.stringify(doc, null, 2);
@@ -112,7 +115,8 @@ export function buildConversationJson(messages: Message[], title = 'Percakapan',
 export function buildConversationMarkdown(messages: Message[], title = 'Percakapan', meta: ConversationExportMeta = {}, createdAt?: number): string {
   const headerMeta = [meta.model ? `Model: ${meta.model}` : '', modeLabel(meta.mode)].filter(Boolean).join(' · ');
   const total = (meta.promptTokens ?? 0) + (meta.completionTokens ?? 0);
-  const usageMeta = total > 0 ? `Penggunaan: ${total} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out)` : '';
+  const costEstimate = total > 0 ? formatUsd(estimateUsd({ promptTokens: meta.promptTokens ?? 0, completionTokens: meta.completionTokens ?? 0 }, meta.model ?? 'hermes')) : '';
+  const usageMeta = total > 0 ? `Penggunaan: ${total} token (${meta.promptTokens ?? 0} in / ${meta.completionTokens ?? 0} out) · ≈ ${costEstimate}` : '';
   const lines = [
     `# ${title}`,
     `*Dibuat: ${createdAt ? new Date(createdAt).toLocaleString('id-ID') : new Date().toLocaleString('id-ID')}*`,
