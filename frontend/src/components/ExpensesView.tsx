@@ -724,7 +724,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                       <path d="M12 21V10M12 10l4-4M12 10l-4-4M12 15l-3-3M12 15l3-3" />
                     </svg>
                   </span>
-                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
+                  <h3 className="border-l-2 border-chill-accent pl-2 text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Tren Bulanan (6 bulan)</h3>
                 </span>
                 <button
                   type="button"
@@ -755,7 +755,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                       <path d="M12 21a8 8 0 1 0 0-16 8 8 0 0 0 0 16ZM9.5 8.5h.1M6.5 12h.1" />
                     </svg>
                   </span>
-                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
+                  <h3 className="border-l-2 border-chill-accent pl-2 text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
                 </span>
               </div>
               <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} hari={summary.hari ?? undefined} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
@@ -770,7 +770,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                       <path d="M6 3v3M18 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" />
                     </svg>
                   </span>
-                  <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Minggu</h3>
+                  <h3 className="border-l-2 border-chill-accent pl-2 text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Minggu</h3>
                 </span>
               </div>
               <WeeklySpendBreakdown items={items} month={month} />
@@ -779,7 +779,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
             <HeaderDivider />
 
             <section aria-label="Total per kategori">
-              <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide mb-3 pixel-heading">Total per Kategori</h3>
+              <h3 className="border-l-2 border-chill-accent pl-2 text-xs font-medium text-chill-muted uppercase tracking-wide mb-3 pixel-heading">Total per Kategori</h3>
               {Object.keys(summary!.perKategori).length === 0 ? (
                 <p className="flex items-center gap-2 text-sm text-chill-muted">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" aria-hidden="true" className="w-4 h-4 shrink-0 text-chill-accent">
@@ -796,7 +796,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
 
             <section aria-label="Daftar transaksi">
               <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 mb-3">
-                <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">
+                <h3 className="border-l-2 border-chill-accent pl-2 text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">
                   Transaksi ({total})
                 </h3>
                 {selectedDay !== null && (
