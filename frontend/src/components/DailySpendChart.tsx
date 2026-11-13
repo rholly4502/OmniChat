@@ -9,6 +9,10 @@ interface Props {
   anggaran: number | null;
   /** Active day count for a partial-month target (null/omitted = full month). */
   hari?: number | null;
+  /** Currently selected day (1-based) whose transactions are shown in the list. */
+  selectedDay?: number | null;
+  /** Called when the user clicks a day bar to drill into that day's transactions. */
+  onSelectDay?: (day: number) => void;
 }
 
 /** Days in `month` (YYYY-MM). Uses the JS Date rollover: day 0 of the month that
@@ -35,7 +39,7 @@ function dailyBudgetFor(anggaran: number | null, days: number): number | null {
  * discretionary spend that should flag the day over its daily budget or dominate
  * the bar scale.
  */
-export function DailySpendChart({ items, month, anggaran, hari }: Props) {
+export function DailySpendChart({ items, month, anggaran, hari, selectedDay, onSelectDay }: Props) {
   const dim = daysInMonth(month);
 
   const byDay = new Map<number, number>();
@@ -86,20 +90,24 @@ export function DailySpendChart({ items, month, anggaran, hari }: Props) {
             const over = budget !== null && total > budget;
             const height = total > 0 ? Math.max(4, Math.round((total / chartMax) * 100)) : 0;
             return (
-              <div key={day} data-testid={`day-${day}`} className={`flex-1 min-w-0 h-full flex items-end justify-center ${total > 0 ? 'group cursor-pointer' : ''}`}>
+              <div key={day} data-testid={`day-${day}`} className={`flex-1 min-w-0 h-full flex items-end justify-center ${total > 0 ? 'group' : ''}`}>
                 {total > 0 ? (
-                  <div
-                    className={`relative w-full max-w-[10px] md:max-w-[16px] border transition-colors ${
+                  <button
+                    type="button"
+                    onClick={() => onSelectDay?.(day)}
+                    aria-pressed={selectedDay === day}
+                    aria-label={`Lihat transaksi ${day} ${month}`}
+                    className={`relative rounded-none w-full max-w-[10px] md:max-w-[16px] border transition-colors cursor-pointer active:opacity-80 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                       over
                         ? 'bg-chill-red/70 border-chill-red group-hover:bg-chill-red-hover group-hover:border-chill-red'
                         : 'bg-chill-accent border-chill-accent/60 group-hover:bg-chill-accent-hover group-hover:border-chill-accent'
-                    }`}
+                    } ${selectedDay === day ? 'ring-2 ring-chill-accent/70' : ''}`}
                     style={{ height: `${height}%` }}
                     title={`${day} ${month}: ${formatRupiah(total)}`}
                   >
                     {/* Hard top-left bevel (pixel meter register) — no soft gradient. */}
                     <div aria-hidden="true" className="absolute inset-x-0 top-0 h-[2px] bg-white/15" />
-                  </div>
+                  </button>
                 ) : (
                   <div className="w-full max-w-[10px] md:max-w-[16px] h-[3px] bg-chill-border/40" />
                 )}

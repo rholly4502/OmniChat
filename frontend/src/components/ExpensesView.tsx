@@ -135,6 +135,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [dupWarning, setDupWarning] = useState<{ payload: ExpenseWritePayload; match: ExpenseItem } | null>(null);
   const [showTargetForm, setShowTargetForm] = useState(false);
@@ -340,8 +341,10 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
       ? Math.max(1, Math.round(summary.anggaran / todayEffDays))
       : null;
   const normalizedQuery = query.trim().toLowerCase();
+  const dayPrefix = selectedDay !== null ? `${month}-${String(selectedDay).padStart(2, '0')}` : null;
   const filteredItems = items.filter((item) => {
     if (categoryFilter && item.kategori !== categoryFilter) return false;
+    if (dayPrefix !== null && !item.tanggal.startsWith(dayPrefix)) return false;
     if (!normalizedQuery) return true;
     return (
       item.keterangan.toLowerCase().includes(normalizedQuery) ||
@@ -353,6 +356,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const clearFilters = () => {
     setQuery('');
     setCategoryFilter('');
+    setSelectedDay(null);
   };
   const showSummary = summary !== null;
   const [allTime, setAllTime] = useState(false);
@@ -754,7 +758,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                   <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">Pengeluaran per Hari</h3>
                 </span>
               </div>
-              <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} hari={summary.hari ?? undefined} />
+              <DailySpendChart items={items} month={month} anggaran={summary!.anggaran} hari={summary.hari ?? undefined} selectedDay={selectedDay} onSelectDay={setSelectedDay} />
             </section>
 
             <section aria-label="Pengeluaran per minggu" className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-border p-4 pixel-shadow pixel-reveal">
@@ -795,6 +799,16 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 <h3 className="text-xs font-medium text-chill-muted uppercase tracking-wide pixel-heading">
                   Transaksi ({total})
                 </h3>
+                {selectedDay !== null && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                    aria-label={`Hapus filter tanggal ${selectedDay}`}
+                  >
+                    Tanggal {selectedDay} ✕
+                  </button>
+                )}
                 {(query || categoryFilter) && (
                   <button
                     type="button"

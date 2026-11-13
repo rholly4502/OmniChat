@@ -9,7 +9,7 @@ function item(tanggal: string, nominal: number, kategori = 'Makan'): ExpenseItem
 
 function barsOf(container: HTMLElement) {
   const img = container.querySelector('[aria-label="Pengeluaran per hari"]')!;
-  return [...img.querySelectorAll('div[title]')].map((el) => ({
+  return [...img.querySelectorAll('button[title]')].map((el) => ({
     title: el.getAttribute('title')!,
     className: typeof el.className === 'string' ? el.className : String(el.getAttribute('class')),
   }));
@@ -212,10 +212,11 @@ describe('DailySpendChart hover affordance', () => {
       <DailySpendChart items={[item('2026-11-02', 20000)]} month="2026-11" anggaran={3900000} />,
     );
     const dayCol = container.querySelector('[data-testid="day-2"]') as HTMLElement;
-    // the bar wrapper is the group + cursor-pointer surface
-    expect(dayCol.className).toContain('cursor-pointer');
+    // the column is the group; cursor-pointer + click live on the bar button
+    expect(dayCol.className).toContain('group');
     const bars = barsOf(container);
     expect(bars).toHaveLength(1);
+    expect(bars[0].className).toContain('cursor-pointer');
     // accent register hover: sibling of DailyUsageChart's group-hover feedback
     expect(bars[0].className).toContain('group-hover:bg-chill-accent-hover');
     expect(bars[0].className).toContain('group-hover:border-chill-accent');
@@ -236,5 +237,46 @@ describe('DailySpendChart hover affordance', () => {
     const stub = container.querySelector('[data-testid="day-3"]') as HTMLElement;
     expect(stub.className).not.toContain('group');
     expect(stub.className).not.toContain('cursor-pointer');
+  });
+});
+
+describe('DailySpendChart drill-down', () => {
+  it('calls onSelectDay when a spend bar is clicked', () => {
+    let selected: number | null = null;
+    const { container } = render(
+      <DailySpendChart
+        items={[item('2026-11-02', 20000), item('2026-11-06', 15000)]}
+        month="2026-11"
+        anggaran={3900000}
+        onSelectDay={(d) => (selected = d)}
+      />,
+    );
+    const bar2 = container.querySelector('button[aria-label="Lihat transaksi 2 2026-11"]') as HTMLButtonElement;
+    expect(bar2).not.toBeNull();
+    bar2.click();
+    expect(selected).toBe(2);
+  });
+
+  it('marks the selected day bar with the accent ring (aria-pressed)', () => {
+    const { container } = render(
+      <DailySpendChart
+        items={[item('2026-11-02', 20000), item('2026-11-06', 15000)]}
+        month="2026-11"
+        anggaran={3900000}
+        selectedDay={6}
+      />,
+    );
+    const bar6 = container.querySelector('button[aria-label="Lihat transaksi 6 2026-11"]') as HTMLButtonElement;
+    expect(bar6.getAttribute('aria-pressed')).toBe('true');
+    expect(bar6.className).toContain('ring-2');
+    const bar2 = container.querySelector('button[aria-label="Lihat transaksi 2 2026-11"]') as HTMLButtonElement;
+    expect(bar2.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('keeps zero-spend stub days non-interactive', () => {
+    const { container } = render(
+      <DailySpendChart items={[item('2026-11-02', 20000)]} month="2026-11" anggaran={3900000} />,
+    );
+    expect(container.querySelector('button[aria-label="Lihat transaksi 3 2026-11"]')).toBeNull();
   });
 });
