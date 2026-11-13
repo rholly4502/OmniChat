@@ -142,6 +142,30 @@ describe('ExpensesView', () => {
     expect(capturedUrl).toContain('q=warteg');
   });
 
+  it('offers Listrik in the add/edit category dropdown and the filter', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary') ? jsonResponse(summaryPayload) : jsonResponse(pagePayload),
+      ),
+    );
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    // The per-list filter dropdown exposes the full standard category list, including
+    // the ledger's Listrik category (electricity bill) — without it a Listrik row can
+    // never be filtered from the web.
+    const filter = screen.getByLabelText('Filter kategori');
+    const filterOpts = Array.from(filter.querySelectorAll('option')).map((o) => o.textContent);
+    expect(filterOpts).toContain('Listrik');
+
+    // The "Tambah" form's category select carries the same list.
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah' }));
+    const formSelect = await screen.findByLabelText('Kategori');
+    const formOpts = Array.from(formSelect.querySelectorAll('option')).map((o) => o.textContent);
+    expect(formOpts).toContain('Listrik');
+  });
+
   it('downloads the PDF report for the selected month', async () => {
     const createUrl = vi.fn(() => 'blob:fake');
     const revokeUrl = vi.fn();

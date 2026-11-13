@@ -30,7 +30,7 @@ export interface ExpensesViewProps {
   apiKey?: string;
 }
 
-const CATEGORY_ORDER = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Kesehatan', 'Hiburan', 'Nabung', 'Lain'];
+const CATEGORY_ORDER = ['Makan', 'Transport', 'Belanja', 'Tagihan', 'Kesehatan', 'Hiburan', 'Nabung', 'Lain', 'Listrik'];
 
 function KategoriBadge({ kategori }: { kategori: string }) {
   return (

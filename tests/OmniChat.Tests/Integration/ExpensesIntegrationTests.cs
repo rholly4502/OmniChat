@@ -879,4 +879,50 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
         finally { File.Delete(db); }
     }
 
+    [Fact]
+    public async Task CreateAndUpdate_withListrikCategory_acceptsCategory()
+    {
+        // The ledger uses "Listrik" as a real category (electricity bill, e.g. Oct
+        // 2026). It is a first-class standard category, so it must be accepted on
+        // both create and edit from the web — a row with this category could not be
+        // edited before it was added to StandardCategories.
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+
+            var created = await client.PostAsJsonAsync("/api/expenses", new
+            {
+                tanggal = "2026-10-29", waktu = "21:54", kategori = "Listrik",
+                keterangan = "Listrik", nominal = 150_000,
+            });
+            Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            using var createdJson = JsonDocument.Parse(await created.Content.ReadAsStringAsync());
+            var id = createdJson.RootElement.GetProperty("id").GetInt64();
+            Assert.Equal("Listrik", createdJson.RootElement.GetProperty("kategori").GetString());
+            Assert.Equal(150_000, createdJson.RootElement.GetProperty("nominal").GetInt64());
+
+            // The row is listable with its category intact.
+            var list = await client.GetAsync("/api/expenses?month=2026-10&pageSize=50");
+            Assert.Equal(HttpStatusCode.OK, list.StatusCode);
+            using var listJson = JsonDocument.Parse(await list.Content.ReadAsStringAsync());
+            Assert.Equal(1, listJson.RootElement.GetProperty("total").GetInt32());
+
+            // Editing the row while keeping Listrik must succeed (the original bug).
+            var update = await client.PutAsJsonAsync($"/api/expenses/{id}", new
+            {
+                tanggal = "2026-10-29", waktu = "22:00", kategori = "Listrik",
+                keterangan = "Listrik November", nominal = 160_000,
+            });
+            Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+            using var updateJson = JsonDocument.Parse(await update.Content.ReadAsStringAsync());
+            Assert.Equal("Listrik", updateJson.RootElement.GetProperty("kategori").GetString());
+            Assert.Equal(160_000, updateJson.RootElement.GetProperty("nominal").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
 }

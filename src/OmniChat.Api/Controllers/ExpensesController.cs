@@ -368,7 +368,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     /// <summary>The standard ledger categories (source of truth for category validation).</summary>
     private static readonly string[] StandardCategories =
     [
-        "Makan", "Transport", "Belanja", "Tagihan", "Kesehatan", "Hiburan", "Nabung", "Lain",
+        "Makan", "Transport", "Belanja", "Tagihan", "Kesehatan", "Hiburan", "Nabung", "Lain", "Listrik",
     ];
 
     /// <summary>Creates a new expense row from the web UI (operator only, key required).</summary>
