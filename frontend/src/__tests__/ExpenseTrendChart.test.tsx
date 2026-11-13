@@ -95,3 +95,27 @@ describe('ExpenseTrendChart current-month marker', () => {
     expect(screen.queryByText(/masih berjalan/)).not.toBeInTheDocument();
   });
 });
+describe('ExpenseTrendChart Listrik integration', () => {
+  it('gives Listrik a fill distinct from Lain', () => {
+    const points: ExpenseTrendPoint[] = [
+      {
+        month: '2026-10',
+        total: 50000,
+        categories: [
+          { kategori: 'Lain', total: 20000 },
+          { kategori: 'Listrik', total: 30000 },
+        ],
+      },
+    ];
+    const { container } = render(<ExpenseTrendChart points={points} />);
+    const segs = [...container.querySelectorAll<HTMLElement>('div[title]')];
+    const listrik = segs.find((el) => el.getAttribute('title')!.startsWith('Listrik'));
+    const lain = segs.find((el) => el.getAttribute('title')!.startsWith('Lain'));
+    expect(listrik).toBeTruthy();
+    expect(lain).toBeTruthy();
+    // Listrik must not collapse onto Lain's fallback fill.
+    expect(listrik!.className).toContain('bg-chill-red');
+    expect(listrik!.className).not.toContain('bg-chill-border');
+    expect(listrik!.className).not.toBe(lain!.className);
+  });
+});

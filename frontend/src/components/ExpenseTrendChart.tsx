@@ -18,6 +18,7 @@ const CATEGORY_FILL: Record<string, string> = {
   Kesehatan: 'bg-chill-muted',
   Hiburan: 'bg-chill-text/60',
   Lain: 'bg-chill-border',
+  Listrik: 'bg-chill-red',
 };
 
 function fillFor(kategori: string): string {

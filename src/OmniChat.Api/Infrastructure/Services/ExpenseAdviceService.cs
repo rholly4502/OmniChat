@@ -386,6 +386,7 @@ public sealed class ExpenseAdviceService(
             "Belanja" => "Terapkan daftar belanja & tunggu 24 jam sebelum membeli barang non-kebutuhan.",
             "Hiburan" => "Ganti sebagian dengan aktivitas gratis (jalan kaki, podcast, senam di kos).",
             "Lain" => "Rincikan pengeluaran ini supaya bisa ditekan minggu depan.",
+            "Listrik" => "Matikan lampu/kipas/charger saat tidak dipakai & bandingkan tagihan antar bulan — pemakaian lebih hemat menahan tagihan listrik.",
             _ => "Cek pos ini mingguan supaya tidak membengkak.",
         };
         return new BiggestLeak(top.Kategori, top.Total, tip);

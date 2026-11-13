@@ -950,6 +950,28 @@ public sealed class ExpenseAdviceServiceTests
     }
 
     [Fact]
+    public async Task BiggestLeak_usesListrikSpecificTip()
+    {
+        var repo = new FakeExpenseRepository
+        {
+            Target = new ExpenseTarget { Month = "2026-11", Anggaran = 3_900_000, TargetNabung = 3_100_000 },
+        };
+        var d = new DateOnly(2026, 11, 11);
+        // Food + a fixed Tagihan bill + Listrik as the top discretionary leak.
+        repo.Rows.Add(Row(d, "Makan", 50_000, "a"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 1), "Tagihan", 1_300_000, "z"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 4), "Listrik", 180_000, "l"));
+        repo.Rows.Add(Row(new DateOnly(2026, 11, 6), "Transport", 60_000, "t"));
+
+        var advice = await NewService(repo).BuildAsync(d, CancellationToken.None);
+
+        Assert.NotNull(advice.BiggestLeak);
+        Assert.Equal("Listrik", advice.BiggestLeak!.Kategori);
+        Assert.Equal(180_000, advice.BiggestLeak.Total);
+        Assert.Contains("matikan", advice.BiggestLeak.Tip, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task BiggestLeak_isNullWhenOnlyFoodAndFixedBills()
     {
         var repo = new FakeExpenseRepository
