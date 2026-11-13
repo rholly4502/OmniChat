@@ -26,3 +26,5 @@ tanggal,waktu,kategori,keterangan,nominal,id
 2026-11-11,20:00,Makan,Makan malam,50000,c89fb9
 2026-11-11,20:00,Makan,Makan siang,15000,e071c8
 2026-11-12,12:48,Makan,Makan siang,15000,367ecb
+2026-11-13,09:46,Makan,Sarapan,10000,d63dac
+2026-11-13,09:46,Tagihan,Top up OVO langganan Gemini Pro,100000,156950
