@@ -108,7 +108,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 appFilter === ''
                   ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               Semua ({events.length})
@@ -125,7 +125,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
                 className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                   appFilter === a
                     ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                    : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                    : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
                 }`}
               >
                 {a} ({events.filter((e) => e.aplikasi === a).length})

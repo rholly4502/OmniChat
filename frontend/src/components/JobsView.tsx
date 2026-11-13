@@ -389,7 +389,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 typeFilter === f.key
                   ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               {f.label} ({typeCount(f.key)})
@@ -411,7 +411,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
             className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
               statusFilter === ''
                 ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
             }`}
           >
             Semua ({opportunities.filter((o) => typeFilter === '' || groupOf(o) === typeFilter).length})
@@ -428,7 +428,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 statusFilter === s
                   ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               {statusLabel(s)} ({statusCount(s)})
@@ -452,7 +452,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
               className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
                 tierFilter === f.key
                   ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
-                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
               }`}
             >
               {f.label} ({tierCount(f.key)})
