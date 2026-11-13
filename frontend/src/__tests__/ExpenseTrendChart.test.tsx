@@ -70,3 +70,28 @@ describe('ExpenseTrendChart stacked categories', () => {
     expect(screen.queryByText('Makan')).not.toBeInTheDocument();
   });
 });
+
+describe('ExpenseTrendChart current-month marker', () => {
+  const points: ExpenseTrendPoint[] = [
+    { month: '2026-09', total: 200000 },
+    { month: '2026-10', total: 150000 },
+  ];
+
+  it('marks the live month and shows the footnote when currentMonth is passed', () => {
+    const { container } = render(<ExpenseTrendChart points={points} currentMonth="2026-10" />);
+    // the live month's label carries the marker dot
+    expect(container.querySelector('[data-testid="trend-current-2026-10"]')).not.toBeNull();
+    // prior months carry no marker
+    expect(container.querySelector('[data-testid="trend-current-2026-09"]')).toBeNull();
+    // footnote explains the partial figure
+    expect(
+      screen.getByText(/masih berjalan/, { selector: 'p' }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders no marker or footnote when currentMonth is omitted', () => {
+    const { container } = render(<ExpenseTrendChart points={points} />);
+    expect(container.querySelector('[data-testid^="trend-current-"]')).toBeNull();
+    expect(screen.queryByText(/masih berjalan/)).not.toBeInTheDocument();
+  });
+});

@@ -10,7 +10,7 @@ import {
   type ExpenseWritePayload,
 } from '../expensesApi';
 import { ApiError } from '../api';
-import { useExpenses } from '../hooks/useExpenses';
+import { useExpenses, currentMonthKey } from '../hooks/useExpenses';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { remainingDailyBudget } from '../expenseBudget';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
@@ -742,7 +742,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
               ) : trend.loading && trend.points.length === 0 ? (
                 <p className="text-sm text-chill-muted" role="status">Memuat tren…</p>
               ) : (
-                <ExpenseTrendChart points={trend.points} />
+                <ExpenseTrendChart points={trend.points} currentMonth={currentMonthKey()} />
               )}
             </section>
 

@@ -3,6 +3,10 @@ import { shortMonth } from '../expenseTrendFormat';
 
 interface Props {
   points: ExpenseTrendPoint[];
+  /** Live WIB month key (YYYY-MM). When a point matches, it is the current,
+      still-in-progress month — its total is partial (accrued to today), so the
+      chart marks it and warns against comparing it to full prior months. */
+  currentMonth?: string;
 }
 
 /** Warm pixel palette keyed by ledger category (kategori) for the stacked trend bars. */
@@ -31,7 +35,7 @@ function ascendingCategories(p: ExpenseTrendPoint) {
  * backend supplies per-category data, each bar is stacked by category (warm
  * palette + legend); otherwise it falls back to a solid accent bar.
  */
-export function ExpenseTrendChart({ points }: Props) {
+export function ExpenseTrendChart({ points, currentMonth }: Props) {
   if (points.length === 0) {
     // Barren-state register: a faint pixel step-up icon (same empty-state grammar
     // as the page-level ornament) so the empty line isn't stark text.
@@ -97,7 +101,18 @@ export function ExpenseTrendChart({ points }: Props) {
                   <div className="w-full max-w-[26px] bg-chill-border/40 border border-chill-border/40" style={{ height: '6px' }} />
                 )}
               </div>
-              <span className="text-xs leading-none text-chill-muted tabular-nums">{shortMonth(p.month)}</span>
+              <div className="flex items-center gap-0.5">
+                <span className="text-xs leading-none text-chill-muted tabular-nums">{shortMonth(p.month)}</span>
+                {currentMonth && p.month === currentMonth && (
+                  <span
+                    data-testid={`trend-current-${p.month}`}
+                    title="Bulan ini masih berjalan — angkanya baru akumulasi sampai hari ini."
+                    className="text-xs leading-none text-chill-accent"
+                  >
+                    ∙
+                  </span>
+                )}
+              </div>
             </div>
           );
         })}
@@ -111,6 +126,11 @@ export function ExpenseTrendChart({ points }: Props) {
             </span>
           ))}
         </div>
+      )}
+      {currentMonth && (
+        <p className="mt-2 text-xs text-chill-muted">
+          ∙ Bulan ini masih berjalan — angkanya sebagian (akumulasi sampai hari ini), belum setara dengan bulan-bulan penuh.
+        </p>
       )}
     </div>
   );
