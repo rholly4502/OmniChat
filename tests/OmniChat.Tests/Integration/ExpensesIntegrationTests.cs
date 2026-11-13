@@ -845,6 +845,15 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
             using var getJson = JsonDocument.Parse(await get.Content.ReadAsStringAsync());
             Assert.Equal(400_000, getJson.RootElement.GetProperty("anggaran").GetInt64());
             Assert.Equal(250_000, getJson.RootElement.GetProperty("targetNabung").GetInt64());
+
+            // A web edit is an explicit user override: it must be flagged IsUserEdited
+            // so the hourly ledger seeder does not silently overwrite it back to the
+            // target.json values (the seed skips user-edited targets).
+            using var dbScope = factory.Services.CreateScope();
+            var repository = dbScope.ServiceProvider.GetRequiredService<IExpenseRepository>();
+            var persisted = await repository.GetTargetAsync("2026-11", CancellationToken.None);
+            Assert.NotNull(persisted);
+            Assert.True(persisted!.IsUserEdited);
         }
         finally { File.Delete(db); }
     }

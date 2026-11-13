@@ -284,4 +284,73 @@ public sealed class ExpenseImporterTests : IDisposable
             Directory.Delete(dir, recursive: true);
         }
     }
+    [Fact]
+    public async Task Import_preserves_web_edited_target_across_reseed()
+    {
+        var dir = WriteLedger(
+            Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N")),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n",
+            """{"2026-10": {"target_nabung": 467000, "anggaran": 520000}}""");
+
+        try
+        {
+            // First seed: ledger values land in the DB.
+            var first = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+            Assert.Equal(1, first.TargetsUpserted);
+
+            // User edits via the web UI (as ExpensesController.UpdateTarget does): a
+            // different budget, flagged IsUserEdited=true.
+            await _repository.UpsertTargetAsync(new ExpenseTarget
+            {
+                Month = "2026-10",
+                TargetNabung = 500000,
+                Anggaran = 600000,
+                IsUserEdited = true,
+            }, CancellationToken.None);
+
+            // The hourly seed runs again with the same (now-stale) ledger target.
+            var second = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            // The web edit must survive — a non-user-edited target would have been
+            // overwritten back to 467000/520000.
+            var target = await _repository.GetTargetAsync("2026-10", CancellationToken.None);
+            Assert.NotNull(target);
+            Assert.Equal(500000, target!.TargetNabung);
+            Assert.Equal(600000, target.Anggaran);
+            Assert.True(target.IsUserEdited);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Import_still_updates_non_user_edited_target_on_reseed()
+    {
+        var dir = WriteLedger(
+            Path.Combine(Path.GetTempPath(), "imp-" + Guid.NewGuid().ToString("N")),
+            "tanggal,waktu,kategori,keterangan,nominal,id\n2026-10-28,12:30,Makan,Warteg,20000,a1b2c3\n",
+            """{"2026-10": {"target_nabung": 467000, "anggaran": 520000}}""");
+
+        try
+        {
+            await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            // Ledger target changes (still not user-edited) -> re-seed updates it.
+            File.WriteAllText(Path.Combine(dir, "target.json"),
+                """{"2026-10": {"target_nabung": 480000, "anggaran": 540000}}""");
+            var second = await _importer.ImportDirectoryAsync(dir, CancellationToken.None);
+
+            var target = await _repository.GetTargetAsync("2026-10", CancellationToken.None);
+            Assert.NotNull(target);
+            Assert.Equal(480000, target!.TargetNabung);
+            Assert.Equal(540000, target.Anggaran);
+            Assert.False(target.IsUserEdited);
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
 }

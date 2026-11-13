@@ -228,6 +228,7 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             existing.TargetNabung = target.TargetNabung;
             existing.Anggaran = target.Anggaran;
             existing.Catatan = target.Catatan;
+            existing.IsUserEdited = target.IsUserEdited;
         }
 
         await db.SaveChangesAsync(cancellationToken);

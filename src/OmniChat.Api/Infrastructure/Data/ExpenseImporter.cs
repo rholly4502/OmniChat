@@ -180,6 +180,19 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
                 }
             }
 
+            // Respect a web edit: a target the user set manually (IsUserEdited) is the
+            // newer, explicit intent and must survive the recurring seed. Updating it
+            // from the ledger would silently revert the user's changes the moment the
+            // next hourly (or push-triggered) seed runs. Skip, but still count it so
+            // the ledger floor check stays meaningful — a present, protected target is
+            // not an error.
+            var existing = await repository.GetTargetAsync(month, cancellationToken);
+            if (existing?.IsUserEdited == true)
+            {
+                count++;
+                continue;
+            }
+
             await repository.UpsertTargetAsync(target, cancellationToken);
             count++;
         }

@@ -154,6 +154,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<long>("TargetNabung")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsUserEdited")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Month")

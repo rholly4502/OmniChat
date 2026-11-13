@@ -151,6 +151,9 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         }
 
         var catatan = string.IsNullOrWhiteSpace(request.Catatan) ? null : request.Catatan.Trim();
+        // A web edit is an explicit user override of the ledger-seeded target. Mark
+        // it so the hourly seeder (which re-upserts from target.json) does not
+        // silently overwrite it back to the old ledger values within the hour.
         await repository.UpsertTargetAsync(
             new ExpenseTarget
             {
@@ -158,6 +161,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Anggaran = request.Anggaran,
                 TargetNabung = request.TargetNabung,
                 Catatan = catatan,
+                IsUserEdited = true,
             },
             cancellationToken);
 

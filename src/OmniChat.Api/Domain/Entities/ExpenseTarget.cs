@@ -25,4 +25,9 @@ public class ExpenseTarget
 
     /// <summary>Optional note explaining how the numbers were derived.</summary>
     public string? Catatan { get; set; }
+
+    /// <summary>True when the user edited this target from the web UI. The hourly
+    /// ledger seeder must NOT overwrite a target the user has set manually — the
+    /// web edit is the newer, explicit intent. False for ledger-seeded rows.</summary>
+    public bool IsUserEdited { get; set; }
 }
