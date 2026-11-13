@@ -837,6 +837,15 @@ describe('MessageList jump-to-bottom affordance', () => {
     expect(screen.queryByRole('button', { name: 'Lompat ke bawah' })).not.toBeInTheDocument();
   });
 
+  it('floating controls reveal with the pixel2 entrance animation', () => {
+    const { scrollRef } = renderList({ messages: msgs() });
+    const el = scrollRef.current!;
+    setScrollMetrics(el, 1000, 200, 100); // far from bottom => show
+    fireEvent.scroll(el);
+    expect(screen.getByRole('button', { name: 'Lompat ke bawah' })).toHaveClass('pixel-reveal');
+    expect(screen.getByRole('button', { name: 'Cari di percakapan' })).toHaveClass('pixel-reveal');
+  });
+
   it('jumps to the bottom when clicked', () => {
     const { scrollRef } = renderList({ messages: msgs() });
     const el = scrollRef.current!;
