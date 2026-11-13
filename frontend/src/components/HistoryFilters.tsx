@@ -100,7 +100,7 @@ export function HistoryFilters({
             type="date"
             value={dateFrom}
             onChange={(e) => onDateFromChange(e.target.value)}
-            className="w-full bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
+            className="w-full bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none transition-colors hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
             aria-label="Filter tanggal mulai"
           />
         </label>
@@ -110,7 +110,7 @@ export function HistoryFilters({
             type="date"
             value={dateTo}
             onChange={(e) => onDateToChange(e.target.value)}
-            className="w-full bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
+            className="w-full bg-chill-surface border border-chill-border px-2 py-2 text-base md:text-sm outline-nonetransition-colors  hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm [color-scheme:dark]"
             aria-label="Filter tanggal akhir"
           />
         </label>

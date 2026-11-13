@@ -244,7 +244,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               type="date"
               value={rangeFrom}
               onChange={(e) => setRangeFrom(e.target.value)}
-              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-border hover:border-chill-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-border transition-colors hover:border-chill-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
               aria-label="Tanggal awal periode statistik"
             />
             <label className="text-xs text-chill-muted font-medium" htmlFor="stats-to">sampai</label>
@@ -253,7 +253,7 @@ export function ChatStatsDialog({ open, onClose, usage, modelOptions, apiKey, fi
               type="date"
               value={rangeTo}
               onChange={(e) => setRangeTo(e.target.value)}
-              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-border hover:border-chill-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              className="rounded-none min-h-[44px] px-2 text-base md:text-sm text-chill-text bg-chill-elevated border border-chill-bordertransition-colors  hover:border-chill-accent/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
               aria-label="Tanggal akhir periode statistik"
             />
             <button
