@@ -75,21 +75,19 @@ describe('useJobs', () => {
     expect(result.current.error).toBe('Gagal memuat lowongan.');
   });
 
-  it('refetches with a status filter when the filter changes', async () => {
+  it('does not refetch when the status filter changes (filtering is client-side)', async () => {
     const { result } = renderHook(() => useJobs(''));
     await waitFor(() => expect(result.current.loading).toBe(false));
     act(() => result.current.setStatusFilter('interview'));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(fetchMock).toHaveBeenLastCalledWith(`${JOBS_URL}?status=interview`, expect.anything());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock).toHaveBeenLastCalledWith(JOBS_URL, expect.anything());
   });
 
-  it('reload() forces a fresh fetch and keeps the current filter', async () => {
+  it('reload() forces a fresh fetch of the full list', async () => {
     const { result } = renderHook(() => useJobs(''));
     await waitFor(() => expect(result.current.loading).toBe(false));
-    act(() => result.current.setStatusFilter('offer'));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     act(() => result.current.reload());
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(fetchMock).toHaveBeenLastCalledWith(`${JOBS_URL}?status=offer`, expect.anything());
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(fetchMock).toHaveBeenLastCalledWith(JOBS_URL, expect.anything());
   });
 });

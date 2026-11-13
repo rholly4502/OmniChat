@@ -39,7 +39,10 @@ export function useJobs(apiKey?: string): UseJobsResult {
       setLoading(true);
       setError(null);
       try {
-        const items = await listOpportunities(options, statusFilter || undefined);
+        // Fetch the full list; status/type/tier filtering happens client-side in
+        // JobsView so the filter tab counts always reflect the true distribution,
+        // not a server-subset (which collapsed every other count to 0).
+        const items = await listOpportunities(options);
         if (!cancelled) setOpportunities(items);
       } catch (err) {
         if (cancelled) return;
@@ -54,7 +57,7 @@ export function useJobs(apiKey?: string): UseJobsResult {
       cancelled = true;
       controller.abort();
     };
-  }, [apiKey, statusFilter, reloadKey]);
+  }, [apiKey, reloadKey]);
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
