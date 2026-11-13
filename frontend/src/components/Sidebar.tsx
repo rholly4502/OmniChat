@@ -389,7 +389,7 @@ export function Sidebar({
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Cari percakapan…"
               aria-label="Cari percakapan"
-              className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none transition-colors hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
+              className="w-full bg-chill-surface border border-chill-border pl-8 pr-2 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] pixel-shadow-sm"
             />
           </div>
           <HistoryFilters
@@ -512,7 +512,7 @@ export function Sidebar({
                           }
                         }}
                         aria-label={`Judul baru untuk ${s.title}`}
-                        className="min-w-0 flex-1 bg-chill-surface border border-chill-border px-2 py-1 text-base md:text-sm outline-nonetransition-colors  hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+                        className="min-w-0 flex-1 bg-chill-surface border border-chill-border px-2 py-1 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
                       />
                       <button
                         type="submit"
@@ -952,7 +952,7 @@ export function Sidebar({
           autoCorrect="off"
           spellCheck={false}
           placeholder="(kosong = tanpa auth)"
-          className="w-full bg-chill-surface border border-chill-border px-3 py-3 text-base md:text-sm outline-nontransition-colors e hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+          className="w-full bg-chill-surface border border-chill-border px-3 py-3 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
           id="api-key-input"
         />
         <p className="text-xs text-chill-muted">
@@ -995,7 +995,7 @@ export function Sidebar({
                 value={settings.systemPrompt}
                 onChange={(e) => onSystemPromptChange?.(e.target.value)}
                 placeholder="Contoh: Bertindak sebagai Software Architect..."
-                className="w-full bg-chill-surface border border-chill-border p-2 text-base md:text-sm outline-notransition-colors ne hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-none"
+                className="w-full bg-chill-surface border border-chill-border p-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 resize-none"
               />
             </div>
             <div>
