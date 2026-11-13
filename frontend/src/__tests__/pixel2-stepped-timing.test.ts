@@ -75,3 +75,31 @@ describe('pixel2 stepped-timing consistency', () => {
     expect(offenders).toEqual([]);
   });
 });
+
+describe('pixel2 animation-register consistency', () => {
+  // Same comment-stripping treatment as the other pixel2 guards, so prose
+  // (e.g. "animate-pulse") can't false-trip the scan.
+  function stripComments(text: string): string {
+    return text
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  }
+
+  it('never uses a smooth Tailwind animation utility in component source', () => {
+    // The pixel register animates only through its own stepped classes
+    // (pixel-blink, pixel-scan, pixel-think, pixel-reveal, pixel-shine,
+    // pixel-overlay-fade, pixel-step-fade) defined in index.css. A Tailwind
+    // `animate-*` utility (pulse/spin/ping/bounce/...) tweens with a smooth
+    // easing — the one motion drift that would render fine and slip past every
+    // rendered test. Reduced-motion is handled globally, so this pins which
+    // animation *family* is allowed, not whether animation happens.
+    const offenders: string[] = [];
+    const re = /animate-[\w-]+\b/g;
+    for (const file of sourceFiles(SRC)) {
+      stripComments(readFileSync(file, 'utf8')).split('\n').forEach((line, i) => {
+        if (line.match(re)) offenders.push(`${file.replace(SRC, 'src')}:${i + 1}: ${line.trim()}`);
+      });
+    }
+    expect(offenders).toEqual([]);
+  });
+});
