@@ -602,7 +602,7 @@ export function Sidebar({
                                     setExportMenuFor(null);
                                     void onCopySession(s);
                                   }}
-                                  className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                                  className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                                 >
                                   Salin (Markdown)
                                 </button>
@@ -619,7 +619,7 @@ export function Sidebar({
                                   setExportMenuFor(null);
                                   onExportSession(s, fmt);
                                 }}
-                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                                className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                               >
                                 {EXPORT_FORMAT_LABELS[fmt]}
                               </button>

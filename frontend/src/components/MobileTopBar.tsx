@@ -207,7 +207,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
                     type="button"
                     role="menuitem"
                     onClick={() => { setExportOpen(false); onExport(fmt); }}
-                    className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                    className="rounded-none block w-full text-left px-3 min-h-[44px] text-sm text-chill-text transition-colors hover:bg-chill-surface active:bg-chill-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                   >
                     {EXPORT_FORMAT_LABELS[fmt]}
                   </button>
