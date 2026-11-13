@@ -660,7 +660,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
 
                       {o.link && (
                         <div className="flex flex-col gap-2">
-                          <label className="flex items-start gap-2 text-xs text-chill-muted cursor-pointer transition-colors hover:text-chill-accent">
+                          <label className="flex items-start gap-2 text-xs text-chill-muted cursor-pointer transition-colors [transition-timing-function:steps(2,jump-none)] hover:text-chill-accent">
                             <input
                               type="checkbox"
                               checked={!!paketConfirmedById[o.id]}

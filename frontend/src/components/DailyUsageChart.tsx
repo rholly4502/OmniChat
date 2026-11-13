@@ -96,9 +96,9 @@ export function DailyUsageChart({ rows, rangeLabel }: DailyUsageChartProps) {
                     title={`${c.date}: ${formatTokens(c.total)} token (masukan ${formatTokens(c.prompt)} · keluaran ${formatTokens(c.completion)})`}
                   >
                     {/* Output tokens — accent base with hard top-left bevel. */}
-                    <div className="w-full flex-1 bg-chill-accent border border-chill-accent/60 transition-colors group-hover:bg-chill-accent-hover group-hover:border-chill-accent" aria-hidden="true" />
+                    <div className="w-full flex-1 bg-chill-accent border border-chill-accent/60 transition-colors [transition-timing-function:steps(2,jump-none)] group-hover:bg-chill-accent-hover group-hover:border-chill-accent" aria-hidden="true" />
                     {/* Input tokens — lighter cap on top. */}
-                    <div className="w-full bg-chill-accent/40 border border-chill-accent/30 transition-colors group-hover:bg-chill-accent/60" style={{ flexBasis: `${promptH}%`, flexGrow: 0 }} aria-hidden="true" />
+                    <div className="w-full bg-chill-accent/40 border border-chill-accent/30 transition-colors [transition-timing-function:steps(2,jump-none)] group-hover:bg-chill-accent/60" style={{ flexBasis: `${promptH}%`, flexGrow: 0 }} aria-hidden="true" />
                   </div>
                 ) : (
                   <div className="w-full max-w-[12px] md:max-w-[18px] h-[3px] bg-chill-border/40" />
