@@ -270,6 +270,7 @@ export function Sidebar({
         </div>
         {/* Close button (mobile only) */}
         <button
+          type="button"
           ref={closeButtonRef}
           onClick={onClose}
           className="md:hidden text-chill-muted hover:text-chill-accent active:bg-chill-elevated active:translate-y-[2px] transition p-2 -mr-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"

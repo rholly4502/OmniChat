@@ -217,6 +217,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
           </div>
         )}
         <button
+          type="button"
           onClick={onLogout}
           aria-label="Keluar"
           className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none text-sm text-chill-muted transition hover:text-chill-accent active:text-chill-accent active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
@@ -230,6 +231,7 @@ export function MobileTopBar({ sidebarOpen, onOpenSidebar, useAgent, menuButtonR
   return (
     <div className="md:hidden flex items-center gap-3 px-3 py-2.5 border-b border-chill-border bg-chill-bg" style={{ paddingTop: 'max(env(safe-area-inset-top), 0.625rem)' }}>
       <button
+        type="button"
         ref={menuButtonRef}
         onClick={onOpenSidebar}
         aria-expanded={sidebarOpen}
