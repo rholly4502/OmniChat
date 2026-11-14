@@ -72,6 +72,14 @@ function setupFetchMock(opts?: {
   return fetchMock;
 }
 
+
+/**
+ * Default landing view is Ringkasan; chat-focused tests must navigate
+ * to the Chat tab before interacting with the composer.
+ */
+function switchToChat() {
+  fireEvent.click(screen.getByRole('tab', { name: 'Chat' }));
+}
 describe('App', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -114,6 +122,7 @@ describe('App', () => {
   it('restores a saved composer draft on load', () => {
     localStorage.setItem('omnichat_composer_draft_v1', 'pesan tersimpan');
     render(<App />);
+    switchToChat();
     const textarea = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
     expect(textarea.value).toBe('pesan tersimpan');
   });
@@ -273,18 +282,21 @@ describe('App', () => {
 
   it('chat input has aria-label for accessibility', () => {
     render(<App />);
+    switchToChat();
     const input = screen.getByLabelText('Ketik pesan');
     expect(input).toBeInTheDocument();
   });
 
   it('disables send button when input is empty', () => {
     render(<App />);
+    switchToChat();
     const sendButton = screen.getByText('Kirim');
     expect(sendButton).toBeDisabled();
   });
 
   it('enables send button when input has text', () => {
     render(<App />);
+    switchToChat();
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Hello' } });
     expect(screen.getByText('Kirim')).toBeEnabled();
@@ -292,6 +304,7 @@ describe('App', () => {
 
   it('clears input after sending a message', async () => {
     render(<App />);
+    switchToChat();
     const input = screen.getByPlaceholderText('Ketik pesan…') as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Hello world' } });
     fireEvent.click(screen.getByText('Kirim'));
@@ -303,6 +316,7 @@ describe('App', () => {
 
   it('shows the user message after sending', async () => {
     render(<App />);
+    switchToChat();
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Test message' } });
     fireEvent.click(screen.getByText('Kirim'));
@@ -317,6 +331,7 @@ describe('App', () => {
 
   it('shows stop button while streaming', async () => {
     render(<App />);
+    switchToChat();
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Hello' } });
     fireEvent.click(screen.getByText('Kirim'));
@@ -330,6 +345,7 @@ describe('App', () => {
     // Make fetch hang so streaming state persists
     global.fetch = vi.fn().mockImplementation(() => new Promise(() => {}));
     render(<App />);
+    switchToChat();
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Hello' } });
     fireEvent.click(screen.getByText('Kirim'));
@@ -346,11 +362,13 @@ describe('App', () => {
 
   it('shows empty state message when no messages', () => {
     render(<App />);
+    switchToChat();
     expect(screen.getByText(/Mulai chat/)).toBeInTheDocument();
   });
 
   it('clears messages when Clear chat button is clicked', async () => {
     render(<App />);
+    switchToChat();
     // Send a message first
     const input = screen.getByPlaceholderText('Ketik pesan…');
     fireEvent.change(input, { target: { value: 'Hello' } });
@@ -457,6 +475,7 @@ describe('App', () => {
 
   it('messages container has aria-label', () => {
     render(<App />);
+    switchToChat();
     const liveRegion = screen.getByLabelText('Chat messages');
     expect(liveRegion).toHaveAttribute('aria-live', 'polite');
   });
@@ -741,6 +760,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Ctrl+Shift+F opens the in-transcript search toolbar', async () => {
     render(<App />);
+    switchToChat();
     expect(screen.queryByLabelText('Cari pesan')).not.toBeInTheDocument();
     fireWindowKey({ key: 'F', ctrlKey: true, shiftKey: true });
     await waitFor(() => {
@@ -750,6 +770,7 @@ describe('App keyboard shortcuts', () => {
 
   it('"/" focuses the composer textarea', async () => {
     render(<App />);
+    switchToChat();
     const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
     expect(document.activeElement).not.toBe(composer);
     fireWindowKey({ key: '/' });
@@ -760,6 +781,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Ctrl+K focuses the composer textarea', async () => {
     render(<App />);
+    switchToChat();
     const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
     fireWindowKey({ key: 'k', ctrlKey: true });
     await waitFor(() => {
@@ -769,6 +791,7 @@ describe('App keyboard shortcuts', () => {
 
   it('Ctrl+N starts a new session (returns to the empty transcript)', async () => {
     render(<App />);
+    switchToChat();
     // Seed a transcript by sending a message (fetch mocks return 401, so the
     // turn completes with an error assistant bubble next to the user turn).
     const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
@@ -795,6 +818,7 @@ describe('App keyboard shortcuts', () => {
     // once), so drop any calls recorded by earlier tests in this suite.
     writeText.mockClear();
     render(<App />);
+    switchToChat();
     const composer = screen.getByLabelText('Ketik pesan') as HTMLTextAreaElement;
     const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
     setter.call(composer, 'halo');
