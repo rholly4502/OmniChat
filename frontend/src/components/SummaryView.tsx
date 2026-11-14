@@ -81,6 +81,32 @@ export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
     );
   }
 
+  const failures = [expenses.error, jobs.error, events.error].filter((e): e is string => Boolean(e));
+  if (failures.length > 0) {
+    const reloadAll = () => {
+      expenses.reload();
+      jobs.reload();
+      events.reload();
+    };
+    return (
+      <div className="flex-1 overflow-y-auto p-4">
+        <div
+          role="alert"
+          className="rounded-none border border-chill-red/40 bg-chill-red/10 px-4 py-3 text-sm text-chill-red flex items-center justify-between gap-3"
+        >
+          <span>Gagal memuat sebagian data: {failures.join(' ')}</span>
+          <button
+            type="button"
+            onClick={reloadAll}
+            className="shrink-0 rounded-none border border-chill-red/50 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/15 active:bg-chill-red/25 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+          >
+            Muat ulang
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const statusCounts = Object.fromEntries(OPPORTUNITY_STATUSES.map((s) => [s, 0]));
   for (const o of jobs.opportunities) {
     if (Object.prototype.hasOwnProperty.call(statusCounts, o.status)) statusCounts[o.status] += 1;

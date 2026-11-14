@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SummaryView } from '../components/SummaryView';
 import { currentMonthKey } from '../hooks/useExpenses';
 import type { Opportunity } from '../jobsApi';
@@ -47,9 +47,12 @@ function eventOf(id: number, aplikasi: string): PromoEvent {
   };
 }
 
-function fetchStub(overrides: { summary?: unknown; jobs?: unknown; events?: unknown } = {}) {
+function fetchStub(overrides: { summary?: Response | typeof summaryPayload; jobs?: unknown; events?: unknown } = {}) {
   return vi.fn((url: string) => {
-    if (url.includes('/summary')) return jsonResponse(overrides.summary ?? summaryPayload);
+    if (url.includes('/summary')) {
+      const v = overrides.summary;
+      return v instanceof Response ? v : jsonResponse(v ?? summaryPayload);
+    }
     if (url.includes('/jobs')) return jsonResponse(overrides.jobs ?? []);
     if (url.includes('/events')) return jsonResponse(overrides.events ?? []);
     return jsonResponse(pagePayload);
@@ -148,5 +151,35 @@ describe('SummaryView', () => {
 
     await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument());
     expect(screen.queryByText('Model aktif')).not.toBeInTheDocument();
+  });
+
+  it('shows an alert with retry when the expenses summary endpoint fails', async () => {
+    const fetchMock = fetchStub({ summary: jsonResponse({ message: 'Boom' }, 500) });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByRole('alert')).toHaveTextContent('Gagal memuat sebagian data');
+    expect(screen.queryByText('Chat')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Muat ulang' })).toBeInTheDocument();
+  });
+
+  it('recovers after a failed load when retry is clicked', async () => {
+    let calls = 0;
+    const fetchMock = vi.fn((url: string) => {
+      calls += 1;
+      if (calls === 1 && url.includes('/summary')) return jsonResponse({ message: 'Boom' }, 500);
+      if (url.includes('/summary')) return jsonResponse(summaryPayload);
+      if (url.includes('/jobs')) return jsonResponse([]);
+      if (url.includes('/events')) return jsonResponse([]);
+      return jsonResponse(pagePayload);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    await waitFor(() => fireEvent.click(screen.getByRole('button', { name: 'Muat ulang' })));
+    await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument());
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
