@@ -117,9 +117,9 @@ export interface SidebarProps {
   /** Toggle Chill Mode. */
   onChillModeChange?: (enabled: boolean) => void;
   /** Active top-level view ('chat' or 'expenses'). */
-  activeView?: 'chat' | 'expenses' | 'jobs' | 'events';
+  activeView?: 'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events';
   /** Switch the active top-level view. */
-  onSelectView?: (view: 'chat' | 'expenses' | 'jobs' | 'events') => void;
+  onSelectView?: (view: 'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events') => void;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary?: ConversationUsageSummary;
   /** Open the per-conversation audit dialog (message-level token/cost table). */
@@ -211,7 +211,7 @@ export function Sidebar({
   const exportMenuRef = useRef<HTMLDivElement | null>(null);
   // View-switcher tabs (role="tab"): WAI-ARIA tabs pattern - only the selected
   // tab is in the tab order, and ArrowLeft/Right/Home/End move focus + selection.
-  const VIEW_TABS = ['chat', 'expenses', 'jobs', 'events'] as const;
+  const VIEW_TABS = ['ringkasan', 'chat', 'expenses', 'jobs', 'events'] as const;
   const viewTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const handleViewSwitcherKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     const idx = VIEW_TABS.indexOf(activeView);
@@ -283,17 +283,31 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* Top-level view switcher: 2x2 square grid. Chat & Pengeluaran on the
-          first row; Lowongan on the second row. The fourth cell is a reserved
-          placeholder that does nothing for now. */}
+      {/* Top-level view switcher: full-width Ringkasan row, then a 2x2 grid
+          for Chat, Pengeluaran, Lowongan and Event. */}
       <div className="grid grid-cols-2 gap-1 rounded-none bg-chill-surface border border-chill-border p-1" role="tablist" aria-label="Pilih tampilan" onKeyDown={handleViewSwitcherKeyDown}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeView === 'ringkasan'}
+          tabIndex={activeView === 'ringkasan' ? 0 : -1}
+          onClick={() => onSelectView('ringkasan')}
+          ref={(el) => { viewTabRefs.current[0] = el; }}
+          className={`col-span-2 rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
+            activeView === 'ringkasan'
+              ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
+              : 'text-chill-muted hover:bg-chill-elevated hover:text-chill-accent active:bg-chill-elevated active:text-chill-accent active:translate-y-[2px] border-transparent'
+          }`}
+        >
+          Ringkasan
+        </button>
         <button
           type="button"
           role="tab"
           aria-selected={activeView === 'chat'}
           tabIndex={activeView === 'chat' ? 0 : -1}
           onClick={() => onSelectView('chat')}
-          ref={(el) => { viewTabRefs.current[0] = el; }}
+          ref={(el) => { viewTabRefs.current[1] = el; }}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'chat'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
@@ -308,7 +322,7 @@ export function Sidebar({
           aria-selected={activeView === 'expenses'}
           tabIndex={activeView === 'expenses' ? 0 : -1}
           onClick={() => onSelectView('expenses')}
-          ref={(el) => { viewTabRefs.current[1] = el; }}
+          ref={(el) => { viewTabRefs.current[2] = el; }}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'expenses'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
@@ -323,7 +337,7 @@ export function Sidebar({
           aria-selected={activeView === 'jobs'}
           tabIndex={activeView === 'jobs' ? 0 : -1}
           onClick={() => onSelectView('jobs')}
-          ref={(el) => { viewTabRefs.current[2] = el; }}
+          ref={(el) => { viewTabRefs.current[3] = el; }}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'jobs'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'
@@ -338,7 +352,7 @@ export function Sidebar({
           aria-selected={activeView === 'events'}
           tabIndex={activeView === 'events' ? 0 : -1}
           onClick={() => onSelectView('events')}
-          ref={(el) => { viewTabRefs.current[3] = el; }}
+          ref={(el) => { viewTabRefs.current[4] = el; }}
           className={`rounded-none px-3 py-2 text-sm font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 border-l-2 ${
             activeView === 'events'
               ? 'bg-chill-elevated text-chill-text pixel-shadow-sm active:translate-y-[3px] active:shadow-none border-chill-accent'

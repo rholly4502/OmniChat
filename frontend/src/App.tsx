@@ -26,6 +26,7 @@ import { useSettings } from './hooks/useSettings';
 import { ExpensesView } from './components/ExpensesView';
 import { JobsView } from './components/JobsView';
 import { EventsView } from './components/EventsView';
+import { SummaryView } from './components/SummaryView';
 import { describeApiError } from './errors';
 import { buildConversationCsv, buildConversationJson, buildConversationMarkdown, buildConversationPdf, downloadBlob, safeFilenameSlug, type ConversationExportFormat } from './conversationExport';
 import type { TokenUsage } from './types';
@@ -45,7 +46,7 @@ export default function App() {
   const { draft: input, setDraft: setInput, clearDraft: clearInput } = useComposerDraft();
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
-  const [activeView, setActiveView] = useState<'chat' | 'expenses' | 'jobs' | 'events'>('chat');
+  const [activeView, setActiveView] = useState<'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events'>('ringkasan');
   const [statsOpen, setStatsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -526,7 +527,9 @@ export default function App() {
           status={streaming && messages[messages.length - 1]?.role === 'assistant' ? (messages[messages.length - 1].status) : undefined}
         />
 
-        {activeView === 'expenses' ? (
+        {activeView === 'ringkasan' ? (
+          <SummaryView apiKey={apiKey} usageSummary={usageSummary} />
+        ) : activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (
           <JobsView apiKey={apiKey} />

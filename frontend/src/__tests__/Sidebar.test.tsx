@@ -1181,10 +1181,10 @@ describe('Sidebar view-switcher keyboard navigation', () => {
     expect(onSelectView).toHaveBeenLastCalledWith('expenses');
 
     fireEvent.keyDown(tablist, { key: 'ArrowLeft' });
-    expect(onSelectView).toHaveBeenLastCalledWith('events');
+    expect(onSelectView).toHaveBeenLastCalledWith('ringkasan');
 
     fireEvent.keyDown(tablist, { key: 'Home' });
-    expect(onSelectView).toHaveBeenLastCalledWith('chat');
+    expect(onSelectView).toHaveBeenLastCalledWith('ringkasan');
 
     fireEvent.keyDown(tablist, { key: 'End' });
     expect(onSelectView).toHaveBeenLastCalledWith('events');

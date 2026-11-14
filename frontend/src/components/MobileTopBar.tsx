@@ -55,7 +55,7 @@ export interface MobileTopBarProps {
   /** Opens the keyboard-shortcut reference dialog. Optional; hidden when absent. */
   onOpenShortcuts?: () => void;
   /** Active top-level view ('chat' | 'expenses'); hides chat telemetry on expenses. */
-  activeView?: 'chat' | 'expenses' | 'jobs' | 'events';
+  activeView?: 'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events';
   /**
    * Title of the active conversation. When present (chat view) it is rendered
    * as a truncated label between the brand and the mode badge so the current
