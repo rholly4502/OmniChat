@@ -1,6 +1,6 @@
 # Cycle 136 — button type consistency (2026-11-14)
 
-**Commit:** (fill after push) — `type="button"` on the three interactive buttons that
+**Commit:** `008d382` — `type="button"` on the three interactive buttons that
 lacked it + a new source-level guard test.
 
 ## What & why
