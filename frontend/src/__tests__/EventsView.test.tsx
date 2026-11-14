@@ -323,3 +323,52 @@ describe('EventsView manual curation', () => {
     expect(deleteMock).not.toHaveBeenCalled();
   });
 });
+
+
+describe('EventsView keyword search', () => {
+  const input = () => screen.getByLabelText('Cari event') as HTMLInputElement;
+
+  it('filters events by title keyword (case-insensitive)', () => {
+    mockState();
+    render(<EventsView />);
+    fireEvent.change(input(), { target: { value: 'gofood' } });
+    expect(screen.getByRole('heading', { name: /Gojek \(1\)/ })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Grab \(1\)/ })).toBeNull();
+  });
+
+  it('matches benefit/syarat text', () => {
+    const withSyarat: PromoEvent = { ...base, id: 3, aplikasi: 'DANA', judul: 'Bonus saldo DANA 20%', syarat: 'Min. top-up Rp50.000' };
+    mockState({ events: [withSyarat, grab] });
+    render(<EventsView />);
+    fireEvent.change(input(), { target: { value: 'top-up' } });
+    expect(screen.getByRole('heading', { name: /DANA \(1\)/ })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Grab \(1\)/ })).toBeNull();
+  });
+
+  it('clearing the query restores the full list', () => {
+    mockState();
+    render(<EventsView />);
+    fireEvent.change(input(), { target: { value: 'voucher' } });
+    expect(screen.getByRole('heading', { name: /Grab \(1\)/ })).toBeTruthy();
+    expect(screen.queryByRole('heading', { name: /Gojek \(1\)/ })).toBeNull();
+    fireEvent.change(input(), { target: { value: '' } });
+    expect(screen.getByRole('heading', { name: /Gojek \(1\)/ })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: /Grab \(1\)/ })).toBeTruthy();
+  });
+
+  it('combines with the platform filter', () => {
+    mockState({ appFilter: 'Gojek' });
+    render(<EventsView />);
+    fireEvent.change(input(), { target: { value: 'voucher' } });
+    expect(screen.getByText(/Belum ada event/)).toBeTruthy();
+    fireEvent.change(input(), { target: { value: 'cashback' } });
+    expect(screen.getByRole('heading', { name: /Gojek \(1\)/ })).toBeTruthy();
+  });
+
+  it('empty results show the query in the empty-state message', () => {
+    mockState();
+    render(<EventsView />);
+    fireEvent.change(input(), { target: { value: 'zzzz' } });
+    expect(screen.getByText(/cocok “zzzz”/)).toBeTruthy();
+  });
+});

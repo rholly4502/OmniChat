@@ -4,7 +4,20 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P3 — Manual curation Event & Promo: tambah / edit / hapus (backend + frontend)
+### P3 — Event & Promo: cari kata kunci (frontend)
+
+#### Added
+- The Events view gains a keyword search box that filters the curated promo list
+  live by judul / aplikasi / benefit / syarat (case-insensitive), scoped to the
+  currently selected platform tab. This complements the existing platform pills,
+  so the daily auto-imported list is now findable by term without opening each
+  platform.
+- Tests: +5 component (EventsView) covering title match, benefit/syarat match,
+  clearing the query restores the full list, combined platform+keyword filter,
+  and the empty-state message showing the query. Full suite green: frontend
+  72 files (1,173 tests), tsc -b, oxlint.
+
+
 
 #### Added
 - Events view now supports manual curation on top of the auto-imported list:

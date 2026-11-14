@@ -54,6 +54,7 @@ function wibToday(): string {
 export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [exportError, setExportError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PromoEvent | null>(null);
@@ -147,7 +148,17 @@ export function EventsView({ apiKey }: EventsViewProps) {
     setAppFilter(appKeys[next]);
     appTabRefs.current[next]?.focus();
   };
-  const filtered = appFilter ? events.filter((e) => e.aplikasi === appFilter) : events;
+  const query = searchQuery.trim().toLowerCase();
+  const byApp = appFilter ? events.filter((e) => e.aplikasi === appFilter) : events;
+  const filtered = query
+    ? byApp.filter(
+        (e) =>
+          e.judul.toLowerCase().includes(query) ||
+          e.aplikasi.toLowerCase().includes(query) ||
+          (e.benefit ?? '').toLowerCase().includes(query) ||
+          (e.syarat ?? '').toLowerCase().includes(query),
+      )
+    : byApp;
   const groups = [...new Set(filtered.map((e) => e.aplikasi))].sort(
     (a, b) => (filtered.filter((e) => e.aplikasi === b).length) - (filtered.filter((e) => e.aplikasi === a).length),
   );
@@ -268,6 +279,16 @@ export function EventsView({ apiKey }: EventsViewProps) {
               </button>
             ))}
           </div>
+          <div className="mt-2 relative">
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari promo… (judul / benefit / syarat)"
+              aria-label="Cari event"
+              className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+            />
+          </div>
         </div>
       )}
 
@@ -295,7 +316,9 @@ export function EventsView({ apiKey }: EventsViewProps) {
           </p>
         ) : filtered.length === 0 ? (
           <div className="border border-chill-border bg-chill-surface p-6 text-center pixel-shadow rounded-none">
-            <p className="text-sm text-chill-muted">Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}.</p>
+            <p className="text-sm text-chill-muted">
+              Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}{query ? ` cocok “${searchQuery}”` : ''}.
+            </p>
             <p className="text-xs text-chill-muted mt-1">Cron Event Hunter akan mengisinya otomatis tiap hari.</p>
           </div>
         ) : (
