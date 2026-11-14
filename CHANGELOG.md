@@ -4,6 +4,25 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P3 — Manual curation Event & Promo: tambah / edit / hapus (backend + frontend)
+
+#### Added
+- Events view now supports manual curation on top of the auto-imported list:
+  a **Tambah** inline form (aplikasi, judul, benefit, syarat, link, berlaku
+  s/d, tanggal ditemukan) plus **Edit**/**Hapus** per card.
+- Backend: `POST /api/events`, `PUT /api/events/{id}` and
+  `DELETE /api/events/{id}` (operator-only, API key required). Manual rows get a
+  `web-…` SourceId prefix so the seeder's dedup never treats them as an
+  auto-imported (platform|judul) row. New `IPromoEventRepository`
+  `GetByIdAsync`/`AddAsync`/`UpdateAsync`/`DeleteAsync`.
+- Frontend: `eventsApi` gains `createEvent`/`updateEvent`/`deleteEvent`;
+  `EventsView` renders the inline form and reloads after each mutation.
+- Tests: backend +10 unit (EventsControllerTests) and +4 integration
+  (EventsWriteIntegrationTests) — create/update/delete, validation, auth,
+  404s; frontend +6 component (EventsView) and +4 transport (eventsApi).
+  Full suite green: backend 687, frontend (72 files), tsc -b, oxlint.
+
+
 ### Fix — Pengeluaran all-time summary: "Dari Gaji" card resolved total income (backend + frontend)
 
 #### Fixed

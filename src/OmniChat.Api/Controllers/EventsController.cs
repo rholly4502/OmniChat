@@ -1,14 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
+using OmniChat.Api.Infrastructure;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 
 namespace OmniChat.Api.Controllers;
 
 /// <summary>
-/// Read-only view over the curated promo/event list. The list is maintained by an
-/// agent cron and imported via the seeder. Routes are NOT guest-exempt, so
-/// anonymous callers get 401 — events are private.
+/// Curated promo/event list: read-only view plus operator CRUD for manual curation.
+/// Routes are NOT guest-exempt, so anonymous callers get 401 — events are private.
 /// </summary>
 [ApiController]
 [Route("api/events")]
@@ -66,6 +66,165 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
 
         return File(bytes, "text/csv; charset=utf-8", $"events-{DateTime.UtcNow:yyyy-MM-dd}.csv");
     }
+
+    /// <summary>Creates a manually curated promo event from the web UI (operator only).</summary>
+    /// <param name="request">The new event fields.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="201">The created event.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Create([FromBody] EventWriteRequest request, CancellationToken cancellationToken)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var @event = new PromoEvent
+        {
+            Aplikasi = request.Aplikasi.Trim(),
+            Judul = request.Judul.Trim(),
+            Benefit = TrimOrNull(request.Benefit),
+            Syarat = TrimOrNull(request.Syarat),
+            Link = TrimOrNull(request.Link),
+            BerlakuSampai = TrimOrNull(request.BerlakuSampai),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            // Manual rows get a distinct SourceId prefix so the seeder's dedup can
+            // never mistake them for an auto-imported (platform|judul) row.
+            SourceId = "web-" + Guid.NewGuid().ToString("N")[..8],
+        };
+
+        var created = await repository.AddAsync(@event, cancellationToken);
+        return CreatedAtAction(nameof(List), new { }, created);
+    }
+
+    /// <summary>Updates a manually curated promo event (operator only).</summary>
+    /// <param name="id">The event id to update.</param>
+    /// <param name="request">The replacement event fields.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">The updated event.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No such event.</response>
+    [HttpPut("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(long id, [FromBody] EventWriteRequest request, CancellationToken cancellationToken)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var @event = new PromoEvent
+        {
+            Id = id,
+            Aplikasi = request.Aplikasi.Trim(),
+            Judul = request.Judul.Trim(),
+            Benefit = TrimOrNull(request.Benefit),
+            Syarat = TrimOrNull(request.Syarat),
+            Link = TrimOrNull(request.Link),
+            BerlakuSampai = TrimOrNull(request.BerlakuSampai),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+        };
+
+        var ok = await repository.UpdateAsync(@event, cancellationToken);
+        if (!ok)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No event with id {id} exists.",
+                Instance = HttpContext?.Request.Path,
+            });
+        }
+
+        var updated = await repository.GetByIdAsync(id, cancellationToken);
+        return Ok(updated!);
+    }
+
+    /// <summary>Deletes a promo event (operator only).</summary>
+    /// <param name="id">The event id to delete.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Deleted.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No such event.</response>
+    [HttpDelete("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken)
+    {
+        var ok = await repository.DeleteAsync(id, cancellationToken);
+        if (!ok)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No event with id {id} exists.",
+                Instance = HttpContext?.Request.Path,
+            });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>Validates a write request, returning a 400 ProblemDetails or null when valid.</summary>
+    private ObjectResult? Validate(EventWriteRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Aplikasi))
+        {
+            return BadRequest("'aplikasi' wajib diisi.");
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Judul))
+        {
+            return BadRequest("'judul' wajib diisi.");
+        }
+
+        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", out _))
+        {
+            return BadRequest("'ditemukan' must be a valid YYYY-MM-DD date.");
+        }
+
+        return null;
+    }
+
+    private ObjectResult BadRequest(string detail) =>
+        new(new ProblemDetails
+        {
+            Title = "Validation Failed",
+            Status = StatusCodes.Status400BadRequest,
+            Detail = detail,
+            Instance = HttpContext?.Request.Path,
+        })
+        {
+            StatusCode = StatusCodes.Status400BadRequest,
+            ContentTypes = { ProblemDetailsResponse.ContentType },
+        };
+
+    private static string? TrimOrNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>Request body for creating or updating a promo event.</summary>
+    public sealed record EventWriteRequest(
+        string Aplikasi,
+        string Judul,
+        string? Benefit,
+        string? Syarat,
+        string? Link,
+        string? BerlakuSampai,
+        string Ditemukan);
 
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
     private static string Csv(string value)

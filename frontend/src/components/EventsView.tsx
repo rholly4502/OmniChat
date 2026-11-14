@@ -1,7 +1,16 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { exportEventsCsv, type PromoEvent } from '../eventsApi';
+import {
+  createEvent,
+  deleteEvent,
+  exportEventsCsv,
+  updateEvent,
+  type EventWritePayload,
+  type PromoEvent,
+} from '../eventsApi';
+import { ApiError } from '../api';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
+import { PanelFrame } from './PanelFrame';
 
 /**
  * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
@@ -35,11 +44,21 @@ function appList(events: PromoEvent[]): string[] {
     .map(([app]) => app);
 }
 
-/** The curated promo/event page: list grouped by app + platform filter. */
+/** Today's date in WIB as YYYY-MM-DD (default for new events). */
+function wibToday(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** The curated promo/event page: list grouped by app + platform filter, plus manual curation. */
 export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
   const [exportError, setExportError] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<PromoEvent | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleExportCsv = async () => {
     try {
@@ -57,6 +76,61 @@ export function EventsView({ apiKey }: EventsViewProps) {
       setExportError('Gagal mengekspor CSV.');
     }
   };
+
+  async function handleSave(payload: EventWritePayload) {
+    if (!apiKey) {
+      setFormError('API key diperlukan untuk menyimpan event.');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editingItem) {
+        await updateEvent(editingItem.id, payload, { apiKey });
+      } else {
+        await createEvent(payload, { apiKey });
+      }
+      setShowForm(false);
+      setEditingItem(null);
+      reload();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? `Gagal menyimpan (${err.status}).` : 'Gagal menyimpan.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(item: PromoEvent) {
+    setEditingItem(item);
+    setShowForm(true);
+    setFormError(null);
+  }
+
+  function openCreate() {
+    setEditingItem(null);
+    setShowForm(true);
+    setFormError(null);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingItem(null);
+    setFormError(null);
+  }
+
+  async function handleDelete(item: PromoEvent) {
+    if (!apiKey) {
+      setExportError('API key diperlukan untuk menghapus event.');
+      return;
+    }
+    if (!window.confirm(`Hapus event "${item.judul}"?`)) return;
+    try {
+      await deleteEvent(item.id, { apiKey });
+      reload();
+    } catch (err) {
+      setExportError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
+    }
+  }
 
   const apps = appList(events);
   // Filter pills are `Semua` (empty key) + one per app; order is the render order.
@@ -89,7 +163,20 @@ export function EventsView({ apiKey }: EventsViewProps) {
             Promo bernilai terkurasi otomatis (cashback, voucher, bonus saldo) untuk platform favoritmu
           </p>
         </div>
-        <div className="shrink-0">
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={openCreate}
+            disabled={loading}
+            aria-label="Tambah event"
+            className="inline-flex items-center gap-1.5 rounded-none border border-chill-accent/60 bg-chill-accent px-3 py-2 text-xs font-semibold text-chill-on-accent transition min-h-[44px] hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="shrink-0">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Tambah
+          </button>
           <button
             type="button"
             onClick={() => void handleExportCsv()}
@@ -102,11 +189,23 @@ export function EventsView({ apiKey }: EventsViewProps) {
             </svg>
             Ekspor CSV
           </button>
-          {exportError && (
-            <p role="alert" className="mt-1 text-xs text-chill-red">{exportError}</p>
+          {(exportError || formError) && (
+            <p role="alert" className="mt-1 text-xs text-chill-red">{exportError || formError}</p>
           )}
         </div>
       </div>
+
+      {showForm && (
+        <div className="px-4 pb-2">
+          <EventForm
+            initial={editingItem}
+            saving={saving}
+            error={formError}
+            onSave={(p) => void handleSave(p)}
+            onCancel={closeForm}
+          />
+        </div>
+      )}
 
       {/* Toggle area filter */}
       <div className="px-4 pb-2">
@@ -219,15 +318,33 @@ export function EventsView({ apiKey }: EventsViewProps) {
                           {e.berlakuSampai && <span>· berlaku s/d {e.berlakuSampai}</span>}
                         </div>
                         {e.syarat && <p className="mt-2 text-xs text-chill-muted">{e.syarat}</p>}
-                        {e.link && (
-                          <a
-                            href={e.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mt-2 inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
-                          >
-                            Lihat promo →
-                          </a>
+                        {(e.link || !loading) && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {e.link && (
+                              <a
+                                href={e.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-block rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/30 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                              >
+                                Lihat promo →
+                              </a>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => startEdit(e)}
+                              className="inline-block rounded-none border border-chill-border px-3 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(e)}
+                              className="inline-block rounded-none border border-chill-red/40 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/10 active:bg-chill-red/15 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+                            >
+                              Hapus
+                            </button>
+                          </div>
                         )}
                       </li>
                     ))}
@@ -239,5 +356,162 @@ export function EventsView({ apiKey }: EventsViewProps) {
         )}
       </div>
     </div>
+  );
+}
+
+interface EventFormProps {
+  initial: PromoEvent | null;
+  saving: boolean;
+  error: string | null;
+  onSave: (payload: EventWritePayload) => void;
+  onCancel: () => void;
+}
+
+/** Small inline form to add or edit one curated promo event. */
+function EventForm({ initial, saving, error, onSave, onCancel }: EventFormProps) {
+  const [aplikasi, setAplikasi] = useState(initial?.aplikasi ?? '');
+  const [judul, setJudul] = useState(initial?.judul ?? '');
+  const [benefit, setBenefit] = useState(initial?.benefit ?? '');
+  const [syarat, setSyarat] = useState(initial?.syarat ?? '');
+  const [link, setLink] = useState(initial?.link ?? '');
+  const [berlakuSampai, setBerlakuSampai] = useState(initial?.berlakuSampai ?? '');
+  const [ditemukan, setDitemukan] = useState(initial?.ditemukan ?? wibToday());
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  function submit() {
+    if (!aplikasi.trim()) {
+      setLocalError('Aplikasi wajib diisi.');
+      return;
+    }
+    if (!judul.trim()) {
+      setLocalError('Judul wajib diisi.');
+      return;
+    }
+    if (!ditemukan) {
+      setLocalError('Tanggal ditemukan wajib diisi.');
+      return;
+    }
+    setLocalError(null);
+    onSave({
+      aplikasi: aplikasi.trim(),
+      judul: judul.trim(),
+      benefit: benefit.trim() || undefined,
+      syarat: syarat.trim() || undefined,
+      link: link.trim() || undefined,
+      berlakuSampai: berlakuSampai.trim() || undefined,
+      ditemukan,
+    });
+  }
+
+  return (
+    <section
+      aria-label={initial ? 'Edit event' : 'Tambah event'}
+      className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-accent/40 p-4 pixel-shadow-sm space-y-3"
+    >
+      <PanelFrame />
+      <h3 className="text-sm font-semibold text-chill-text pixel-heading">
+        {initial ? 'Edit Event' : 'Tambah Event'}
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Aplikasi
+          <input
+            type="text"
+            maxLength={64}
+            value={aplikasi}
+            onChange={(e) => setAplikasi(e.target.value)}
+            placeholder="Mis. GoPay"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Judul
+          <input
+            type="text"
+            maxLength={500}
+            value={judul}
+            onChange={(e) => setJudul(e.target.value)}
+            placeholder="Mis. Cashback 50% GoPay Coins"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Benefit (opsional)
+          <input
+            type="text"
+            maxLength={500}
+            value={benefit}
+            onChange={(e) => setBenefit(e.target.value)}
+            placeholder="Mis. Cashback 50%"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Berlaku s/d (opsional)
+          <input
+            type="text"
+            maxLength={64}
+            value={berlakuSampai}
+            onChange={(e) => setBerlakuSampai(e.target.value)}
+            placeholder="Mis. 31 Des 2026"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Link promo (opsional)
+          <input
+            type="url"
+            maxLength={1000}
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://..."
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Tanggal ditemukan
+          <input
+            type="date"
+            value={ditemukan}
+            onChange={(e) => setDitemukan(e.target.value)}
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-xs text-chill-muted">
+        Syarat & ketentuan (opsional)
+        <textarea
+          maxLength={2000}
+          rows={3}
+          value={syarat}
+          onChange={(e) => setSyarat(e.target.value)}
+          placeholder="Mis. Min. transaksi Rp50.000"
+          className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark] resize-y"
+        />
+      </label>
+      {(localError || error) && (
+        <p role="alert" className="text-sm text-chill-red">
+          {localError ?? error}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="rounded-none border border-chill-accent/60 bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50 disabled:shadow-none"
+        >
+          {saving ? 'Menyimpan…' : initial ? 'Simpan Perubahan' : 'Simpan'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="rounded-none border border-chill-border px-4 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:shadow-none"
+        >
+          Batal
+        </button>
+      </div>
+    </section>
   );
 }

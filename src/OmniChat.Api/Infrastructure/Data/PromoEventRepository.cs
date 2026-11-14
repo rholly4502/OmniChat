@@ -4,7 +4,7 @@ using OmniChat.Domain.Entities;
 
 namespace OmniChat.Infrastructure.Data;
 
-/// <summary>EF Core read path for curated promo events.</summary>
+/// <summary>EF Core read/write path for curated promo events.</summary>
 public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventRepository
 {
     public async Task<IReadOnlyList<PromoEvent>> ListAsync(
@@ -59,5 +59,52 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
 
         db.PromoEvents.AddRange(missing);
         return await db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<PromoEvent?> GetByIdAsync(
+        long id, CancellationToken cancellationToken) =>
+        await db.PromoEvents.AsNoTracking().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+
+    public async Task<PromoEvent> AddAsync(
+        PromoEvent @event, CancellationToken cancellationToken)
+    {
+        db.PromoEvents.Add(@event);
+        await db.SaveChangesAsync(cancellationToken);
+        return @event;
+    }
+
+    public async Task<bool> UpdateAsync(
+        PromoEvent @event, CancellationToken cancellationToken)
+    {
+        var existing = await db.PromoEvents.FirstOrDefaultAsync(e => e.Id == @event.Id, cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        existing.Aplikasi = @event.Aplikasi;
+        existing.Judul = @event.Judul;
+        existing.Benefit = @event.Benefit;
+        existing.Syarat = @event.Syarat;
+        existing.Link = @event.Link;
+        existing.BerlakuSampai = @event.BerlakuSampai;
+        existing.Ditemukan = @event.Ditemukan;
+        existing.SourceId = @event.SourceId ?? existing.SourceId;
+
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        var existing = await db.PromoEvents.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        db.PromoEvents.Remove(existing);
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

@@ -64,3 +64,60 @@ export async function exportEventsCsv(
   }
   return await res.blob();
 }
+
+/** Write payload for creating or updating a promo event. */
+export interface EventWritePayload {
+  aplikasi: string;
+  judul: string;
+  benefit?: string | null;
+  syarat?: string | null;
+  link?: string | null;
+  berlakuSampai?: string | null;
+  ditemukan: string; // YYYY-MM-DD (WIB)
+}
+
+async function requestJson(
+  path: string,
+  method: 'POST' | 'PUT' | 'DELETE',
+  body: unknown,
+  options: EventsRequestOptions = {},
+): Promise<Response> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(path, {
+    method,
+    headers: {
+      ...authHeaders(options.apiKey),
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return res;
+}
+
+/** Create a manually curated promo event (operator only). Returns the created event. */
+export async function createEvent(
+  payload: EventWritePayload,
+  options: EventsRequestOptions = {},
+): Promise<PromoEvent> {
+  const res = await requestJson(EVENTS_URL, 'POST', payload, options);
+  return (await res.json()) as PromoEvent;
+}
+
+/** Update an existing promo event (operator only). Returns the updated event. */
+export async function updateEvent(
+  id: number,
+  payload: EventWritePayload,
+  options: EventsRequestOptions = {},
+): Promise<PromoEvent> {
+  const res = await requestJson(`${EVENTS_URL}/${id}`, 'PUT', payload, options);
+  return (await res.json()) as PromoEvent;
+}
+
+/** Delete a promo event (operator only). */
+export async function deleteEvent(id: number, options: EventsRequestOptions = {}): Promise<void> {
+  await requestJson(`${EVENTS_URL}/${id}`, 'DELETE', undefined, options);
+}

@@ -29,3 +29,44 @@ describe('exportEventsCsv', () => {
     await expect(exportEventsCsv({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
   });
 });
+
+describe('event write transport', () => {
+  const event = { id: 1, aplikasi: 'GoPay', judul: 'Cashback', ditemukan: '2026-11-14' };
+  const json = () => Promise.resolve(event);
+  const okRes = { ok: true, status: 200, json };
+  const payload = { aplikasi: 'GoPay', judul: 'Cashback 20%', ditemukan: '2026-11-14' };
+
+  it('createEvent POSTs a JSON body with the API key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okRes);
+    const out = await import('../eventsApi').then((m) => m.createEvent(payload, { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch }));
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}`);
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe('application/json');
+    expect((init.headers as Record<string, string>)['X-Api-Key']).toBe('k');
+    expect(JSON.parse(init.body as string)).toEqual(payload);
+    expect(out).toEqual(event);
+  });
+
+  it('updateEvent PUTs to /api/events/{id}', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okRes);
+    await import('../eventsApi').then((m) => m.updateEvent(7, payload, { fetchImpl: fetchMock as unknown as typeof fetch }));
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/7`);
+    expect(init.method).toBe('PUT');
+  });
+
+  it('deleteEvent DELETEs to /api/events/{id} with no body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 });
+    await import('../eventsApi').then((m) => m.deleteEvent(7, { fetchImpl: fetchMock as unknown as typeof fetch }));
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/7`);
+    expect(init.method).toBe('DELETE');
+    expect(init.body).toBeUndefined();
+  });
+
+  it('throws ApiError on a non-OK write response', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: { get: () => null } });
+    await expect(import('../eventsApi').then((m) => m.createEvent(payload, { fetchImpl: fetchMock as unknown as typeof fetch }))).rejects.toMatchObject({ status: 401 });
+  });
+});

@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
-import { exportEventsCsv, type PromoEvent } from '../eventsApi';
+import { createEvent, deleteEvent, exportEventsCsv, updateEvent, type PromoEvent } from '../eventsApi';
 
 vi.mock('../eventsApi', async () => ({
   ...(await vi.importActual<typeof import('../eventsApi')>('../eventsApi')),
   exportEventsCsv: vi.fn(),
+  createEvent: vi.fn(),
+  updateEvent: vi.fn(),
+  deleteEvent: vi.fn(),
 }));
 
 // Control useEvents from the test instead of exercising the real fetch path —
@@ -222,5 +225,101 @@ describe('EventsView CSV export', () => {
     mockState({ loading: true });
     render(<EventsView />);
     expect(screen.getByRole('button', { name: 'Ekspor CSV' })).toBeDisabled();
+  });
+});
+
+describe('EventsView manual curation', () => {
+  const createMock = vi.mocked(createEvent);
+  const updateMock = vi.mocked(updateEvent);
+  const deleteMock = vi.mocked(deleteEvent);
+
+  const fillRequired = (aplikasi = 'GoPay', judul = 'Cashback 20%') => {
+    fireEvent.change(screen.getByLabelText('Aplikasi'), { target: { value: aplikasi } });
+    fireEvent.change(screen.getByLabelText('Judul'), { target: { value: judul } });
+  };
+
+  it('Tambah opens the inline form with today as the default ditemukan', () => {
+    mockState();
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah event' }));
+    expect(screen.getByRole('heading', { name: 'Tambah Event' })).toBeTruthy();
+    expect((screen.getByLabelText('Tanggal ditemukan') as HTMLInputElement).value).toBeTruthy();
+  });
+
+  it('saving a new event calls createEvent then reloads and closes', async () => {
+    createMock.mockResolvedValue({ ...base, id: 99 });
+    const reload = vi.fn();
+    mockState({ reload });
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah event' }));
+    fillRequired();
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() =>
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({ aplikasi: 'GoPay', judul: 'Cashback 20%' }),
+        { apiKey: 'k' },
+      ),
+    );
+    expect(reload).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Tambah Event' })).toBeNull());
+  });
+
+  it('blocks save when required fields are empty (no API call)', async () => {
+    mockState();
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah event' }));
+    fireEvent.change(screen.getByLabelText('Aplikasi'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    expect(screen.getByRole('alert').textContent).toContain('Aplikasi wajib diisi.');
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('requires an API key before saving', () => {
+    mockState();
+    render(<EventsView />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah event' }));
+    fillRequired();
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan' }));
+    expect(screen.getAllByRole('alert').some((a) => a.textContent?.includes('API key'))).toBe(true);
+    expect(createMock).not.toHaveBeenCalled();
+  });
+
+  it('Edit pre-fills the form and saving calls updateEvent with the right id', async () => {
+    updateMock.mockResolvedValue({ ...base, judul: 'Judul Baru' });
+    const reload = vi.fn();
+    mockState({ reload });
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+
+    expect(screen.getByRole('heading', { name: 'Edit Event' })).toBeTruthy();
+    expect((screen.getByLabelText('Aplikasi') as HTMLInputElement).value).toBe('Gojek');
+    fireEvent.change(screen.getByLabelText('Judul'), { target: { value: 'Judul Baru' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Simpan Perubahan' }));
+
+    await waitFor(() =>
+      expect(updateMock).toHaveBeenCalledWith(1, expect.objectContaining({ judul: 'Judul Baru' }), { apiKey: 'k' }),
+    );
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it('Hapus confirms then calls deleteEvent and reloads', async () => {
+    deleteMock.mockResolvedValue(undefined);
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const reload = vi.fn();
+    mockState({ reload });
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus' })[0]);
+    expect(confirmSpy).toHaveBeenCalled();
+    await waitFor(() => expect(deleteMock).toHaveBeenCalledWith(1, { apiKey: 'k' }));
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it('Hapus without confirm does not delete', () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(false);
+    mockState();
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus' })[0]);
+    expect(deleteMock).not.toHaveBeenCalled();
   });
 });
