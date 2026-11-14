@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -152,5 +152,32 @@ describe('downloadCvFile', () => {
   it('throws ApiError when not ok', async () => {
     const fetchMock = vi.fn().mockResolvedValue(errResponse(404));
     await expect(downloadCvFile('x.pdf', { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('exportOpportunitiesCsv', () => {
+  const csvBlob = new Blob(['judul,perusahaan'], { type: 'text/csv; charset=utf-8' });
+
+  it('GETs /export with no auth header when no key is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
+    const out = await exportOpportunitiesCsv({ fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/export`);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({});
+    expect(out).toBe(csvBlob);
+  });
+
+  it('sends the API key and appends an encoded ?status= filter when given', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
+    await exportOpportunitiesCsv({ apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch }, 'offer');
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/export?status=offer`);
+    expect(init.headers).toEqual({ 'X-Api-Key': 'secret-key' });
+  });
+
+  it('throws an ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
+    await expect(exportOpportunitiesCsv({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
   });
 });

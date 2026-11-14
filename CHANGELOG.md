@@ -4,6 +4,18 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P2 — Job pipeline CSV export (backend + frontend)
+
+#### Added
+- `GET /api/jobs/export` returns the curated job-opportunity list as CSV
+  (RFC 4180, UTF-8 with BOM), optionally filtered by pipeline status. Backend
+  tests: new `JobsControllerExportTests` (4 cases — header/rows, status filter,
+  RFC 4180 quote-escaping, follow-up date column); full backend suite green (670).
+- The Job Opportunities view gains an **"Ekspor CSV"** button that downloads the
+  current pipeline (respecting the active status filter) via the new
+  `exportOpportunitiesCsv` in jobsApi. Frontend tests: +3 jobsApi transport,
+  +2 component (download + failure alert); full suite green (1,150).
+
 
 ### P3 — Composer draft auto-save (frontend)
 

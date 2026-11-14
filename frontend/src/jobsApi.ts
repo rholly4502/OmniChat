@@ -117,6 +117,24 @@ export async function updateOpportunityFollowUp(
   }
 }
 
+/** Download the curated opportunity list as CSV bytes (RFC 4180, UTF-8 with BOM). */
+export async function exportOpportunitiesCsv(
+  options: JobsRequestOptions = {},
+  status?: string,
+): Promise<Blob> {
+  const path = status ? `${JOBS_URL}/export?status=${encodeURIComponent(status)}` : `${JOBS_URL}/export`;
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(path, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return await res.blob();
+}
+
 /** Base path of the authenticated CV download service. */
 export const CV_URL = '/api/cv';
 

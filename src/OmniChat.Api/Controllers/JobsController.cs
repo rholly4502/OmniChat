@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 
@@ -123,6 +124,55 @@ public sealed class JobsController(
             return StatusCode(StatusCodes.Status502BadGateway, new { message = "Gagal membuat draft lamaran: gateway AI tidak tersedia." });
         }
     }
+
+    /// <summary>Exports the curated opportunity list as CSV (RFC 4180, UTF-8 with BOM).</summary>
+    /// <param name="status">Optional pipeline filter; omitted exports every stage.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">CSV file download.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("export")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Export(
+        [FromQuery] string? status,
+        CancellationToken cancellationToken = default)
+    {
+        var items = await repository.ListAsync(status, cancellationToken);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,ditemukan,link,catatan");
+        foreach (var o in items)
+        {
+            sb.Append(Csv(o.Judul)).Append(',');
+            sb.Append(Csv(o.Perusahaan)).Append(',');
+            sb.Append(Csv(o.Lokasi)).Append(',');
+            sb.Append(Csv(o.Tipe)).Append(',');
+            sb.Append(Csv(o.Gaji ?? string.Empty)).Append(',');
+            sb.Append(o.Skor?.ToString() ?? string.Empty).Append(',');
+            sb.Append(Csv(o.Status)).Append(',');
+            sb.Append(o.FollowUpTanggal?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
+            sb.Append(o.Ditemukan.ToString("yyyy-MM-dd")).Append(',');
+            sb.Append(Csv(o.Link ?? string.Empty)).Append(',');
+            sb.Append(Csv(o.Catatan ?? string.Empty)).Append('\n');
+        }
+
+        // UTF-8 BOM so Excel renders the CSV as UTF-8 rather than ANSI.
+        var bytes = Encoding.UTF8.GetPreamble()
+            .Concat(Encoding.UTF8.GetBytes(sb.ToString()))
+            .ToArray();
+
+        return File(bytes, "text/csv; charset=utf-8", $"jobs-{DateTime.UtcNow:yyyy-MM-dd}.csv");
+    }
+
+    /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
+    private static string Csv(string value)
+    {
+        if (value.Contains('"') || value.Contains(',') || value.Contains('\n') || value.Contains('\r'))
+        {
+            return "\"" + value.Replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
 }
 
 /// <summary>Allowed pipeline status values.</summary>
@@ -137,10 +187,8 @@ public static class OpportunityStatuses
         status is not null && All.Contains(status);
 }
 
-
 /// <summary>Request body for <c>PATCH /api/jobs/{id}/status</c>.</summary>
 public sealed record UpdateOpportunityStatusRequest(string Status);
 
 /// <summary>Request body for <c>PATCH /api/jobs/{id}/follow-up</c>.</summary>
 public sealed record UpdateOpportunityFollowUpRequest(string? Tanggal);
-

@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, type Opportunity } from '../jobsApi';
 import { useJobs } from '../hooks/useJobs';
 import { ScanLoader } from './ScanLoader';
 import { AlertIcon } from './Icons';
@@ -135,6 +135,24 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [draftOpenById, setDraftOpenById] = useState<Record<number, boolean>>({});
   const [copiedDraft, setCopiedDraft] = useState<number | null>(null);
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
+  const [exportError, setExportError] = useState('');
+
+  const handleExportCsv = async () => {
+    try {
+      const blob = await exportOpportunitiesCsv({ apiKey }, statusFilter || undefined);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `jobs-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportError('');
+    } catch {
+      setExportError('Gagal mengekspor CSV.');
+    }
+  };
 
   const handleGenerateDraft = async (o: Opportunity) => {
     try {
@@ -322,6 +340,23 @@ export function JobsView({ apiKey }: JobsViewProps) {
         <p className="text-xs text-chill-muted mt-0.5">
           Lowongan relevan (.NET, ±2 tahun) yang dikurasi otomatis · kontrak berakhir 30 Des
         </p>
+      </div>
+
+      <div className="px-4 pb-2">
+        <button
+          type="button"
+          onClick={() => void handleExportCsv()}
+          disabled={loading}
+          className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true" className="shrink-0">
+            <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+          </svg>
+          Ekspor CSV
+        </button>
+        {exportError && (
+          <p role="alert" className="mt-1 text-xs text-chill-red">{exportError}</p>
+        )}
       </div>
 
       {cvFiles.length > 0 && (
