@@ -178,10 +178,12 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     {
         var totalPemasukan = await repository.GetTotalPemasukanAsync(cancellationToken);
         var totalPengeluaran = await repository.GetTotalPengeluaranAllAsync(cancellationToken);
+        var totalNabung = await repository.GetTotalNabungAsync(cancellationToken);
         return Ok(new
         {
             totalPemasukan,
             totalPengeluaran,
+            totalNabung,
             sisaUang = totalPemasukan - totalPengeluaran,
         });
     }

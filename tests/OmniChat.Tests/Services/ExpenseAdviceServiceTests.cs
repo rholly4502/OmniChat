@@ -89,6 +89,8 @@ public sealed class ExpenseAdviceServiceTests
 
         public Task<long> GetTotalPengeluaranAllAsync(CancellationToken ct) => Task.FromResult(0L);
 
+        public Task<long> GetTotalNabungAsync(CancellationToken ct) => Task.FromResult(0L);
+
         public Task<int> InsertMissingIncomesAsync(IEnumerable<Income> incomes, CancellationToken ct) =>
             Task.FromResult(0);
     }

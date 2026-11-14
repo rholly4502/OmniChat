@@ -36,6 +36,9 @@ public interface IExpenseRepository
     /// <summary>Total spend (all categories except Nabung) summed across all ledger months.</summary>
     Task<long> GetTotalPengeluaranAllAsync(CancellationToken cancellationToken);
 
+    /// <summary>Total savings (Nabung) deposits summed across all ledger months.</summary>
+    Task<long> GetTotalNabungAsync(CancellationToken cancellationToken);
+
     /// <summary>Inserts income rows whose non-empty <see cref="Income.SourceId"/> is not already present.</summary>
     Task<int> InsertMissingIncomesAsync(IEnumerable<Income> incomes, CancellationToken cancellationToken);
 

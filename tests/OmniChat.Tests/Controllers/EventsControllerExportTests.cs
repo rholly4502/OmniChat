@@ -21,7 +21,7 @@ public class EventsControllerExportTests
     {
         Id = 1,
         Aplikasi = aplikasi,
-        Judul = judul,
+        Judul = judul!,
         Benefit = "Maks Rp20.000",
         Syarat = syarat,
         Link = null,

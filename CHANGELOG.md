@@ -4,6 +4,22 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### Fix — Pengeluaran all-time summary: "Dari Gaji" card resolved total income (backend + frontend)
+
+#### Fixed
+- The all-time "Sisa Uang" grid card a card labeled "Dari Gaji" that displayed the same
+  value as "Total Pemasukan" (total income across all sources) — misleading once any
+  non-salary income exists. Removed the duplicate.
+- Replaced it with a genuinely useful "Total Ditabung" stat: total savings
+  (Nabung-category deposits) across all months, surfaced from a new `totalNabung`
+  field on `GET /api/expenses/sisa`. Backend: new `IExpenseRepository.GetTotalNabungAsync`
+  (sum of `Kategori == "Nabung"`); `ExpensesController.Sisa` now returns it. Frontend:
+  `ExpenseSisa.totalNabung` + the `ExpensesView` card reads it. Also cleared two
+  pre-existing CS8601 nullable-reference warnings in `Jobs/EventsControllerExportTests`.
+- Tests: +1 backend integration test (`Sisa_withApiKey_returnsTotalsAndNabung`,
+  backend suite 674 → 675, 0 warnings); updated the `ExpensesView` all-time sisa test.
+  Full suite green: backend 675, frontend (72 files), tsc -b, oxlint.
+
 ### P3 — Ringkasan dashboard: Perlu follow-up count (frontend)
 
 #### Added

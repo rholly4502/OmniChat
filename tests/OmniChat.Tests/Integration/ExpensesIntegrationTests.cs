@@ -187,6 +187,45 @@ public sealed class ExpensesIntegrationTests : IClassFixture<WebApplicationFacto
     }
 
     [Fact]
+    public async Task Sisa_withApiKey_returnsTotalsAndNabung()
+    {
+        var db = TempDb();
+        try
+        {
+            var factory = _factory.WithWebHostBuilder(b => b
+                .UseSetting("Security:ApiKey", Secret)
+                .UseSetting("Persistence:ConnectionString", $"Data Source={db}"));
+            var client = Authorized(factory.CreateClient());
+            await SeedAsync(factory, async repository =>
+            {
+                await repository.InsertMissingIncomesAsync(
+                    [
+                        new Income { Tanggal = new DateOnly(2026, 10, 28), Keterangan = "Gaji (pemasukan) 7jt", Nominal = 7_000_000, SourceId = "inc-gaji" },
+                        new Income { Tanggal = new DateOnly(2026, 11, 5), Keterangan = "Bonus", Nominal = 400_000, SourceId = "inc-bonus" },
+                    ], CancellationToken.None);
+                await repository.InsertMissingExpensesAsync(
+                    [
+                        new Expense { Tanggal = new DateOnly(2026, 10, 29), Waktu = "09:10", Kategori = "Nabung",
+                            Keterangan = "setoran", Nominal = 300_000, SourceId = "a1b2c4" },
+                        new Expense { Tanggal = new DateOnly(2026, 11, 1), Waktu = "06:50", Kategori = "Makan",
+                            Keterangan = "sarapan", Nominal = 23_000, SourceId = "a1b2c5" },
+                    ], CancellationToken.None);
+            });
+
+            var response = await client.GetAsync("/api/expenses/sisa");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            var root = json.RootElement;
+            Assert.Equal(7_400_000, root.GetProperty("totalPemasukan").GetInt64());
+            Assert.Equal(23_000, root.GetProperty("totalPengeluaran").GetInt64());
+            Assert.Equal(300_000, root.GetProperty("totalNabung").GetInt64());
+            Assert.Equal(7_377_000, root.GetProperty("sisaUang").GetInt64());
+        }
+        finally { File.Delete(db); }
+    }
+
+    [Fact]
     public async Task Target_withApiKey_returns404WhenUnset()
     {
         var db = TempDb();

@@ -557,7 +557,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
                 />
                 <StatCard label="Total Pemasukan" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Tagihan" />
                 <StatCard label="Total Pengeluaran" value={sisa ? formatRupiah(sisa.totalPengeluaran) : '—'} icon="Lain" tone="accent" />
-                <StatCard label="Dari Gaji" value={sisa ? formatRupiah(sisa.totalPemasukan) : '—'} icon="Gaji" />
+                <StatCard label="Total Ditabung" value={sisa ? formatRupiah(sisa.totalNabung) : '—'} icon="Nabung" />
               </section>
             ) : (
               <section aria-label="Ringkasan bulanan" className="pixel-reveal grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

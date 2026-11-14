@@ -175,6 +175,8 @@ export interface ExpenseSisa {
   totalPengeluaran: number;
   /** Remaining cash = totalPemasukan - totalPengeluaran. */
   sisaUang: number;
+  /** Total savings (Nabung) deposits across all months. */
+  totalNabung: number;
 }
 
 /** Fetch all-time remaining cash (gaji minus total pengeluaran). */

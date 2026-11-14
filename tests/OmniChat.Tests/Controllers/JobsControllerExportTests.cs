@@ -21,7 +21,7 @@ public class JobsControllerExportTests
     {
         Id = 1,
         Judul = ".NET Developer",
-        Perusahaan = perusahaan,
+        Perusahaan = perusahaan!,
         Lokasi = "Remote",
         Tipe = "Kontrak",
         Gaji = "15-20jt",

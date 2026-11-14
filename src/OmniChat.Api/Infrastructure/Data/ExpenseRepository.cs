@@ -100,6 +100,12 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             .Where(e => e.Kategori != "Nabung")
             .SumAsync(e => (long?)e.Nominal, cancellationToken) ?? 0;
 
+    public async Task<long> GetTotalNabungAsync(CancellationToken cancellationToken) =>
+        await db.Expenses
+            .AsNoTracking()
+            .Where(e => e.Kategori == "Nabung")
+            .SumAsync(e => (long?)e.Nominal, cancellationToken) ?? 0;
+
     public async Task<int> InsertMissingIncomesAsync(
         IEnumerable<Income> incomes, CancellationToken cancellationToken)
     {

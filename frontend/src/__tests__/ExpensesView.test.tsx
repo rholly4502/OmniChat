@@ -705,9 +705,10 @@ describe('ExpensesView all-time sisa cards', () => {
     totalPemasukan: 7400000,
     totalPengeluaran: 372000,
     sisaUang: 7028000,
+    totalNabung: 500000,
   };
 
-  it('renders the "Dari Gaji" card from the live /sisa total, not a hardcoded literal', async () => {
+  it('renders the "Total Ditabung" card from the live /sisa totalNabung, distinct from total income', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn((url: string) =>
@@ -724,13 +725,15 @@ describe('ExpensesView all-time sisa cards', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Semua Waktu' }));
     await waitFor(() => expect(screen.getByText('Total Pemasukan')).toBeInTheDocument());
 
-    // The card value must be the API-derived rupiah (Rp 7.400.000), proving the
-    // card now reads from the ledger instead of a drifting hardcoded "7.4 jt".
-    expect(screen.getByText('Dari Gaji')).toBeInTheDocument();
+    // The savings card value must be the API-derived rupiah (Rp 500.000) from
+    // totalNabung — distinct from "Total Pemasukan" (Rp 7.400.000), proving the
+    // card reads the ledger's Nabung deposits rather than duplicating income.
+    expect(screen.getByText('Total Ditabung')).toBeInTheDocument();
     // formatRupiah emits a non-breaking space (U+00A0) between "Rp" and the
     // amount, so match on normalized whitespace (see expenses pitfall).
-    // Both "Total Pemasukan" and "Dari Gaji" cards now read the same live value.
-    expect(screen.getAllByText((_, el) => el?.textContent?.replace(/\s/g, ' ') === formatRupiah(sisaPayload.totalPemasukan).replace(/\s/g, ' ')).length).toBeGreaterThanOrEqual(2);
+    expect(screen.getAllByText((_, el) => el?.textContent?.replace(/\s/g, ' ') === formatRupiah(sisaPayload.totalNabung).replace(/\s/g, ' ')).length).toBeGreaterThanOrEqual(1);
+    // The income card still shows only its own value (one occurrence, not shared).
+    expect(screen.getAllByText((_, el) => el?.textContent?.replace(/\s/g, ' ') === formatRupiah(sisaPayload.totalPemasukan).replace(/\s/g, ' ')).length).toBe(1);
     expect(screen.queryByText('7.4 jt')).not.toBeInTheDocument();
   });
 });
