@@ -134,7 +134,7 @@ export function AdvicePanel({ apiKey, month }: AdvicePanelProps) {
           aria-expanded={open}
           aria-controls="advice-body"
           disabled={loading}
-          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 hover:translate-y-[1px] active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] min-w-[148px] justify-center disabled:opacity-50 disabled:shadow-none"
+          className="shrink-0 rounded-none border border-chill-accent/50 bg-chill-accent/10 px-3.5 py-2 text-sm font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] min-w-[148px] justify-center disabled:opacity-50 disabled:shadow-none"
         >
           {loading && <span className="w-2.5 h-2.5 bg-chill-accent rounded-none pixel-blink mr-2 inline-block" aria-hidden="true" />}
           {loading ? 'Menganalisa…' : open ? 'Tutup' : 'Analisa & Saran'}

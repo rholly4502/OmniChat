@@ -126,4 +126,21 @@ describe('pixel2 press shadow consistency', () => {
     }
   });
 
+  it('press buttons translate only on press (no hover:translate-y divergence)', () => {
+    // The pixel press register is press-only site-wide: a button moves on active,
+    // never on hover. The expenses/advice tab once carried an isolated two-stage
+    // hover-lift (hover:translate-y-[1px]) that diverged from the other 125+
+    // press-translating buttons. That divergence is removed; this pins the
+    // uniform convention so it cannot silently creep back in any component.
+    const offenders: string[] = [];
+    for (const file of files) {
+      for (const { attrs, line } of buttonTags(readFileSync(file, 'utf8'))) {
+        if (attrs.includes('hover:translate-y')) {
+          offenders.push(`${file.replace(SRC, 'src')}:${line} hover:translate-y on a button — ${attrs}`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
 });
