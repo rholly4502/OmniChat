@@ -110,4 +110,20 @@ describe('pixel2 press shadow consistency', () => {
     }
     expect(offenders).toEqual([]);
   });
+
+  it('chat-stats export buttons carry the press-slide (active:translate-y)', () => {
+    // The three data views' export actions all press-slide; the ChatStatsDialog
+    // export buttons were the last secondary buttons missing `active:translate-y`
+    // (they had hover + active-background only). Pin the press-slide so the
+    // interaction language stays uniform across every surface.
+    const dialog = readFileSync(join(SRC, 'components/ChatStatsDialog.tsx'), 'utf8');
+    const exportButtons = buttonTags(dialog).filter(({ attrs }) =>
+      attrs.includes('aria-label="Ekspor semua percakapan'),
+    );
+    expect(exportButtons.length).toBeGreaterThanOrEqual(2);
+    for (const { attrs, line } of exportButtons) {
+      expect(attrs, `export button at line ${line}`).toMatch(/active:translate-y/);
+    }
+  });
+
 });
