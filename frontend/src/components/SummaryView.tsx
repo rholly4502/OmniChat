@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useExpenses } from '../hooks/useExpenses';
 import { useJobs } from '../hooks/useJobs';
 import { useEvents } from '../hooks/useEvents';
 import type { ConversationUsageSummary } from '../types';
+import type { Opportunity } from '../jobsApi';
 import { OPPORTUNITY_STATUSES } from '../jobsApi';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
@@ -67,6 +69,16 @@ function StatRow({ label, value }: { label: string; value: string }) {
  * read-only digest that links back into its full view via the sidebar tabs.
  */
 export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
+  // Today captured once per mount (WIB local); keeps the follow-up deadline stable.
+  const [todayISO] = useState(() => {
+    const t = new Date();
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  });
+  const needsFollowUp = (o: Opportunity): boolean => {
+    if (!o.followUpTanggal) return false;
+    if (o.status !== 'applied' && o.status !== 'interview' && o.status !== 'offer') return false;
+    return o.followUpTanggal <= todayISO;
+  };
   const expenses = useExpenses(apiKey);
   const jobs = useJobs(apiKey);
   const events = useEvents(apiKey);
@@ -112,6 +124,7 @@ export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
     if (Object.prototype.hasOwnProperty.call(statusCounts, o.status)) statusCounts[o.status] += 1;
   }
   const activeJobs = jobs.opportunities.filter((o) => o.status !== 'closed').length;
+  const overdueFollowUps = jobs.opportunities.filter(needsFollowUp).length;
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
 
@@ -142,6 +155,7 @@ export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
           <StatRow label="Baru" value={String(statusCounts.new)} />
           <StatRow label="Sudah dilamar" value={String(statusCounts.applied)} />
           <StatRow label="Interview" value={String(statusCounts.interview)} />
+          <StatRow label="Perlu follow-up" value={String(overdueFollowUps)} />
           <StatRow label="Tawaran" value={String(statusCounts.offer)} />
         </Card>
 

@@ -117,6 +117,26 @@ describe('SummaryView', () => {
     expect(screen.getByText('Tawaran').parentElement).toHaveTextContent('1');
   });
 
+  it('counts overdue follow-ups among active pipeline stages', async () => {
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const past = '2020-01-01';
+    const future = '2099-01-01';
+    const jobs: Opportunity[] = [
+      { ...jobOf(1, 'applied'), followUpTanggal: past },
+      { ...jobOf(2, 'applied'), followUpTanggal: future },
+      { ...jobOf(3, 'interview'), followUpTanggal: past },
+      { ...jobOf(4, 'new'), followUpTanggal: past }, // inactive stage -> not counted
+      { ...jobOf(5, 'closed'), followUpTanggal: past }, // closed -> not counted
+      jobOf(6, 'offer'),
+    ];
+    vi.stubGlobal('fetch', fetchStub({ jobs }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.getByText('Perlu follow-up').parentElement).toHaveTextContent('2');
+  });
+
   it('counts unique event sources', async () => {
     const events: PromoEvent[] = [
       eventOf(1, 'OVO'),

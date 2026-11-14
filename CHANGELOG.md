@@ -4,6 +4,15 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P3 — Ringkasan dashboard: Perlu follow-up count (frontend)
+
+#### Added
+- The Ringkasan Lowongan card now shows a "Perlu follow-up" row counting active
+  opportunities (applied/interview/offer) whose scheduled follow-up date is overdue
+  (same logic as the Jobs view), so the one-screen dashboard surfaces actionable
+  job-hunting follow-ups without opening the full pipeline. Frontend tests:
+  SummaryView 8 → 9 (new overdue-follow-up case).
+
 ### P2 — Job pipeline CSV export (backend + frontend)
 
 #### Added
