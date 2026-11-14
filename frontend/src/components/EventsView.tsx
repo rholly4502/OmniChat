@@ -1,5 +1,5 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import type { PromoEvent } from '../eventsApi';
+import { exportEventsCsv, type PromoEvent } from '../eventsApi';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
 
@@ -39,6 +39,24 @@ function appList(events: PromoEvent[]): string[] {
 export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
+  const [exportError, setExportError] = useState('');
+
+  const handleExportCsv = async () => {
+    try {
+      const blob = await exportEventsCsv({ apiKey }, appFilter || undefined);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `events-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportError('');
+    } catch {
+      setExportError('Gagal mengekspor CSV.');
+    }
+  };
 
   const apps = appList(events);
   // Filter pills are `Semua` (empty key) + one per app; order is the render order.
@@ -64,11 +82,30 @@ export function EventsView({ apiKey }: EventsViewProps) {
 
   return (
     <div className="h-full flex flex-col min-h-0 pixel-reveal">
-      <div className="px-4 pt-4 pb-2">
-        <h1 className="text-base font-semibold text-chill-text">Event & Promo</h1>
-        <p className="text-xs text-chill-muted mt-0.5">
-          Promo bernilai terkurasi otomatis (cashback, voucher, bonus saldo) untuk platform favoritmu
-        </p>
+      <div className="px-4 pt-4 pb-2 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-base font-semibold text-chill-text">Event & Promo</h1>
+          <p className="text-xs text-chill-muted mt-0.5">
+            Promo bernilai terkurasi otomatis (cashback, voucher, bonus saldo) untuk platform favoritmu
+          </p>
+        </div>
+        <div className="shrink-0">
+          <button
+            type="button"
+            onClick={() => void handleExportCsv()}
+            disabled={loading}
+            aria-label="Ekspor CSV"
+            className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true" className="shrink-0">
+              <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+            </svg>
+            Ekspor CSV
+          </button>
+          {exportError && (
+            <p role="alert" className="mt-1 text-xs text-chill-red">{exportError}</p>
+          )}
+        </div>
       </div>
 
       {/* Toggle area filter */}

@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
-import type { PromoEvent } from '../eventsApi';
+import { exportEventsCsv, type PromoEvent } from '../eventsApi';
+
+vi.mock('../eventsApi', async () => ({
+  ...(await vi.importActual<typeof import('../eventsApi')>('../eventsApi')),
+  exportEventsCsv: vi.fn(),
+}));
 
 // Control useEvents from the test instead of exercising the real fetch path —
 // EventsView only renders the hook result, so a mocked hook keeps every state
@@ -179,5 +184,43 @@ describe('EventsView filter tablist keyboard navigation', () => {
     const list = container.querySelector('div[aria-label="Filter aplikasi"]')!;
     fireEvent.keyDown(list, { key: 'Tab' });
     expect(setAppFilter).not.toHaveBeenCalled();
+  });
+});
+
+describe('EventsView CSV export', () => {
+  it('downloads the event list as CSV through exportEventsCsv (respects active app filter)', async () => {
+    mockState({ appFilter: 'Gojek' });
+    const exportMock = vi.mocked(exportEventsCsv);
+    exportMock.mockResolvedValue(new Blob(['aplikasi,judul'], { type: 'text/csv; charset=utf-8' }));
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fake');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek'));
+    expect(click).toHaveBeenCalledTimes(1);
+
+    createUrl.mockRestore();
+    revoke.mockRestore();
+    click.mockRestore();
+  });
+
+  it('shows an error message when the export fails', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsCsv);
+    exportMock.mockRejectedValue(new Error('fail'));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor CSV.'));
+  });
+
+  it('disables the export button while loading', () => {
+    mockState({ loading: true });
+    render(<EventsView />);
+    expect(screen.getByRole('button', { name: 'Ekspor CSV' })).toBeDisabled();
   });
 });
