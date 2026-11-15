@@ -4,6 +4,20 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P8 — Event & Promo: countdown masa berlaku (frontend)
+
+#### Added
+- Promo event cards now show an emphasized countdown beside their "berlaku s/d"
+  date: **N hari lagi** (multi-day), **besok berakhir**, or **berakhir hari ini**
+  — so promos near expiry are visible at a glance without opening each promo.
+  Computed from `berlakuSampai` against WIB today via new pure
+  `countdownLabel()`/`daysRemaining()` in `eventsStatus.ts`; rendered only for
+  active (incl. segera) events — expired ones keep their chip + dimming and
+  show no countdown.
+- Tests: +5 unit (`countdownLabel`/`daysRemaining`) and +2 component
+  (EventsView) covering same-day/tomorrow/multi-day labels and the no-countdown
+  path for expired promos. Full suite green: frontend (73 files), tsc -b.
+
 ### P7 — Dashboard: follow-up hari ini & 7 hari (frontend)
 
 #### Added

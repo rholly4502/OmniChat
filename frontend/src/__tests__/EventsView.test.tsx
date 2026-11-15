@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
-import { eventStatus } from '../eventsStatus';
+import { countdownLabel, eventStatus } from '../eventsStatus';
 import { createEvent, deleteEvent, exportEventsCsv, updateEvent, type PromoEvent } from '../eventsApi';
 
 vi.mock('../eventsApi', async () => ({
@@ -393,6 +393,58 @@ describe('eventStatus', () => {
   it('treats a missing end date as tanpa-batas', () => {
     expect(eventStatus(null, '2026-11-15')).toBe('tanpa-batas');
     expect(eventStatus(undefined, '2026-11-15')).toBe('tanpa-batas');
+  });
+});
+
+describe('countdownLabel', () => {
+  it('returns null when there is no end date', () => {
+    expect(countdownLabel(null, '2026-11-15')).toBeNull();
+    expect(countdownLabel(undefined, '2026-11-15')).toBeNull();
+  });
+
+  it('returns null for an expired event (its chip already carries that state)', () => {
+    expect(countdownLabel('2026-10-31', '2026-11-15')).toBeNull();
+  });
+
+  it('labels same-day expiry', () => {
+    expect(countdownLabel('2026-11-15', '2026-11-15')).toBe('berakhir hari ini');
+  });
+
+  it('labels tomorrow expiry', () => {
+    expect(countdownLabel('2026-11-16', '2026-11-15')).toBe('besok berakhir');
+  });
+
+  it('labels a multi-day countdown', () => {
+    expect(countdownLabel('2026-12-31', '2026-11-15')).toBe('46 hari lagi');
+  });
+});
+
+// Real-today helper mirroring the component's wibToday() (UTC+7, never local
+// zone), so countdown assertions stay deterministic regardless of the sandbox TZ.
+function localTodayISO(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+function shiftDay(iso: string, days: number): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+describe('EventsView countdown', () => {
+  it('renders an emphasized countdown on an active promo with an end date', () => {
+    const today = localTodayISO();
+    const day3 = shiftDay(today, 3);
+    mockState({ events: [{ ...base, id: 30, judul: 'Promo 3 hari', berlakuSampai: day3 }] });
+    render(<EventsView />);
+    expect(screen.getByText(/3 hari lagi/)).toBeTruthy();
+  });
+
+  it('does not render a countdown on an expired promo', () => {
+    mockState({ events: [{ ...base, id: 31, judul: 'Promo basi', berlakuSampai: '2020-01-01' }] });
+    render(<EventsView />);
+    expect(screen.queryByText(/hari lagi/)).toBeNull();
+    expect(screen.queryByText(/berakhir/)).toBeNull();
   });
 });
 

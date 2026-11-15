@@ -25,6 +25,38 @@ export function eventStatus(
   return 'aktif';
 }
 
+/**
+ * Whole calendar days from `today` to the event end date (`berlakuSampai`).
+ * Negative when the end date has passed; null when no end date is set. Both
+ * dates are normalized to UTC midnight so the difference is always whole days.
+ */
+export function daysRemaining(
+  berlakuSampai: string | null | undefined,
+  today: string,
+): number | null {
+  if (!berlakuSampai) return null;
+  const diffMs = parseDay(berlakuSampai) - parseDay(today);
+  return Math.round(diffMs / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Short Indonesian countdown label for an active promo (`berlakuSampai` set
+ * and not yet expired). Returns null for events with no end date or that are
+ * already expired — those carry their own chip/dimming and need no countdown.
+ */
+export function countdownLabel(
+  berlakuSampai: string | null | undefined,
+  today: string,
+): string | null {
+  const status = eventStatus(berlakuSampai, today);
+  if (status === 'tanpa-batas' || status === 'kedaluwarsa') return null;
+  const n = daysRemaining(berlakuSampai, today);
+  if (n === null) return null;
+  if (n === 0) return 'berakhir hari ini';
+  if (n === 1) return 'besok berakhir';
+  return `${n} hari lagi`;
+}
+
 /** Chip label + classes per event status (used by the event card). */
 export const STATUS_CHIP: Record<EventStatus, { text: string; cls: string }> = {
   aktif: { text: 'Aktif', cls: 'border-chill-emerald/50 text-chill-emerald bg-chill-emerald/10' },

@@ -11,7 +11,7 @@ import { ApiError } from '../api';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
-import { STATUS_CHIP, eventStatus, type EventStatus } from '../eventsStatus';
+import { STATUS_CHIP, countdownLabel, eventStatus, type EventStatus } from '../eventsStatus';
 
 /**
  * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
@@ -383,6 +383,11 @@ export function EventsView({ apiKey }: EventsViewProps) {
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted">
                           <span>· ditemukan {e.ditemukan}</span>
                           {e.berlakuSampai && <span>· berlaku s/d {e.berlakuSampai}</span>}
+                          {countdownLabel(e.berlakuSampai, nowWib) && (
+                            <span className="font-semibold text-chill-accent">
+                              · {countdownLabel(e.berlakuSampai, nowWib)}
+                            </span>
+                          )}
                         </div>
                         {e.syarat && <p className="mt-2 text-xs text-chill-muted">{e.syarat}</p>}
                         {(e.link || !loading) && (
