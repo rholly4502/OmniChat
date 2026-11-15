@@ -85,4 +85,130 @@ public class JobsControllerExportTests
 
         Assert.Contains("2026-11-20", text);
     }
+
+    [Fact]
+    public async Task Export_AppliesTipeFilter()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                Opp(tipe: "Kontrak", perusahaan: "PT Kontrak"),
+                Opp(tipe: "FTE", perusahaan: "PT FTE"),
+                Opp(tipe: "Ops", perusahaan: "PT Ops"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, tipe: "Kontrak"));
+
+        var body = Body(file);
+        Assert.Contains("PT Kontrak", body);
+        Assert.DoesNotContain("PT FTE", body);
+        Assert.DoesNotContain("PT Ops", body);
+    }
+
+    [Fact]
+    public async Task Export_AppliesTierFilter()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                Opp(status: "new", tipe: "Part-time", perusahaan: "PT High"),
+                Opp(status: "new", tipe: "Kontrak", lokasi: "Jakarta", perusahaan: "PT Medium"),
+                Opp(status: "applied", tipe: "Kontrak", perusahaan: "PT Low"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, tier: "high"));
+
+        var body = Body(file);
+        Assert.Contains("PT High", body);
+        Assert.DoesNotContain("PT Medium", body);
+        Assert.DoesNotContain("PT Low", body);
+    }
+
+    [Fact]
+    public async Task Export_AppliesKeywordFilter_AcrossFields()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                Opp(lokasi: "Singapura", perusahaan: "PT A"),
+                Opp(catatan: "membutuhkan microservices", perusahaan: "PT B"),
+                Opp(perusahaan: "PT Sepeda"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, q: "singapura"));
+
+        var body = Body(file);
+        Assert.Contains("PT A", body);
+        Assert.DoesNotContain("PT B", body);
+        Assert.DoesNotContain("PT Sepeda", body);
+    }
+
+    [Fact]
+    public async Task Export_AppliesFollowUpOnlyFilter_WithProvidedToday()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                Opp(status: "interview", followUp: new DateOnly(2026, 11, 14), perusahaan: "PT Overdue"),
+                Opp(status: "applied", followUp: new DateOnly(2026, 11, 20), perusahaan: "PT Future"),
+                Opp(status: "new", followUp: new DateOnly(2026, 11, 10), perusahaan: "PT NotActive"),
+                Opp(status: "offer", followUp: null, perusahaan: "PT NoFollowUp"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, followUpOnly: true, today: "2026-11-15"));
+
+        var body = Body(file);
+        Assert.Contains("PT Overdue", body);
+        Assert.DoesNotContain("PT Future", body);
+        Assert.DoesNotContain("PT NotActive", body);
+        Assert.DoesNotContain("PT NoFollowUp", body);
+    }
+
+    [Fact]
+    public async Task Export_CombinesAllFilters()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                Opp(status: "applied", tipe: "Kontrak", followUp: new DateOnly(2026, 11, 14), catatan: ".NET API", perusahaan: "PT Match"),
+                Opp(status: "applied", tipe: "FTE", followUp: new DateOnly(2026, 11, 14), catatan: ".NET API", perusahaan: "PT WrongType"),
+                Opp(status: "closed", tipe: "Kontrak", followUp: new DateOnly(2026, 11, 14), catatan: ".NET API", perusahaan: "PT WrongStatus"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, tipe: "Kontrak", q: ".net", followUpOnly: true, today: "2026-11-15"));
+
+        var body = Body(file);
+        Assert.Contains("PT Match", body);
+        Assert.DoesNotContain("PT WrongType", body);
+        Assert.DoesNotContain("PT WrongStatus", body);
+    }
+
+    private static Opportunity Opp(
+        string status = "new",
+        string tipe = "Kontrak",
+        string lokasi = "Remote",
+        int? skor = null,
+        DateOnly? followUp = null,
+        string? perusahaan = "PT X",
+        string? catatan = null) => new()
+    {
+        Id = 7,
+        Judul = ".NET Developer",
+        Perusahaan = perusahaan!,
+        Lokasi = lokasi,
+        Tipe = tipe,
+        Gaji = "15-20jt",
+        Skor = skor,
+        Status = status,
+        FollowUpTanggal = followUp,
+        Ditemukan = new DateOnly(2026, 11, 5),
+        Link = null,
+        Catatan = catatan,
+    };
+
+    private static string Body(FileContentResult file)
+    {
+        var s = Encoding.UTF8.GetString(file.FileContents);
+        return s.Length > 0 && s[0] == 0xFEFF ? s.Substring(1) : s;
+    }
 }

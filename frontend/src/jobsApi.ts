@@ -118,11 +118,28 @@ export async function updateOpportunityFollowUp(
 }
 
 /** Download the curated opportunity list as CSV bytes (RFC 4180, UTF-8 with BOM). */
+export interface OpportunityExportFilters {
+  status?: string;
+  tipe?: string;
+  tier?: string;
+  q?: string;
+  followUpOnly?: boolean;
+  today?: string;
+}
+
 export async function exportOpportunitiesCsv(
   options: JobsRequestOptions = {},
-  status?: string,
+  filters: OpportunityExportFilters = {},
 ): Promise<Blob> {
-  const path = status ? `${JOBS_URL}/export?status=${encodeURIComponent(status)}` : `${JOBS_URL}/export`;
+  const params = new URLSearchParams();
+  if (filters.status) params.set('status', filters.status);
+  if (filters.tipe) params.set('tipe', filters.tipe);
+  if (filters.tier) params.set('tier', filters.tier);
+  if (filters.q) params.set('q', filters.q);
+  if (filters.followUpOnly) params.set('followUpOnly', 'true');
+  if (filters.followUpOnly && filters.today) params.set('today', filters.today);
+  const qs = params.toString();
+  const path = qs ? `${JOBS_URL}/export?${qs}` : `${JOBS_URL}/export`;
   const doFetch = options.fetchImpl ?? fetch;
   const res = await doFetch(path, {
     method: 'GET',

@@ -170,10 +170,23 @@ describe('exportOpportunitiesCsv', () => {
 
   it('sends the API key and appends an encoded ?status= filter when given', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
-    await exportOpportunitiesCsv({ apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch }, 'offer');
+    await exportOpportunitiesCsv(
+      { apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch },
+      { status: 'offer' },
+    );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${JOBS_URL}/export?status=offer`);
     expect(init.headers).toEqual({ 'X-Api-Key': 'secret-key' });
+  });
+
+  it('appends every provided filter as query params', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
+    await exportOpportunitiesCsv(
+      { fetchImpl: fetchMock as unknown as typeof fetch },
+      { status: 'applied', tipe: 'Kontrak', tier: 'high', q: '.net', followUpOnly: true, today: '2026-11-15' },
+    );
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/export?status=applied&tipe=Kontrak&tier=high&q=.net&followUpOnly=true&today=2026-11-15`);
   });
 
   it('throws an ApiError when not ok', async () => {

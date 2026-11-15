@@ -374,7 +374,7 @@ describe('JobsView CSV export', () => {
     render(<JobsView apiKey="k" />);
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, expect.any(Object)));
     expect(click).toHaveBeenCalledTimes(1);
 
     createUrl.mockRestore();

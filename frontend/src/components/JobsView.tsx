@@ -227,7 +227,17 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
 
   const handleExportCsv = async () => {
     try {
-      const blob = await exportOpportunitiesCsv({ apiKey }, statusFilter || undefined);
+      const blob = await exportOpportunitiesCsv(
+        { apiKey },
+        {
+          status: statusFilter || undefined,
+          tipe: typeFilter || undefined,
+          tier: tierFilter || undefined,
+          q: searchQuery.trim() || undefined,
+          followUpOnly: followUpOnly || undefined,
+          today: followUpOnly ? todayISO : undefined,
+        },
+      );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

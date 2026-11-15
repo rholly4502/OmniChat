@@ -241,13 +241,26 @@ public sealed class JobsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export(
         [FromQuery] string? status,
+        [FromQuery] string? tipe = null,
+        [FromQuery] string? tier = null,
+        [FromQuery] string? q = null,
+        [FromQuery] bool? followUpOnly = null,
+        [FromQuery] string? today = null,
         CancellationToken cancellationToken = default)
     {
         var items = await repository.ListAsync(status, cancellationToken);
 
+        var todayDate = DateOnly.TryParse(today, out var parsedToday) ? parsedToday : DateOnly.FromDateTime(DateTime.UtcNow);
+        var followUpOnlyFilter = followUpOnly ?? false;
+        var filtered = items.Where(o =>
+            MatchesType(o, tipe) &&
+            MatchesTier(o, tier) &&
+            MatchesKeyword(o, q) &&
+            (!followUpOnlyFilter || NeedsFollowUp(o, todayDate)));
+
         var sb = new StringBuilder();
         sb.AppendLine("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,ditemukan,link,catatan");
-        foreach (var o in items)
+        foreach (var o in filtered)
         {
             sb.Append(Csv(o.Judul)).Append(',');
             sb.Append(Csv(o.Perusahaan)).Append(',');
@@ -319,6 +332,47 @@ public sealed class JobsController(
             return "\"" + value.Replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private static bool MatchesType(Opportunity o, string? tipe)
+    {
+        if (string.IsNullOrWhiteSpace(tipe)) return true;
+        var t = (o.Tipe ?? string.Empty).Trim().ToLowerInvariant();
+        var group =
+            t.Contains("full") || t == "fte" ? "FTE" :
+            t.Contains("kontrak") || t.Contains("contract") || t.Contains("b2b") || t.Contains("pkwt") ? "Kontrak" :
+            (o.Tipe ?? string.Empty).Trim();
+        return string.Equals(group, tipe, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool MatchesTier(Opportunity o, string? tier)
+    {
+        if (string.IsNullOrWhiteSpace(tier)) return true;
+        var t = (o.Tipe ?? string.Empty).Trim().ToLowerInvariant();
+        var lokasi = (o.Lokasi ?? string.Empty).Trim().ToLowerInvariant();
+        var partTime = t.Contains("part-time");
+        var mySg = lokasi.Contains("malaysia") || lokasi.Contains("singapura") || lokasi.Contains("singapore");
+        string computed = o.Status != "new" ? "low" : (partTime || mySg) ? "high" : "medium";
+        return string.Equals(computed, tier, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool MatchesKeyword(Opportunity o, string? q)
+    {
+        if (string.IsNullOrWhiteSpace(q)) return true;
+        var query = q.Trim().ToLowerInvariant();
+        return o.Judul.ToLowerInvariant().Contains(query)
+            || o.Perusahaan.ToLowerInvariant().Contains(query)
+            || o.Lokasi.ToLowerInvariant().Contains(query)
+            || (o.Tipe ?? string.Empty).ToLowerInvariant().Contains(query)
+            || (o.Gaji ?? string.Empty).ToLowerInvariant().Contains(query)
+            || (o.Catatan ?? string.Empty).ToLowerInvariant().Contains(query);
+    }
+
+    private static bool NeedsFollowUp(Opportunity o, DateOnly today)
+    {
+        if (o.FollowUpTanggal is not DateOnly f) return false;
+        if (o.Status != "applied" && o.Status != "interview" && o.Status != "offer") return false;
+        return f <= today;
     }
 }
 

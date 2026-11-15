@@ -4,6 +4,24 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P10 — Jobs: ekspor CSV menghormati semua filter aktif (backend + frontend)
+
+#### Fixed
+- CSV export di view Job Opportunities sebelumnya hanya menghormati filter status;
+  filter **tipe**, **tier** (prioritas/standar), **kata kunci**, dan
+  **Perlu follow-up** diabaikan sehingga hasil unduhan bisa menyimpang dari
+  daftar yang tampil di layar. Sekarang `GET /api/jobs/export` menerima
+  parameter `tipe`, `tier`, `q`, `followUpOnly` (dengan `today` WIB) dan
+  menerapkan aturan filter yang sama dengan UI — file CSV selalu mencerminkan
+  baris yang sedang dilihat, konsisten dengan perilaku ekspor pengeluaran dan
+  event.
+- Frontend `exportOpportunitiesCsv` kini menerima objek filter dan mengirim
+  seluruh filter aktif saat mengekspor.
+- Tests: backend +6 unit test (`JobsControllerExportTests`): tipe, tier,
+  keyword lintas field, follow-up-only dengan today ekplisit, dan kombinasi
+  semua filter. Full suite hijau: backend 711, frontend 73 file, tsc -b,
+  oxlint (tanpa warning baru).
+
 ### P9 — Ringkasan: promo segera berakhir (frontend)
 
 #### Added
