@@ -468,9 +468,10 @@ describe('JobsView overdue follow-up filter', () => {
     render(<JobsView />);
     const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
     fireEvent.click(toggle);
-    expect(screen.queryByText('Overdue Applied Role')).toBeTruthy();
-    expect(screen.queryByText('Upcoming Interview Role')).toBeNull();
-    expect(screen.queryByText('Backend .NET Developer')).toBeNull();
+    const list = within(screen.getByTestId('jobs-list'));
+    expect(list.queryByText('Overdue Applied Role')).toBeTruthy();
+    expect(list.queryByText('Upcoming Interview Role')).toBeNull();
+    expect(list.queryByText('Backend .NET Developer')).toBeNull();
   });
 
   it('toggle off restores the full list', () => {
@@ -479,9 +480,10 @@ describe('JobsView overdue follow-up filter', () => {
     const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
     fireEvent.click(toggle);
     fireEvent.click(toggle);
-    expect(screen.getByText('Overdue Applied Role')).toBeTruthy();
-    expect(screen.getByText('Upcoming Interview Role')).toBeTruthy();
-    expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
+    const list = within(screen.getByTestId('jobs-list'));
+    expect(list.getByText('Overdue Applied Role')).toBeTruthy();
+    expect(list.getByText('Upcoming Interview Role')).toBeTruthy();
+    expect(list.getByText('Backend .NET Developer')).toBeTruthy();
   });
 
   it('empty state mentions follow-up when toggle is on and nothing matches', () => {
@@ -495,9 +497,10 @@ describe('JobsView overdue follow-up filter', () => {
   it('seeds the follow-up filter ON when initialFollowUpOnly is true', () => {
     mockState({ opportunities: [overdue, upcoming, base] });
     render(<JobsView initialFollowUpOnly />);
-    expect(screen.getByText('Overdue Applied Role')).toBeTruthy();
-    expect(screen.queryByText('Upcoming Interview Role')).toBeNull();
-    expect(screen.queryByText('Backend .NET Developer')).toBeNull();
+    const list = within(screen.getByTestId('jobs-list'));
+    expect(list.getByText('Overdue Applied Role')).toBeTruthy();
+    expect(list.queryByText('Upcoming Interview Role')).toBeNull();
+    expect(list.queryByText('Backend .NET Developer')).toBeNull();
   });
   it('mobile: tombol Download CV besar membuka dropdown daftar file', async () => {
     const mockDownload = vi.fn();
@@ -573,5 +576,40 @@ describe('JobsView manual CRUD', () => {
     await waitFor(() => expect(deleteJob).toHaveBeenCalledTimes(1));
     expect(reload).toHaveBeenCalled();
     vi.restoreAllMocks();
+  });
+});
+
+describe('JobsView jadwal follow-up (schedule panel)', () => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const now = new Date();
+  const todayISO = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const addDaysIso = (iso: string, days: number) => {
+    const d = new Date(iso + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  };
+
+  it('mengelompokkan follow-up per urgensi (terlambat / hari ini / 7 hari / berikutnya)', () => {
+    const overdue = { ...base, id: 10, judul: 'Aplikasi Lama', status: 'applied', followUpTanggal: '2020-01-01' };
+    const today = { ...base, id: 11, judul: 'Due Hari Ini', status: 'interview', followUpTanggal: todayISO };
+    const week = { ...base, id: 12, judul: 'Dalam 7 Hari', status: 'applied', followUpTanggal: addDaysIso(todayISO, 3) };
+    const later = { ...base, id: 13, judul: 'Nanti Saja', status: 'offer', followUpTanggal: addDaysIso(todayISO, 40) };
+    mockState({ opportunities: [overdue, today, week, later] });
+    render(<JobsView />);
+
+    expect(screen.getByText('Jadwal follow-up')).toBeTruthy();
+    const panel = within(screen.getByRole('region', { name: 'Jadwal follow-up' }));
+    expect(panel.getByText('Terlambat (1)')).toBeTruthy();
+    expect(panel.getByText('Hari ini (1)')).toBeTruthy();
+    expect(panel.getByText('7 hari ke depan (1)')).toBeTruthy();
+    expect(panel.getByText('Berikutnya (1)')).toBeTruthy();
+    expect(panel.getByText('Aplikasi Lama')).toBeTruthy();
+    expect(panel.getByText('Due Hari Ini')).toBeTruthy();
+  });
+
+  it('tidak menampilkan panel saat tidak ada follow-up terjadwal', () => {
+    mockState(); // default: none of fte/base/freelance carry followUpTanggal
+    render(<JobsView />);
+    expect(screen.queryByText('Jadwal follow-up')).toBeNull();
   });
 });

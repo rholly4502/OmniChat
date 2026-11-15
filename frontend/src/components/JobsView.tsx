@@ -126,7 +126,84 @@ function statusTone(status: string): string {
   }
 }
 
+type ScheduleBucket = 'terlambat' | 'hariIni' | 'tujuhHari' | 'nanti';
+
+/** Bucket a follow-up date relative to today (WIB). Pure — no Date object math surprises. */
+function followUpBucket(dateISO: string, todayISO: string): ScheduleBucket {
+  const d = Date.parse(dateISO + 'T00:00:00Z');
+  const t = Date.parse(todayISO + 'T00:00:00Z');
+  const DAY = 86_400_000;
+  if (d < t) return 'terlambat';
+  if (d === t) return 'hariIni';
+  if (d <= t + 7 * DAY) return 'tujuhHari';
+  return 'nanti';
+}
+
+const ID_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+/** Render `YYYY-MM-DD` as a short Indonesian date, e.g. `15 Nov 2026`. */
+function formatShortDate(iso: string): string {
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]) - 1;
+  const d = Number(parts[2]);
+  if (!y || !Number.isFinite(m) || !Number.isFinite(d)) return iso;
+  return `${d} ${ID_MONTHS[m] ?? ''} ${y}`.trim();
+}
+
+const SCHEDULE_BUCKETS: ReadonlyArray<{ key: ScheduleBucket; label: string; tone: string }> = [
+  { key: 'terlambat', label: 'Terlambat', tone: 'text-chill-red border-chill-red/40 bg-chill-red/10' },
+  { key: 'hariIni', label: 'Hari ini', tone: 'text-chill-accent border-chill-accent/40 bg-chill-accent/10' },
+  { key: 'tujuhHari', label: '7 hari ke depan', tone: 'text-chill-sage border-chill-sage/40 bg-chill-sage/10' },
+  { key: 'nanti', label: 'Berikutnya', tone: 'text-chill-muted border-chill-border bg-chill-surface' },
+];
+
+/**
+ * Jadwal follow-up — all opportunities that carry a follow-up target date, bucketed
+ * by urgency (overdue → today → next 7 days → later). Renders nothing when no
+ * follow-up is scheduled, so it is additive to the filtered list below.
+ */
+function FollowUpSchedule({ opportunities, todayISO }: { opportunities: Opportunity[]; todayISO: string }) {
+  const scheduled = opportunities.filter((o) => o.followUpTanggal != null);
+  if (scheduled.length === 0) return null;
+
+  const grouped = SCHEDULE_BUCKETS.map((b) => ({
+    ...b,
+    items: scheduled
+      .filter((o) => followUpBucket(o.followUpTanggal as string, todayISO) === b.key)
+      .sort((a, z) => ((a.followUpTanggal as string) < (z.followUpTanggal as string) ? -1 : 1)),
+  })).filter((g) => g.items.length > 0);
+
+  return (
+    <section aria-label="Jadwal follow-up" className="mb-5 border border-chill-border bg-chill-surface p-4 pixel-shadow-sm">
+      <h2 className="text-sm font-semibold text-chill-text pixel-heading mb-1">Jadwal follow-up</h2>
+      <p className="text-xs text-chill-muted mb-3">Semua lowongan dengan target follow-up, diurutkan per urgensi.</p>
+      <div className="space-y-3">
+        {grouped.map((g) => (
+          <div key={g.key}>
+            <div className={`inline-block rounded-none border px-2 py-0.5 text-xs font-medium ${g.tone} mb-1.5`}>
+              {g.label} ({g.items.length})
+            </div>
+            <ul className="space-y-1">
+              {g.items.map((o) => (
+                <li key={o.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-chill-muted">
+                  <span className="font-medium text-chill-text">{o.judul}</span>
+                  <span>{o.perusahaan}</span>
+                  <span>· {formatShortDate(o.followUpTanggal as string)}</span>
+                  <span className="ml-auto rounded-none border border-chill-border px-1.5 text-xs">{statusLabel(o.status)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
+
 export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
@@ -690,6 +767,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 pb-6 min-h-0">
+        <FollowUpSchedule opportunities={opportunities} todayISO={todayISO} />
         {loading ? (
           <p className="flex items-center justify-center gap-2 text-sm text-chill-muted py-10" role="status">
             <ScanLoader />
@@ -709,7 +787,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
             </p>
           </div>
         ) : (
-          <div className="space-y-5">
+          <div data-testid="jobs-list" className="space-y-5">
             {GROUP_ORDER.filter((g) => filtered.some((o) => groupOf(o) === g)).map((g) => {
               const items = filtered
                 .filter((o) => groupOf(o) === g)
