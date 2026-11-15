@@ -138,6 +138,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [copiedDraft, setCopiedDraft] = useState<number | null>(null);
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
   const [exportError, setExportError] = useState('');
+  const [cvMenuOpen, setCvMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
 
@@ -379,7 +380,48 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
 
       {cvFiles.length > 0 && (
         <div className="px-4 pb-0">
-          <div className="flex flex-wrap items-center gap-2 border border-chill-border bg-chill-surface px-3 py-2">
+          {/* Mobile: satu tombol besar + dropdown daftar file (target sentuh nyaman) */}
+          <div className="relative md:hidden">
+            <button
+              type="button"
+              onClick={() => setCvMenuOpen(!cvMenuOpen)}
+              aria-expanded={cvMenuOpen}
+              aria-haspopup="true"
+              className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-sm font-semibold text-chill-text transition min-h-[48px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="flex items-center gap-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
+                  <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+                </svg>
+                Download CV ({cvFiles.length})
+              </span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`text-chill-muted shrink-0 transition-transform duration-150 ${cvMenuOpen ? 'rotate-180' : ''}`}>
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+            {cvMenuOpen && (
+              <ul role="listbox" aria-label="Pilih CV" className="mt-2 border border-chill-border bg-chill-surface p-2 space-y-2">
+                {cvFiles.map((f) => (
+                  <li key={f}>
+                    <button
+                      type="button"
+                      onClick={() => { void downloadCv(f); setCvMenuOpen(false); }}
+                      className="w-full flex items-center gap-2 rounded-none border border-chill-border bg-chill-elevated px-3 py-2.5 text-sm text-chill-text transition min-h-[48px] hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
+                        <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
+                      </svg>
+                      {f}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {cvError && <p role="alert" className="mt-1 text-xs text-chill-red">{cvError}</p>}
+          </div>
+
+          {/* Desktop: chip inline tetap (kursor presisi) */}
+          <div className="hidden md:flex flex-wrap items-center gap-2 border border-chill-border bg-chill-surface px-3 py-2">
             <span className="text-xs font-medium text-chill-text">CV siap pakai:</span>
             {cvFiles.map((f) => (
               <button
@@ -400,6 +442,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
           </div>
         </div>
       )}
+
 
       {/* Toggle area filter (minimize di layar kecil) */}
       <div className="px-4 pb-2">

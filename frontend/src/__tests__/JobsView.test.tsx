@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { JobsView } from '../components/JobsView';
 import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, type Opportunity } from '../jobsApi';
 
@@ -496,4 +496,27 @@ describe('JobsView overdue follow-up filter', () => {
     expect(screen.queryByText('Upcoming Interview Role')).toBeNull();
     expect(screen.queryByText('Backend .NET Developer')).toBeNull();
   });
+  it('mobile: tombol Download CV besar membuka dropdown daftar file', async () => {
+    const mockDownload = vi.fn();
+    mockState({ cvFiles: ['Rholly-CV-A.pdf', 'Rholly-CV-B.pdf'], downloadCv: mockDownload });
+    render(<JobsView />);
+
+    const downloadBtn = screen.getByRole('button', { name: /Download CV \(2\)/ });
+    expect(downloadBtn).toBeTruthy();
+
+    // dropdown tertutup awalnya
+    expect(screen.queryByRole('listbox')).toBeNull();
+
+    fireEvent.click(downloadBtn);
+    const listbox = screen.getByRole('listbox');
+    expect(listbox).toBeTruthy();
+    expect(within(listbox).getByText('Rholly-CV-A.pdf')).toBeTruthy();
+    expect(within(listbox).getByText('Rholly-CV-B.pdf')).toBeTruthy();
+
+    // klik salah satu file memanggil downloadCv & menutup dropdown
+    fireEvent.click(within(listbox).getByText('Rholly-CV-B.pdf'));
+    expect(mockDownload).toHaveBeenCalledWith('Rholly-CV-B.pdf');
+    expect(screen.queryByRole('listbox')).toBeNull();
+  });
+
 });
