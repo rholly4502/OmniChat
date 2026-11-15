@@ -390,3 +390,50 @@ describe('JobsView CSV export', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor CSV.'));
   });
 });
+
+describe('JobsView keyword search', () => {
+  it('filters the list live by judul (case-insensitive)', () => {
+    mockState();
+    render(<JobsView />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'blazor' } });
+    expect(screen.getByText('Freelance Blazor')).toBeTruthy();
+    expect(screen.queryByText('Senior .NET Engineer')).toBeNull();
+    expect(screen.queryByText('Backend .NET Developer')).toBeNull();
+  });
+
+  it('matches perusahaan and lokasi too', () => {
+    mockState();
+    render(<JobsView />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'PT Contoh' } });
+    expect(screen.getAllByText('PT Contoh · Jakarta').length).toBe(3);
+  });
+
+  it('clearing the query restores the full list', () => {
+    mockState();
+    render(<JobsView />);
+    const box = screen.getByRole('searchbox');
+    fireEvent.change(box, { target: { value: 'senior' } });
+    expect(screen.getByText('Senior .NET Engineer')).toBeTruthy();
+    expect(screen.queryByText('Freelance Blazor')).toBeNull();
+    fireEvent.change(box, { target: { value: '' } });
+    expect(screen.getByText('Freelance Blazor')).toBeTruthy();
+    expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
+  });
+
+  it('combines with the status filter', () => {
+    mockState({ statusFilter: 'new' }); // only base is 'new'
+    render(<JobsView />);
+    const box = screen.getByRole('searchbox');
+    fireEvent.change(box, { target: { value: 'Backend' } });
+    expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
+    fireEvent.change(box, { target: { value: 'Senior' } });
+    expect(screen.queryByText('Senior .NET Engineer')).toBeNull();
+  });
+
+  it('empty state shows the active query when nothing matches', () => {
+    mockState();
+    render(<JobsView />);
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
+    expect(screen.getByText(/cocok “zzz”/)).toBeTruthy();
+  });
+});

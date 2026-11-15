@@ -136,6 +136,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [copiedDraft, setCopiedDraft] = useState<number | null>(null);
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
   const [exportError, setExportError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleExportCsv = async () => {
     try {
@@ -321,11 +322,24 @@ export function JobsView({ apiKey }: JobsViewProps) {
         (typeFilter === '' || groupOf(o) === typeFilter)
     ).length;
 
+  const query = searchQuery.trim().toLowerCase();
+  const matchesQuery = (o: Opportunity): boolean => {
+    if (!query) return true;
+    return (
+      o.judul.toLowerCase().includes(query) ||
+      o.perusahaan.toLowerCase().includes(query) ||
+      o.lokasi.toLowerCase().includes(query) ||
+      o.tipe.toLowerCase().includes(query) ||
+      (o.gaji ?? '').toLowerCase().includes(query) ||
+      (o.catatan ?? '').toLowerCase().includes(query)
+    );
+  };
   const filtered = opportunities.filter(
     (o) =>
       (statusFilter === '' || o.status === statusFilter) &&
       (typeFilter === '' || groupOf(o) === typeFilter) &&
-      tierOk(o)
+      tierOk(o) &&
+      matchesQuery(o)
   );
 
   const activeSummary =
@@ -496,6 +510,19 @@ export function JobsView({ apiKey }: JobsViewProps) {
         </div>
       </div>
 
+      <div className="px-4 pb-2">
+        <div className="relative">
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari lowongan… (judul / perusahaan / lokasi)"
+            aria-label="Cari lowongan"
+            className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </div>
+      </div>
+
         </div>
       )}
       {error && (
@@ -525,7 +552,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
             <p className="text-sm text-chill-muted">
               Belum ada lowongan
               {statusFilter ? ` berstatus ${statusLabel(statusFilter)}` : ''}
-              {typeFilter ? ` tipe ${typeFilter}` : ''}.
+              {typeFilter ? ` tipe ${typeFilter}` : ''}
+              {query ? ` cocok “${searchQuery}”` : ''}.
             </p>
             <p className="text-xs text-chill-muted mt-1">
               Cron Job Hunter akan mengisinya otomatis tiap hari.

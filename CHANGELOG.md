@@ -4,6 +4,19 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P2 — Job pipeline keyword search (frontend)
+
+#### Added
+- The Jobs view gains a keyword search box that filters the curated opportunity
+  list live by judul / perusahaan / lokasi / tipe / gaji / catatan
+  (case-insensitive), scoped to the currently active status/type/tier filters.
+  This complements the existing filter tabs and CSV export, so the pipeline is
+  now findable by term without scrolling every group.
+- Tests: +5 component (JobsView) covering title match, perusahaan/lokasi match,
+  clearing the query restores the full list, combined with the status filter, and
+  the empty-state message showing the query. Full suite green: frontend 72 files
+  (1,173 tests), tsc -b, oxlint, a11y typography scan; backend 687 unchanged.
+
 ### P3 — Event & Promo: cari kata kunci (frontend)
 
 #### Added
