@@ -4,7 +4,22 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P8 — Event & Promo: countdown masa berlaku (frontend)
+### P9 — Ringkasan: promo segera berakhir (frontend)
+
+#### Added
+- The Ringkasan "Promo / Event" card now surfaces promo urgency the same
+  way the Lowongan card surfaces follow-ups: three counts — **Berakhir
+  hari ini**, **Besok berakhir**, and **Dalam 7 hari** — bucketed from
+  the existing `countdownLabel()`/`daysRemaining()` helpers in
+  `eventsStatus.ts` against today (WIB). Rendered only when at least one
+  promo is expiring within 7 days, so a quiet digest stays clean. This
+  brings near-expiry promos onto the one-screen digest without opening
+  the Events view.
+- Tests: +2 component tests (SummaryView) covering the today/tomorrow/
+  7-day buckets (expired and far-future events excluded) and the hidden
+  path when nothing is expiring soon. Full suite green: frontend (16
+  targeted), tsc -b, oxlint (no new warnings).
+
 
 #### Added
 - Promo event cards now show an emphasized countdown beside their "berlaku s/d"

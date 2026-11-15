@@ -6,6 +6,7 @@ import { useEvents } from '../hooks/useEvents';
 import type { ConversationUsageSummary } from '../types';
 import type { Opportunity } from '../jobsApi';
 import { OPPORTUNITY_STATUSES } from '../jobsApi';
+import { countdownLabel, daysRemaining } from '../eventsStatus';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
 
@@ -151,6 +152,19 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryVi
       o.followUpTanggal <= weekEndISO,
   ).length;
 
+  // Promo expiring within 7 days, bucketed like the event countdown labels.
+  const eventsToday = events.events.filter(
+    (e) => countdownLabel(e.berlakuSampai, todayISO) === 'berakhir hari ini',
+  ).length;
+  const eventsTomorrow = events.events.filter(
+    (e) => countdownLabel(e.berlakuSampai, todayISO) === 'besok berakhir',
+  ).length;
+  const eventsWeek = events.events.filter((e) => {
+    const d = daysRemaining(e.berlakuSampai, todayISO);
+    return d !== null && d >= 2 && d <= 7;
+  }).length;
+  const hasExpiringSoon = eventsToday + eventsTomorrow + eventsWeek > 0;
+
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
 
@@ -201,6 +215,13 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryVi
         <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">
           <StatRow label="Total terdokumentasi" value={String(events.events.length)} />
           <StatRow label="Sumber unik" value={String(new Set(events.events.map((e) => e.aplikasi)).size)} />
+          {hasExpiringSoon && (
+            <>
+              <StatRow label="Berakhir hari ini" value={String(eventsToday)} />
+              <StatRow label="Besok berakhir" value={String(eventsTomorrow)} />
+              <StatRow label="Dalam 7 hari" value={String(eventsWeek)} />
+            </>
+          )}
         </Card>
       </div>
     </div>

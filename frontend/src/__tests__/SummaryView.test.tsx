@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { SummaryView } from '../components/SummaryView';
 import { currentMonthKey } from '../hooks/useExpenses';
 import type { Opportunity } from '../jobsApi';
@@ -242,6 +242,38 @@ describe('SummaryView', () => {
     await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
     expect(screen.getByText('Follow-up hari ini').parentElement).toHaveTextContent('1');
     expect(screen.getByText('Dalam 7 hari').parentElement).toHaveTextContent('2');
+  });
+
+  it('shows promo expiry urgency buckets', async () => {
+    const now = new Date();
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = iso(now);
+    const plus = (days: number) => { const d = new Date(now); d.setDate(d.getDate() + days); return iso(d); };
+    const events: PromoEvent[] = [
+      { ...eventOf(1, 'OVO'), berlakuSampai: today },       // berakhir hari ini
+      { ...eventOf(2, 'OVO'), berlakuSampai: plus(1) },    // besok berakhir
+      { ...eventOf(3, 'GoPay'), berlakuSampai: plus(3) },  // dalam 7 hari
+      { ...eventOf(4, 'GoPay'), berlakuSampai: plus(30) }, // jauh -> tidak masuk bucket
+      { ...eventOf(5, 'OVO'), berlakuSampai: plus(-3) },   // expired -> tidak masuk
+    ];
+    vi.stubGlobal('fetch', fetchStub({ events }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    const card = within(screen.getByRole('heading', { name: 'Promo / Event' }).closest('section') as HTMLElement);
+    expect(card.getByText('Berakhir hari ini').parentElement).toHaveTextContent('1');
+    expect(card.getByText('Besok berakhir').parentElement).toHaveTextContent('1');
+    expect(card.getByText('Dalam 7 hari').parentElement).toHaveTextContent('1');
+  });
+
+  it('hides promo expiry rows when nothing expires within 7 days', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.getByText('Sumber unik')).toBeInTheDocument();
+    expect(screen.queryByText('Berakhir hari ini')).not.toBeInTheDocument();
+    expect(screen.queryByText('Besok berakhir')).not.toBeInTheDocument();
   });
 
 });
