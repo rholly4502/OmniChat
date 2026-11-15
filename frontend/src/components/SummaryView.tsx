@@ -66,6 +66,15 @@ function StatRow({ label, value }: { label: string; value: string }) {
 }
 
 /**
+ * YYYY-MM-DD shifted by `days` (WIB-anchored; UTC math keeps ranges stable).
+ */
+function dayOffsetISO(baseISO: string, days: number): string {
+  const [y, m, d] = baseISO.split('-').map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
+}
+
+/**
  * Ringkasan — one screen aggregating the four top-level views: chat usage,
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
@@ -127,6 +136,21 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryVi
   }
   const activeJobs = jobs.opportunities.filter((o) => o.status !== 'closed').length;
   const overdueFollowUps = jobs.opportunities.filter(needsFollowUp).length;
+
+  const activeFollowUpStage = (o: Opportunity) =>
+    o.status === 'applied' || o.status === 'interview' || o.status === 'offer';
+  const todayFollowUps = jobs.opportunities.filter(
+    (o) => o.followUpTanggal != null && activeFollowUpStage(o) && o.followUpTanggal === todayISO,
+  ).length;
+  const weekEndISO = dayOffsetISO(todayISO, 7);
+  const weekFollowUps = jobs.opportunities.filter(
+    (o) =>
+      o.followUpTanggal != null &&
+      activeFollowUpStage(o) &&
+      o.followUpTanggal > todayISO &&
+      o.followUpTanggal <= weekEndISO,
+  ).length;
+
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
 
@@ -169,6 +193,8 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryVi
           ) : (
             <StatRow label="Perlu follow-up" value={String(overdueFollowUps)} />
           )}
+          <StatRow label="Follow-up hari ini" value={String(todayFollowUps)} />
+          <StatRow label="Dalam 7 hari" value={String(weekFollowUps)} />
           <StatRow label="Tawaran" value={String(statusCounts.offer)} />
         </Card>
 

@@ -221,4 +221,27 @@ describe('SummaryView', () => {
     fireEvent.click(followUpBtn);
     expect(onOpenFollowUps).toHaveBeenCalledTimes(1);
   });
+
+  it('counts upcoming follow-ups split into today and next 7 days', async () => {
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const now = new Date();
+    const today = iso(now);
+    const plus = (days: number) => { const d = new Date(now); d.setDate(d.getDate() + days); return iso(d); };
+    const jobs: Opportunity[] = [
+      { ...jobOf(1, 'applied'), followUpTanggal: today },      // today
+      { ...jobOf(2, 'interview'), followUpTanggal: plus(3) },  // within 7 days
+      { ...jobOf(3, 'applied'), followUpTanggal: plus(7) },   // boundary (included)
+      { ...jobOf(4, 'offer'), followUpTanggal: plus(10) },    // later -> not counted
+      { ...jobOf(5, 'new'), followUpTanggal: today },         // inactive stage -> not counted
+      { ...jobOf(6, 'closed'), followUpTanggal: plus(2) },    // closed -> not counted
+    ];
+    vi.stubGlobal('fetch', fetchStub({ jobs }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.getByText('Follow-up hari ini').parentElement).toHaveTextContent('1');
+    expect(screen.getByText('Dalam 7 hari').parentElement).toHaveTextContent('2');
+  });
+
 });

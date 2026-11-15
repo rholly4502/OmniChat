@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P7 — Dashboard: follow-up hari ini & 7 hari (frontend)
+
+#### Added
+- The Ringkasan "Lowongan" card now shows two more follow-up stats beside the
+  existing overdue ("Perlu follow-up") count: **Follow-up hari ini** and
+  **Dalam 7 hari** — the same urgency bucketing as the Jobs "Jadwal follow-up"
+  panel, scoped to active pipeline stages (applied/interview/offer). This brings
+  the next week's nudges onto the one-screen digest without opening the Jobs view.
+- Tests: +1 component test (SummaryView) covering the today / 7-day split,
+  boundary day, and active-stage-only counting.
+
 ### P6 — Jobs: panel "Jadwal follow-up" (frontend)
 
 #### Added
