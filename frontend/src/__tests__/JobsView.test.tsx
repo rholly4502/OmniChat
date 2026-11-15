@@ -6,6 +6,9 @@ import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, type Opportunity } from '
 vi.mock('../jobsApi', async () => ({
   ...(await vi.importActual<typeof import('../jobsApi')>('../jobsApi')),
   exportOpportunitiesCsv: vi.fn(),
+  createJob: vi.fn().mockResolvedValue({ id: 99, judul: 'Backend .NET Developer' }),
+  updateJob: vi.fn().mockResolvedValue({ id: 1, judul: 'Backend .NET Developer' }),
+  deleteJob: vi.fn().mockResolvedValue(undefined),
 }));
 
 // Control useJobs from the test instead of exercising the real fetch path —
@@ -519,4 +522,56 @@ describe('JobsView overdue follow-up filter', () => {
     expect(screen.queryByRole('listbox')).toBeNull();
   });
 
+});
+
+describe('JobsView manual CRUD', () => {
+  it('Tambah button opens the form; saving calls createJob and reloads', async () => {
+    const reload = vi.fn();
+    mockState({ reload });
+    render(<JobsView apiKey="k" />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tambah lowongan' }));
+    expect(screen.getByRole('heading', { name: 'Tambah Lowongan' })).toBeTruthy();
+
+    const { createJob } = await import('../jobsApi');
+    fireEvent.change(screen.getByLabelText('Judul'), { target: { value: 'Backend .NET Developer' } });
+    fireEvent.change(screen.getByLabelText('Perusahaan'), { target: { value: 'PT Contoh' } });
+    fireEvent.change(screen.getByLabelText('Lokasi'), { target: { value: 'Jakarta' } });
+    const formSection = screen.getByRole('heading', { name: 'Tambah Lowongan' }).closest('section')!;
+    fireEvent.click(within(formSection).getByRole('button', { name: 'Simpan' }));
+
+    await waitFor(() => expect(createJob).toHaveBeenCalledTimes(1));
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it('Edit button opens the form pre-filled; saving calls updateJob', async () => {
+    const reload = vi.fn();
+    mockState({ reload });
+    render(<JobsView apiKey="k" />);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+    expect(screen.getByRole('heading', { name: 'Edit Lowongan' })).toBeTruthy();
+    expect((screen.getByLabelText('Judul') as HTMLInputElement).value).toBe('Senior .NET Engineer');
+
+    const { updateJob } = await import('../jobsApi');
+    const editSection = screen.getByRole('heading', { name: 'Edit Lowongan' }).closest('section')!;
+    fireEvent.click(within(editSection).getByRole('button', { name: 'Simpan Perubahan' }));
+
+    await waitFor(() => expect(updateJob).toHaveBeenCalledTimes(1));
+    expect(reload).toHaveBeenCalled();
+  });
+
+  it('Hapus confirms then calls deleteJob and reloads', async () => {
+    const reload = vi.fn();
+    mockState({ reload });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    render(<JobsView apiKey="k" />);
+
+    const { deleteJob } = await import('../jobsApi');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Hapus' })[0]);
+
+    await waitFor(() => expect(deleteJob).toHaveBeenCalledTimes(1));
+    expect(reload).toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
 });

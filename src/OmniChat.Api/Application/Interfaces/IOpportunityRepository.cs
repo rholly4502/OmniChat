@@ -4,8 +4,7 @@ namespace OmniChat.Application.Interfaces;
 
 /// <summary>
 /// Read access to the curated job-opportunity list, plus the idempotent write path
-/// used by the one-shot agent importer. Read-only in the API surface; writes happen
-/// only during seeding.
+/// used by the one-shot agent importer and operator CRUD for manual curation.
 /// </summary>
 public interface IOpportunityRepository
 {
@@ -32,4 +31,13 @@ public interface IOpportunityRepository
     /// when the id is unknown (404).
     /// </summary>
     Task<bool> UpdateFollowUpAsync(long id, DateOnly? tanggal, CancellationToken cancellationToken);
+
+    /// <summary>Inserts a new opportunity and returns it with its generated id.</summary>
+    Task<Opportunity> AddAsync(Opportunity opportunity, CancellationToken cancellationToken);
+
+    /// <summary>Replaces an existing opportunity's editable fields. Returns false when id is absent.</summary>
+    Task<bool> UpdateAsync(Opportunity opportunity, CancellationToken cancellationToken);
+
+    /// <summary>Deletes an opportunity by id. Returns false when id is absent.</summary>
+    Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
 }

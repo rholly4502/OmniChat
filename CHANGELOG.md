@@ -4,7 +4,27 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P4 — Jobs: filter "Perlu follow-up" (frontend)
+### P5 — Jobs: kurasi manual — tambah/edit/hapus lowongan (backend + frontend)
+
+#### Added
+- The Jobs view gains manual curation on top of the auto-imported list: a
+  **Tambah** inline form (judul, perusahaan, lokasi, tipe, gaji, link, catatan,
+  status awal, tanggal ditemukan) plus **Edit**/**Hapus** per card. Manual rows
+  get a `web-…` SourceId prefix so the seeder's dedup never treats them as an
+  auto-imported row.
+- Backend: `POST /api/jobs`, `PUT /api/jobs/{id}` and `DELETE /api/jobs/{id}`
+  (operator-only, API key required). New `IOpportunityRepository`
+  `AddAsync`/`UpdateAsync`/`DeleteAsync`; `JobWriteRequest` DTO with validation
+  (required judul/perusahaan/lokasi, known status, valid dates, skor 0–100).
+- Frontend: `jobsApi` gains `createJob`/`updateJob`/`deleteJob` + `JobWritePayload`;
+  `JobsView` renders the inline form (reusing the events-form interaction pattern)
+  and reloads after each mutation.
+- Tests: backend +7 unit (JobsControllerWriteTests) and +6 integration
+  (JobsWriteIntegrationTests) — create/update/delete, validation, auth, 404s;
+  frontend +4 component (JobsView) and +4 transport (jobsApi). Full suite green:
+  backend 706, frontend (72 files), tsc -b, oxlint, a11y typography scan.
+
+
 
 #### Added
 - The Jobs view gains a toggle that narrows the list to opportunities whose

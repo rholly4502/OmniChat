@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, createJob, updateJob, deleteJob, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -179,5 +179,61 @@ describe('exportOpportunitiesCsv', () => {
   it('throws an ApiError when not ok', async () => {
     const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
     await expect(exportOpportunitiesCsv({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('createJob / updateJob / deleteJob', () => {
+  const payload = {
+    judul: 'Backend .NET Developer',
+    perusahaan: 'PT Contoh',
+    lokasi: 'Jakarta',
+    tipe: 'Kontrak',
+    gaji: 'IDR 15-25 jt',
+    skor: null,
+    link: 'https://example.com/job',
+    catatan: 'kotak .NET',
+    status: 'new',
+    followUpTanggal: null,
+    ditemukan: '2026-11-14',
+  };
+
+  it('createJob POSTs the payload and returns the created opportunity', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse({ ...OPP, id: 42 }));
+    const out = await createJob(payload, { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(JOBS_URL);
+    expect(init.method).toBe('POST');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'k', 'Content-Type': 'application/json' });
+    expect(JSON.parse(String(init.body))).toEqual(payload);
+    expect(out.id).toBe(42);
+  });
+
+  it('createJob throws an ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
+    await expect(createJob(payload, { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
+  });
+
+  it('updateJob PUTs to /{id} with the payload', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse({ ...OPP, judul: 'Senior' }));
+    const out = await updateJob(7, { ...payload, judul: 'Senior' }, { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/7`);
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(String(init.body))).toMatchObject({ judul: 'Senior' });
+    expect(out.judul).toBe('Senior');
+  });
+
+  it('deleteJob DELETEs /{id} with no body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204, headers: { get: () => null } });
+    await deleteJob(7, { apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/7`);
+    expect(init.method).toBe('DELETE');
+    expect(init.body).toBeUndefined();
+  });
+
+  it('deleteJob throws an ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(404));
+    await expect(deleteJob(7, { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
   });
 });

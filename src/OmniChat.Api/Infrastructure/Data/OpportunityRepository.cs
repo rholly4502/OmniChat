@@ -121,4 +121,53 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<Opportunity> AddAsync(
+        Opportunity opportunity, CancellationToken cancellationToken)
+    {
+        db.Opportunities.Add(opportunity);
+        await db.SaveChangesAsync(cancellationToken);
+        return opportunity;
+    }
+
+    public async Task<bool> UpdateAsync(
+        Opportunity opportunity, CancellationToken cancellationToken)
+    {
+        var existing = await db.Opportunities
+            .FirstOrDefaultAsync(o => o.Id == opportunity.Id, cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        existing.Judul = opportunity.Judul;
+        existing.Perusahaan = opportunity.Perusahaan;
+        existing.Lokasi = opportunity.Lokasi;
+        existing.Tipe = opportunity.Tipe;
+        existing.Gaji = opportunity.Gaji;
+        existing.Skor = opportunity.Skor;
+        existing.Link = opportunity.Link;
+        existing.Catatan = opportunity.Catatan;
+        existing.Status = opportunity.Status;
+        existing.FollowUpTanggal = opportunity.FollowUpTanggal;
+        existing.Ditemukan = opportunity.Ditemukan;
+        existing.SourceId = opportunity.SourceId ?? existing.SourceId;
+
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> DeleteAsync(long id, CancellationToken cancellationToken)
+    {
+        var existing = await db.Opportunities
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        db.Opportunities.Remove(existing);
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

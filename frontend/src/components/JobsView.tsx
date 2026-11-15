@@ -1,8 +1,10 @@
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, type Opportunity } from '../jobsApi';
+import { OPPORTUNITY_STATUSES, createJob, deleteJob, exportOpportunitiesCsv, updateJob, type JobWritePayload, type Opportunity } from '../jobsApi';
+import { ApiError } from '../api';
 import { useJobs } from '../hooks/useJobs';
 import { ScanLoader } from './ScanLoader';
 import { AlertIcon } from './Icons';
+import { PanelFrame } from './PanelFrame';
 
 /**
  * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
@@ -141,6 +143,10 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [cvMenuOpen, setCvMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingItem, setEditingItem] = useState<Opportunity | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const handleExportCsv = async () => {
     try {
@@ -197,6 +203,61 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       window.open(o.link, '_blank', 'noopener,noreferrer');
     }
   };
+
+  async function handleSave(payload: JobWritePayload) {
+    if (!apiKey) {
+      setFormError('API key diperlukan untuk menyimpan lowongan.');
+      return;
+    }
+    setSaving(true);
+    setFormError(null);
+    try {
+      if (editingItem) {
+        await updateJob(editingItem.id, payload, { apiKey });
+      } else {
+        await createJob(payload, { apiKey });
+      }
+      setShowForm(false);
+      setEditingItem(null);
+      reload();
+    } catch (err) {
+      setFormError(err instanceof ApiError ? `Gagal menyimpan (${err.status}).` : 'Gagal menyimpan.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEdit(item: Opportunity) {
+    setEditingItem(item);
+    setShowForm(true);
+    setFormError(null);
+  }
+
+  function openCreate() {
+    setEditingItem(null);
+    setShowForm(true);
+    setFormError(null);
+  }
+
+  function closeForm() {
+    setShowForm(false);
+    setEditingItem(null);
+    setFormError(null);
+  }
+
+  async function handleDelete(item: Opportunity) {
+    if (!apiKey) {
+      setExportError('API key diperlukan untuk menghapus lowongan.');
+      return;
+    }
+    if (!window.confirm(`Hapus lowongan "${item.judul}"?`)) return;
+    try {
+      await deleteJob(item.id, { apiKey });
+      reload();
+    } catch (err) {
+      setExportError(err instanceof ApiError ? `Gagal menghapus (${err.status}).` : 'Gagal menghapus.');
+    }
+  }
 
   // Roving-tabindex refs for the three filter tablists (type/status/tier).
   // Only the selected tab in each list is in the tab order; arrow keys move
@@ -361,7 +422,20 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
         </p>
       </div>
 
-      <div className="px-4 pb-2">
+      <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          onClick={openCreate}
+          disabled={loading}
+          aria-label="Tambah lowongan"
+          className="inline-flex items-center gap-1.5 rounded-none border border-chill-accent/60 bg-chill-accent px-3 py-2 text-xs font-semibold text-chill-on-accent transition min-h-[44px] hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 disabled:opacity-50"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="shrink-0">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          Tambah
+        </button>
         <button
           type="button"
           onClick={() => void handleExportCsv()}
@@ -373,10 +447,22 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
           </svg>
           Ekspor CSV
         </button>
-        {exportError && (
-          <p role="alert" className="mt-1 text-xs text-chill-red">{exportError}</p>
+        {(exportError || formError) && (
+          <p role="alert" className="text-xs text-chill-red">{exportError || formError}</p>
         )}
       </div>
+
+      {showForm && (
+        <div className="px-4 pb-2">
+          <JobForm
+            initial={editingItem}
+            saving={saving}
+            error={formError}
+            onSave={(p) => void handleSave(p)}
+            onCancel={closeForm}
+          />
+        </div>
+      )}
 
       {cvFiles.length > 0 && (
         <div className="px-4 pb-0">
@@ -705,6 +791,20 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
                   </span>
                   <button
                     type="button"
+                    onClick={() => startEdit(o)}
+                    className="inline-block rounded-none border border-chill-border px-3 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleDelete(o)}
+                    className="inline-block rounded-none border border-chill-red/40 px-3 py-1.5 text-xs font-medium text-chill-red transition hover:bg-chill-red/10 active:bg-chill-red/15 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-red/60"
+                  >
+                    Hapus
+                  </button>
+                  <button
+                    type="button"
                     disabled={generatingId === o.id}
                     onClick={() => void handleGenerateDraft(o)}
                     className={`rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 active:translate-y-[2px] disabled:active:translate-y-0 ${generatingId === o.id ? 'border-chill-border bg-chill-surface text-chill-muted cursor-wait' : 'border-chill-accent/50 bg-chill-accent/10 text-chill-accent hover:bg-chill-accent/20 active:bg-chill-accent/30'}`}
@@ -870,5 +970,205 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
         )}
       </div>
     </div>
+  );
+}
+
+function wibToday(): string {
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(now.getUTCDate()).padStart(2, '0')}`;
+}
+
+interface JobFormProps {
+  initial: Opportunity | null;
+  saving: boolean;
+  error: string | null;
+  onSave: (payload: JobWritePayload) => void;
+  onCancel: () => void;
+}
+
+/** Small inline form to add or edit one curated job opportunity. */
+function JobForm({ initial, saving, error, onSave, onCancel }: JobFormProps) {
+  const [judul, setJudul] = useState(initial?.judul ?? '');
+  const [perusahaan, setPerusahaan] = useState(initial?.perusahaan ?? '');
+  const [lokasi, setLokasi] = useState(initial?.lokasi ?? '');
+  const [tipe, setTipe] = useState(initial?.tipe ?? '');
+  const [gaji, setGaji] = useState(initial?.gaji ?? '');
+  const [link, setLink] = useState(initial?.link ?? '');
+  const [catatan, setCatatan] = useState(initial?.catatan ?? '');
+  const [status, setStatus] = useState(initial?.status ?? 'new');
+  const [ditemukan, setDitemukan] = useState(initial?.ditemukan ?? wibToday());
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  function submit() {
+    if (!judul.trim()) {
+      setLocalError('Judul wajib diisi.');
+      return;
+    }
+    if (!perusahaan.trim()) {
+      setLocalError('Perusahaan wajib diisi.');
+      return;
+    }
+    if (!lokasi.trim()) {
+      setLocalError('Lokasi wajib diisi.');
+      return;
+    }
+    if (!ditemukan) {
+      setLocalError('Tanggal ditemukan wajib diisi.');
+      return;
+    }
+    setLocalError(null);
+    onSave({
+      judul: judul.trim(),
+      perusahaan: perusahaan.trim(),
+      lokasi: lokasi.trim(),
+      tipe: tipe.trim(),
+      gaji: gaji.trim() || undefined,
+      skor: initial?.skor ?? null,
+      link: link.trim() || undefined,
+      catatan: catatan.trim() || undefined,
+      status: status.trim() || undefined,
+      followUpTanggal: initial?.followUpTanggal ?? null,
+      ditemukan,
+    });
+  }
+
+  return (
+    <section
+      aria-label={initial ? 'Edit lowongan' : 'Tambah lowongan'}
+      className="relative overflow-hidden rounded-none bg-chill-surface border border-chill-accent/40 p-4 pixel-shadow-sm space-y-3"
+    >
+      <PanelFrame />
+      <h3 className="text-sm font-semibold text-chill-text pixel-heading">
+        {initial ? 'Edit Lowongan' : 'Tambah Lowongan'}
+      </h3>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Judul
+          <input
+            type="text"
+            maxLength={300}
+            value={judul}
+            onChange={(e) => setJudul(e.target.value)}
+            placeholder="Mis. .NET Developer"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Perusahaan
+          <input
+            type="text"
+            maxLength={200}
+            value={perusahaan}
+            onChange={(e) => setPerusahaan(e.target.value)}
+            placeholder="Mis. PT Contoh"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Lokasi
+          <input
+            type="text"
+            maxLength={200}
+            value={lokasi}
+            onChange={(e) => setLokasi(e.target.value)}
+            placeholder="Mis. Remote / Jakarta"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Tipe
+          <input
+            type="text"
+            maxLength={100}
+            value={tipe}
+            onChange={(e) => setTipe(e.target.value)}
+            placeholder="Mis. Koutrak / FTE / Part-time"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Gaji (opsional)
+          <input
+            type="text"
+            maxLength={100}
+            value={gaji}
+            onChange={(e) => setGaji(e.target.value)}
+            placeholder="Mis. 15-20jt"
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Link lowongan (opsional)
+          <input
+            type="url"
+            maxLength={1000}
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="https://..."
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-chill-muted">
+          Tanggal ditemukan
+          <input
+            type="date"
+            value={ditemukan}
+            onChange={(e) => setDitemukan(e.target.value)}
+            className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
+          />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1 text-xs text-chill-muted">
+        Status awal
+        <span className="relative">
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full appearance-none pr-9 cursor-pointer bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text transition-colors pixel-shadow-sm [color-scheme:dark]"
+          >
+            {OPPORTUNITY_STATUSES.map((st) => (
+              <option key={st} value={st}>{statusLabel(st)}</option>
+            ))}
+          </select>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-chill-muted">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </span>
+      </label>
+      <label className="flex flex-col gap-1 text-xs text-chill-muted">
+        Catatan (opsional)
+        <textarea
+          maxLength={2000}
+          rows={3}
+          value={catatan}
+          onChange={(e) => setCatatan(e.target.value)}
+          placeholder="Mis. Rekruter kontak via LinkedIn, stack .NET 8"
+          className="bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark] resize-y"
+        />
+      </label>
+      {(localError || error) && (
+        <p role="alert" className="text-sm text-chill-red">
+          {localError ?? error}
+        </p>
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={submit}
+          disabled={saving}
+          className="rounded-none border border-chill-accent/60 bg-chill-accent px-4 py-2 text-sm font-semibold text-chill-on-accent transition hover:bg-chill-accent-hover active:bg-chill-accent-active active:translate-y-[2px] active:shadow-none pixel-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/70 min-h-[44px] disabled:opacity-50 disabled:shadow-none"
+        >
+          {saving ? 'Menyimpan…' : initial ? 'Simpan Perubahan' : 'Simpan'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="rounded-none border border-chill-border px-4 py-2 text-sm font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] active:shadow-none pixel-shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] disabled:opacity-50 disabled:shadow-none"
+        >
+          Batal
+        </button>
+      </div>
+    </section>
   );
 }

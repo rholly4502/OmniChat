@@ -6,9 +6,10 @@ using OmniChat.Domain.Entities;
 namespace OmniChat.Api.Controllers;
 
 /// <summary>
-/// Read-only view over the curated job-opportunity list. The list is maintained by an
-/// agent cron and imported via the seeder; this API serves what was stored. Routes are
-/// NOT guest-exempt, so anonymous callers get 401 — opportunities are private.
+/// Read-only view over the curated job-opportunity list plus operator CRUD for manual
+/// curation. The list is maintained by an agent cron and imported via the seeder; this
+/// API serves what was stored. Routes are NOT guest-exempt, so anonymous callers get
+/// 401 — opportunities are private.
 /// </summary>
 [ApiController]
 [Route("api/jobs")]
@@ -92,6 +93,111 @@ public sealed class JobsController(
         return updated ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
     }
 
+    /// <summary>Adds a manually curated opportunity (operator only).</summary>
+    /// <param name="request">Job details.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="201">Opportunity created.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Create(
+        [FromBody] JobWriteRequest request, CancellationToken cancellationToken = default)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var opportunity = new Opportunity
+        {
+            Judul = request.Judul.Trim(),
+            Perusahaan = request.Perusahaan.Trim(),
+            Lokasi = request.Lokasi.Trim(),
+            Tipe = request.Tipe.Trim(),
+            Gaji = TrimOrNull(request.Gaji),
+            Skor = request.Skor,
+            Link = TrimOrNull(request.Link),
+            Catatan = TrimOrNull(request.Catatan),
+            Status = (request.Status ?? "new").ToLowerInvariant(),
+            FollowUpTanggal = ParseDateOrNull(request.FollowUpTanggal),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            // Manual rows get a distinct SourceId prefix so the seeder's dedup can
+            // never mistake them for an auto-imported row.
+            SourceId = "web-" + Guid.NewGuid().ToString("N")[..8],
+        };
+
+        var created = await repository.AddAsync(opportunity, cancellationToken);
+        return CreatedAtAction(nameof(List), new { }, created);
+    }
+
+    /// <summary>Replaces a manually curated opportunity's editable fields (operator only).</summary>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="request">Job details.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Opportunity updated.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No opportunity with this id.</response>
+    [HttpPut("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(
+        long id,
+        [FromBody] JobWriteRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var problem = Validate(request);
+        if (problem is not null)
+        {
+            return problem;
+        }
+
+        var opportunity = new Opportunity
+        {
+            Id = id,
+            Judul = request.Judul.Trim(),
+            Perusahaan = request.Perusahaan.Trim(),
+            Lokasi = request.Lokasi.Trim(),
+            Tipe = request.Tipe.Trim(),
+            Gaji = TrimOrNull(request.Gaji),
+            Skor = request.Skor,
+            Link = TrimOrNull(request.Link),
+            Catatan = TrimOrNull(request.Catatan),
+            Status = (request.Status ?? "new").ToLowerInvariant(),
+            FollowUpTanggal = ParseDateOrNull(request.FollowUpTanggal),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+        };
+
+        var updated = await repository.UpdateAsync(opportunity, cancellationToken);
+        if (!updated)
+        {
+            return NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
+        }
+        return Ok(await repository.GetByIdAsync(id, cancellationToken));
+    }
+
+    /// <summary>Deletes a manually curated opportunity (operator only).</summary>
+    /// <param name="id">Opportunity id.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Opportunity deleted.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No opportunity with this id.</response>
+    [HttpDelete("{id:long}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(long id, CancellationToken cancellationToken = default)
+    {
+        var deleted = await repository.DeleteAsync(id, cancellationToken);
+        return deleted ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
+    }
+
     /// <summary>
     /// Generates a first-draft cover letter for one opportunity by calling the Hermes
     /// gateway with Rholly's profile and the opportunity details. The result is a draft
@@ -165,6 +271,47 @@ public sealed class JobsController(
     }
 
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
+    /// <summary>Validates a write request, returning a 400 BadRequest or null when valid.</summary>
+    private IActionResult? Validate(JobWriteRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.Judul))
+        {
+            return BadRequest(new { message = "'judul' wajib diisi." });
+        }
+        if (string.IsNullOrWhiteSpace(request.Perusahaan))
+        {
+            return BadRequest(new { message = "'perusahaan' wajib diisi." });
+        }
+        if (string.IsNullOrWhiteSpace(request.Lokasi))
+        {
+            return BadRequest(new { message = "'lokasi' wajib diisi." });
+        }
+        if (!string.IsNullOrWhiteSpace(request.Status) && !OpportunityStatuses.Contains(request.Status))
+        {
+            return BadRequest(new { message = $"Status '{request.Status}' tidak dikenal." });
+        }
+        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", out _))
+        {
+            return BadRequest(new { message = "'ditemukan' must be a valid YYYY-MM-DD date." });
+        }
+        if (!string.IsNullOrWhiteSpace(request.FollowUpTanggal) &&
+            !DateOnly.TryParse(request.FollowUpTanggal, out _))
+        {
+            return BadRequest(new { message = "'followUpTanggal' must be a valid YYYY-MM-DD date or null." });
+        }
+        if (request.Skor is < 0 or > 100)
+        {
+            return BadRequest(new { message = "'skor' must be between 0 and 100." });
+        }
+        return null;
+    }
+
+    private static string? TrimOrNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static DateOnly? ParseDateOrNull(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : DateOnly.Parse(value);
+
     private static string Csv(string value)
     {
         if (value.Contains('"') || value.Contains(',') || value.Contains('\n') || value.Contains('\r'))
@@ -192,3 +339,17 @@ public sealed record UpdateOpportunityStatusRequest(string Status);
 
 /// <summary>Request body for <c>PATCH /api/jobs/{id}/follow-up</c>.</summary>
 public sealed record UpdateOpportunityFollowUpRequest(string? Tanggal);
+
+/// <summary>Request body for creating or updating a job opportunity.</summary>
+public sealed record JobWriteRequest(
+    string Judul,
+    string Perusahaan,
+    string Lokasi,
+    string Tipe,
+    string? Gaji,
+    int? Skor,
+    string? Link,
+    string? Catatan,
+    string? Status,
+    string? FollowUpTanggal,
+    string Ditemukan);

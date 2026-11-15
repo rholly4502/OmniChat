@@ -170,3 +170,64 @@ export async function downloadCvFile(
   }
   return res.blob();
 }
+
+/** Write payload for creating or updating a curated job opportunity. */
+export interface JobWritePayload {
+  judul: string;
+  perusahaan: string;
+  lokasi: string;
+  tipe: string;
+  gaji?: string | null;
+  skor?: number | null;
+  link?: string | null;
+  catatan?: string | null;
+  status?: string | null;
+  followUpTanggal?: string | null; // YYYY-MM-DD or null
+  ditemukan: string; // YYYY-MM-DD (WIB)
+}
+
+async function requestJson(
+  path: string,
+  method: 'POST' | 'PUT' | 'DELETE',
+  body: unknown,
+  options: JobsRequestOptions = {},
+): Promise<Response> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(path, {
+    method,
+    headers: {
+      ...authHeaders(options.apiKey),
+      ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+    },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return res;
+}
+
+/** Create a manually curated job opportunity (operator only). Returns the created opportunity. */
+export async function createJob(
+  payload: JobWritePayload,
+  options: JobsRequestOptions = {},
+): Promise<Opportunity> {
+  const res = await requestJson(JOBS_URL, 'POST', payload, options);
+  return (await res.json()) as Opportunity;
+}
+
+/** Update an existing job opportunity (operator only). Returns the updated opportunity. */
+export async function updateJob(
+  id: number,
+  payload: JobWritePayload,
+  options: JobsRequestOptions = {},
+): Promise<Opportunity> {
+  const res = await requestJson(`${JOBS_URL}/${id}`, 'PUT', payload, options);
+  return (await res.json()) as Opportunity;
+}
+
+/** Delete a job opportunity (operator only). */
+export async function deleteJob(id: number, options: JobsRequestOptions = {}): Promise<void> {
+  await requestJson(`${JOBS_URL}/${id}`, 'DELETE', undefined, options);
+}
