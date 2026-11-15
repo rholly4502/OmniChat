@@ -47,6 +47,7 @@ export default function App() {
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
   const [activeView, setActiveView] = useState<'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events'>('ringkasan');
+  const [jobsFollowUpRequested, setJobsFollowUpRequested] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -428,6 +429,12 @@ export default function App() {
     );
   }
 
+  /** Jump from the Ringkasan "Perlu follow-up" stat into the Jobs view pre-filtered to overdue follow-ups. */
+  function openJobFollowUps() {
+    setJobsFollowUpRequested(true);
+    setActiveView('jobs');
+  }
+
   return (
     <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}
       onTouchStart={onTouchStart}
@@ -501,7 +508,10 @@ export default function App() {
         chillMode={settings.chillMode}
         onChillModeChange={updateChillMode}
         activeView={activeView}
-        onSelectView={setActiveView}
+        onSelectView={(v) => {
+          setJobsFollowUpRequested(false);
+          setActiveView(v);
+        }}
         backendStatus={backendStatus}
       />
 
@@ -528,11 +538,11 @@ export default function App() {
         />
 
         {activeView === 'ringkasan' ? (
-          <SummaryView apiKey={apiKey} usageSummary={usageSummary} />
+          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} />
         ) : activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (
-          <JobsView apiKey={apiKey} />
+          <JobsView apiKey={apiKey} initialFollowUpOnly={jobsFollowUpRequested} />
         ) : activeView === 'events' ? (
           <EventsView apiKey={apiKey} />
         ) : (

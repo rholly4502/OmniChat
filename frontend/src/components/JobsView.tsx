@@ -23,6 +23,8 @@ function nextTabIndex(keys: readonly string[], current: string, key: string): nu
 
 interface JobsViewProps {
   apiKey?: string;
+  /** Seed the follow-up filter to ON at first mount (used by the Ringkasan shortcut). */
+  initialFollowUpOnly?: boolean;
 }
 
 function statusLabel(status: string): string {
@@ -123,7 +125,7 @@ function statusTone(status: string): string {
 }
 
 /** The curated Job Opportunities page: a list of "yes" roles + pipeline filter. */
-export function JobsView({ apiKey }: JobsViewProps) {
+export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(true);
@@ -137,7 +139,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
   const [exportError, setExportError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [followUpOnly, setFollowUpOnly] = useState(false);
+  const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
 
   const handleExportCsv = async () => {
     try {

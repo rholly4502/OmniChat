@@ -17,6 +17,8 @@ export interface SummaryViewProps {
   apiKey?: string;
   /** Aggregate token usage across every stored conversation (all-zero for a guest). */
   usageSummary?: ConversationUsageSummary;
+  /** When provided, the "Perlu follow-up" stat becomes a button that jumps to the Jobs view filtered to overdue follow-ups. */
+  onOpenFollowUps?: () => void;
 }
 
 /** Pixel glyph set for the four summary cards. */
@@ -68,7 +70,7 @@ function StatRow({ label, value }: { label: string; value: string }) {
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
  */
-export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
+export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryViewProps) {
   // Today captured once per mount (WIB local); keeps the follow-up deadline stable.
   const [todayISO] = useState(() => {
     const t = new Date();
@@ -155,7 +157,18 @@ export function SummaryView({ apiKey, usageSummary }: SummaryViewProps) {
           <StatRow label="Baru" value={String(statusCounts.new)} />
           <StatRow label="Sudah dilamar" value={String(statusCounts.applied)} />
           <StatRow label="Interview" value={String(statusCounts.interview)} />
-          <StatRow label="Perlu follow-up" value={String(overdueFollowUps)} />
+          {onOpenFollowUps ? (
+            <button
+              type="button"
+              onClick={onOpenFollowUps}
+              className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="text-xs text-chill-muted">Perlu follow-up</span>
+              <span className="text-sm font-medium text-chill-text">{String(overdueFollowUps)}</span>
+            </button>
+          ) : (
+            <StatRow label="Perlu follow-up" value={String(overdueFollowUps)} />
+          )}
           <StatRow label="Tawaran" value={String(statusCounts.offer)} />
         </Card>
 

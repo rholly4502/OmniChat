@@ -202,4 +202,23 @@ describe('SummaryView', () => {
     await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument());
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
+
+  it('renders the Perlu follow-up stat as a button and triggers navigation when clicked', async () => {
+    const onOpenFollowUps = vi.fn();
+    const overdueJob: Opportunity = { ...jobOf(10, 'applied'), followUpTanggal: '2026-01-01' };
+    vi.stubGlobal('fetch', fetchStub({ jobs: [overdueJob] }));
+    render(
+      <SummaryView
+        apiKey="secret"
+        usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }}
+        onOpenFollowUps={onOpenFollowUps}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Ringkasan' })).toBeInTheDocument());
+    const followUpBtn = screen.getByRole('button', { name: /Perlu follow-up/ });
+    expect(followUpBtn).toBeInTheDocument();
+    fireEvent.click(followUpBtn);
+    expect(onOpenFollowUps).toHaveBeenCalledTimes(1);
+  });
 });

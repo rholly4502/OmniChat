@@ -488,4 +488,12 @@ describe('JobsView overdue follow-up filter', () => {
     fireEvent.click(toggle);
     expect(screen.getByText(/Belum ada lowongan yang perlu follow-up/)).toBeTruthy();
   });
+
+  it('seeds the follow-up filter ON when initialFollowUpOnly is true', () => {
+    mockState({ opportunities: [overdue, upcoming, base] });
+    render(<JobsView initialFollowUpOnly />);
+    expect(screen.getByText('Overdue Applied Role')).toBeTruthy();
+    expect(screen.queryByText('Upcoming Interview Role')).toBeNull();
+    expect(screen.queryByText('Backend .NET Developer')).toBeNull();
+  });
 });
