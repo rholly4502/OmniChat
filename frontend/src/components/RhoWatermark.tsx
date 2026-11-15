@@ -8,7 +8,7 @@ export default function RhoWatermark({ compact = false }: { compact?: boolean })
     <div
       className={[
         'flex items-center justify-center gap-2 px-4 py-2 select-none',
-        compact ? 'text-[10px]' : 'text-xs',
+        'text-xs',
       ].join(' ')}
     >
       {/* ρ glyph in a bordered tile */}

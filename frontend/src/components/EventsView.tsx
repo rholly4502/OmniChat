@@ -56,6 +56,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hideExpired, setHideExpired] = useState(false);
   const [exportError, setExportError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PromoEvent | null>(null);
@@ -164,8 +165,14 @@ export function EventsView({ apiKey }: EventsViewProps) {
   const statusById = new Map<number, EventStatus>(
     filtered.map((e) => [e.id, eventStatus(e.berlakuSampai, nowWib)]),
   );
-  const groups = [...new Set(filtered.map((e) => e.aplikasi))].sort(
-    (a, b) => (filtered.filter((e) => e.aplikasi === b).length) - (filtered.filter((e) => e.aplikasi === a).length),
+  // When "Sembunyikan kedaluwarsa" is on, drop expired promos entirely instead of
+  // only dimming them — an expired promo is not actionable, so it should not
+  // occupy space in the list (app/keyword filters still apply first).
+  const visible = hideExpired
+    ? filtered.filter((e) => statusById.get(e.id) !== 'kedaluwarsa')
+    : filtered;
+  const groups = [...new Set(visible.map((e) => e.aplikasi))].sort(
+    (a, b) => (visible.filter((e) => e.aplikasi === b).length) - (visible.filter((e) => e.aplikasi === a).length),
   );
 
   const activeSummary = appFilter || 'Semua';
@@ -294,6 +301,23 @@ export function EventsView({ apiKey }: EventsViewProps) {
               className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
             />
           </div>
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setHideExpired((v) => !v)}
+              aria-pressed={hideExpired}
+              className={`inline-flex items-center gap-2 rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                hideExpired
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="shrink-0">
+                <path d="M3 7h18l-7 9v4l-4-2v-2L3 7Z" />
+              </svg>
+              Sembunyikan kedaluwarsa
+            </button>
+          </div>
         </div>
       )}
 
@@ -319,17 +343,17 @@ export function EventsView({ apiKey }: EventsViewProps) {
             <ScanLoader />
             Memuat event…
           </p>
-        ) : filtered.length === 0 ? (
+        ) : visible.length === 0 ? (
           <div className="border border-chill-border bg-chill-surface p-6 text-center pixel-shadow rounded-none">
             <p className="text-sm text-chill-muted">
-              Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}{query ? ` cocok “${searchQuery}”` : ''}.
+              Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}{query ? ` cocok “${searchQuery}”` : ''}{hideExpired ? ' yang masih aktif' : ''}.
             </p>
             <p className="text-xs text-chill-muted mt-1">Cron Event Hunter akan mengisinya otomatis tiap hari.</p>
           </div>
         ) : (
           <div className="space-y-5">
             {groups.map((g) => {
-              const items = filtered.filter((e) => e.aplikasi === g);
+              const items = visible.filter((e) => e.aplikasi === g);
               return (
                 <section key={g} aria-labelledby={`app-${g}`}>
                   <div className="mb-2 border-l-2 border-chill-accent pl-2">

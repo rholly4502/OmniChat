@@ -423,3 +423,44 @@ describe('EventsView expiry chips', () => {
     await waitFor(() => expect(screen.getByText('Aktif')).toBeTruthy());
   });
 });
+
+describe('EventsView hide-expired toggle', () => {
+  it('hides expired promos when the toggle is on, keeps them when off', async () => {
+    const expired: PromoEvent = { ...base, id: 20, judul: 'Promo basi', berlakuSampai: '2020-01-01' };
+    const active: PromoEvent = { ...base, id: 21, judul: 'Promo segar', berlakuSampai: '2099-12-31' };
+    mockState({ events: [expired, active] });
+    render(<EventsView />);
+
+    // Default: both visible.
+    await waitFor(() => expect(screen.getByText('Promo basi')).toBeTruthy());
+    expect(screen.getByText('Promo segar')).toBeTruthy();
+
+    // Turn the toggle on: expired disappears, active remains.
+    fireEvent.click(screen.getByRole('button', { name: /Sembunyikan kedaluwarsa/ }));
+    await waitFor(() => expect(screen.queryByText('Promo basi')).toBeNull());
+    expect(screen.getByText('Promo segar')).toBeTruthy();
+
+    // Toggle off restores the expired promo.
+    fireEvent.click(screen.getByRole('button', { name: /Sembunyikan kedaluwarsa/ }));
+    await waitFor(() => expect(screen.getByText('Promo basi')).toBeTruthy());
+  });
+
+  it('empty-state mentions the active-only filter when hiding expired', async () => {
+    const expired: PromoEvent = { ...base, id: 22, judul: 'Promo basi', berlakuSampai: '2020-01-01' };
+    mockState({ events: [expired] });
+    render(<EventsView />);
+    fireEvent.click(screen.getByRole('button', { name: /Sembunyikan kedaluwarsa/ }));
+    await waitFor(() => expect(screen.getByText(/Belum ada event.*yang masih aktif/)).toBeTruthy());
+  });
+
+  it('the toggle button is a 44px target with aria-pressed state', async () => {
+    mockState();
+    render(<EventsView />);
+    const btn = screen.getByRole('button', { name: /Sembunyikan kedaluwarsa/ });
+    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(btn);
+    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    expect(btn.className).toContain('min-h-[44px]');
+  });
+});
+
