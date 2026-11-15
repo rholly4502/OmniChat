@@ -387,7 +387,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
               onClick={() => setCvMenuOpen(!cvMenuOpen)}
               aria-expanded={cvMenuOpen}
               aria-haspopup="true"
-              className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-sm font-semibold text-chill-text transition min-h-[48px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+              className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-sm font-semibold text-chill-text transition active:bg-chill-elevated active:translate-y-[2px] min-h-[48px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
             >
               <span className="flex items-center gap-2">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
@@ -395,7 +395,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
                 </svg>
                 Download CV ({cvFiles.length})
               </span>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`text-chill-muted shrink-0 transition-transform duration-150 ${cvMenuOpen ? 'rotate-180' : ''}`}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`text-chill-muted shrink-0 transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] ${cvMenuOpen ? 'rotate-180' : ''}`}>
                 <polyline points="6 9 12 15 18 9" />
               </svg>
             </button>
@@ -406,7 +406,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
                     <button
                       type="button"
                       onClick={() => { void downloadCv(f); setCvMenuOpen(false); }}
-                      className="w-full flex items-center gap-2 rounded-none border border-chill-border bg-chill-elevated px-3 py-2.5 text-sm text-chill-text transition min-h-[48px] hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+                      className="w-full flex items-center gap-2 rounded-none border border-chill-border bg-chill-elevated px-3 py-2.5 text-sm text-chill-text transition min-h-[44px] hover:bg-chill-accent/15 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" aria-hidden="true" className="shrink-0">
                         <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
