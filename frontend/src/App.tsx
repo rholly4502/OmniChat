@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CodeBlock } from './components/CodeBlock';
 import LoginScreen from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
+import RhoWatermark from './components/RhoWatermark';
 import { MessageList } from './components/MessageList';
 import { Composer } from './components/Composer';
 import { MobileTopBar } from './components/MobileTopBar';
@@ -610,6 +611,7 @@ export default function App() {
           </div>
         )}
       </main>
+      <RhoWatermark compact />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   );
