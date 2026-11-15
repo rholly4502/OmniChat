@@ -4,6 +4,21 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P6 — Jobs: panel "Jadwal follow-up" (frontend)
+
+#### Added
+- The Jobs view gains a "Jadwal follow-up" panel that lists every opportunity
+  carrying a follow-up target date, bucketed by urgency: **Terlambat** (past
+  date), **Hari ini**, **7 hari ke depan**, and **Berikutnya** (later), each
+  sorted by date and with the pipeline status shown. It complements the existing
+  "Perlu follow-up" filter (which only surfaces overdue) by also surfacing the
+  upcoming follow-ups, so the next week's nudges are visible at a glance.
+- Renders nothing when no follow-up is scheduled, so it is additive to the
+  existing filter/list.
+- Tests: +2 component tests (JobsView) covering bucket grouping and the empty
+  case; existing overdue-follow-up filter tests re-scoped to the list via a
+  `data-testid="jobs-list"` hook shared the new panel is a separate section.
+  Full suite green: frontend (73 files), tsc -b, oxlint.
 ### P5 — Jobs: kurasi manual — tambah/edit/hapus lowongan (backend + frontend)
 
 #### Added
