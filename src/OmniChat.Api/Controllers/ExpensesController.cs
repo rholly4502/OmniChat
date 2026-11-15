@@ -116,7 +116,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Not Found",
                 Status = StatusCodes.Status404NotFound,
                 Detail = $"No expense target is set for {month}.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             });
         }
 
@@ -201,7 +201,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         Title = "Validation Failed",
         Status = StatusCodes.Status400BadRequest,
         Detail = $"'{month}' is not a valid YYYY-MM month key.",
-        Instance = HttpContext.Request.Path,
+        Instance = HttpContext?.Request.Path,
     })
     {
         StatusCode = StatusCodes.Status400BadRequest,
@@ -302,7 +302,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'months' must be between 1 and 24.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -360,7 +360,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         Title = "Validation Failed",
         Status = StatusCodes.Status400BadRequest,
         Detail = $"'{date ?? ""}' is not a valid YYYY-MM-DD date.",
-        Instance = HttpContext.Request.Path,
+        Instance = HttpContext?.Request.Path,
     })
     {
         StatusCode = StatusCodes.Status400BadRequest,
@@ -446,7 +446,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Not Found",
                 Status = StatusCodes.Status404NotFound,
                 Detail = $"No expense row with id {id} exists.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             });
         }
 
@@ -474,7 +474,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Not Found",
                 Status = StatusCodes.Status404NotFound,
                 Detail = $"No expense row with id {id} exists.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             });
         }
 
@@ -491,7 +491,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'tanggal' must be a valid YYYY-MM-DD date.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -506,7 +506,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = $"'kategori' must be one of: {string.Join(", ", StandardCategories)}.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -521,7 +521,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'nominal' must be a positive amount.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -536,7 +536,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'keterangan' must be 500 characters or fewer.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -562,7 +562,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'anggaran' must be zero or a positive amount.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -577,7 +577,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'targetNabung' must be zero or a positive amount.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,
@@ -592,7 +592,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
                 Title = "Validation Failed",
                 Status = StatusCodes.Status400BadRequest,
                 Detail = "'catatan' must be 200 characters or fewer.",
-                Instance = HttpContext.Request.Path,
+                Instance = HttpContext?.Request.Path,
             })
             {
                 StatusCode = StatusCodes.Status400BadRequest,

@@ -342,7 +342,7 @@ public sealed class ConversationsController : ControllerBase
                     Title = "Validation Failed",
                     Status = StatusCodes.Status400BadRequest,
                     Detail = "Feedback must be \"up\", \"down\" or null.",
-                    Instance = HttpContext.Request.Path,
+                    Instance = HttpContext?.Request.Path,
                 })
                 {
                     StatusCode = StatusCodes.Status400BadRequest,
@@ -496,7 +496,7 @@ public sealed class ConversationsController : ControllerBase
         Title = "Not Found",
         Status = StatusCodes.Status404NotFound,
         Detail = $"No conversation with id {id} belongs to this caller.",
-        Instance = HttpContext.Request.Path,
+        Instance = HttpContext?.Request.Path,
     })
     {
         StatusCode = StatusCodes.Status404NotFound,
