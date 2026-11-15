@@ -13,4 +13,4 @@ already counted overdue follow-ups, so this surfaces the queue in the view.
 - Tests: +4 component (JobsView) — count label, filter to overdue only, toggle
   off restores, empty-state message. Full suite green: frontend (73 files),
   tsc -b, oxlint, a11y typography scan.
-- Commit SHA: 59e3a14.
+- Commit SHA: 1aed28c.
