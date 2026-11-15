@@ -11,6 +11,7 @@ import { ApiError } from '../api';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
+import { STATUS_CHIP, eventStatus, type EventStatus } from '../eventsStatus';
 
 /**
  * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
@@ -159,6 +160,10 @@ export function EventsView({ apiKey }: EventsViewProps) {
           (e.syarat ?? '').toLowerCase().includes(query),
       )
     : byApp;
+  const nowWib = wibToday();
+  const statusById = new Map<number, EventStatus>(
+    filtered.map((e) => [e.id, eventStatus(e.berlakuSampai, nowWib)]),
+  );
   const groups = [...new Set(filtered.map((e) => e.aplikasi))].sort(
     (a, b) => (filtered.filter((e) => e.aplikasi === b).length) - (filtered.filter((e) => e.aplikasi === a).length),
   );
@@ -334,8 +339,23 @@ export function EventsView({ apiKey }: EventsViewProps) {
                   </div>
                   <ul className="space-y-3">
                     {items.map((e: PromoEvent) => (
-                      <li key={e.id} className="rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm transition hover:bg-chill-elevated">
-                        <h3 className="text-sm font-semibold text-chill-text">{e.judul}</h3>
+                      <li
+                        key={e.id}
+                        className={`rounded-none border border-chill-border bg-chill-surface p-4 pixel-shadow-sm transition hover:bg-chill-elevated ${
+                          statusById.get(e.id) === 'kedaluwarsa' ? 'opacity-55' : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="text-sm font-semibold text-chill-text">{e.judul}</h3>
+                          {statusById.get(e.id) !== 'tanpa-batas' && (
+                            <span
+                              aria-label={STATUS_CHIP[statusById.get(e.id)!].text}
+                              className={`shrink-0 rounded-none border px-2 py-0.5 text-xs font-medium ${STATUS_CHIP[statusById.get(e.id)!].cls}`}
+                            >
+                              {STATUS_CHIP[statusById.get(e.id)!].text}
+                            </span>
+                          )}
+                        </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-chill-muted">
                           <span>· ditemukan {e.ditemukan}</span>
                           {e.berlakuSampai && <span>· berlaku s/d {e.berlakuSampai}</span>}

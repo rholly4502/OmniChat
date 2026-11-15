@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
+import { eventStatus } from '../eventsStatus';
 import { createEvent, deleteEvent, exportEventsCsv, updateEvent, type PromoEvent } from '../eventsApi';
 
 vi.mock('../eventsApi', async () => ({
@@ -370,5 +371,55 @@ describe('EventsView keyword search', () => {
     render(<EventsView />);
     fireEvent.change(input(), { target: { value: 'zzzz' } });
     expect(screen.getByText(/cocok “zzzz”/)).toBeTruthy();
+  });
+});
+describe('eventStatus', () => {
+  it('marks a past end date as expired', () => {
+    expect(eventStatus('2026-10-31', '2026-11-15')).toBe('kedaluwarsa');
+  });
+
+  it('marks an end date inside the next 7 days as "segera"', () => {
+    expect(eventStatus('2026-11-20', '2026-11-15')).toBe('segera');
+  });
+
+  it('marks an end date on the boundary of 7 days as "segera"', () => {
+    expect(eventStatus('2026-11-22', '2026-11-15')).toBe('segera');
+  });
+
+  it('marks a far-future end date as active', () => {
+    expect(eventStatus('2027-01-01', '2026-11-15')).toBe('aktif');
+  });
+
+  it('treats a missing end date as tanpa-batas', () => {
+    expect(eventStatus(null, '2026-11-15')).toBe('tanpa-batas');
+    expect(eventStatus(undefined, '2026-11-15')).toBe('tanpa-batas');
+  });
+});
+
+describe('EventsView expiry chips', () => {
+  it('renders a Kedaluwarsa chip and dims an expired event card', async () => {
+    const expired: PromoEvent = {
+      ...base,
+      id: 9,
+      judul: 'Promo lama',
+      berlakuSampai: '2020-01-01',
+    };
+    mockState({ events: [expired] });
+    render(<EventsView />);
+    await waitFor(() => expect(screen.getByText('Kedaluwarsa')).toBeTruthy());
+    const li = screen.getByText('Kedaluwarsa').closest('li');
+    expect((li?.className ?? '')).toContain('opacity-55');
+  });
+
+  it('renders an Aktif chip for an in-date event', async () => {
+    const active: PromoEvent = {
+      ...base,
+      id: 10,
+      judul: 'Promo jangka panjang',
+      berlakuSampai: '2099-12-31',
+    };
+    mockState({ events: [active] });
+    render(<EventsView />);
+    await waitFor(() => expect(screen.getByText('Aktif')).toBeTruthy());
   });
 });
