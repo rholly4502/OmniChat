@@ -137,6 +137,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
   const [exportError, setExportError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [followUpOnly, setFollowUpOnly] = useState(false);
 
   const handleExportCsv = async () => {
     try {
@@ -339,7 +340,8 @@ export function JobsView({ apiKey }: JobsViewProps) {
       (statusFilter === '' || o.status === statusFilter) &&
       (typeFilter === '' || groupOf(o) === typeFilter) &&
       tierOk(o) &&
-      matchesQuery(o)
+      matchesQuery(o) &&
+      (!followUpOnly || needsFollowUp(o))
   );
 
   const activeSummary =
@@ -511,6 +513,21 @@ export function JobsView({ apiKey }: JobsViewProps) {
       </div>
 
       <div className="px-4 pb-2">
+        <button
+          type="button"
+          aria-pressed={followUpOnly}
+          onClick={() => setFollowUpOnly((v) => !v)}
+          className={`rounded-none px-3 py-1.5 text-xs font-medium transition min-h-[44px] border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+            followUpOnly
+              ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+              : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
+          }`}
+        >
+          Perlu follow-up ({opportunities.filter((o) => needsFollowUp(o)).length})
+        </button>
+      </div>
+
+      <div className="px-4 pb-2">
         <div className="relative">
           <input
             type="search"
@@ -553,6 +570,7 @@ export function JobsView({ apiKey }: JobsViewProps) {
               Belum ada lowongan
               {statusFilter ? ` berstatus ${statusLabel(statusFilter)}` : ''}
               {typeFilter ? ` tipe ${typeFilter}` : ''}
+              {followUpOnly ? ' yang perlu follow-up' : ''}
               {query ? ` cocok “${searchQuery}”` : ''}.
             </p>
             <p className="text-xs text-chill-muted mt-1">

@@ -4,6 +4,19 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P4 — Jobs: filter "Perlu follow-up" (frontend)
+
+#### Added
+- The Jobs view gains a toggle that narrows the list to opportunities whose
+  scheduled follow-up date has passed (status applied/interview/offer, date <=
+  today). It reuses the existing `needsFollowUp` rule, shows a live count on the
+  button, combines with the status/type/tier/keyword filters, and the empty state
+  names the follow-up filter when nothing matches. This turns the overdue
+  follow-up badges into a one-click actionable queue — handy as the Dec 2026
+  contract end nears.
+- Tests: +4 component (JobsView) covering the count label, filtering to overdue
+  only, toggling off to restore, and the empty-state message.
+
 ### P2 — Job pipeline keyword search (frontend)
 
 #### Added

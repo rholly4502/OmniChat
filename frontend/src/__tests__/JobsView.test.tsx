@@ -437,3 +437,55 @@ describe('JobsView keyword search', () => {
     expect(screen.getByText(/cocok “zzz”/)).toBeTruthy();
   });
 });
+
+describe('JobsView overdue follow-up filter', () => {
+  const overdue: Opportunity = {
+    ...base,
+    id: 10,
+    judul: 'Overdue Applied Role',
+    status: 'applied',
+    followUpTanggal: '2020-01-01',
+  };
+  const upcoming: Opportunity = {
+    ...base,
+    id: 11,
+    judul: 'Upcoming Interview Role',
+    status: 'interview',
+    followUpTanggal: '2099-01-01',
+  };
+
+  it('shows the overdue count on the toggle', () => {
+    mockState({ opportunities: [overdue, upcoming, base] });
+    render(<JobsView />);
+    expect(screen.getByRole('button', { name: 'Perlu follow-up (1)' })).toBeTruthy();
+  });
+
+  it('filters to only overdue follow-ups when toggled on', () => {
+    mockState({ opportunities: [overdue, upcoming, base] });
+    render(<JobsView />);
+    const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
+    fireEvent.click(toggle);
+    expect(screen.queryByText('Overdue Applied Role')).toBeTruthy();
+    expect(screen.queryByText('Upcoming Interview Role')).toBeNull();
+    expect(screen.queryByText('Backend .NET Developer')).toBeNull();
+  });
+
+  it('toggle off restores the full list', () => {
+    mockState({ opportunities: [overdue, upcoming, base] });
+    render(<JobsView />);
+    const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
+    fireEvent.click(toggle);
+    fireEvent.click(toggle);
+    expect(screen.getByText('Overdue Applied Role')).toBeTruthy();
+    expect(screen.getByText('Upcoming Interview Role')).toBeTruthy();
+    expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
+  });
+
+  it('empty state mentions follow-up when toggle is on and nothing matches', () => {
+    mockState({ opportunities: [upcoming, base] }); // no overdue
+    render(<JobsView />);
+    const toggle = screen.getByRole('button', { name: 'Perlu follow-up (0)' });
+    fireEvent.click(toggle);
+    expect(screen.getByText(/Belum ada lowongan yang perlu follow-up/)).toBeTruthy();
+  });
+});
