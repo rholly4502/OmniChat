@@ -207,7 +207,7 @@ function FollowUpSchedule({ opportunities, todayISO }: { opportunities: Opportun
 export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv } = useJobs(apiKey);
   const [typeFilter, setTypeFilter] = useState('');
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
   const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
@@ -509,6 +509,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
         </p>
       </div>
 
+      {filtersOpen && (
       <div className="px-4 pb-2 flex items-center gap-2 flex-wrap">
         <button
           type="button"
@@ -538,6 +539,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
           <p role="alert" className="text-xs text-chill-red">{exportError || formError}</p>
         )}
       </div>
+      )}
 
       {showForm && (
         <div className="px-4 pb-2">
@@ -623,7 +625,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
           type="button"
           onClick={() => setFiltersOpen(!filtersOpen)}
           aria-expanded={filtersOpen}
-          aria-controls="jobs-filters"
+          aria-controls="jobs-tools"
           className="w-full flex items-center justify-between gap-2 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
         >
           <span className="flex items-center gap-2">
@@ -632,7 +634,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
               <line x1="7" y1="12" x2="17" y2="12" />
               <line x1="10" y1="18" x2="14" y2="18" />
             </svg>
-            Filter
+            Alat & Filter
             <span className="text-chill-muted">· {activeSummary}</span>
           </span>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className={`text-chill-muted shrink-0 transition-transform duration-150 [transition-timing-function:steps(3,jump-none)] ${filtersOpen ? 'rotate-180' : ''}`}>

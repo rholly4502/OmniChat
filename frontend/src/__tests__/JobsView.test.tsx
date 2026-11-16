@@ -67,11 +67,19 @@ function mockState(overrides: Partial<MockJobsState> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
 });
+function openTools() {
+  const toggle = screen.getByRole('button', { name: /Alat & Filter/ });
+  if (toggle.getAttribute('aria-expanded') !== 'true') {
+    fireEvent.click(toggle);
+  }
+}
+
 
 describe('JobsView', () => {
   it('groups opportunities by type with labeled headers and counts', () => {
     mockState();
     render(<JobsView />);
+    openTools();
 
     // All three groups render with their count in the label.
     expect(screen.getByText('FTE — pengganti utama (1)')).toBeTruthy();
@@ -90,18 +98,21 @@ describe('JobsView', () => {
   it('shows a loading status until the list is ready', () => {
     mockState({ loading: true, opportunities: [] });
     render(<JobsView />);
+    openTools();
     expect(screen.getByText('Mencari lowongan…')).toBeTruthy();
   });
 
   it('renders the empty state when there are no opportunities', () => {
     mockState({ opportunities: [] });
     render(<JobsView />);
+    openTools();
     expect(screen.getByText('Belum ada lowongan.')).toBeTruthy();
   });
 
   it('renders the empty state with the active status filter when one is set', () => {
     mockState({ opportunities: [], statusFilter: 'offer' });
     render(<JobsView />);
+    openTools();
     expect(screen.getByText('Belum ada lowongan berstatus Tawaran.')).toBeTruthy();
   });
 
@@ -109,6 +120,7 @@ describe('JobsView', () => {
     const setStatusFilter = vi.fn();
     mockState({ setStatusFilter });
     render(<JobsView />);
+    openTools();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Interview (1)' }));
     expect(setStatusFilter).toHaveBeenCalledWith('interview');
@@ -118,6 +130,7 @@ describe('JobsView', () => {
     const setStatusFilter = vi.fn();
     mockState({ setStatusFilter, statusFilter: 'interview' });
     render(<JobsView />);
+    openTools();
 
     fireEvent.click(screen.getByRole('tab', { name: 'Interview (1)' }));
     expect(setStatusFilter).toHaveBeenCalledWith('');
@@ -127,6 +140,7 @@ describe('JobsView', () => {
     const reload = vi.fn();
     mockState({ error: 'Gagal memuat lowongan (401).', opportunities: [], reload });
     render(<JobsView />);
+    openTools();
 
     const alert = screen.getByRole('alert');
     expect(alert.textContent).toContain('Gagal memuat lowongan (401).');
@@ -143,6 +157,7 @@ describe('JobsView tiering (prioritas rekomendasi)', () => {
     const kontrakNew: Opportunity = { ...base, id: 12, judul: 'Kontrak Jakarta' };
     mockState({ opportunities: [ptNew, myNew, kontrakNew] });
     render(<JobsView />);
+    openTools();
     expect(screen.getAllByText('Prioritas').length).toBe(2);
     expect(screen.getByText('Standar')).toBeTruthy();
   });
@@ -152,6 +167,7 @@ describe('JobsView tiering (prioritas rekomendasi)', () => {
     const kontrakNew: Opportunity = { ...base, id: 12, judul: 'Kontrak Jakarta' };
     mockState({ opportunities: [ptNew, kontrakNew] });
     render(<JobsView />);
+    openTools();
     fireEvent.click(screen.getByRole('tab', { name: 'Prioritas (1)' }));
     expect(screen.getByText('Part-time Blazor')).toBeTruthy();
     expect(screen.queryByText('Kontrak Jakarta')).toBeNull();
@@ -162,6 +178,8 @@ describe('JobsView job card micro-interaction', () => {
   it('every opportunity card carries the shared hover register (transition + hover:bg-chill-elevated)', () => {
     mockState();
     const { container } = render(<JobsView />);
+
+    openTools();
     // Cards are the <li> elements inside the grouped list (the empty-state box is a div).
     const cards = container.querySelectorAll('ul li');
     expect(cards.length).toBeGreaterThan(0);
@@ -174,6 +192,7 @@ describe('JobsView job card micro-interaction', () => {
   it('follow-up save button carries the shared accent press register (hover + active bg)', () => {
     mockState();
     render(<JobsView />);
+    openTools();
     const atur = screen.getAllByRole('button', { name: /Atur follow-up/ })[0];
     fireEvent.click(atur);
     const simpan = screen.getByRole('button', { name: 'Simpan' });
@@ -192,26 +211,27 @@ describe('JobsView filter controls (pixel icon + micro-interaction)', () => {
       Array.from(container.querySelectorAll('svg[aria-hidden="true"]')).find(
         (s) => s.querySelector('polyline'),
       );
-    // SVG className is an SVGAnimatedString; read the real class list via getAttribute.
     const chevronClass = () => chevronSvg()!.getAttribute('class') ?? '';
 
-    // Default open: the chevron is rotated via a stepped transform transition.
+    // Default tertutup: chevron tidak diputar, panel tersembunyi.
     expect(chevronSvg()).toBeTruthy();
-    expect(chevronClass()).toContain('rotate-180');
+    expect(chevronClass()).not.toContain('rotate-180');
     expect(chevronClass()).toContain('transition-transform');
     expect(chevronClass()).toContain('[transition-timing-function:steps(3,jump-none)]');
+    expect(screen.queryByRole('button', { name: 'Ekspor CSV' })).toBeNull();
 
-    // No text-glyph placeholder icons remain on the toggle.
     expect(screen.queryByText('≡')).toBeNull();
     expect(screen.queryByText('▲')).toBeNull();
     expect(screen.queryByText('▼')).toBeNull();
 
     const toggle = screen.getByRole('button', { name: /Filter/ });
+    fireEvent.click(toggle); // expand
+    expect(chevronClass()).toContain('rotate-180');
+    expect(screen.getByRole('button', { name: 'Ekspor CSV' })).toBeTruthy();
+
     fireEvent.click(toggle); // collapse
     expect(chevronClass()).not.toContain('rotate-180');
-
-    fireEvent.click(toggle); // expand again
-    expect(chevronClass()).toContain('rotate-180');
+    expect(screen.queryByRole('button', { name: 'Ekspor CSV' })).toBeNull();
   });
 });
 
@@ -224,6 +244,8 @@ describe('JobsView filter tablist keyboard navigation', () => {
   it('keeps only the selected tab in the tab order per group (roving tabindex)', () => {
     mockState();
     const { container } = render(<JobsView />);
+
+    openTools();
     const type = pills(container, 'Filter posisi');
     expect(type.length).toBe(4); // Semua + FTE + Kontrak + Part-time
     expect(type[0].getAttribute('tabindex')).toBe('0');
@@ -240,6 +262,8 @@ describe('JobsView filter tablist keyboard navigation', () => {
   it('ArrowRight selects and focuses the next type-filter pill', () => {
     mockState();
     const { container } = render(<JobsView />);
+
+    openTools();
     const list = container.querySelector('div[aria-label="Filter posisi"]')!;
     fireEvent.keyDown(list, { key: 'ArrowRight' });
     const type = pills(container, 'Filter posisi');
@@ -252,6 +276,8 @@ describe('JobsView filter tablist keyboard navigation', () => {
   it('ArrowLeft wraps from the first pill to the last', () => {
     mockState();
     const { container } = render(<JobsView />);
+
+    openTools();
     const list = container.querySelector('div[aria-label="Filter posisi"]')!;
     fireEvent.keyDown(list, { key: 'ArrowLeft' });
     const type = pills(container, 'Filter posisi');
@@ -262,6 +288,8 @@ describe('JobsView filter tablist keyboard navigation', () => {
   it('Home/End jump to the first/last tier pill', () => {
     mockState();
     const { container } = render(<JobsView />);
+
+    openTools();
     const list = container.querySelector('div[aria-label="Filter prioritas"]')!;
     fireEvent.keyDown(list, { key: 'End' });
     const tier = pills(container, 'Filter prioritas');
@@ -274,6 +302,8 @@ describe('JobsView filter tablist keyboard navigation', () => {
     const setStatusFilter = vi.fn();
     mockState({ setStatusFilter });
     const { container } = render(<JobsView />);
+
+    openTools();
     const list = container.querySelector('div[aria-label="Filter status"]')!;
     fireEvent.keyDown(list, { key: 'ArrowRight' });
     expect(setStatusFilter).toHaveBeenCalledWith(OPPORTUNITY_STATUSES[0]);
@@ -286,6 +316,7 @@ describe('JobsView paket lamaran (auto-prep + gate review)', () => {
   it('menampilkan data isian form & lampiran CV setelah draft dibuat, dan gate menunggu konfirmasi', async () => {
     mockState({ cvFiles: ['Rholly-CV-EN-MYSG.pdf'] });
     render(<JobsView />);
+    openTools();
 
     fireEvent.click(screen.getAllByText('Buat draft lamaran')[0]);
     await waitFor(() => expect(screen.getByText('Paket lamaran')).toBeTruthy());
@@ -309,6 +340,7 @@ describe('JobsView paket lamaran (auto-prep + gate review)', () => {
     try {
       mockState({ cvFiles: [] });
       render(<JobsView />);
+    openTools();
 
       fireEvent.click(screen.getAllByText('Buat draft lamaran')[0]);
       await waitFor(() => expect(screen.getByText('Paket lamaran')).toBeTruthy());
@@ -332,6 +364,7 @@ describe('JobsView disabled-state contrast (no misleading press feedback)', () =
   it('status buttons drop the press-slide while a status update is in flight', () => {
     mockState({ opportunities: [base], updatingId: 1 });
     render(<JobsView />);
+    openTools();
     const group = screen.getByRole('group', { name: 'Ubah status' });
     const buttons = Array.from(group.querySelectorAll('button'));
     expect(buttons.length).toBeGreaterThan(0);
@@ -345,6 +378,7 @@ describe('JobsView disabled-state contrast (no misleading press feedback)', () =
   it('generate-draft button drops the press-slide while generating', () => {
     mockState({ opportunities: [base], generatingId: 1, generateDraft: vi.fn() });
     render(<JobsView />);
+    openTools();
     const gen = screen.getByRole('button', { name: /Menyusun…/ }) as HTMLButtonElement;
     expect(gen.disabled).toBe(true);
     expect(gen.className).toContain('disabled:active:translate-y-0');
@@ -354,6 +388,7 @@ describe('JobsView disabled-state contrast (no misleading press feedback)', () =
   it('follow-up save button shows a distinct disabled state while a save is in flight', () => {
     mockState({ opportunities: [base], updatingId: 1 });
     render(<JobsView />);
+    openTools();
     fireEvent.click(screen.getByRole('button', { name: /Atur follow-up/ }));
     const simpan = screen.getByRole('button', { name: 'Simpan' }) as HTMLButtonElement;
     expect(simpan.disabled).toBe(true);
@@ -372,6 +407,7 @@ describe('JobsView CSV export', () => {
     const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     render(<JobsView apiKey="k" />);
+    openTools();
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
     await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, expect.any(Object)));
@@ -388,6 +424,7 @@ describe('JobsView CSV export', () => {
     exportMock.mockRejectedValue(new Error('fail'));
 
     render(<JobsView apiKey="k" />);
+    openTools();
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor CSV.'));
@@ -398,6 +435,7 @@ describe('JobsView keyword search', () => {
   it('filters the list live by judul (case-insensitive)', () => {
     mockState();
     render(<JobsView />);
+    openTools();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'blazor' } });
     expect(screen.getByText('Freelance Blazor')).toBeTruthy();
     expect(screen.queryByText('Senior .NET Engineer')).toBeNull();
@@ -407,6 +445,7 @@ describe('JobsView keyword search', () => {
   it('matches perusahaan and lokasi too', () => {
     mockState();
     render(<JobsView />);
+    openTools();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'PT Contoh' } });
     expect(screen.getAllByText('PT Contoh · Jakarta').length).toBe(3);
   });
@@ -414,6 +453,7 @@ describe('JobsView keyword search', () => {
   it('clearing the query restores the full list', () => {
     mockState();
     render(<JobsView />);
+    openTools();
     const box = screen.getByRole('searchbox');
     fireEvent.change(box, { target: { value: 'senior' } });
     expect(screen.getByText('Senior .NET Engineer')).toBeTruthy();
@@ -426,6 +466,7 @@ describe('JobsView keyword search', () => {
   it('combines with the status filter', () => {
     mockState({ statusFilter: 'new' }); // only base is 'new'
     render(<JobsView />);
+    openTools();
     const box = screen.getByRole('searchbox');
     fireEvent.change(box, { target: { value: 'Backend' } });
     expect(screen.getByText('Backend .NET Developer')).toBeTruthy();
@@ -436,6 +477,7 @@ describe('JobsView keyword search', () => {
   it('empty state shows the active query when nothing matches', () => {
     mockState();
     render(<JobsView />);
+    openTools();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzz' } });
     expect(screen.getByText(/cocok “zzz”/)).toBeTruthy();
   });
@@ -460,12 +502,14 @@ describe('JobsView overdue follow-up filter', () => {
   it('shows the overdue count on the toggle', () => {
     mockState({ opportunities: [overdue, upcoming, base] });
     render(<JobsView />);
+    openTools();
     expect(screen.getByRole('button', { name: 'Perlu follow-up (1)' })).toBeTruthy();
   });
 
   it('filters to only overdue follow-ups when toggled on', () => {
     mockState({ opportunities: [overdue, upcoming, base] });
     render(<JobsView />);
+    openTools();
     const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
     fireEvent.click(toggle);
     const list = within(screen.getByTestId('jobs-list'));
@@ -477,6 +521,7 @@ describe('JobsView overdue follow-up filter', () => {
   it('toggle off restores the full list', () => {
     mockState({ opportunities: [overdue, upcoming, base] });
     render(<JobsView />);
+    openTools();
     const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
     fireEvent.click(toggle);
     fireEvent.click(toggle);
@@ -489,6 +534,7 @@ describe('JobsView overdue follow-up filter', () => {
   it('empty state mentions follow-up when toggle is on and nothing matches', () => {
     mockState({ opportunities: [upcoming, base] }); // no overdue
     render(<JobsView />);
+    openTools();
     const toggle = screen.getByRole('button', { name: 'Perlu follow-up (0)' });
     fireEvent.click(toggle);
     expect(screen.getByText(/Belum ada lowongan yang perlu follow-up/)).toBeTruthy();
@@ -497,6 +543,7 @@ describe('JobsView overdue follow-up filter', () => {
   it('seeds the follow-up filter ON when initialFollowUpOnly is true', () => {
     mockState({ opportunities: [overdue, upcoming, base] });
     render(<JobsView initialFollowUpOnly />);
+    openTools();
     const list = within(screen.getByTestId('jobs-list'));
     expect(list.getByText('Overdue Applied Role')).toBeTruthy();
     expect(list.queryByText('Upcoming Interview Role')).toBeNull();
@@ -506,6 +553,7 @@ describe('JobsView overdue follow-up filter', () => {
     const mockDownload = vi.fn();
     mockState({ cvFiles: ['Rholly-CV-A.pdf', 'Rholly-CV-B.pdf'], downloadCv: mockDownload });
     render(<JobsView />);
+    openTools();
 
     const downloadBtn = screen.getByRole('button', { name: /Download CV \(2\)/ });
     expect(downloadBtn).toBeTruthy();
@@ -532,6 +580,7 @@ describe('JobsView manual CRUD', () => {
     const reload = vi.fn();
     mockState({ reload });
     render(<JobsView apiKey="k" />);
+    openTools();
 
     fireEvent.click(screen.getByRole('button', { name: 'Tambah lowongan' }));
     expect(screen.getByRole('heading', { name: 'Tambah Lowongan' })).toBeTruthy();
@@ -551,6 +600,7 @@ describe('JobsView manual CRUD', () => {
     const reload = vi.fn();
     mockState({ reload });
     render(<JobsView apiKey="k" />);
+    openTools();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
     expect(screen.getByRole('heading', { name: 'Edit Lowongan' })).toBeTruthy();
@@ -569,6 +619,7 @@ describe('JobsView manual CRUD', () => {
     mockState({ reload });
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<JobsView apiKey="k" />);
+    openTools();
 
     const { deleteJob } = await import('../jobsApi');
     fireEvent.click(screen.getAllByRole('button', { name: 'Hapus' })[0]);
@@ -596,6 +647,7 @@ describe('JobsView jadwal follow-up (schedule panel)', () => {
     const later = { ...base, id: 13, judul: 'Nanti Saja', status: 'offer', followUpTanggal: addDaysIso(todayISO, 40) };
     mockState({ opportunities: [overdue, today, week, later] });
     render(<JobsView />);
+    openTools();
 
     expect(screen.getByText('Jadwal follow-up')).toBeTruthy();
     const panel = within(screen.getByRole('region', { name: 'Jadwal follow-up' }));
@@ -610,6 +662,7 @@ describe('JobsView jadwal follow-up (schedule panel)', () => {
   it('tidak menampilkan panel saat tidak ada follow-up terjadwal', () => {
     mockState(); // default: none of fte/base/freelance carry followUpTanggal
     render(<JobsView />);
+    openTools();
     expect(screen.queryByText('Jadwal follow-up')).toBeNull();
   });
 });

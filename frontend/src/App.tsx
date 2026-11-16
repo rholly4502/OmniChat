@@ -616,7 +616,7 @@ export default function App() {
           </div>
         )}
       </main>
-      <RhoWatermark compact />
+      <RhoWatermark floating />
       <ShortcutsDialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   );
