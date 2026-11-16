@@ -1,0 +1,90 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using OmniChat.Domain.Entities;
+using OmniChat.Infrastructure.Data;
+
+namespace OmniChat.Tests.Data;
+
+/// <summary>
+/// Tests for <see cref="OpportunityRepository.JobsSummaryAsync"/> against a real
+/// in-memory SQLite database.
+/// </summary>
+public sealed class OpportunityRepositorySummaryTests : IDisposable
+{
+    private readonly SqliteConnection _connection;
+    private readonly ChatDbContext _db;
+    private readonly OpportunityRepository _repository;
+
+    public OpportunityRepositorySummaryTests()
+    {
+        _connection = new SqliteConnection("Data Source=:memory:");
+        _connection.Open();
+        _db = new ChatDbContext(new DbContextOptionsBuilder<ChatDbContext>()
+            .UseSqlite(_connection)
+            .Options);
+        _db.Database.EnsureCreated();
+        _repository = new OpportunityRepository(_db);
+    }
+
+    public void Dispose()
+    {
+        _db.Dispose();
+        _connection.Dispose();
+    }
+
+    private static Opportunity NewOpportunity(
+        long id, string status, DateOnly? followUp = null) => new()
+    {
+        Id = id,
+        Judul = $".NET Developer {id}",
+        Perusahaan = "PT Contoh",
+        Lokasi = "Remote",
+        Tipe = "Kontrak",
+        Status = status,
+        FollowUpTanggal = followUp,
+        Ditemukan = new DateOnly(2026, 11, 1),
+    };
+
+    private async Task SeedAsync(params Opportunity[] rows)
+    {
+        await _db.Opportunities.AddRangeAsync(rows);
+        await _db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Summary_groups_by_status_and_buckets_followups_relative_to_today()
+    {
+        var today = new DateOnly(2026, 11, 16);
+        await SeedAsync(
+            NewOpportunity(1, "new"),
+            NewOpportunity(2, "applied", new DateOnly(2026, 11, 15)), // overdue
+            NewOpportunity(3, "applied", new DateOnly(2026, 11, 16)), // today
+            NewOpportunity(4, "interview", new DateOnly(2026, 11, 20)), // within 7d
+            NewOpportunity(5, "offer", new DateOnly(2026, 12, 1)),     // beyond 7d
+            NewOpportunity(6, "closed"));
+
+        var summary = await _repository.JobsSummaryAsync(today, CancellationToken.None);
+
+        Assert.Equal(6, summary.Total);
+        Assert.Equal(1, summary.PerStatus["new"]);
+        Assert.Equal(2, summary.PerStatus["applied"]);
+        Assert.Equal(1, summary.PerStatus["interview"]);
+        Assert.Equal(1, summary.PerStatus["offer"]);
+        Assert.Equal(1, summary.PerStatus["closed"]);
+        Assert.Equal(1, summary.FollowUpTerlambat);
+        Assert.Equal(1, summary.FollowUpHariIni);
+        Assert.Equal(1, summary.FollowUp7Hari);
+    }
+
+    [Fact]
+    public async Task Summary_returns_zero_counts_when_no_rows()
+    {
+        var summary = await _repository.JobsSummaryAsync(new DateOnly(2026, 11, 16), CancellationToken.None);
+
+        Assert.Equal(0, summary.Total);
+        Assert.Empty(summary.PerStatus);
+        Assert.Equal(0, summary.FollowUpTerlambat);
+        Assert.Equal(0, summary.FollowUpHariIni);
+        Assert.Equal(0, summary.FollowUp7Hari);
+    }
+}

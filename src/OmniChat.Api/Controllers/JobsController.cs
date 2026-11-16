@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Api.Controllers;
 
@@ -33,6 +34,21 @@ public sealed class JobsController(
         var items = await repository.ListAsync(status, cancellationToken);
         return Ok(items);
     }
+
+    /// <summary>Pipeline overview: counts per status plus follow-up urgency buckets.</summary>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Job pipeline summary.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("summary")]
+    [ProducesResponseType(typeof(JobsSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Summary(CancellationToken cancellationToken = default)
+    {
+        return Ok(await repository.JobsSummaryAsync(TodayWib(), cancellationToken));
+    }
+
+    /// <summary>Today in WIB (UTC+7) — the timezone the pipeline and follow-ups use.</summary>
+    private static DateOnly TodayWib() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 
     /// <summary>Moves one opportunity to another pipeline status (new/applied/interview/offer/closed).</summary>
     /// <param name="id">Opportunity id.</param>

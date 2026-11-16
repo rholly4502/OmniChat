@@ -5,6 +5,19 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P12 — Jobs: endpoint ringkasan pipeline `GET /api/jobs/summary` (backend)
+
+#### Added
+- Endpoint baru `GET /api/jobs/summary` mengembalikan ringkasan pipeline
+  lowongan: jumlah per status (`new`/`applied`/`interview`/`offer`/`closed`),
+  total, dan ember urgensi follow-up relatif terhadap hari ini (WIB) —
+  **terlambat** (sebelum hari ini), **hari ini**, dan **dalam 7 hari**.
+  Dibangun satu query ringan (`Status` + `FollowUpTanggal` saja), mengikuti
+  pola fungsi `TodayWib()` yang sama dengan `ExpensesController`.
+- Tests: +3 — 2 unit test repository (SQLite in-memory: grup status + ember
+  follow-up vs `today`, serta kasus kosong) dan 1 test controller (200 + bentuk
+  `JobsSummary`). Full suite backend hijau: 714 pass, build 0 warning.
+
 ### P11 — Ringkasan: kartu Promo/Event bisa dialihkan ke view Events (frontend)
 
 #### Added

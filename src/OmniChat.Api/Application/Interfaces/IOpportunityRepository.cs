@@ -1,4 +1,5 @@
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Application.Interfaces;
 
@@ -40,4 +41,10 @@ public interface IOpportunityRepository
 
     /// <summary>Deletes an opportunity by id. Returns false when id is absent.</summary>
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Builds a pipeline summary (status counts + follow-up urgency buckets)
+    /// for the curated job list, relative to <paramref name="today"/> (WIB).
+    /// </summary>
+    Task<JobsSummary> JobsSummaryAsync(DateOnly today, CancellationToken cancellationToken);
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Infrastructure.Data;
 
@@ -169,5 +170,31 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         db.Opportunities.Remove(existing);
         await db.SaveChangesAsync(cancellationToken);
         return true;
+    }
+
+    public async Task<JobsSummary> JobsSummaryAsync(DateOnly today, CancellationToken cancellationToken)
+    {
+        // Only the fields we need — avoids loading full rows for an aggregate.
+        var rows = await db.Opportunities
+            .AsNoTracking()
+            .Select(o => new { o.Status, o.FollowUpTanggal })
+            .ToListAsync(cancellationToken);
+
+        var perStatus = rows
+            .GroupBy(r => r.Status)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var followUps = rows
+            .Select(r => r.FollowUpTanggal)
+            .Where(d => d.HasValue)
+            .Select(d => d!.Value)
+            .ToList();
+
+        return new JobsSummary(
+            perStatus,
+            rows.Count,
+            followUps.Count(d => d < today),
+            followUps.Count(d => d == today),
+            followUps.Count(d => d > today && d <= today.AddDays(7)));
     }
 }
