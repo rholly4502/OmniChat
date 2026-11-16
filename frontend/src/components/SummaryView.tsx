@@ -196,6 +196,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
 
         <Card title="Pengeluaran (bulan ini)" glyph={GLYPHS.expenses} tone={expenses.summary && expenses.summary.sisaAnggaran !== null && expenses.summary.sisaAnggaran < 0 ? 'red' : 'emerald'}>
           <StatRow label="Total bulan ini" value={expenses.summary ? expenses.summary.total.toLocaleString('id-ID') : '—'} />
+          <StatRow label="Anggaran" value={expenses.summary?.anggaran != null ? expenses.summary.anggaran.toLocaleString('id-ID') : '—'} />
           <StatRow label="Sisa anggaran" value={expenses.summary?.sisaAnggaran !== null && expenses.summary?.sisaAnggaran !== undefined ? expenses.summary.sisaAnggaran.toLocaleString('id-ID') : '—'} />
           {(() => {
             const cmp = monthCompare(trend.points, expenses.summary?.month);

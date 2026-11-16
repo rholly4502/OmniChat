@@ -362,4 +362,12 @@ describe('SummaryView', () => {
     expect(screen.queryByText('Dibanding bulan lalu')).not.toBeInTheDocument();
   });
 
+  it('shows the monthly budget ceiling on the expenses card', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Anggaran').parentElement).toHaveTextContent('520.000');
+  });
+
 });

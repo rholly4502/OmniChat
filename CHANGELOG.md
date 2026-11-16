@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P17 — Ringkasan: nominal anggaran bulanan di kartu Pengeluaran (frontend)
+
+#### Added
+- Kartu "Pengeluaran (bulan ini)" di Ringkasan kini menampilkan **Anggaran**
+  (plafon budget bulanan) di antara "Total bulan ini" dan "Sisa anggaran" —
+  sehingga angka sisa anggaran punya konteks (plafon berapa). Menampilkan
+  "—" bila anggaran belum ditetapkan (konsisten dengan baris lain).
+- Tests: +1 komponen (SummaryView) — baris Anggaran dirender dengan locale
+  id-ID dari data summary. Full suite frontend hijau: tsc -b, oxlint tanpa
+  warning baru.
+
 ### P16 — Ringkasan: kartu Promo/Event pakai endpoint ringkasan `GET /api/events/summary` (backend + frontend)
 
 #### Added
