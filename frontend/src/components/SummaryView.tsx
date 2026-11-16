@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useExpenses } from '../hooks/useExpenses';
-import { useJobs } from '../hooks/useJobs';
+import { useJobsSummary } from '../hooks/useJobsSummary';
 import { useEvents } from '../hooks/useEvents';
 import type { ConversationUsageSummary } from '../types';
-import type { Opportunity } from '../jobsApi';
-import { OPPORTUNITY_STATUSES } from '../jobsApi';
 import { countdownLabel, daysRemaining } from '../eventsStatus';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
@@ -68,15 +66,6 @@ function StatRow({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * YYYY-MM-DD shifted by `days` (WIB-anchored; UTC math keeps ranges stable).
- */
-function dayOffsetISO(baseISO: string, days: number): string {
-  const [y, m, d] = baseISO.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, m - 1, d + days));
-  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, '0')}-${String(dt.getUTCDate()).padStart(2, '0')}`;
-}
-
-/**
  * Top spending categories for the digest, ranked by nominal and excluding
  * savings deposits (kategori "Nabung"), so the breakdown reflects actual
  * spending — the same figure the card reports as "Total bulan ini".
@@ -97,19 +86,14 @@ function topSpendCategories(
  * read-only digest that links back into its full view via the sidebar tabs.
  */
 export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents }: SummaryViewProps) {
-  // Today captured once per mount (WIB local); keeps the follow-up deadline stable.
+  const expenses = useExpenses(apiKey);
+  const jobs = useJobsSummary(apiKey);
+  const events = useEvents(apiKey);
+  // Today captured once per mount (WIB local); anchors the events promo deadline.
   const [todayISO] = useState(() => {
     const t = new Date();
     return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
   });
-  const needsFollowUp = (o: Opportunity): boolean => {
-    if (!o.followUpTanggal) return false;
-    if (o.status !== 'applied' && o.status !== 'interview' && o.status !== 'offer') return false;
-    return o.followUpTanggal <= todayISO;
-  };
-  const expenses = useExpenses(apiKey);
-  const jobs = useJobs(apiKey);
-  const events = useEvents(apiKey);
 
   const loading = expenses.loading || jobs.loading || events.loading;
 
@@ -147,26 +131,18 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
     );
   }
 
-  const statusCounts = Object.fromEntries(OPPORTUNITY_STATUSES.map((s) => [s, 0]));
-  for (const o of jobs.opportunities) {
-    if (Object.prototype.hasOwnProperty.call(statusCounts, o.status)) statusCounts[o.status] += 1;
-  }
-  const activeJobs = jobs.opportunities.filter((o) => o.status !== 'closed').length;
-  const overdueFollowUps = jobs.opportunities.filter(needsFollowUp).length;
-
-  const activeFollowUpStage = (o: Opportunity) =>
-    o.status === 'applied' || o.status === 'interview' || o.status === 'offer';
-  const todayFollowUps = jobs.opportunities.filter(
-    (o) => o.followUpTanggal != null && activeFollowUpStage(o) && o.followUpTanggal === todayISO,
-  ).length;
-  const weekEndISO = dayOffsetISO(todayISO, 7);
-  const weekFollowUps = jobs.opportunities.filter(
-    (o) =>
-      o.followUpTanggal != null &&
-      activeFollowUpStage(o) &&
-      o.followUpTanggal > todayISO &&
-      o.followUpTanggal <= weekEndISO,
-  ).length;
+  const summary = jobs.summary;
+  const statusCounts = summary?.perStatus ?? {};
+  const countNew = statusCounts.new ?? 0;
+  const countApplied = statusCounts.applied ?? 0;
+  const countInterview = statusCounts.interview ?? 0;
+  const countOffer = statusCounts.offer ?? 0;
+  // Aktif = total minus closed (opportunities that are no longer open).
+  const activeJobs = summary ? summary.total - (statusCounts.closed ?? 0) : 0;
+  // "Perlu follow-up" = terlambat + hari ini (both are actionable right now).
+  const overdueFollowUps = summary ? summary.followUpTerlambat + summary.followUpHariIni : 0;
+  const todayFollowUps = summary?.followUpHariIni ?? 0;
+  const weekFollowUps = summary?.followUp7Hari ?? 0;
 
   // Promo expiring within 7 days, bucketed like the event countdown labels.
   const eventsToday = events.events.filter(
@@ -234,9 +210,9 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
 
         <Card title="Lowongan" glyph={GLYPHS.jobs} tone="accent">
           <StatRow label="Aktif (belum tutup)" value={String(activeJobs)} />
-          <StatRow label="Baru" value={String(statusCounts.new)} />
-          <StatRow label="Sudah dilamar" value={String(statusCounts.applied)} />
-          <StatRow label="Interview" value={String(statusCounts.interview)} />
+          <StatRow label="Baru" value={String(countNew)} />
+          <StatRow label="Sudah dilamar" value={String(countApplied)} />
+          <StatRow label="Interview" value={String(countInterview)} />
           {onOpenFollowUps ? (
             <button
               type="button"
@@ -251,7 +227,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           )}
           <StatRow label="Follow-up hari ini" value={String(todayFollowUps)} />
           <StatRow label="Dalam 7 hari" value={String(weekFollowUps)} />
-          <StatRow label="Tawaran" value={String(statusCounts.offer)} />
+          <StatRow label="Tawaran" value={String(countOffer)} />
         </Card>
 
         <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">

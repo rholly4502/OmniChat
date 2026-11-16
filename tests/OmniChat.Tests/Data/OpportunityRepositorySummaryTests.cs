@@ -61,16 +61,21 @@ public sealed class OpportunityRepositorySummaryTests : IDisposable
             NewOpportunity(3, "applied", new DateOnly(2026, 11, 16)), // today
             NewOpportunity(4, "interview", new DateOnly(2026, 11, 20)), // within 7d
             NewOpportunity(5, "offer", new DateOnly(2026, 12, 1)),     // beyond 7d
-            NewOpportunity(6, "closed"));
+            NewOpportunity(6, "closed"),
+            // Non-actionable stages carry follow-up dates but must NOT count:
+            // closed/new are not open pipeline stages, so their targets are
+            // excluded from the urgency buckets (matches the Ringkasan card).
+            NewOpportunity(7, "closed", new DateOnly(2026, 11, 15)),
+            NewOpportunity(8, "new", new DateOnly(2026, 11, 16)));
 
         var summary = await _repository.JobsSummaryAsync(today, CancellationToken.None);
 
-        Assert.Equal(6, summary.Total);
-        Assert.Equal(1, summary.PerStatus["new"]);
+        Assert.Equal(8, summary.Total);
+        Assert.Equal(2, summary.PerStatus["new"]);
         Assert.Equal(2, summary.PerStatus["applied"]);
         Assert.Equal(1, summary.PerStatus["interview"]);
         Assert.Equal(1, summary.PerStatus["offer"]);
-        Assert.Equal(1, summary.PerStatus["closed"]);
+        Assert.Equal(2, summary.PerStatus["closed"]);
         Assert.Equal(1, summary.FollowUpTerlambat);
         Assert.Equal(1, summary.FollowUpHariIni);
         Assert.Equal(1, summary.FollowUp7Hari);

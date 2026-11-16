@@ -2,7 +2,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { SummaryView } from '../components/SummaryView';
 import { currentMonthKey } from '../hooks/useExpenses';
-import type { Opportunity } from '../jobsApi';
 import type { PromoEvent } from '../eventsApi';
 
 function jsonResponse(body: unknown, status = 200) {
@@ -26,18 +25,6 @@ const pagePayload = {
   items: [],
 };
 
-function jobOf(id: number, status: string): Opportunity {
-  return {
-    id,
-    judul: `Job ${id}`,
-    perusahaan: 'Astra',
-    lokasi: 'Jakarta',
-    tipe: 'fulltime',
-    status,
-    ditemukan: '2026-11-01',
-  };
-}
-
 function eventOf(id: number, aplikasi: string): PromoEvent {
   return {
     id,
@@ -47,13 +34,28 @@ function eventOf(id: number, aplikasi: string): PromoEvent {
   };
 }
 
-function fetchStub(overrides: { summary?: Response | typeof summaryPayload; jobs?: unknown; events?: unknown } = {}) {
+const defaultJobsSummary = {
+  perStatus: { new: 0, applied: 0, interview: 0, offer: 0, closed: 0 },
+  total: 0,
+  followUpTerlambat: 0,
+  followUpHariIni: 0,
+  followUp7Hari: 0,
+};
+
+function fetchStub(overrides: {
+  summary?: Response | typeof summaryPayload;
+  jobsSummary?: Response | typeof defaultJobsSummary;
+  events?: unknown;
+} = {}) {
   return vi.fn((url: string) => {
+    if (url.includes('/jobs/summary')) {
+      const v = overrides.jobsSummary;
+      return v instanceof Response ? v : jsonResponse(v ?? defaultJobsSummary);
+    }
     if (url.includes('/summary')) {
       const v = overrides.summary;
       return v instanceof Response ? v : jsonResponse(v ?? summaryPayload);
     }
-    if (url.includes('/jobs')) return jsonResponse(overrides.jobs ?? []);
     if (url.includes('/events')) return jsonResponse(overrides.events ?? []);
     return jsonResponse(pagePayload);
   });
@@ -94,18 +96,14 @@ describe('SummaryView', () => {
   });
 
   it('counts job pipeline statuses and excludes closed from aktif', async () => {
-    const jobs: Opportunity[] = [
-      jobOf(1, 'new'),
-      jobOf(2, 'new'),
-      jobOf(3, 'applied'),
-      jobOf(4, 'interview'),
-      jobOf(5, 'interview'),
-      jobOf(6, 'interview'),
-      jobOf(7, 'offer'),
-      jobOf(8, 'closed'),
-      jobOf(9, 'closed'),
-    ];
-    vi.stubGlobal('fetch', fetchStub({ jobs }));
+    const jobsSummary = {
+      perStatus: { new: 2, applied: 1, interview: 3, offer: 1, closed: 2 },
+      total: 9,
+      followUpTerlambat: 0,
+      followUpHariIni: 0,
+      followUp7Hari: 0,
+    };
+    vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
@@ -118,17 +116,15 @@ describe('SummaryView', () => {
   });
 
   it('counts overdue follow-ups among active pipeline stages', async () => {
-    const past = '2020-01-01';
-    const future = '2099-01-01';
-    const jobs: Opportunity[] = [
-      { ...jobOf(1, 'applied'), followUpTanggal: past },
-      { ...jobOf(2, 'applied'), followUpTanggal: future },
-      { ...jobOf(3, 'interview'), followUpTanggal: past },
-      { ...jobOf(4, 'new'), followUpTanggal: past }, // inactive stage -> not counted
-      { ...jobOf(5, 'closed'), followUpTanggal: past }, // closed -> not counted
-      jobOf(6, 'offer'),
-    ];
-    vi.stubGlobal('fetch', fetchStub({ jobs }));
+    // Hanya stage aktif yang dihitung: terlambat (2) + hari ini (0) = 2.
+    const jobsSummary = {
+      perStatus: { new: 1, applied: 2, interview: 1, closed: 1, offer: 1 },
+      total: 6,
+      followUpTerlambat: 2,
+      followUpHariIni: 0,
+      followUp7Hari: 0,
+    };
+    vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
@@ -226,8 +222,8 @@ describe('SummaryView', () => {
     const fetchMock = vi.fn((url: string) => {
       calls += 1;
       if (calls === 1 && url.includes('/summary')) return jsonResponse({ message: 'Boom' }, 500);
+      if (url.includes('/jobs/summary')) return jsonResponse(defaultJobsSummary);
       if (url.includes('/summary')) return jsonResponse(summaryPayload);
-      if (url.includes('/jobs')) return jsonResponse([]);
       if (url.includes('/events')) return jsonResponse([]);
       return jsonResponse(pagePayload);
     });
@@ -242,8 +238,7 @@ describe('SummaryView', () => {
 
   it('renders the Perlu follow-up stat as a button and triggers navigation when clicked', async () => {
     const onOpenFollowUps = vi.fn();
-    const overdueJob: Opportunity = { ...jobOf(10, 'applied'), followUpTanggal: '2026-01-01' };
-    vi.stubGlobal('fetch', fetchStub({ jobs: [overdueJob] }));
+    vi.stubGlobal('fetch', fetchStub());
     render(
       <SummaryView
         apiKey="secret"
@@ -260,20 +255,14 @@ describe('SummaryView', () => {
   });
 
   it('counts upcoming follow-ups split into today and next 7 days', async () => {
-    const iso = (d: Date) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const now = new Date();
-    const today = iso(now);
-    const plus = (days: number) => { const d = new Date(now); d.setDate(d.getDate() + days); return iso(d); };
-    const jobs: Opportunity[] = [
-      { ...jobOf(1, 'applied'), followUpTanggal: today },      // today
-      { ...jobOf(2, 'interview'), followUpTanggal: plus(3) },  // within 7 days
-      { ...jobOf(3, 'applied'), followUpTanggal: plus(7) },   // boundary (included)
-      { ...jobOf(4, 'offer'), followUpTanggal: plus(10) },    // later -> not counted
-      { ...jobOf(5, 'new'), followUpTanggal: today },         // inactive stage -> not counted
-      { ...jobOf(6, 'closed'), followUpTanggal: plus(2) },    // closed -> not counted
-    ];
-    vi.stubGlobal('fetch', fetchStub({ jobs }));
+    const jobsSummary = {
+      perStatus: { new: 1, applied: 2, interview: 1, closed: 1, offer: 1 },
+      total: 6,
+      followUpTerlambat: 0,
+      followUpHariIni: 1,
+      followUp7Hari: 2,
+    };
+    vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());

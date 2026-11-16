@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, createJob, updateJob, deleteJob, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, createJob, updateJob, deleteJob, fetchJobsSummary, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -248,5 +248,30 @@ describe('createJob / updateJob / deleteJob', () => {
   it('deleteJob throws an ApiError when not ok', async () => {
     const fetchMock = vi.fn().mockResolvedValue(errResponse(404));
     await expect(deleteJob(7, { fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe('fetchJobsSummary', () => {
+  const summary = {
+    perStatus: { new: 2, applied: 1, interview: 3, offer: 1, closed: 2 },
+    total: 9,
+    followUpTerlambat: 1,
+    followUpHariIni: 1,
+    followUp7Hari: 2,
+  };
+
+  it('GETs the summary endpoint and returns the pipeline overview', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(okResponse(summary));
+    const out = await fetchJobsSummary({ apiKey: 'k', fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/summary`);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toMatchObject({ 'X-Api-Key': 'k' });
+    expect(out).toEqual(summary);
+  });
+
+  it('throws an ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
+    await expect(fetchJobsSummary({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
   });
 });

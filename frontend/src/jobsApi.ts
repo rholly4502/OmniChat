@@ -152,6 +152,37 @@ export async function exportOpportunitiesCsv(
   return await res.blob();
 }
 
+/**
+ * Pipeline overview as served by `GET /api/jobs/summary`: per-status counts
+ * plus follow-up urgency buckets relative to the server's WIB day.
+ */
+export interface JobsSummary {
+  /** Count of opportunities per pipeline status (key = status name). */
+  perStatus: Record<string, number>;
+  /** Total number of opportunities. */
+  total: number;
+  /** Active-stage follow-ups with a target date before today. */
+  followUpTerlambat: number;
+  /** Active-stage follow-ups targeted for today. */
+  followUpHariIni: number;
+  /** Active-stage follow-ups targeted within the next 7 days. */
+  followUp7Hari: number;
+}
+
+/** Fetch the pipeline overview (per-status counts + follow-up urgency buckets). */
+export async function fetchJobsSummary(options: JobsRequestOptions = {}): Promise<JobsSummary> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${JOBS_URL}/summary`, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return (await res.json()) as JobsSummary;
+}
+
 /** Base path of the authenticated CV download service. */
 export const CV_URL = '/api/cv';
 

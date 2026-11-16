@@ -184,7 +184,11 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
             .GroupBy(r => r.Status)
             .ToDictionary(g => g.Key, g => g.Count());
 
-        var followUps = rows
+        // Follow-up urgency buckets count only open pipeline stages — closed/new
+        // opportunities are not actionable follow-up targets (matches the UI's
+        // "active stage" rule, so the summary and the Ringkasan card agree).
+        var activeFollowUps = rows
+            .Where(r => r.Status == "applied" || r.Status == "interview" || r.Status == "offer")
             .Select(r => r.FollowUpTanggal)
             .Where(d => d.HasValue)
             .Select(d => d!.Value)
@@ -193,8 +197,8 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         return new JobsSummary(
             perStatus,
             rows.Count,
-            followUps.Count(d => d < today),
-            followUps.Count(d => d == today),
-            followUps.Count(d => d > today && d <= today.AddDays(7)));
+            activeFollowUps.Count(d => d < today),
+            activeFollowUps.Count(d => d == today),
+            activeFollowUps.Count(d => d > today && d <= today.AddDays(7)));
     }
 }
