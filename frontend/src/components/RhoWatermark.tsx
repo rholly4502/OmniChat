@@ -10,7 +10,7 @@ export default function RhoWatermark({ compact = false, floating = false }: { co
     return (
       <div
         title="Rholly Kurnia Putra"
-        className="pointer-events-none absolute right-2 bottom-2 z-[40] flex items-center gap-1.5 select-none text-[10px]"
+        className="pointer-events-none absolute right-2 bottom-2 z-[40] flex items-center gap-1.5 select-none text-xs"
       >
         <span
           className="inline-flex items-center justify-center border border-chill-border text-chill-accent"
