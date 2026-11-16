@@ -184,6 +184,10 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
   const spendCategories = expenses.summary ? topSpendCategories(expenses.summary.perKategori) : [];
+  // Tabungan bulan ini vs target (mendukung sasaran nabung di kartu).
+  const monthSavings = expenses.summary?.perKategori?.['Nabung'] ?? 0;
+  const nabungTarget = expenses.summary?.targetNabung ?? 0;
+  const nabungPct = nabungTarget > 0 ? Math.round((monthSavings / nabungTarget) * 100) : null;
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -205,6 +209,18 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           <StatRow label="Total bulan ini" value={expenses.summary ? expenses.summary.total.toLocaleString('id-ID') : '—'} />
           <StatRow label="Sisa anggaran" value={expenses.summary?.sisaAnggaran !== null && expenses.summary?.sisaAnggaran !== undefined ? expenses.summary.sisaAnggaran.toLocaleString('id-ID') : '—'} />
           <StatRow label="Target nabung" value={expenses.summary?.targetNabung != null ? expenses.summary.targetNabung.toLocaleString('id-ID') : '—'} />
+          <StatRow label="Ditabung bulan ini" value={monthSavings.toLocaleString('id-ID')} />
+          {nabungPct !== null && (
+            <div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-chill-muted">Progres nabung</span>
+                <span className="text-sm font-medium text-chill-text">{nabungPct}%</span>
+              </div>
+              <div className="mt-1 h-1.5 border border-chill-border bg-chill-surface overflow-hidden">
+                <div className="h-full bg-chill-emerald" style={{ width: `${Math.min(100, nabungPct)}%` }} />
+              </div>
+            </div>
+          )}
           {spendCategories.length > 0 && (
             <>
               <div className="h-px bg-chill-surface my-2" aria-hidden="true" />

@@ -5,6 +5,20 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P14 — Ringkasan: stat tabungan + progres menuju target nabung (frontend)
+
+#### Added
+- Kartu "Pengeluaran (bulan ini)" di Ringkasan kini menampilkan **Ditabung
+  bulan ini** (nominal kategori "Nabung" bulan berjalan, dari data summary yang
+  sudah dimuat) serta **Progres nabung** — bar persentase sederhana terhadap
+  `targetNabung` saat target ditetapkan, untuk memantau sasaran menabung
+  (mis. dana PC) sekilas.
+- Fix a11y: watermark floating (RhoWatermark) memakai `text-[10px]` di bawah
+  lantai keterbacaan 12px → diganti `text-xs` (menghijaukan scan typography).
+- Tests: +2 komponen (SummaryView) — nilai Ditabung dirender dari
+  `perKategori["Nabung"]`, dan bar progres muncul hanya saat target > 0.
+  Full suite frontend hijau: 73 file, tsc -b, oxlint tanpa warning baru.
+
 ### P13 — Ringkasan: rincian pengeluaran per kategori di kartu Pengeluaran (frontend)
 
 #### Added

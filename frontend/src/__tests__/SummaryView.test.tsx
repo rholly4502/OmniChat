@@ -183,6 +183,25 @@ describe('SummaryView', () => {
     expect(screen.queryByText('Nabung')).not.toBeInTheDocument();
   });
 
+  it('shows monthly savings and progress toward the nabung target', async () => {
+    vi.stubGlobal('fetch', fetchStub({ summary: { ...summaryPayload, perKategori: { Makan: 12000, Lain: 8000, Nabung: 500000 }, targetNabung: 1000000 } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Ditabung bulan ini').parentElement).toHaveTextContent('500.000');
+    expect(screen.getByText('Progres nabung')).toBeInTheDocument();
+    expect(screen.getByText('50%')).toBeInTheDocument();
+  });
+
+  it('hides the nabung progress when no target is set', async () => {
+    vi.stubGlobal('fetch', fetchStub({ summary: { ...summaryPayload, perKategori: { Makan: 12000, Lain: 8000, Nabung: 500000 }, targetNabung: 0 } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Ditabung bulan ini').parentElement).toHaveTextContent('500.000');
+    expect(screen.queryByText('Progres nabung')).not.toBeInTheDocument();
+  });
+
   it('hides the Model aktif row when byModel is empty', async () => {
     vi.stubGlobal('fetch', fetchStub());
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 3, totalTokens: 5000, byModel: {} }} />);
