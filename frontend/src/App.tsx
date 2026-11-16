@@ -436,6 +436,11 @@ export default function App() {
     setActiveView('jobs');
   }
 
+  /** Jump from the Ringkasan "Promo / Event" card into the Events view. */
+  function openEvents() {
+    setActiveView('events');
+  }
+
   return (
     <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}
       onTouchStart={onTouchStart}
@@ -539,7 +544,7 @@ export default function App() {
         />
 
         {activeView === 'ringkasan' ? (
-          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} />
+          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} onOpenEvents={openEvents} />
         ) : activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (

@@ -4,6 +4,19 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+
+### P11 — Ringkasan: kartu Promo/Event bisa dialihkan ke view Events (frontend)
+
+#### Added
+- Kartu "Promo / Event" di Ringkasan kini punya tombol **Lihat semua promo** yang
+  mengalihkan langsung ke view Events — pola yang sama dengan drill-down "Perlu
+  follow-up" di kartu Lowongan. Tombol muncul hanya saat prop `onOpenEvents`
+  disediakan; tanpa prop itu, kartu tetap dirender seperti semula (backward-
+  compatible).
+- Tests: +2 komponen (SummaryView) — tombol dirender dan memicu navigasi saat
+  diklik, serta tidak muncul ketika `onOpenEvents` kosong. Full suite hijau:
+  frontend (tsc -b, oxlint tanpa warning baru).
+
 ### P10 — Jobs: ekspor CSV menghormati semua filter aktif (backend + frontend)
 
 #### Fixed

@@ -20,6 +20,7 @@ export interface SummaryViewProps {
   usageSummary?: ConversationUsageSummary;
   /** When provided, the "Perlu follow-up" stat becomes a button that jumps to the Jobs view filtered to overdue follow-ups. */
   onOpenFollowUps?: () => void;
+  onOpenEvents?: () => void;
 }
 
 /** Pixel glyph set for the four summary cards. */
@@ -80,7 +81,7 @@ function dayOffsetISO(baseISO: string, days: number): string {
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
  */
-export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryViewProps) {
+export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents }: SummaryViewProps) {
   // Today captured once per mount (WIB local); keeps the follow-up deadline stable.
   const [todayISO] = useState(() => {
     const t = new Date();
@@ -222,6 +223,16 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps }: SummaryVi
               <StatRow label="Dalam 7 hari" value={String(eventsWeek)} />
             </>
           )}
+          {onOpenEvents ? (
+            <button
+              type="button"
+              onClick={onOpenEvents}
+              className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="text-xs text-chill-muted">Lihat semua promo</span>
+              <span className="text-sm font-medium text-chill-text">{String(events.events.length)}</span>
+            </button>
+          ) : null}
         </Card>
       </div>
     </div>

@@ -118,8 +118,6 @@ describe('SummaryView', () => {
   });
 
   it('counts overdue follow-ups among active pipeline stages', async () => {
-    const now = new Date();
-    const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const past = '2020-01-01';
     const future = '2099-01-01';
     const jobs: Opportunity[] = [
@@ -274,6 +272,36 @@ describe('SummaryView', () => {
     expect(screen.getByText('Sumber unik')).toBeInTheDocument();
     expect(screen.queryByText('Berakhir hari ini')).not.toBeInTheDocument();
     expect(screen.queryByText('Besok berakhir')).not.toBeInTheDocument();
+  });
+
+  it('renders the Lihat semua promo button and triggers navigation when clicked', async () => {
+    const onOpenEvents = vi.fn();
+    const now = new Date();
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = iso(now);
+    const events: PromoEvent[] = [{ ...eventOf(1, 'OVO'), berlakuSampai: today }];
+    vi.stubGlobal('fetch', fetchStub({ events }));
+    render(
+      <SummaryView
+        apiKey="secret"
+        usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }}
+        onOpenEvents={onOpenEvents}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    const eventsBtn = screen.getByRole('button', { name: /Lihat semua promo/ });
+    expect(eventsBtn).toBeInTheDocument();
+    fireEvent.click(eventsBtn);
+    expect(onOpenEvents).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the Lihat semua promo button when onOpenEvents is not passed', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Lihat semua promo/ })).not.toBeInTheDocument();
   });
 
 });
