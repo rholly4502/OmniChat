@@ -5,6 +5,21 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P15 — Ringkasan: perbandingan pengeluaran vs bulan lalu (frontend)
+
+#### Added
+- Kartu "Pengeluaran (bulan ini)" di Ringkasan kini menampilkan **Dibanding
+  bulan lalu** — selisih total belanja bulan ini terhadap bulan sebelumnya
+  (dari endpoint `GET /api/expenses/trend`, yang sudah mengecualikan setoran
+  Nabung sehingga angka konsisten dengan "Total bulan ini"). Selisih positif
+  (merah = boros), negatif (emerald = lebih hemat), dan nol (netral) dirender
+  dengan tone masing-masing. Baris hanya muncul bila terdapat bulan sebelumnya di
+  serial tren; tanpa data, baris disembunyikan (best-effort, tidak ikut
+  menggatalkan kartu lain).
+- Tests: +2 komponen (SummaryView) — baris selisih dirender dari data trend
+  (dengan tanda + dan lokale id-ID), dan tersembunyi saat tidak ada bulan
+  sebelumnya. Full suite frontend hijau: tsc -b, oxlint tanpa warning baru.
+
 ### P14 — Ringkasan: stat tabungan + progres menuju target nabung (frontend)
 
 #### Added

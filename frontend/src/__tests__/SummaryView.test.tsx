@@ -46,11 +46,16 @@ function fetchStub(overrides: {
   summary?: Response | typeof summaryPayload;
   jobsSummary?: Response | typeof defaultJobsSummary;
   events?: unknown;
+  trend?: unknown;
 } = {}) {
   return vi.fn((url: string) => {
     if (url.includes('/jobs/summary')) {
       const v = overrides.jobsSummary;
       return v instanceof Response ? v : jsonResponse(v ?? defaultJobsSummary);
+    }
+    if (url.includes('/trend')) {
+      const v = overrides.trend;
+      return v instanceof Response ? v : jsonResponse(v ?? { months: 6, points: [] });
     }
     if (url.includes('/summary')) {
       const v = overrides.summary;
@@ -330,6 +335,32 @@ describe('SummaryView', () => {
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
     expect(screen.queryByRole('button', { name: /Lihat semua promo/ })).not.toBeInTheDocument();
+  });
+
+  it('shows the month-over-month spend change from the trend endpoint', async () => {
+    const month = currentMonthKey(new Date());
+    const [y, m] = month.split('-').map(Number);
+    const prev = m === 1 ? `${y - 1}-12` : `${y}-${String(m - 1).padStart(2, '0')}`;
+    vi.stubGlobal('fetch', fetchStub({ trend: { months: 6, points: [
+      { month: prev, total: 12000 },
+      { month, total: 20000 },
+    ] } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Dibanding bulan lalu')).toBeInTheDocument());
+    // 20.000 − 12.000 = 8.000 (locale id-ID), dinaikkan dengan tanda +
+    expect(screen.getByText('+8.000')).toBeInTheDocument();
+  });
+
+  it('hides the month-over-month row when there is no prior month in the trend', async () => {
+    const month = currentMonthKey(new Date());
+    vi.stubGlobal('fetch', fetchStub({ trend: { months: 6, points: [
+      { month, total: 20000 },
+    ] } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.queryByText('Dibanding bulan lalu')).not.toBeInTheDocument();
   });
 
 });

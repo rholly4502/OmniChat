@@ -3,7 +3,9 @@ import type { ReactNode } from 'react';
 import { useExpenses } from '../hooks/useExpenses';
 import { useJobsSummary } from '../hooks/useJobsSummary';
 import { useEvents } from '../hooks/useEvents';
+import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import type { ConversationUsageSummary } from '../types';
+import type { ExpenseTrendPoint } from '../expensesApi';
 import { countdownLabel, daysRemaining } from '../eventsStatus';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
@@ -81,6 +83,29 @@ function topSpendCategories(
 }
 
 /**
+ * Month-over-month spend change for the digest: the viewed month vs the month
+ * immediately before it in the trend series. Returns null when either month is
+ * missing (first month, or trend not yet loaded) so the card simply omits the
+ * row instead of showing a misleading comparison.
+ */
+function monthCompare(
+  points: readonly ExpenseTrendPoint[] | undefined,
+  month: string | undefined,
+): { direction: 'up' | 'down' | 'flat'; delta: number; prevMonth: string } | null {
+  if (!Array.isArray(points) || points.length < 2 || !month) return null;
+  const idx = points.findIndex((p) => p.month === month);
+  if (idx <= 0) return null;
+  const currentTotal = points[idx].total;
+  const prev = points[idx - 1];
+  const delta = currentTotal - prev.total;
+  return {
+    direction: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat',
+    delta,
+    prevMonth: prev.month,
+  };
+}
+
+/**
  * Ringkasan — one screen aggregating the four top-level views: chat usage,
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
@@ -89,6 +114,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
   const expenses = useExpenses(apiKey);
   const jobs = useJobsSummary(apiKey);
   const events = useEvents(apiKey);
+  const trend = useExpenseTrend(apiKey);
   // Today captured once per mount (WIB local); anchors the events promo deadline.
   const [todayISO] = useState(() => {
     const t = new Date();
@@ -184,6 +210,22 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
         <Card title="Pengeluaran (bulan ini)" glyph={GLYPHS.expenses} tone={expenses.summary && expenses.summary.sisaAnggaran !== null && expenses.summary.sisaAnggaran < 0 ? 'red' : 'emerald'}>
           <StatRow label="Total bulan ini" value={expenses.summary ? expenses.summary.total.toLocaleString('id-ID') : '—'} />
           <StatRow label="Sisa anggaran" value={expenses.summary?.sisaAnggaran !== null && expenses.summary?.sisaAnggaran !== undefined ? expenses.summary.sisaAnggaran.toLocaleString('id-ID') : '—'} />
+          {(() => {
+            const cmp = monthCompare(trend.points, expenses.summary?.month);
+            if (!cmp) return null;
+            const sign = cmp.direction === 'up' ? '+' : cmp.direction === 'down' ? '−' : '';
+            const toneClass =
+              cmp.direction === 'up' ? 'text-chill-red' :
+              cmp.direction === 'down' ? 'text-chill-emerald' : 'text-chill-muted';
+            return (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs text-chill-muted">Dibanding bulan lalu</span>
+                <span className={`text-sm font-medium ${toneClass}`}>
+                  {sign}{Math.abs(cmp.delta).toLocaleString('id-ID')}
+                </span>
+              </div>
+            );
+          })()}
           <StatRow label="Target nabung" value={expenses.summary?.targetNabung != null ? expenses.summary.targetNabung.toLocaleString('id-ID') : '—'} />
           <StatRow label="Ditabung bulan ini" value={monthSavings.toLocaleString('id-ID')} />
           {nabungPct !== null && (
