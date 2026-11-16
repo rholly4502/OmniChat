@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import App from '../App';
 import { CodeBlock } from '../App';
 
@@ -862,5 +862,62 @@ describe('App skip-to-content link', () => {
     expect(skip.className).toContain('focus:rounded-none');
     expect(skip.className).toContain('focus:border-chill-accent');
     expect(skip.className).toContain('focus:bg-chill-elevated');
+  });
+});
+
+describe('App URL hash deep-link', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    // A stored key keeps the app unlocked so the workspace renders.
+    localStorage.setItem('omnichat_api_key', 'test-key');
+    setupFetchMock();
+    // Fresh fragment for every test.
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  });
+
+  const selectedTab = (name: string) =>
+    screen.getByRole('tab', { name }) as HTMLElement;
+
+  it('defaults to Ringkasan when no view hash is present', () => {
+    render(<App />);
+    expect(selectedTab('Ringkasan')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('opens the view named in the URL hash on load (deep link)', () => {
+    window.location.hash = '#jobs';
+    render(<App />);
+    expect(selectedTab('Lowongan')).toHaveAttribute('aria-selected', 'true');
+    expect(selectedTab('Ringkasan')).toHaveAttribute('aria-selected', 'false');
+  });
+
+  it('falls back to Ringkasan for an unknown hash', () => {
+    window.location.hash = '#tidak-ada';
+    render(<App />);
+    expect(selectedTab('Ringkasan')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  it('writes the selected view into the URL hash', () => {
+    render(<App />);
+    fireEvent.click(selectedTab('Pengeluaran'));
+    expect(window.location.hash).toBe('#expenses');
+  });
+
+  it('follows browser back/forward editing hashchange', () => {
+    render(<App />);
+    fireEvent.click(selectedTab('Pengeluaran'));
+    // Simulate external navigation (back/forward / pasted link). The state
+    // update must run inside act() so React flushes the re-render.
+    act(() => {
+      window.location.hash = '#events';
+      window.dispatchEvent(new Event('hashchange'));
+    });
+    expect(selectedTab('Event')).toHaveAttribute('aria-selected', 'true');
+    expect(selectedTab('Pengeluaran')).toHaveAttribute('aria-selected', 'false');
   });
 });

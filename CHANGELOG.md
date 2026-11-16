@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P19 — Navigasi: deep-link view via URL hash (frontend)
+
+#### Added
+- View-switcher (Ringkasan/Chat/Pengeluaran/Lowongan/Event) kini sinkron dengan
+  URL hash (`#chat`, `#expenses`, `#jobs`, `#events`) — setiap view dapat
+  dibookmark/dibagikan lewat tautan, dan tombol back/forward browser mengembalikan
+  view sebelumnya. Hash kosong/asing jatuh balik ke Ringkasan.
+- Tests: +5 komponen (App) — default Ringkasan, muat dari hash, hash asing,
+  tulis hash saat pindah view, ikuti `hashchange` (back/forward). Full suite
+  frontend hijau: tsc -b, oxlint bersih, 75 file/1247 test lulus, build prod ok.
+
 ### P18 — Events: ekspor CSV menghormati pencarian keyword & sembunyikan kedaluwarsa (backend + frontend)
 
 #### Changed

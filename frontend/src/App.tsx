@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CodeBlock } from './components/CodeBlock';
 import LoginScreen from './components/LoginScreen';
 import { Sidebar } from './components/Sidebar';
@@ -43,12 +43,38 @@ export { CodeBlock };
  * child component, so this file only wires them together and owns the four DOM
  * refs (which the hooks cannot create, because they do not own the elements).
  */
+/** View keys addressable via URL hash deep-link (#chat, #expenses, #jobs, #events). */
+const VIEW_KEYS = ['ringkasan', 'chat', 'expenses', 'jobs', 'events'] as const;
+type ViewKey = (typeof VIEW_KEYS)[number];
+
+/** Maps a location.hash value to the nearest known view; unknown/empty -> Ringkasan. */
+function parseHashView(hash: string): ViewKey {
+  const key = hash.replace(/^#/, '');
+  return (VIEW_KEYS as readonly string[]).includes(key) ? (key as ViewKey) : 'ringkasan';
+}
+
 export default function App() {
   const { draft: input, setDraft: setInput, clearDraft: clearInput } = useComposerDraft();
   const [useAgent, setUseAgent] = useState(true);
   const [model, setModel] = useState(DEFAULT_MODEL);
-  const [activeView, setActiveView] = useState<'ringkasan' | 'chat' | 'expenses' | 'jobs' | 'events'>('ringkasan');
+  const [activeView, setActiveView] = useState<ViewKey>(() => parseHashView(window.location.hash));
   const [jobsFollowUpRequested, setJobsFollowUpRequested] = useState(false);
+  /** Writes a view change into both state and the URL hash (#deep-link), so views
+   *  are bookmarkable and browser back/forward restore them. */
+  const selectView = useCallback((v: ViewKey) => {
+    setActiveView(v);
+    const target = v === 'ringkasan' ? '' : v;
+    if (window.location.hash !== (target ? `#${target}` : '')) {
+      window.location.hash = target;
+    }
+  }, []);
+
+  // Keep state in sync when the hash changes externally (back/forward, pasted link).
+  useEffect(() => {
+    const onHashChange = () => setActiveView(parseHashView(window.location.hash));
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
   const [statsOpen, setStatsOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -433,12 +459,12 @@ export default function App() {
   /** Jump from the Ringkasan "Perlu follow-up" stat into the Jobs view pre-filtered to overdue follow-ups. */
   function openJobFollowUps() {
     setJobsFollowUpRequested(true);
-    setActiveView('jobs');
+    selectView('jobs');
   }
 
   /** Jump from the Ringkasan "Promo / Event" card into the Events view. */
   function openEvents() {
-    setActiveView('events');
+    selectView('events');
   }
 
   return (
@@ -516,7 +542,7 @@ export default function App() {
         activeView={activeView}
         onSelectView={(v) => {
           setJobsFollowUpRequested(false);
-          setActiveView(v);
+          selectView(v);
         }}
         backendStatus={backendStatus}
       />
