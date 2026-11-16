@@ -77,6 +77,21 @@ function dayOffsetISO(baseISO: string, days: number): string {
 }
 
 /**
+ * Top spending categories for the digest, ranked by nominal and excluding
+ * savings deposits (kategori "Nabung"), so the breakdown reflects actual
+ * spending — the same figure the card reports as "Total bulan ini".
+ */
+function topSpendCategories(
+  perKategori: Record<string, number>,
+  top = 4,
+): [string, number][] {
+  return Object.entries(perKategori)
+    .filter(([kategori]) => kategori !== 'Nabung')
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, top);
+}
+
+/**
  * Ringkasan — one screen aggregating the four top-level views: chat usage,
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
@@ -168,6 +183,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
 
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
+  const spendCategories = expenses.summary ? topSpendCategories(expenses.summary.perKategori) : [];
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -189,6 +205,15 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           <StatRow label="Total bulan ini" value={expenses.summary ? expenses.summary.total.toLocaleString('id-ID') : '—'} />
           <StatRow label="Sisa anggaran" value={expenses.summary?.sisaAnggaran !== null && expenses.summary?.sisaAnggaran !== undefined ? expenses.summary.sisaAnggaran.toLocaleString('id-ID') : '—'} />
           <StatRow label="Target nabung" value={expenses.summary?.targetNabung != null ? expenses.summary.targetNabung.toLocaleString('id-ID') : '—'} />
+          {spendCategories.length > 0 && (
+            <>
+              <div className="h-px bg-chill-surface my-2" aria-hidden="true" />
+              <p className="text-xs text-chill-muted">Pengeluaran per kategori</p>
+              {spendCategories.map(([kategori, nominal]) => (
+                <StatRow key={kategori} label={kategori} value={nominal.toLocaleString('id-ID')} />
+              ))}
+            </>
+          )}
         </Card>
 
         <Card title="Lowongan" glyph={GLYPHS.jobs} tone="accent">

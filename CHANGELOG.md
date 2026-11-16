@@ -5,6 +5,18 @@ The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
 
+### P13 — Ringkasan: rincian pengeluaran per kategori di kartu Pengeluaran (frontend)
+
+#### Added
+- Kartu "Pengeluaran (bulan ini)" di Ringkasan kini menampilkan hingga 4 kategori
+  belanja terbesar bulan ini (berdasarkan nominal), dikecualikan setoran
+  "Nabung" agar konsisten dengan angka "Total bulan ini" (yang juga tidak
+  menghitung nabung sebagai pengeluaran). Breakdown hanya dirender bila ada
+  kategori belanja, jadi digest tetap tenang saat bulan kosong.
+- Tests: +2 komponen (SummaryView) — breakdown per kategori dirender dari data
+  summary, dan kategori "Nabung" tidak ikut tampil. Full suite hijau: frontend
+  (tsc -b, oxlint tanpa warning baru).
+
 ### P12 — Jobs: endpoint ringkasan pipeline `GET /api/jobs/summary` (backend)
 
 #### Added

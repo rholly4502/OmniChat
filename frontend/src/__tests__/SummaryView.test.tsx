@@ -163,6 +163,26 @@ describe('SummaryView', () => {
     expect(card?.innerHTML ?? '').toContain('text-red-400');
   });
 
+  it('shows the per-category spending breakdown on the expenses card', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Pengeluaran per kategori')).toBeInTheDocument();
+    expect(screen.getByText('Makan')).toBeInTheDocument();
+    expect(screen.getByText('Lain')).toBeInTheDocument();
+  });
+
+  it('excludes Nabung savings from the per-category spending breakdown', async () => {
+    vi.stubGlobal('fetch', fetchStub({ summary: { ...summaryPayload, perKategori: { Makan: 12000, Lain: 8000, Nabung: 500000 } } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Makan')).toBeInTheDocument();
+    expect(screen.getByText('Lain')).toBeInTheDocument();
+    expect(screen.queryByText('Nabung')).not.toBeInTheDocument();
+  });
+
   it('hides the Model aktif row when byModel is empty', async () => {
     vi.stubGlobal('fetch', fetchStub());
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 3, totalTokens: 5000, byModel: {} }} />);
