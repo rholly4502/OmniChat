@@ -1,12 +1,10 @@
-import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useExpenses } from '../hooks/useExpenses';
 import { useJobsSummary } from '../hooks/useJobsSummary';
-import { useEvents } from '../hooks/useEvents';
+import { useEventsSummary } from '../hooks/useEventsSummary';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import type { ConversationUsageSummary } from '../types';
 import type { ExpenseTrendPoint } from '../expensesApi';
-import { countdownLabel, daysRemaining } from '../eventsStatus';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
 
@@ -113,13 +111,8 @@ function monthCompare(
 export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents }: SummaryViewProps) {
   const expenses = useExpenses(apiKey);
   const jobs = useJobsSummary(apiKey);
-  const events = useEvents(apiKey);
+  const events = useEventsSummary(apiKey);
   const trend = useExpenseTrend(apiKey);
-  // Today captured once per mount (WIB local); anchors the events promo deadline.
-  const [todayISO] = useState(() => {
-    const t = new Date();
-    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-  });
 
   const loading = expenses.loading || jobs.loading || events.loading;
 
@@ -137,6 +130,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
       expenses.reload();
       jobs.reload();
       events.reload();
+      trend.reload();
     };
     return (
       <div className="flex-1 overflow-y-auto p-4">
@@ -170,18 +164,11 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
   const todayFollowUps = summary?.followUpHariIni ?? 0;
   const weekFollowUps = summary?.followUp7Hari ?? 0;
 
-  // Promo expiring within 7 days, bucketed like the event countdown labels.
-  const eventsToday = events.events.filter(
-    (e) => countdownLabel(e.berlakuSampai, todayISO) === 'berakhir hari ini',
-  ).length;
-  const eventsTomorrow = events.events.filter(
-    (e) => countdownLabel(e.berlakuSampai, todayISO) === 'besok berakhir',
-  ).length;
-  const eventsWeek = events.events.filter((e) => {
-    const d = daysRemaining(e.berlakuSampai, todayISO);
-    return d !== null && d >= 2 && d <= 7;
-  }).length;
-  const hasExpiringSoon = eventsToday + eventsTomorrow + eventsWeek > 0;
+  // Promo digest from the lightweight WIB-based /api/events/summary endpoint.
+  const eventsSummary = events.summary;
+  const hasExpiringSoon = eventsSummary
+    ? eventsSummary.berakhirHariIni + eventsSummary.besokBerakhir + eventsSummary.dalam7Hari > 0
+    : false;
 
   const totalTokens = usageSummary?.totalTokens ?? 0;
   const conversationCount = usageSummary?.conversationCount ?? 0;
@@ -273,13 +260,13 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
         </Card>
 
         <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">
-          <StatRow label="Total terdokumentasi" value={String(events.events.length)} />
-          <StatRow label="Sumber unik" value={String(new Set(events.events.map((e) => e.aplikasi)).size)} />
-          {hasExpiringSoon && (
+          <StatRow label="Total terdokumentasi" value={String(eventsSummary?.total ?? 0)} />
+          <StatRow label="Sumber unik" value={String(eventsSummary?.sumberUnik ?? 0)} />
+          {hasExpiringSoon && eventsSummary && (
             <>
-              <StatRow label="Berakhir hari ini" value={String(eventsToday)} />
-              <StatRow label="Besok berakhir" value={String(eventsTomorrow)} />
-              <StatRow label="Dalam 7 hari" value={String(eventsWeek)} />
+              <StatRow label="Berakhir hari ini" value={String(eventsSummary.berakhirHariIni)} />
+              <StatRow label="Besok berakhir" value={String(eventsSummary.besokBerakhir)} />
+              <StatRow label="Dalam 7 hari" value={String(eventsSummary.dalam7Hari)} />
             </>
           )}
           {onOpenEvents ? (
@@ -289,7 +276,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
             >
               <span className="text-xs text-chill-muted">Lihat semua promo</span>
-              <span className="text-sm font-medium text-chill-text">{String(events.events.length)}</span>
+              <span className="text-sm font-medium text-chill-text">{String(eventsSummary?.total ?? 0)}</span>
             </button>
           ) : null}
         </Card>

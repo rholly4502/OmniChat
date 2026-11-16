@@ -1,4 +1,5 @@
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Application.Interfaces;
 
@@ -10,6 +11,9 @@ public interface IPromoEventRepository
 {
     /// <summary>All events, optionally filtered by platform, newest-first.</summary>
     Task<IReadOnlyList<PromoEvent>> ListAsync(string? aplikasi, CancellationToken cancellationToken);
+
+    /// <summary>Aggregate digest for the Ringkasan card (totals + expiry buckets).</summary>
+    Task<EventsSummary> EventsSummaryAsync(DateOnly today, CancellationToken cancellationToken);
 
     /// <summary>Inserts events whose non-empty <see cref="PromoEvent.SourceId"/> is not already present.</summary>
     Task<int> InsertMissingAsync(IEnumerable<PromoEvent> events, CancellationToken cancellationToken);

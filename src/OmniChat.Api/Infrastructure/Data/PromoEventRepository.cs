@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Infrastructure.Data;
 
@@ -20,6 +21,37 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
             .OrderByDescending(e => e.Ditemukan)
             .ThenByDescending(e => e.Id)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<EventsSummary> EventsSummaryAsync(
+        DateOnly today, CancellationToken cancellationToken)
+    {
+        // Only the columns the digest needs — avoids loading full rows for an aggregate.
+        var rows = await db.PromoEvents
+            .AsNoTracking()
+            .Select(e => new { e.Aplikasi, e.BerlakuSampai })
+            .ToListAsync(cancellationToken);
+
+        // Expiry buckets only consider dates that parse as YYYY-MM-DD (the stored
+        // convention). Rows with no end date, or free-text/invalid dates, don't
+        // land in any urgency bucket — matching the frontend, which shows those as
+        // "aktif" rather than counting them as expiring.
+        var ends = new List<DateOnly>(rows.Count);
+        foreach (var row in rows)
+        {
+            if (row.BerlakuSampai is string s &&
+                DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end))
+            {
+                ends.Add(end);
+            }
+        }
+
+        return new EventsSummary(
+            rows.Count,
+            rows.Select(r => r.Aplikasi).Distinct().Count(),
+            ends.Count(d => d == today),
+            ends.Count(d => d == today.AddDays(1)),
+            ends.Count(d => d > today.AddDays(1) && d <= today.AddDays(7)));
     }
 
     public async Task<int> InsertMissingAsync(

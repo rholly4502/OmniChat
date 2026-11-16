@@ -4,6 +4,29 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P16 — Ringkasan: kartu Promo/Event pakai endpoint ringkasan `GET /api/events/summary` (backend + frontend)
+
+#### Added
+- Endpoint baru `GET /api/events/summary` — ringkasan ringan daftar promo
+  terkurasi (cermin pola `/api/jobs/summary`), mengembalikan **total**,
+  **sumber unik** (jumlah platform/aplikasi berbeda), dan ember urgensi
+  berakhir relatif terhadap hari ini (WIB): **berakhir hari ini**, **besok
+  berakhir**, dan **dalam 7 hari**. Repo memuat hanya kolom `Aplikasi` +
+  `BerlakuSampai` (bukan seluruh baris); tanggal akhir yang tidak bisa
+  di-parse sebagai `YYYY-MM-DD` (kosong / teks bebas) tidak masuk ember mana
+  pun — konsisten dengan semantik frontend yang menampilkannya sebagai
+  "aktif" alih-alih menghitungnya sebagai segera habis.
+- Frontend: kartu "Promo / Event" di Ringkasan kini mengonsumsi endpoint
+  tersebut lewat hook baru `useEventsSummary` (bukan lagi menarik **seluruh**
+  daftar event hanya untuk digest). Gating loading/error dan tombol muat
+  ulang ikut berpindah; tombol "Muat ulang" pada banner error kini juga
+  menyegarkan tren pengeluaran (`trend.reload()`, sebelumnya tidak ikut).
+- Tests: +3 backend (2 unit repository SQLite in-memory: bucket vs `today`
+  + kasus kosong; 1 controller 200 + bentuk `EventsSummary`). +2 frontend
+  hook (`useEventsSummary`); test SummaryView yang menguji kartu promo
+  diperbarui untuk men-stub `/api/events/summary`. Full suite backend 717
+  pass, frontend hijau (tsc -b, oxlint tanpa warning baru).
+
 
 ### P15 — Ringkasan: perbandingan pengeluaran vs bulan lalu (frontend)
 

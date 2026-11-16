@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using OmniChat.Api.Infrastructure;
+using OmniChat.Domain.Models;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 
@@ -36,6 +37,18 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
     /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
     /// <response code="200">CSV file download.</response>
     /// <response code="401">Missing or invalid API key.</response>
+    /// <summary>Digest of the curated promo list for the Ringkasan card.</summary>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="200">Event digest (totals + expiry buckets).</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    [HttpGet("summary")]
+    [ProducesResponseType(typeof(EventsSummary), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Summary(CancellationToken cancellationToken = default)
+    {
+        return Ok(await repository.EventsSummaryAsync(TodayWib(), cancellationToken));
+    }
+
     [HttpGet("export")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -180,6 +193,9 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
     }
 
     /// <summary>Validates a write request, returning a 400 ProblemDetails or null when valid.</summary>
+    /// <summary>Today in WIB (UTC+7) — the timezone the promo expiry buckets use.</summary>
+    private static DateOnly TodayWib() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+
     private ObjectResult? Validate(EventWriteRequest request)
     {
         if (string.IsNullOrWhiteSpace(request.Aplikasi))

@@ -121,3 +121,31 @@ export async function updateEvent(
 export async function deleteEvent(id: number, options: EventsRequestOptions = {}): Promise<void> {
   await requestJson(`${EVENTS_URL}/${id}`, 'DELETE', undefined, options);
 }
+
+/** Digest served by `GET /api/events/summary` for the Ringkasan card (WIB-based). */
+export interface EventsSummary {
+  /** Total number of curated events. */
+  total: number;
+  /** Number of distinct source platforms (aplikasi). */
+  sumberUnik: number;
+  /** Events whose known end date is today. */
+  berakhirHariIni: number;
+  /** Events whose known end date is tomorrow. */
+  besokBerakhir: number;
+  /** Events ending within the next 7 days (2–7 days out). */
+  dalam7Hari: number;
+}
+
+/** Fetch the curated-event digest (totals + expiry buckets). */
+export async function fetchEventsSummary(options: EventsRequestOptions = {}): Promise<EventsSummary> {
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(`${EVENTS_URL}/summary`, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return (await res.json()) as EventsSummary;
+}

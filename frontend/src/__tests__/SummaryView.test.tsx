@@ -2,7 +2,6 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { SummaryView } from '../components/SummaryView';
 import { currentMonthKey } from '../hooks/useExpenses';
-import type { PromoEvent } from '../eventsApi';
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -25,15 +24,6 @@ const pagePayload = {
   items: [],
 };
 
-function eventOf(id: number, aplikasi: string): PromoEvent {
-  return {
-    id,
-    aplikasi,
-    judul: `Event ${id}`,
-    ditemukan: '2026-11-01',
-  };
-}
-
 const defaultJobsSummary = {
   perStatus: { new: 0, applied: 0, interview: 0, offer: 0, closed: 0 },
   total: 0,
@@ -42,16 +32,28 @@ const defaultJobsSummary = {
   followUp7Hari: 0,
 };
 
+const defaultEventsSummary = {
+  total: 0,
+  sumberUnik: 0,
+  berakhirHariIni: 0,
+  besokBerakhir: 0,
+  dalam7Hari: 0,
+};
+
 function fetchStub(overrides: {
   summary?: Response | typeof summaryPayload;
   jobsSummary?: Response | typeof defaultJobsSummary;
-  events?: unknown;
+  eventsSummary?: Response | typeof defaultEventsSummary;
   trend?: unknown;
 } = {}) {
   return vi.fn((url: string) => {
     if (url.includes('/jobs/summary')) {
       const v = overrides.jobsSummary;
       return v instanceof Response ? v : jsonResponse(v ?? defaultJobsSummary);
+    }
+    if (url.includes('/events/summary')) {
+      const v = overrides.eventsSummary;
+      return v instanceof Response ? v : jsonResponse(v ?? defaultEventsSummary);
     }
     if (url.includes('/trend')) {
       const v = overrides.trend;
@@ -61,7 +63,6 @@ function fetchStub(overrides: {
       const v = overrides.summary;
       return v instanceof Response ? v : jsonResponse(v ?? summaryPayload);
     }
-    if (url.includes('/events')) return jsonResponse(overrides.events ?? []);
     return jsonResponse(pagePayload);
   });
 }
@@ -136,15 +137,9 @@ describe('SummaryView', () => {
     expect(screen.getByText('Perlu follow-up').parentElement).toHaveTextContent('2');
   });
 
-  it('counts unique event sources', async () => {
-    const events: PromoEvent[] = [
-      eventOf(1, 'OVO'),
-      eventOf(2, 'OVO'),
-      eventOf(3, 'GoPay'),
-      eventOf(4, 'GoPay'),
-      eventOf(5, 'GoPay'),
-    ];
-    vi.stubGlobal('fetch', fetchStub({ events }));
+  it('counts total events and unique sources from the summary endpoint', async () => {
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0 };
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
@@ -226,10 +221,10 @@ describe('SummaryView', () => {
     let calls = 0;
     const fetchMock = vi.fn((url: string) => {
       calls += 1;
-      if (calls === 1 && url.includes('/summary')) return jsonResponse({ message: 'Boom' }, 500);
+      if (calls === 1 && url.includes('/api/expenses')) return jsonResponse({ message: 'Boom' }, 500);
+      if (url.includes('/events/summary')) return jsonResponse(defaultEventsSummary);
       if (url.includes('/jobs/summary')) return jsonResponse(defaultJobsSummary);
       if (url.includes('/summary')) return jsonResponse(summaryPayload);
-      if (url.includes('/events')) return jsonResponse([]);
       return jsonResponse(pagePayload);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -275,19 +270,9 @@ describe('SummaryView', () => {
     expect(screen.getByText('Dalam 7 hari').parentElement).toHaveTextContent('2');
   });
 
-  it('shows promo expiry urgency buckets', async () => {
-    const now = new Date();
-    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const today = iso(now);
-    const plus = (days: number) => { const d = new Date(now); d.setDate(d.getDate() + days); return iso(d); };
-    const events: PromoEvent[] = [
-      { ...eventOf(1, 'OVO'), berlakuSampai: today },       // berakhir hari ini
-      { ...eventOf(2, 'OVO'), berlakuSampai: plus(1) },    // besok berakhir
-      { ...eventOf(3, 'GoPay'), berlakuSampai: plus(3) },  // dalam 7 hari
-      { ...eventOf(4, 'GoPay'), berlakuSampai: plus(30) }, // jauh -> tidak masuk bucket
-      { ...eventOf(5, 'OVO'), berlakuSampai: plus(-3) },   // expired -> tidak masuk
-    ];
-    vi.stubGlobal('fetch', fetchStub({ events }));
+  it('shows promo expiry urgency buckets from the summary endpoint', async () => {
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1 };
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
@@ -309,11 +294,8 @@ describe('SummaryView', () => {
 
   it('renders the Lihat semua promo button and triggers navigation when clicked', async () => {
     const onOpenEvents = vi.fn();
-    const now = new Date();
-    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const today = iso(now);
-    const events: PromoEvent[] = [{ ...eventOf(1, 'OVO'), berlakuSampai: today }];
-    vi.stubGlobal('fetch', fetchStub({ events }));
+    const eventsSummary = { total: 3, sumberUnik: 1, berakhirHariIni: 1, besokBerakhir: 0, dalam7Hari: 0 };
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(
       <SummaryView
         apiKey="secret"
