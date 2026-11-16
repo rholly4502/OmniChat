@@ -203,12 +203,25 @@ describe('EventsView CSV export', () => {
     render(<EventsView apiKey="k" />);
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek'));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined));
     expect(click).toHaveBeenCalledTimes(1);
 
     createUrl.mockRestore();
     revoke.mockRestore();
     click.mockRestore();
+  });
+
+  it('forwards the active keyword and hide-expired filters to the export', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsCsv);
+    exportMock.mockResolvedValue(new Blob(['aplikasi,judul'], { type: 'text/csv; charset=utf-8' }));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Cari event' }), { target: { value: 'cashback' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan kedaluwarsa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true));
   });
 
   it('shows an error message when the export fails', async () => {

@@ -51,8 +51,15 @@ export async function listEvents(
 export async function exportEventsCsv(
   options: EventsRequestOptions = {},
   aplikasi?: string,
+  q?: string,
+  hideExpired?: boolean,
 ): Promise<Blob> {
-  const path = aplikasi ? `${EVENTS_URL}/export?aplikasi=${encodeURIComponent(aplikasi)}` : `${EVENTS_URL}/export`;
+  const params = new URLSearchParams();
+  if (aplikasi) params.set('aplikasi', aplikasi);
+  if (q) params.set('q', q);
+  if (hideExpired) params.set('hideExpired', 'true');
+  const qs = params.toString();
+  const path = qs ? `${EVENTS_URL}/export?${qs}` : `${EVENTS_URL}/export`;
   const doFetch = options.fetchImpl ?? fetch;
   const res = await doFetch(path, {
     method: 'GET',

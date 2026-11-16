@@ -65,7 +65,12 @@ export function EventsView({ apiKey }: EventsViewProps) {
 
   const handleExportCsv = async () => {
     try {
-      const blob = await exportEventsCsv({ apiKey }, appFilter || undefined);
+      const blob = await exportEventsCsv(
+        { apiKey },
+        appFilter || undefined,
+        searchQuery.trim() || undefined,
+        hideExpired || undefined,
+      );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;

@@ -4,7 +4,24 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P17 — Ringkasan: nominal anggaran bulanan di kartu Pengeluaran (frontend)
+### P18 — Events: ekspor CSV menghormati pencarian keyword & sembunyikan kedaluwarsa (backend + frontend)
+
+#### Changed
+- Backend `GET /api/events/export` kini menerima dua filter tambahan di samping
+  `aplikasi`: `q` (kata kunci, case-insensitive atas judul/aplikasi/benefit/
+  syarat) dan `hideExpired` (buang promo yang kedaluwarsa). Semantik kadaluwarsa
+  menyamai frontend: hanya tanggal akhir yang ter-parse sebagai `YYYY-MM-DD` dan
+  sudah lewat yang dianggap kedaluwarsa — baris tanpa tanggal akhir / teks bebas
+  tetap disertakan (dihitung "aktif").
+- Frontend: `exportEventsCsv` menerima `q` dan `hideExpired`; tombol "Ekspor CSV"
+  di view Events kini mengirim seluruh filter aktif (aplikasi + pencarian + toggle
+  "Sembunyikan kedaluwarsa"), sehingga file yang diunduh persis baris di layar.
+- Tests: +3 backend (filter keyword, sembunyikan kedaluwarsa, tanpa filter tetap
+  menyertakan semua), +2 frontend transport (`q`/`hideExpired` di query string),
+  +1 komponen EventsView (forward filter aktif). Hijau: backend 720, frontend tsc
+  -b + oxlint bersih.
+
+
 
 #### Added
 - Kartu "Pengeluaran (bulan ini)" di Ringkasan kini menampilkan **Anggaran**

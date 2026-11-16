@@ -24,6 +24,22 @@ describe('exportEventsCsv', () => {
     expect((init.headers as Record<string, string>)['X-Api-Key']).toBe('secret-key');
   });
 
+  it('appends keyword and hideExpired filters', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
+    await exportEventsCsv({ fetchImpl: fetchMock as unknown as typeof fetch }, 'OVO', 'cashback', true);
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/export?aplikasi=OVO&q=cashback&hideExpired=true`);
+  });
+
+  it('omits query string when no filters are set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
+    await exportEventsCsv({ fetchImpl: fetchMock as unknown as typeof fetch });
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/export`);
+  });
+
   it('throws ApiError on a non-OK response', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: { get: () => null } });
     await expect(exportEventsCsv({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });

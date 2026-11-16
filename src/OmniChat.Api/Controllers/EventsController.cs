@@ -54,13 +54,31 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export(
         [FromQuery] string? aplikasi,
+        [FromQuery] string? q = null,
+        [FromQuery] bool? hideExpired = null,
         CancellationToken cancellationToken = default)
     {
         var items = await repository.ListAsync(aplikasi, cancellationToken);
 
+        // Mirror the on-screen filters so an export yields exactly what the user
+        // is looking at: keyword match over judul/aplikasi/benefit/syarat, and
+        // (when "Sembunyikan kedaluwarsa" is on) dropping expired promos. A promo
+        // counts as expired only when its end date parses as YYYY-MM-DD and is in
+        // the past — rows with no end date or free-text dates stay (frontend
+        // treats those as active, not expired).
+        var today = TodayWib();
+        var keyword = string.IsNullOrWhiteSpace(q) ? null : q!.Trim().ToLowerInvariant();
+        var filtered = items.Where(e =>
+            (keyword == null ||
+             e.Judul.ToLowerInvariant().Contains(keyword) ||
+             e.Aplikasi.ToLowerInvariant().Contains(keyword) ||
+             (e.Benefit ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
+             (e.Syarat ?? string.Empty).ToLowerInvariant().Contains(keyword)) &&
+            (!(hideExpired ?? false) || !IsExpired(e, today))).ToList();
+
         var sb = new StringBuilder();
         sb.AppendLine("aplikasi,judul,benefit,syarat,berlakuSampai,ditemukan,link,sourceId");
-        foreach (var e in items)
+        foreach (var e in filtered)
         {
             sb.Append(Csv(e.Aplikasi)).Append(',');
             sb.Append(Csv(e.Judul)).Append(',');
@@ -241,6 +259,14 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
         string? Link,
         string? BerlakuSampai,
         string Ditemukan);
+
+    /// <summary>True when a promo's end date parsed as YYYY-MM-DD is before `today`.</summary>
+    private static bool IsExpired(PromoEvent e, DateOnly today)
+    {
+        return e.BerlakuSampai is string s
+            && DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end)
+            && end < today;
+    }
 
     /// <summary>Quotes a CSV field per RFC 4180 when it contains a delimiter, quote, or newline.</summary>
     private static string Csv(string value)
