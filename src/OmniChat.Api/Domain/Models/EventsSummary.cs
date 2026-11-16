@@ -16,4 +16,6 @@ public sealed record EventsSummary(
     /// <summary>Events whose known end date is tomorrow.</summary>
     int BesokBerakhir,
     /// <summary>Events ending within the next 7 days (after tomorrow, i.e. 2–7 days out).</summary>
-    int Dalam7Hari);
+    int Dalam7Hari,
+    /// <summary>Events whose known end date has already passed (stale promos).</summary>
+    int SudahBerakhir);

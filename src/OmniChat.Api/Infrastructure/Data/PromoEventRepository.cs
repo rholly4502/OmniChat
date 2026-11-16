@@ -51,7 +51,8 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
             rows.Select(r => r.Aplikasi).Distinct().Count(),
             ends.Count(d => d == today),
             ends.Count(d => d == today.AddDays(1)),
-            ends.Count(d => d > today.AddDays(1) && d <= today.AddDays(7)));
+            ends.Count(d => d > today.AddDays(1) && d <= today.AddDays(7)),
+            ends.Count(d => d < today));
     }
 
     public async Task<int> InsertMissingAsync(

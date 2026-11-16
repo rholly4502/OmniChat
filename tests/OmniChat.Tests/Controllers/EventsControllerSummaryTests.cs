@@ -17,7 +17,8 @@ public class EventsControllerSummaryTests
         SumberUnik: 3,
         BerakhirHariIni: 1,
         BesokBerakhir: 1,
-        Dalam7Hari: 1);
+        Dalam7Hari: 1,
+        SudahBerakhir: 2);
 
     [Fact]
     public async Task Summary_ReturnsOk_WithRepositorySummary()
@@ -34,5 +35,6 @@ public class EventsControllerSummaryTests
         Assert.Equal(1, body.BerakhirHariIni);
         Assert.Equal(1, body.BesokBerakhir);
         Assert.Equal(1, body.Dalam7Hari);
+        Assert.Equal(2, body.SudahBerakhir);
     }
 }

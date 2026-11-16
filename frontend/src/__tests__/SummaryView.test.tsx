@@ -38,6 +38,7 @@ const defaultEventsSummary = {
   berakhirHariIni: 0,
   besokBerakhir: 0,
   dalam7Hari: 0,
+  sudahBerakhir: 0,
 };
 
 function fetchStub(overrides: {
@@ -138,13 +139,29 @@ describe('SummaryView', () => {
   });
 
   it('counts total events and unique sources from the summary endpoint', async () => {
-    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0 };
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 0 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
     expect(screen.getByText('Total terdokumentasi').parentElement).toHaveTextContent('5');
     expect(screen.getByText('Sumber unik').parentElement).toHaveTextContent('2');
+  });
+
+  it('shows the already-expired promo count when stale promos exist', async () => {
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary: { total: 4, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 3 } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.getByText('Sudah berakhir').parentElement).toHaveTextContent('3');
+  });
+
+  it('hides the already-expired row when there are no stale promos', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.queryByText('Sudah berakhir')).not.toBeInTheDocument();
   });
 
   it('marks the expenses card red when the allowance is negative', async () => {
@@ -271,7 +288,7 @@ describe('SummaryView', () => {
   });
 
   it('shows promo expiry urgency buckets from the summary endpoint', async () => {
-    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1 };
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1, sudahBerakhir: 0 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
@@ -294,7 +311,7 @@ describe('SummaryView', () => {
 
   it('renders the Lihat semua promo button and triggers navigation when clicked', async () => {
     const onOpenEvents = vi.fn();
-    const eventsSummary = { total: 3, sumberUnik: 1, berakhirHariIni: 1, besokBerakhir: 0, dalam7Hari: 0 };
+    const eventsSummary = { total: 3, sumberUnik: 1, berakhirHariIni: 1, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 2 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(
       <SummaryView

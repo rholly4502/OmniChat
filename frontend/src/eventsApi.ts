@@ -134,6 +134,8 @@ export interface EventsSummary {
   besokBerakhir: number;
   /** Events ending within the next 7 days (2–7 days out). */
   dalam7Hari: number;
+  /** Events whose known end date has already passed (stale promos). */
+  sudahBerakhir: number;
 }
 
 /** Fetch the curated-event digest (totals + expiry buckets). */

@@ -67,6 +67,7 @@ public sealed class PromoEventRepositorySummaryTests : IDisposable
         Assert.Equal(1, summary.BerakhirHariIni);
         Assert.Equal(1, summary.BesokBerakhir);
         Assert.Equal(1, summary.Dalam7Hari);
+        Assert.Equal(1, summary.SudahBerakhir); // 2026-11-13 expired
     }
 
     [Fact]
@@ -79,5 +80,6 @@ public sealed class PromoEventRepositorySummaryTests : IDisposable
         Assert.Equal(0, summary.BerakhirHariIni);
         Assert.Equal(0, summary.BesokBerakhir);
         Assert.Equal(0, summary.Dalam7Hari);
+        Assert.Equal(0, summary.SudahBerakhir);
     }
 }

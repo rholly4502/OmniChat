@@ -269,6 +269,9 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               <StatRow label="Dalam 7 hari" value={String(eventsSummary.dalam7Hari)} />
             </>
           )}
+          {eventsSummary && (eventsSummary.sudahBerakhir ?? 0) > 0 && (
+            <StatRow label="Sudah berakhir" value={String(eventsSummary.sudahBerakhir)} />
+          )}
           {onOpenEvents ? (
             <button
               type="button"
