@@ -11,7 +11,7 @@ import { ApiError } from '../api';
 import { useEvents } from '../hooks/useEvents';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
-import { STATUS_CHIP, countdownLabel, eventStatus, type EventStatus } from '../eventsStatus';
+import { STATUS_CHIP, countdownLabel, eventStatus, sortEventsByUrgency, type EventStatus } from '../eventsStatus';
 
 /**
  * WAI-ARIA tabs pattern (roving tabindex): given the ordered filter keys and the
@@ -353,7 +353,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
         ) : (
           <div className="space-y-5">
             {groups.map((g) => {
-              const items = visible.filter((e) => e.aplikasi === g);
+              const items = sortEventsByUrgency(visible.filter((e) => e.aplikasi === g), nowWib);
               return (
                 <section key={g} aria-labelledby={`app-${g}`}>
                   <div className="mb-2 border-l-2 border-chill-accent pl-2">

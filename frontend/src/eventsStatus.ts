@@ -57,6 +57,33 @@ export function countdownLabel(
   return `${n} hari lagi`;
 }
 
+/**
+ * Order promo events by actionability: non-expired events first, ordered by
+ * nearest expiry (most urgent first), then running-end-date events, then
+ * expired ones last. Stable — equal keys keep their input order.
+ */
+export function sortEventsByUrgency<T extends { berlakuSampai?: string | null }>(
+  events: readonly T[],
+  today: string,
+): T[] {
+  const rank = (e: T): number => {
+    const st = eventStatus(e.berlakuSampai, today);
+    if (st === 'kedaluwarsa') return 3;
+    if (st === 'tanpa-batas') return 2;
+    return 1;
+  };
+  const days = (e: T): number => {
+    const d = daysRemaining(e.berlakuSampai, today);
+    return d === null ? Infinity : d;
+  };
+  return [...events].sort((a, b) => {
+    const r = rank(a) - rank(b);
+    if (r !== 0) return r;
+    // Within the same band, nearest expiry first (farthest / undated last).
+    return days(a) - days(b);
+  });
+}
+
 /** Chip label + classes per event status (used by the event card). */
 export const STATUS_CHIP: Record<EventStatus, { text: string; cls: string }> = {
   aktif: { text: 'Aktif', cls: 'border-chill-emerald/50 text-chill-emerald bg-chill-emerald/10' },

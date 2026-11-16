@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
-import { countdownLabel, eventStatus } from '../eventsStatus';
+import { countdownLabel, eventStatus, sortEventsByUrgency } from '../eventsStatus';
 import { createEvent, deleteEvent, exportEventsCsv, updateEvent, type PromoEvent } from '../eventsApi';
 
 vi.mock('../eventsApi', async () => ({
@@ -396,6 +396,33 @@ describe('eventStatus', () => {
   });
 });
 
+describe('sortEventsByUrgency', () => {
+  const today = '2026-11-15';
+  const ev = (id: number, berlakuSampai?: string | null) => ({ id, berlakuSampai });
+
+  it('puts expired events last, after active and tanpa-batas ones', () => {
+    const sorted = sortEventsByUrgency([ev(1, '2026-10-01'), ev(2, null), ev(3, '2027-01-01')], today);
+    expect(sorted.map((e) => e.id)).toEqual([3, 2, 1]);
+  });
+
+  it('orders active events by nearest expiry first', () => {
+    const sorted = sortEventsByUrgency(
+      [ev(1, '2026-12-31'), ev(2, '2026-11-18'), ev(3, '2026-11-16')],
+      today,
+    );
+    expect(sorted.map((e) => e.id)).toEqual([3, 2, 1]);
+  });
+
+  it('keeps input order for equal deadlines', () => {
+    const sorted = sortEventsByUrgency([ev(1, '2026-12-01'), ev(2, '2026-12-01')], today);
+    expect(sorted.map((e) => e.id)).toEqual([1, 2]);
+  });
+
+  it('leaves a single-element list unchanged', () => {
+    expect(sortEventsByUrgency([ev(9, '2026-12-01')], today).map((e) => e.id)).toEqual([9]);
+  });
+});
+
 describe('countdownLabel', () => {
   it('returns null when there is no end date', () => {
     expect(countdownLabel(null, '2026-11-15')).toBeNull();
@@ -516,3 +543,20 @@ describe('EventsView hide-expired toggle', () => {
   });
 });
 
+describe('EventsView urgency ordering', () => {
+  it('renders the most urgent promo first within a group', () => {
+    const today = localTodayISO();
+    const far = shiftDay(today, 20);
+    const soon = shiftDay(today, 2);
+    mockState({
+      events: [
+        { ...base, id: 41, judul: 'Promo jauh', berlakuSampai: far },
+        { ...base, id: 42, judul: 'Promo dekat', berlakuSampai: soon },
+        { ...grab, id: 43, judul: 'Promo Grab', berlakuSampai: far },
+      ],
+    });
+    render(<EventsView />);
+    const titles = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+    expect(titles).toEqual(['Promo dekat', 'Promo jauh', 'Promo Grab']);
+  });
+});
