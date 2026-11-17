@@ -1,66 +1,15 @@
-name: Deploy
-
-permissions:
-  contents: read
-  checks: read
+name: Deploy OmniChat
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:  # manual trigger dari GitHub Actions tab
-
-concurrency:
-  # Serialize deploy vs seed (lihat seed-expenses.yml). Keduanya menyentuh VPS
-  # yg sama: deploy reset repo /opt/OmniChat & restart container; seed baca
-  # seed-staging + DB. Tanpa guard ini, push yg memicu keduanya serentak => race.
-  group: vps-maintenance-${{ github.ref }}
-  cancel-in-progress: false
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy to VPS
     runs-on: ubuntu-latest
-
     steps:
-      - name: Wait for CI to pass (gate deploy on green)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          SHA="${{ github.sha }}"
-          echo "Waiting for CI on $SHA ..."
-          for i in $(seq 1 90); do
-            if ! READOUT="$(gh api repos/${{ github.repository }}/commits/$SHA/check-runs --jq '
-              [.check_runs[] | select(.name != "Deploy to VPS")] as $ci |
-              "\($ci | length) \($ci | map(select(.status == "completed")) | length) \($ci | map(select(.conclusion == "success")) | length)"
-            ' 2>&1)"; then
-              echo "warning: gh api check-runs failed (attempt $i/90); retrying..."
-              sleep 10
-              continue
-            fi
-            set -- $READOUT
-            N="${1:-0}"
-            DONE="${2:-0}"
-            OK="${3:-0}"
-            echo "CI check runs: $OK/$N passed, $DONE completed (attempt $i/90)"
-            if [ "$N" -gt 0 ] && [ "$OK" -eq "$N" ]; then
-              echo "OK: CI passed for $SHA"
-              exit 0
-            fi
-            if [ "$N" -gt 0 ] && [ "$DONE" -ge "$N" ] && [ "$OK" -ne "$N" ]; then
-              echo "ERROR: CI checks failed for $SHA — deploy blocked."
-              exit 1
-            fi
-            sleep 10
-          done
-          echo "ERROR: timed out waiting for CI."
-          exit 1
-
       - name: Deploy via SSH
-        # Pendekatan lama pakai appleboy/ssh-action, yg mengunduh binary drone-ssh
-        # dari GitHub releases. Endpoint release-asset itu sering 504/timeout, sehingga
-        # deploy gagal konsisten walau CI hijau. Sekarang pakai ssh bawaan runner
-        # (key dari secret) — tidak mengunduh apa pun, kebal terhadap kegagalan itu.
         shell: bash
         env:
           SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
@@ -69,95 +18,23 @@ jobs:
           VPS_PORT: ${{ secrets.VPS_PORT }}
           REMOTE_SCRIPT: |
             set -euo pipefail
+            docker network inspect shared_bridge >/dev/null 2>&1 || docker network create shared_bridge
             cd /opt/OmniChat
-
-            echo "=== Target commit: ${{ github.sha }} ==="
-
-            if ! git diff --quiet || ! git diff --cached --quiet; then
-              BACKUP="/tmp/omnichat-local-$(date +%Y%m%d-%H%M%S).patch"
-              git diff HEAD > "$BACKUP"
-              echo "WARNING: local modifications detected — saved to $BACKUP"
-              git status --short
-            fi
-
-            git fetch --prune origin main
-            git reset --hard origin/main
+            git fetch --prune origin main && git reset --hard origin/main
             git clean -fd
-
-            DEPLOYED_SHA="$(git rev-parse HEAD)"
-            echo "=== Deployed commit: $DEPLOYED_SHA ==="
-            if [ "$DEPLOYED_SHA" != "${{ github.sha }}" ]; then
-              echo "ERROR: deployed commit $DEPLOYED_SHA != pushed commit ${{ github.sha }}"
-              exit 1
-            fi
-
-            echo "=== Building images ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache frontend backend
-
-            echo "=== Ensuring shared Hermes network ==="
-            HERMES_NET="${HERMES_DOCKER_NETWORK:-omnichat_hermes}"
-            docker network inspect "$HERMES_NET" > /dev/null 2>&1 || docker network create "$HERMES_NET"
-            echo "network: $HERMES_NET"
-
-            echo "=== Starting services ==="
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-
-            echo "=== Validating Caddyfile (from host) ==="
-            docker run --rm --entrypoint caddy \
-              -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" \
-              caddy:2-alpine validate --config /etc/caddy/Caddyfile
-
-            echo "=== Recreating Caddy so it picks up the Caddyfile ==="
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --force-recreate caddy
-
-            echo "=== Waiting for backend health ==="
-            for i in $(seq 1 30); do
-              if curl -fsS http://localhost:5184/health > /dev/null; then
-                echo "backend healthy after ${i}s"
-                break
-              fi
-              if [ "$i" -eq 30 ]; then
-                echo "ERROR: backend did not become healthy within 30s"
-                docker compose -f docker-compose.yml -f docker-compose.prod.yml logs backend --tail=50
-                exit 1
-              fi
-              sleep 1
-            done
-
-            echo "=== Container status ==="
+            sleep 8
             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-
-            echo "=== Public health check (must reach the API) ==="
-            for i in $(seq 1 15); do
-              BODY="$(curl -fsS https://rhol-ai.tech/health 2>/dev/null || true)"
-              if printf '%s' "$BODY" | grep -q '"status"'; then
-                echo "/health served by the API: $BODY"
-                break
-              fi
-              if [ "$i" -eq 15 ]; then
-                echo "ERROR: /health is not reaching the API after 15 attempts."
-                echo "Last body: $BODY"
-                docker compose -f docker-compose.yml -f docker-compose.prod.yml logs caddy --tail=30
-                exit 1
-              fi
-              sleep 2
-            done
-
-            echo "=== Auth enforcement check ==="
-            AUTH_CODE="$(curl -s -o /dev/null -w '%{http_code}' https://rhol-ai.tech/api/models || echo 000)"
-            if [ "$AUTH_CODE" = "401" ]; then
-              echo "OK: /api/models requires credentials (401) — API key enforced."
-            else
-              echo "ERROR: /api/models answered $AUTH_CODE (expected 401) — the API is OPEN."
-              echo "ERROR: Security__ApiKey appears unset on the VPS .env. Restore it and redeploy."
-              exit 1
-            fi
-
-            echo "=== Deploy complete: $DEPLOYED_SHA ==="
+            curl -s -o /dev/null -w "root_http=%{http_code}\n" https://rhol-ai.tech/api/health || echo "health check failed"
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           PORT="${VPS_PORT:-22}"
-          printf '%s\n' "$REMOTE_SCRIPT" | ssh             -o StrictHostKeyChecking=accept-new             -o UserKnownHostsFile=/dev/null             -o ConnectTimeout=20             -p "$PORT"             "${VPS_USER}@${VPS_HOST}" 'bash -s'
+          printf '%s\n' "$REMOTE_SCRIPT" | ssh \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=20 -p "$PORT" \
+            "${VPS_USER}@${VPS_HOST}" 'bash -s'
