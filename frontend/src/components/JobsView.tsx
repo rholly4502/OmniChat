@@ -242,7 +242,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `jobs-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `jobs-${todayISO}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -269,7 +269,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `jobs-${new Date().toISOString().slice(0, 10)}.pdf`;
+      link.download = `jobs-${todayISO}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
