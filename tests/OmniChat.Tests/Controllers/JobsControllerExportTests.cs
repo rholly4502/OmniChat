@@ -211,4 +211,39 @@ public class JobsControllerExportTests
         var s = Encoding.UTF8.GetString(file.FileContents);
         return s.Length > 0 && s[0] == 0xFEFF ? s.Substring(1) : s;
     }
+    [Fact]
+    public async Task Export_Pdf_ReturnsPdfFile_WhenFormatIsPdf()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Opportunity() });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, format: "pdf"));
+
+        Assert.Equal("application/pdf", file.ContentType);
+        Assert.EndsWith(".pdf", file.FileDownloadName);
+        Assert.StartsWith("%PDF-1.4", Encoding.ASCII.GetString(file.FileContents));
+    }
+
+    [Fact]
+    public async Task Export_Pdf_AppliesFilters()
+    {
+        _repository.Setup(r => r.ListAsync("applied", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Opportunity("applied") });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: "applied", format: "pdf"));
+
+        Assert.Contains("Dilamar", Encoding.ASCII.GetString(file.FileContents));
+    }
+
+    [Fact]
+    public async Task Export_DefaultsToCsv_WhenFormatIsNotPdf()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Opportunity() });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null, format: "docx"));
+
+        Assert.Equal("text/csv; charset=utf-8", file.ContentType);
+        Assert.EndsWith(".csv", file.FileDownloadName);
+    }
 }

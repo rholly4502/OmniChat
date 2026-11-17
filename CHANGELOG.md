@@ -4,6 +4,23 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P21 — Jobs: ekspor PDF pipeline (backend + frontend)
+
+#### Added
+- Backend `GET /api/jobs/export?format=pdf` — render pipeline (setiap status
+  yang sedang difilter, termasuk follow-up) sebagai PDF multi-halaman A4 lewat
+  `JobsPdfReport` (writers bebas-dependensi, font base-14 Helvetica, pagination
+  otomatis — tidak memangkas baris di halaman pertama). Kembali `application/pdf`
+  dengan nama `jobs-<tanggal>.pdf`; tanpa `format=pdf` tetap menghasilkan CSV.
+- `JobsPdfReportTests`: 5 unit test struktur PDF (header, objek, xref, trailer),
+  pagination > 1 halaman tanpa truncasi (120 baris → 3 halaman, baris terakhir
+  tetap ada), label status Indonesia, escape tanda kurung.
+- `JobsControllerExportTests`: +3 — PDF file, filter diterapkan, fallback CSV.
+- Frontend: `exportOpportunitiesPdf` (transport, `format=pdf` + seluruh filter
+  aktif) dan tombol "Ekspor PDF" di JobsView di samping "Ekspor CSV".
+- Tests frontend: +3 jobsApi + +2 JobsView (download & galat). Full suite hijau:
+  backend 751, tsc -b, oxlint tanpa warning baru, build prod ok.
+
 ### P20 — Expenses: unit test controller `ExpensesController` (backend)
 
 #### Added

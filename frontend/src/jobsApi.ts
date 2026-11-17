@@ -127,19 +127,45 @@ export interface OpportunityExportFilters {
   today?: string;
 }
 
-export async function exportOpportunitiesCsv(
-  options: JobsRequestOptions = {},
-  filters: OpportunityExportFilters = {},
-): Promise<Blob> {
-  const params = new URLSearchParams();
+function buildExportQuery(filters: OpportunityExportFilters, format: string): string {
+  const params = new URLSearchParams({ format });
   if (filters.status) params.set('status', filters.status);
   if (filters.tipe) params.set('tipe', filters.tipe);
   if (filters.tier) params.set('tier', filters.tier);
   if (filters.q) params.set('q', filters.q);
   if (filters.followUpOnly) params.set('followUpOnly', 'true');
   if (filters.followUpOnly && filters.today) params.set('today', filters.today);
-  const qs = params.toString();
-  const path = qs ? `${JOBS_URL}/export?${qs}` : `${JOBS_URL}/export`;
+  return params.toString();
+}
+
+export async function exportOpportunitiesCsv(
+  options: JobsRequestOptions = {},
+  filters: OpportunityExportFilters = {},
+): Promise<Blob> {
+  const qs = buildExportQuery(filters, 'csv');
+  const path = `${JOBS_URL}/export?${qs}`;
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(path, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return await res.blob();
+}
+
+/**
+ * Downloads the curated pipeline as a PDF (server-rendered). Honors the same
+ * filters as {@link exportOpportunitiesCsv} via `format=pdf`.
+ */
+export async function exportOpportunitiesPdf(
+  options: JobsRequestOptions = {},
+  filters: OpportunityExportFilters = {},
+): Promise<Blob> {
+  const qs = buildExportQuery(filters, 'pdf');
+  const path = `${JOBS_URL}/export?${qs}`;
   const doFetch = options.fetchImpl ?? fetch;
   const res = await doFetch(path, {
     method: 'GET',

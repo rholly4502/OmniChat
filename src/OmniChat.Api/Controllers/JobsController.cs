@@ -3,6 +3,7 @@ using System.Text;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
+using OmniChat.Infrastructure.Services;
 
 namespace OmniChat.Api.Controllers;
 
@@ -257,6 +258,7 @@ public sealed class JobsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Export(
         [FromQuery] string? status,
+        [FromQuery] string? format = null,
         [FromQuery] string? tipe = null,
         [FromQuery] string? tier = null,
         [FromQuery] string? q = null,
@@ -273,6 +275,12 @@ public sealed class JobsController(
             MatchesTier(o, tier) &&
             MatchesKeyword(o, q) &&
             (!followUpOnlyFilter || NeedsFollowUp(o, todayDate)));
+
+        if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            var pdf = JobsPdfReport.Build(filtered.ToList());
+            return File(pdf, "application/pdf", $"jobs-{DateTime.UtcNow:yyyy-MM-dd}.pdf");
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,ditemukan,link,catatan");

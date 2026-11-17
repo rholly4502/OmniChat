@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { JobsView } from '../components/JobsView';
-import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, type Opportunity } from '../jobsApi';
+import { OPPORTUNITY_STATUSES, exportOpportunitiesCsv, exportOpportunitiesPdf, type Opportunity } from '../jobsApi';
 
 vi.mock('../jobsApi', async () => ({
   ...(await vi.importActual<typeof import('../jobsApi')>('../jobsApi')),
   exportOpportunitiesCsv: vi.fn(),
+  exportOpportunitiesPdf: vi.fn(),
   createJob: vi.fn().mockResolvedValue({ id: 99, judul: 'Backend .NET Developer' }),
   updateJob: vi.fn().mockResolvedValue({ id: 1, judul: 'Backend .NET Developer' }),
   deleteJob: vi.fn().mockResolvedValue(undefined),
@@ -428,6 +429,40 @@ describe('JobsView CSV export', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor CSV.'));
+  });
+});
+
+describe('JobsView PDF export', () => {
+  it('downloads the pipeline as PDF through exportOpportunitiesPdf', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportOpportunitiesPdf);
+    exportMock.mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fake');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    render(<JobsView apiKey="k" />);
+    openTools();
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, expect.any(Object)));
+    expect(click).toHaveBeenCalledTimes(1);
+
+    createUrl.mockRestore();
+    revoke.mockRestore();
+    click.mockRestore();
+  });
+
+  it('shows an error message when the PDF export fails', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportOpportunitiesPdf);
+    exportMock.mockRejectedValue(new Error('fail'));
+
+    render(<JobsView apiKey="k" />);
+    openTools();
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor PDF.'));
   });
 });
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, createJob, updateJob, deleteJob, fetchJobsSummary, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
+import { JOBS_URL, CV_URL, listOpportunities, generateLamaranDraft, updateOpportunityFollowUp, listCvFiles, downloadCvFile, exportOpportunitiesCsv, exportOpportunitiesPdf, createJob, updateJob, deleteJob, fetchJobsSummary, OPPORTUNITY_STATUSES, type Opportunity } from '../jobsApi';
 
 /** Minimal Response stand-in used across the jobs transport tests. */
 function okResponse(data: unknown) {
@@ -162,7 +162,7 @@ describe('exportOpportunitiesCsv', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(csvBlob) });
     const out = await exportOpportunitiesCsv({ fetchImpl: fetchMock as unknown as typeof fetch });
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${JOBS_URL}/export`);
+    expect(url).toBe(`${JOBS_URL}/export?format=csv`);
     expect(init.method).toBe('GET');
     expect(init.headers).toEqual({});
     expect(out).toBe(csvBlob);
@@ -175,7 +175,7 @@ describe('exportOpportunitiesCsv', () => {
       { status: 'offer' },
     );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${JOBS_URL}/export?status=offer`);
+    expect(url).toBe(`${JOBS_URL}/export?format=csv&status=offer`);
     expect(init.headers).toEqual({ 'X-Api-Key': 'secret-key' });
   });
 
@@ -186,12 +186,42 @@ describe('exportOpportunitiesCsv', () => {
       { status: 'applied', tipe: 'Kontrak', tier: 'high', q: '.net', followUpOnly: true, today: '2026-11-15' },
     );
     const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${JOBS_URL}/export?status=applied&tipe=Kontrak&tier=high&q=.net&followUpOnly=true&today=2026-11-15`);
+    expect(url).toBe(`${JOBS_URL}/export?format=csv&status=applied&tipe=Kontrak&tier=high&q=.net&followUpOnly=true&today=2026-11-15`);
   });
 
   it('throws an ApiError when not ok', async () => {
     const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
     await expect(exportOpportunitiesCsv({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
+  });
+});
+
+describe('exportOpportunitiesPdf', () => {
+  const pdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+
+  it('GETs /export?format=pdf with no auth header when no key is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(pdfBlob) });
+    const out = await exportOpportunitiesPdf({ fetchImpl: fetchMock as unknown as typeof fetch });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/export?format=pdf`);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({});
+    expect(out).toBe(pdfBlob);
+  });
+
+  it('sends the API key and appends filters with format=pdf', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(pdfBlob) });
+    await exportOpportunitiesPdf(
+      { apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch },
+      { status: 'applied', followUpOnly: true, today: '2026-11-15' },
+    );
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${JOBS_URL}/export?format=pdf&status=applied&followUpOnly=true&today=2026-11-15`);
+    expect(init.headers).toEqual({ 'X-Api-Key': 'secret-key' });
+  });
+
+  it('throws an ApiError when not ok', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(errResponse(401));
+    await expect(exportOpportunitiesPdf({ fetchImpl: fetchMock as unknown as typeof fetch })).rejects.toMatchObject({ status: 401 });
   });
 });
 
