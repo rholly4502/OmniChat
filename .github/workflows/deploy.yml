@@ -27,6 +27,15 @@ jobs:
             sleep 8
             docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
             curl -s -o /dev/null -w "root_http=%{http_code}\n" https://rhol-ai.tech/api/health || echo "health check failed"
+            # Auth enforcement check: a public API that answers /api/models without an
+            # API key is exposed (and routes to the paid Hermes gateway). It must
+            # return 401; a 200 means Security__ApiKey is unset on the VPS .env.
+            api_models_code=$(curl -s -o /dev/null -w "%{http_code}" https://rhol-ai.tech/api/models)
+            echo "api_models_no_key=${api_models_code}"
+            if [ "${api_models_code}" != "401" ]; then
+              echo "WARNING: /api/models answered ${api_models_code} (expected 401) — Security__ApiKey likely unset; the public API is open."
+              exit 1
+            fi
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
