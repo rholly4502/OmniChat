@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P20 — Expenses: unit test controller `ExpensesController` (backend)
+
+#### Added
+- `tests/.../Controllers/ExpensesControllerTests.cs`: 23 test baru menutup celah
+  cakupan `ExpensesController` (domain Pengeluaran) — sebelumnya tidak punya test
+  unit sama sekali. Meliputi list paged (terbaru dulu + validasi bulan), summary
+  (total per kategori, sisa anggaran), target GET/PUT (upsert + flag
+  `IsUserEdited` + validasi), sisa kas (pemasukan − pengeluaran − nabung),
+  ekspor CSV (BOM UTF-8 + hormati filter kategori) dan PDF, trend (zero-filled),
+  advice (tanggal valid/tidak valid), serta CRUD web (tombstone delete).
+- Full suite backend kini 743 test hijau; build 0 warning / 0 error.
 ### P19 — Navigasi: deep-link view via URL hash (frontend)
 
 #### Added
