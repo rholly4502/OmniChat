@@ -29,7 +29,7 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
         // Only the columns the digest needs — avoids loading full rows for an aggregate.
         var rows = await db.PromoEvents
             .AsNoTracking()
-            .Select(e => new { e.Aplikasi, e.BerlakuSampai })
+            .Select(e => new { e.Aplikasi, e.BerlakuSampai, e.Dipakai })
             .ToListAsync(cancellationToken);
 
         // Expiry buckets only consider dates that parse as YYYY-MM-DD (the stored
@@ -46,14 +46,25 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
             }
         }
 
+        var totalDipakai = rows.Count(r => r.Dipakai);
+        var sisaAktif = rows.Count(r => !r.Dipakai && !IsExpiredRow(r.BerlakuSampai, today));
+
         return new EventsSummary(
             rows.Count,
             rows.Select(r => r.Aplikasi).Distinct().Count(),
             ends.Count(d => d == today),
             ends.Count(d => d == today.AddDays(1)),
             ends.Count(d => d > today.AddDays(1) && d <= today.AddDays(7)),
-            ends.Count(d => d < today));
+            ends.Count(d => d < today),
+            totalDipakai,
+            sisaAktif);
     }
+
+    /// <summary>True when a promo's end date parses as YYYY-MM-DD and is before `today`.</summary>
+    private static bool IsExpiredRow(string? berlakuSampai, DateOnly today)
+        => berlakuSampai is string s &&
+           DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end) &&
+           end < today;
 
     public async Task<int> InsertMissingAsync(
         IEnumerable<PromoEvent> events, CancellationToken cancellationToken)

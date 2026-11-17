@@ -280,6 +280,14 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           {eventsSummary && (eventsSummary.sudahBerakhir ?? 0) > 0 && (
             <StatRow label="Sudah berakhir" value={String(eventsSummary.sudahBerakhir)} />
           )}
+          {eventsSummary && (
+            <>
+              <StatRow label="Masih aktif tersedia" value={String(eventsSummary.sisaAktif)} />
+              {eventsSummary.totalDipakai > 0 && (
+                <StatRow label="Sudah dipakai" value={String(eventsSummary.totalDipakai)} />
+              )}
+            </>
+          )}
           {onOpenEvents ? (
             <button
               type="button"

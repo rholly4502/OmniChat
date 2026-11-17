@@ -4,7 +4,23 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P27 — Events: tandai promo yang sudah dipakai/terklaim (backend + frontend)
+### P28 — Events: sisa promo aktif & sudah dipakai di Ringkasan (backend + frontend)
+
+#### Added
+- Backend `GET /api/events/summary` kini mengembalikan `totalDipakai` (jumlah promo
+  yang ditandai sudah dipakai) dan `sisaAktif` (promo masih berlaku dan belum
+  dipakai) — keduanya dihitung di `PromoEventRepository.EventsSummaryAsync` dengan
+  memuat kolom `Dipakai`. `EventsSummary` diperluas dua field baru.
+- `PromoEventRepositorySummaryTests`: asersi `totalDipakai` & `sisaAktif`
+  (termasuk kasus promo aktif-tapi-dipakai tidak ikut terhitung sebagai sisa).
+  `EventsControllerSummaryTests` diverifikasi field baru.
+- Frontend: kartu Promo/Event Ringkasan menampilkan baris "Masih aktif tersedia"
+  (sisaAktif) dan — bila ada — "Sudah dipakai" (totalDipakai). Interface
+  `EventsSummary` diperluas dua field baru.
+- Tests frontend: +2 SummaryView (render sisa & dipakai; sembunyikan baris
+  dipakai saat nol). Full suite hijau: backend 766, tsc -b, vitest SummaryView,
+  oxlint tanpa warning.
+
 
 #### Added
 - Backend `PATCH /api/events/{id}/dipakai` — toggle `dipakai` (sudah dipakai /

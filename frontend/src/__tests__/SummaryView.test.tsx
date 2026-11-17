@@ -40,6 +40,8 @@ const defaultEventsSummary = {
   besokBerakhir: 0,
   dalam7Hari: 0,
   sudahBerakhir: 0,
+  totalDipakai: 0,
+  sisaAktif: 0,
 };
 
 function fetchStub(overrides: {
@@ -140,7 +142,7 @@ describe('SummaryView', () => {
   });
 
   it('counts total events and unique sources from the summary endpoint', async () => {
-    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 0 };
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 0, totalDipakai: 2, sisaAktif: 3 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
@@ -150,7 +152,7 @@ describe('SummaryView', () => {
   });
 
   it('shows the already-expired promo count when stale promos exist', async () => {
-    vi.stubGlobal('fetch', fetchStub({ eventsSummary: { total: 4, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 3 } }));
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary: { total: 4, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 3, totalDipakai: 0, sisaAktif: 1 } }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
@@ -163,6 +165,26 @@ describe('SummaryView', () => {
 
     await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
     expect(screen.queryByText('Sudah berakhir')).not.toBeInTheDocument();
+  });
+
+  it('shows remaining active and used promo counts from the summary', async () => {
+    const eventsSummary = { total: 6, sumberUnik: 2, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 1, totalDipakai: 2, sisaAktif: 3 };
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.getByText('Masih aktif tersedia').parentElement).toHaveTextContent('3');
+    expect(screen.getByText('Sudah dipakai').parentElement).toHaveTextContent('2');
+  });
+
+  it('omits the used-promo row when none are used', async () => {
+    const eventsSummary = { total: 4, sumberUnik: 1, berakhirHariIni: 0, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 0, totalDipakai: 0, sisaAktif: 4 };
+    vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Promo / Event')).toBeInTheDocument());
+    expect(screen.getByText('Masih aktif tersedia').parentElement).toHaveTextContent('4');
+    expect(screen.queryByText('Sudah dipakai')).not.toBeInTheDocument();
   });
 
   it('marks the expenses card red when the allowance is negative', async () => {
@@ -297,7 +319,7 @@ describe('SummaryView', () => {
   });
 
   it('shows promo expiry urgency buckets from the summary endpoint', async () => {
-    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1, sudahBerakhir: 0 };
+    const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1, sudahBerakhir: 0, totalDipakai: 1, sisaAktif: 4 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
 
@@ -320,7 +342,7 @@ describe('SummaryView', () => {
 
   it('renders the Lihat semua promo button and triggers navigation when clicked', async () => {
     const onOpenEvents = vi.fn();
-    const eventsSummary = { total: 3, sumberUnik: 1, berakhirHariIni: 1, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 2 };
+    const eventsSummary = { total: 3, sumberUnik: 1, berakhirHariIni: 1, besokBerakhir: 0, dalam7Hari: 0, sudahBerakhir: 2, totalDipakai: 2, sisaAktif: 0 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));
     render(
       <SummaryView

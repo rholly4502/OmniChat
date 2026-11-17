@@ -12,6 +12,9 @@ const summaryPayload = {
   berakhirHariIni: 1,
   besokBerakhir: 1,
   dalam7Hari: 1,
+  sudahBerakhir: 2,
+  totalDipakai: 2,
+  sisaAktif: 3,
 };
 
 afterEach(() => {

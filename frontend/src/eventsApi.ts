@@ -180,6 +180,10 @@ export interface EventsSummary {
   dalam7Hari: number;
   /** Events whose known end date has already passed (stale promos). */
   sudahBerakhir: number;
+  /** Events the owner has already marked as redeemed/used. */
+  totalDipakai: number;
+  /** Events still active (not expired) and not yet used. */
+  sisaAktif: number;
 }
 
 /** Fetch the curated-event digest (totals + expiry buckets). */
