@@ -43,6 +43,8 @@ export interface ExpenseSummary {
   targetNabung: number | null;
   anggaran: number | null;
   sisaAnggaran: number | null;
+  /** Cumulative savings pot (all Nabung deposits to end of month) — standing fund. */
+  totalNabungKumulatif?: number;
   /** Active day count for partial-month targets (null = full month). */
   hari?: number | null;
   catatan?: string | null;

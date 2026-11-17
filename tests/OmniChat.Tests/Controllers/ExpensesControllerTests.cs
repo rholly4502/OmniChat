@@ -108,6 +108,28 @@ public class ExpensesControllerTests
         Assert.Equal(2000L, perKategori["Nabung"]);
         Assert.Equal(30000L, Get<long>(ok.Value, "anggaran"));
         Assert.Equal(15000L, Get<long>(ok.Value, "sisaAnggaran")); // anggaran - total
+        Assert.Equal(2000L, Get<long>(ok.Value, "totalNabungKumulatif")); // cumulative Nabung pot
+    }
+
+    [Fact]
+    public async Task Summary_TotalNabungIsCumulativeAcrossMonths()
+    {
+        var (controller, repo, dbPath) = Setup();
+        await Seed(dbPath,
+            Expense("2026-10-15", "Nabung", 500000, "p1"), // prior month
+            Expense("2026-11-01", "Nabung", 200000, "p2"),
+            Expense("2026-11-02", "Makan", 10000, "a1"));
+        await repo.UpsertTargetAsync(new ExpenseTarget
+        {
+            Month = "2026-11",
+            Anggaran = 30000,
+            TargetNabung = 200000,
+        }, CancellationToken.None);
+
+        var result = await controller.Summary("2026-11", CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        // Pot includes the October deposit too — standing fund toward the PC goal.
+        Assert.Equal(700000L, Get<long>(ok.Value, "totalNabungKumulatif"));
     }
 
     [Fact]

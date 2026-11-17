@@ -74,6 +74,9 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
         var (total, perKategori) = await repository.GetTotalsAsync(month, cancellationToken);
         var target = await repository.GetTargetAsync(month, cancellationToken);
+        // Cumulative Nabung pot (all deposits up to the end of this month) — the
+        // standing fund toward the long-term saving goal (e.g. part PC).
+        var totalNabungKumulatif = await repository.GetCumulativeNabungAsync(month, cancellationToken);
 
         return Ok(new
         {
@@ -84,6 +87,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
             anggaran = target?.Anggaran,
     hari = target?.Hari,
             sisaAnggaran = target is null ? (long?)null : target.Anggaran - total,
+            totalNabungKumulatif,
             catatan = target?.Catatan,
         });
     }

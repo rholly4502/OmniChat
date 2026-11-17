@@ -216,6 +216,7 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           })()}
           <StatRow label="Target nabung" value={expenses.summary?.targetNabung != null ? expenses.summary.targetNabung.toLocaleString('id-ID') : '—'} />
           <StatRow label="Ditabung bulan ini" value={monthSavings.toLocaleString('id-ID')} />
+          <StatRow label="Dana PC terkumpul" value={expenses.summary?.totalNabungKumulatif != null ? expenses.summary.totalNabungKumulatif.toLocaleString('id-ID') : '—'} />
           {nabungPct !== null && (
             <div>
               <div className="flex items-center justify-between gap-2">

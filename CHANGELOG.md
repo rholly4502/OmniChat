@@ -4,7 +4,21 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
-### P22 — Jobs: tambah LinkedIn ke profil draft lamaran (backend)
+### P23 — Expenses: dana nabung kumulatif di Ringkasan (backend + frontend)
+
+#### Added
+- Backend `GET /api/expenses/summary` kini mengembalikan `totalNabungKumulatif`
+  — akumulasi seluruh setoran kategori "Nabung" sampai akhir bulan (dana
+  mengendap menuju sasaran jangka panjang, mis. part PC), via
+  `ExpenseRepository.GetCumulativeNabungAsync`. Berbeda dari `totalNabung`
+  (`/sisa`) yang hanya hitungan bulan berjalan.
+- `ExpensesControllerTests`: +2 — `totalNabungKumulatif` dalam summary, dan
+  akumulasi lintas-bulan (setoran bulan sebelumnya ikut terhitung).
+- Frontend: baris "Dana PC terkumpul" di kartu Pengeluaran Ringkasan menampilkan
+  dana kumulatif (locale id-ID). `ExpenseSummary.totalNabungKumulatif` (opsional).
+- Tests frontend: +1 SummaryView (render dana kumulatif). Full suite hijau:
+  backend 753, tsc -b, vitest 48 file hijau, oxlint tanpa warning baru.
+
 
 #### Added
 - Backend `LamaranDraftService.BuildPrompt` — profil kandidat Rholly kini memuat

@@ -14,6 +14,7 @@ const summaryPayload = {
   targetNabung: 467000,
   anggaran: 520000,
   sisaAnggaran: 500000,
+  totalNabungKumulatif: 1250000,
 };
 
 const pagePayload = {
@@ -204,6 +205,14 @@ describe('SummaryView', () => {
     expect(screen.getByText('Ditabung bulan ini').parentElement).toHaveTextContent('500.000');
     expect(screen.getByText('Progres nabung')).toBeInTheDocument();
     expect(screen.getByText('50%')).toBeInTheDocument();
+  });
+
+  it('shows the cumulative savings pot (dana PC terkumpul)', async () => {
+    vi.stubGlobal('fetch', fetchStub({ summary: { ...summaryPayload, totalNabungKumulatif: 1250000 } }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Dana PC terkumpul').parentElement).toHaveTextContent('1.250.000');
   });
 
   it('hides the nabung progress when no target is set', async () => {
