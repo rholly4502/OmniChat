@@ -133,6 +133,42 @@ public class ExpensesControllerTests
     }
 
     [Fact]
+    public async Task Summary_CurrentMonth_ReturnsDailyAverageAndProjection()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        var month = today.ToString("yyyy-MM");
+        var daysInMonth = DateTime.DaysInMonth(today.Year, today.Month);
+        var day = Math.Clamp(today.Day, 1, daysInMonth);
+
+        var (controller, _, dbPath) = Setup();
+        await Seed(dbPath, Expense($"{month}-01", "Makan", 30000, "a1"));
+
+        var result = await controller.Summary(month, CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(result);
+
+        Assert.Equal(daysInMonth, Get<int>(ok.Value, "hariBulanIni"));
+        Assert.Equal(day, Get<int>(ok.Value, "hariBerjalan"));
+        var avg = (long)Math.Round(30000.0 / day);
+        Assert.Equal(avg, Get<long>(ok.Value, "rata2Harian"));
+        Assert.Equal(avg * daysInMonth, Get<long>(ok.Value, "proyeksiAkhirBulan"));
+    }
+
+    [Fact]
+    public async Task Summary_NonCurrentMonth_OmitsProjection()
+    {
+        var (controller, _, dbPath) = Setup();
+        await Seed(dbPath, Expense("2020-01-01", "Makan", 30000, "a1"));
+
+        var result = await controller.Summary("2020-01", CancellationToken.None);
+        var ok = Assert.IsType<OkObjectResult>(result);
+
+        Assert.Null(Get<int?>(ok.Value, "hariBulanIni"));
+        Assert.Null(Get<int?>(ok.Value, "hariBerjalan"));
+        Assert.Null(Get<long?>(ok.Value, "rata2Harian"));
+        Assert.Null(Get<long?>(ok.Value, "proyeksiAkhirBulan"));
+    }
+
+    [Fact]
     public async Task Summary_InvalidMonth_Returns400()
     {
         var (controller, _, _) = Setup();

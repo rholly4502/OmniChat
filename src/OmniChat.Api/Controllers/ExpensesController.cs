@@ -78,6 +78,21 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         // standing fund toward the long-term saving goal (e.g. part PC).
         var totalNabungKumulatif = await repository.GetCumulativeNabungAsync(month, cancellationToken);
 
+        // Daily-spend rate and month-end projection — meaningful only for the current
+        // WIB month (a past/future month cannot be projected).
+        var today = TodayWib();
+        int? hariBulanIni = null;
+        int? hariBerjalan = null;
+        long? rata2Harian = null;
+        long? proyeksiAkhirBulan = null;
+        if (today.ToString("yyyy-MM") == month)
+        {
+            hariBulanIni = DateTime.DaysInMonth(today.Year, today.Month);
+            hariBerjalan = Math.Clamp(today.Day, 1, hariBulanIni.Value);
+            rata2Harian = hariBerjalan.Value > 0 ? (long)Math.Round(total / (double)hariBerjalan.Value) : 0;
+            proyeksiAkhirBulan = hariBulanIni.Value * rata2Harian.Value;
+        }
+
         return Ok(new
         {
             month,
@@ -88,6 +103,10 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     hari = target?.Hari,
             sisaAnggaran = target is null ? (long?)null : target.Anggaran - total,
             totalNabungKumulatif,
+            hariBulanIni,
+            hariBerjalan,
+            rata2Harian,
+            proyeksiAkhirBulan,
             catatan = target?.Catatan,
         });
     }

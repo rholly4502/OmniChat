@@ -4,6 +4,22 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P24 — Expenses: rata-rata harian & proyeksi akhir bulan di Ringkasan (backend + frontend)
+
+#### Added
+- Backend `GET /api/expenses/summary` (bulan WIB berjalan) kini mengembalikan
+  `hariBulanIni`, `hariBerjalan`, `rata2Harian` (total ÷ hari berjalan), dan
+  `proyeksiAkhirBulan` (tarif harian × jumlah hari dalam bulan). Untuk bulan
+  selain bulan WIB berjalan keempat field bernilai `null` — tidak ada proyeksi
+  yang bermakna untuk bulan yang sudah lewat.
+- `ExpensesControllerTests`: +2 — proyeksi di bulan berjalan (rata-rata harian
+  & proyeksi akhir bulan dihitung benar), dan bulan lampau mengembalikan null.
+- Frontend: baris "Rata-rata harian" dan "Proyeksi akhir bulan" di kartu
+  Pengeluaran Ringkasan (locale id-ID), muncul hanya jika summary menyediakan
+  proyeksi. `ExpenseSummary.rata2Harian` / `.proyeksiAkhirBulan` (opsional).
+- Tests frontend: +2 SummaryView. Full suite hijau: backend 755, tsc -b,
+  vitest SummaryView 27 hijau, oxlint tanpa warning.
+
 ### P23 — Expenses: dana nabung kumulatif di Ringkasan (backend + frontend)
 
 #### Added

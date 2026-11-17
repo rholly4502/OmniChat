@@ -47,6 +47,14 @@ export interface ExpenseSummary {
   totalNabungKumulatif?: number;
   /** Active day count for partial-month targets (null = full month). */
   hari?: number | null;
+  /** Days in the viewed month (present only when it is the current WIB month). */
+  hariBulanIni?: number;
+  /** Current day-of-month in WIB (clamped; present only for the current WIB month). */
+  hariBerjalan?: number;
+  /** Spend rate: total / days elapsed (current WIB month only). */
+  rata2Harian?: number;
+  /** Projected month-end spend at today's daily rate (current WIB month only). */
+  proyeksiAkhirBulan?: number;
   catatan?: string | null;
 }
 

@@ -198,6 +198,12 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           <StatRow label="Total bulan ini" value={expenses.summary ? expenses.summary.total.toLocaleString('id-ID') : '—'} />
           <StatRow label="Anggaran" value={expenses.summary?.anggaran != null ? expenses.summary.anggaran.toLocaleString('id-ID') : '—'} />
           <StatRow label="Sisa anggaran" value={expenses.summary?.sisaAnggaran !== null && expenses.summary?.sisaAnggaran !== undefined ? expenses.summary.sisaAnggaran.toLocaleString('id-ID') : '—'} />
+          {expenses.summary?.rata2Harian != null && (
+            <StatRow label="Rata-rata harian" value={expenses.summary.rata2Harian.toLocaleString('id-ID')} />
+          )}
+          {expenses.summary?.proyeksiAkhirBulan != null && (
+            <StatRow label="Proyeksi akhir bulan" value={expenses.summary.proyeksiAkhirBulan.toLocaleString('id-ID')} />
+          )}
           {(() => {
             const cmp = monthCompare(trend.points, expenses.summary?.month);
             if (!cmp) return null;

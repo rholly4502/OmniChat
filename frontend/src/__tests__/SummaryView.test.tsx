@@ -379,4 +379,26 @@ describe('SummaryView', () => {
     expect(screen.getByText('Anggaran').parentElement).toHaveTextContent('520.000');
   });
 
+  it('renders daily average and month-end projection when the summary provides them', async () => {
+    vi.stubGlobal('fetch', fetchStub({
+      summary: { ...summaryPayload, rata2Harian: 1176, proyeksiAkhirBulan: 35280 },
+    }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.getByText('Rata-rata harian')).toBeInTheDocument();
+    expect(screen.getByText('1.176')).toBeInTheDocument();
+    expect(screen.getByText('Proyeksi akhir bulan')).toBeInTheDocument();
+    expect(screen.getByText('35.280')).toBeInTheDocument();
+  });
+
+  it('omits the daily/projection rows when the summary has no projection', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.queryByText('Rata-rata harian')).not.toBeInTheDocument();
+    expect(screen.queryByText('Proyeksi akhir bulan')).not.toBeInTheDocument();
+  });
+
 });
