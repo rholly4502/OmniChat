@@ -30,16 +30,6 @@
     "ditemukan": "2026-10-27"
   },
   {
-    "id": "11e08923b12c",
-    "aplikasi": "DANA",
-    "judul": "Cashback 10% (maks Rp22.000) dengan DANA QRIS di Hypermart (HUT ke-22) — min. transaksi ?",
-    "benefit": null,
-    "syarat": "berlaku s/d ?",
-    "link": "https://www.dana.id/en/promo/special-promo-hypermart-22nd-anniversary-10-cashback-up-to-22k-with-dana-qris-get-it-now",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-10-29"
-  },
-  {
     "id": "be37e20efa44",
     "aplikasi": "DANA",
     "judul": "Cashback 10% (maks Rp5.000) dengan DANA QRIS di Circle K — min. transaksi Rp30.000, wajib bayar pakai saldo DANA, khusus KYC (non-KYC 5%)",
@@ -56,6 +46,16 @@
     "benefit": null,
     "syarat": "berlaku s/d 31 Des 2026",
     "link": "https://www.dana.id/en/promo/save-10-cashback-in-seindonesia-with-dana-qris-get-it-now",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-10-29"
+  },
+  {
+    "id": "11e08923b12c",
+    "aplikasi": "DANA",
+    "judul": "Cashback 10% (maks Rp22.000) dengan DANA QRIS di Hypermart (HUT ke-22) — min. transaksi ?",
+    "benefit": null,
+    "syarat": "berlaku s/d ?",
+    "link": "https://www.dana.id/en/promo/special-promo-hypermart-22nd-anniversary-10-cashback-up-to-22k-with-dana-qris-get-it-now",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-29"
   },
@@ -80,22 +80,22 @@
     "ditemukan": "2026-10-30"
   },
   {
-    "id": "f277a5d937e3",
-    "aplikasi": "DANA",
-    "judul": "Cashback Rp3.000 (≈12%) QRIS di Point Coffee Indomaret (Palm Sugar Latte) — min. transaksi Rp25.000, bayar saldo DANA, 1x/pengguna/minggu",
-    "benefit": null,
-    "syarat": "berlaku s/d 31 Des 2026",
-    "link": "https://www.dana.id/promo/ngopi-hemat-di-point-coffee-indomaret-pasti-cashback-rp3000-dengan-dana-qris",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-11-02"
-  },
-  {
     "id": "a1d6e931fad1",
     "aplikasi": "DANA",
     "judul": "Event 11.11: voucher serba Rp11, Spesial 11.11, DANA CICIL + game DANAPoly (klaim DANA Points dari transaksi biasa; hadiah Daily/Flash Sale/Grand Prize: saldo DANA, voucher eMAS, iPhone 17e; All-Time Winner setelah program) — tanpa setoran, klaim poin dari transaksi sehari-hari",
     "benefit": null,
     "syarat": "berlaku 1–11 Nov 2026",
     "link": "https://www.dana.id/promo/dana-1111",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-02"
+  },
+  {
+    "id": "f277a5d937e3",
+    "aplikasi": "DANA",
+    "judul": "Cashback Rp3.000 (≈12%) QRIS di Point Coffee Indomaret (Palm Sugar Latte) — min. transaksi Rp25.000, bayar saldo DANA, 1x/pengguna/minggu",
+    "benefit": null,
+    "syarat": "berlaku s/d 31 Des 2026",
+    "link": "https://www.dana.id/promo/ngopi-hemat-di-point-coffee-indomaret-pasti-cashback-rp3000-dengan-dana-qris",
     "berlaku_sampai": null,
     "ditemukan": "2026-11-02"
   },
@@ -120,52 +120,62 @@
     "ditemukan": "2026-11-11"
   },
   {
-    "id": "846dd98e4986",
+    "id": "08e0478e29f5",
+    "aplikasi": "DANA",
+    "judul": "Cashback Rp10.000 beli paket data Telkomsel via menu \"Pilihan Paket Data Telkomsel\" di aplikasi DANA — khusus pelanggan SIMPATI, semua paket, maks 1x/pelanggan/bulan, kuota 15.000 transaksi pertama",
+    "benefit": null,
+    "syarat": "berlaku 11–30 Nov 2026",
+    "link": "https://www.telkomsel.com/promo/dana-paket-data-11-11-november-2026",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-17"
+  },
+  {
+    "id": "eb539b0ac3fe",
     "aplikasi": "GoPay",
-    "judul": "Cashback 50% (maks Rp10.000 GoPay Coins) paket data Tri di bima+ — min. transaksi Rp20.000, 1x/pengguna, untuk pengguna baru GoPay di bima+. 1 Okt-31 Des 2026.",
+    "judul": "Cashback 50% (maks Rp50.000 GoPay Coins) di McDonald's — min. transaksi Rp50.000, maks 2x/pengguna, wajib sumber dana kartu kredit/debit VISA atau Mastercard di app GoPay (tidak berlaku di app Gojek), dine-in saja bukan McDelivery. Berakhir 31 Okt — 5 hari lagi. https://gopay.co.id/promo/mcd",
     "benefit": null,
     "syarat": null,
-    "link": "https://gopay.co.id/promo/bima",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "bf8962d08c52",
+    "id": "46a71f88b5a0",
     "aplikasi": "GoPay",
-    "judul": "Cashback 50% (maks Rp50.000 GoPay Coins) di McDonald's — min. transaksi Rp50.000, maks 2x/pengguna, wajib sumber dana kartu kredit/debit VISA atau Mastercard di app GoPay (tidak berlaku di app Gojek), dine-in saja bukan McDelivery. Berakhir 31 Okt — 5 hari lagi.",
+    "judul": "Cashback 90% (maks Rp12.000 GoPay Coins) top up game di UniPin — min. transaksi Rp10.000, 1x/pengguna, hanya untuk transaksi pertama di UniPin, akun GoPay terdaftar sebelum 1 Apr 2026. 1 Okt-31 Des 2026. https://gopay.co.id/promo/unipin",
     "benefit": null,
     "syarat": null,
-    "link": "https://gopay.co.id/promo/mcd",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "e3d60b800565",
+    "id": "a1ad9d55788e",
     "aplikasi": "GoPay",
-    "judul": "Cashback 90% (maks Rp12.000 GoPay Coins) top up game di UniPin — min. transaksi Rp10.000, 1x/pengguna, hanya untuk transaksi pertama di UniPin, akun GoPay terdaftar sebelum 1 Apr 2026. 1 Okt-31 Des 2026.",
+    "judul": "Cashback bertingkat s.d. Rp150.000 GoPay Coins paket data MyTelkomsel (Payday) — tier harian: Rp10.000 coins min. Rp50.000, Rp25.000 min. Rp100.000, Rp50.000 min. Rp200.000, Rp150.000 min. Rp350.000. 25 Okt-2 Nov 2026, 10.00-23.59 WIB. https://gopay.co.id/promo/mytelkomsel",
     "benefit": null,
     "syarat": null,
-    "link": "https://gopay.co.id/promo/unipin",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "125864a46fe0",
+    "id": "ecf6de131ddf",
     "aplikasi": "GoPay",
-    "judul": "Cashback bertingkat s.d. Rp150.000 GoPay Coins paket data MyTelkomsel (Payday) — tier harian: Rp10.000 coins min. Rp50.000, Rp25.000 min. Rp100.000, Rp50.000 min. Rp200.000, Rp150.000 min. Rp350.000. 25 Okt-2 Nov 2026, 10.00-23.59 WIB.",
+    "judul": "Diskon s.d. Rp20.000 belanja di Tokopedia pakai GoPay/GoPay Tabungan — min. transaksi Rp99.000, 1x/pengguna/periode (bukan QRIS). 1-31 Okt 2026. https://gopay.co.id/promo/tokopedia",
     "benefit": null,
     "syarat": null,
-    "link": "https://gopay.co.id/promo/mytelkomsel",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "f1f8505ea3db",
+    "id": "038504f9656b",
     "aplikasi": "GoPay",
-    "judul": "Diskon s.d. Rp20.000 belanja di Tokopedia pakai GoPay/GoPay Tabungan — min. transaksi Rp99.000, 1x/pengguna/periode (bukan QRIS). 1-31 Okt 2026.",
+    "judul": "Cashback 50% (maks Rp10.000 GoPay Coins) paket data Tri di bima+ — min. transaksi Rp20.000, 1x/pengguna, untuk pengguna baru GoPay di bima+. 1 Okt-31 Des 2026. https://gopay.co.id/promo/bima",
     "benefit": null,
     "syarat": null,
-    "link": "https://gopay.co.id/promo/tokopedia",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
@@ -210,26 +220,6 @@
     "ditemukan": "2026-10-30"
   },
   {
-    "id": "d8875d6a8898",
-    "aplikasi": "GoPay",
-    "judul": "Cashback 20% hingga Rp50.000 transaksi pertama di Alfagift (GoPay Plus; pengguna lain Rp5.000) — khusus yang hubungkan akun GoPay mulai 16 Sep 2026, 1x/pengguna",
-    "benefit": null,
-    "syarat": "berlaku s/d 31 Okt 2026",
-    "link": "https://gopay.co.id/promo/alfagift",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-10-31"
-  },
-  {
-    "id": "dcf55cb07452",
-    "aplikasi": "GoPay",
-    "judul": "Cashback 50% (maks Rp10.000) tagihan & paket XL PRIORITAS (Prio Booster & Bill Payment) — tanpa min. transaksi, pengguna baru GoPay di XL PRIORITAS, 1x/pengguna",
-    "benefit": null,
-    "syarat": "berlaku s/d 31 Des 2026",
-    "link": "https://gopay.co.id/promo/xl-prioritas",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-10-31"
-  },
-  {
     "id": "543b6aabd4c2",
     "aplikasi": "GoPay",
     "judul": "Cashback 50% (maks Rp30.000) langganan Spotify Premium (bulan pertama setengah harga) — tanpa min. pembayaran, pengguna baru & kriteria GoPay, bayar via Spotify Web pakai GoPay",
@@ -250,12 +240,32 @@
     "ditemukan": "2026-10-31"
   },
   {
+    "id": "dcf55cb07452",
+    "aplikasi": "GoPay",
+    "judul": "Cashback 50% (maks Rp10.000) tagihan & paket XL PRIORITAS (Prio Booster & Bill Payment) — tanpa min. transaksi, pengguna baru GoPay di XL PRIORITAS, 1x/pengguna",
+    "benefit": null,
+    "syarat": "berlaku s/d 31 Des 2026",
+    "link": "https://gopay.co.id/promo/xl-prioritas",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-10-31"
+  },
+  {
     "id": "338221e45cfb",
     "aplikasi": "GoPay",
     "judul": "Gratis 3x voucher cashback 90% (maks Rp20.000) top-up game/aplikasi via Google Play (Gaming: Mobile Legends, Free Fire, Roblox, dkk; Entertainment; Productivity) — pengguna baru yang menghubungkan akun GoPay di Google Play, klaim maks 7 hari, kuota terbatas",
     "benefit": null,
     "syarat": "berlaku s/d 15 Jan 2027",
     "link": "https://gopay.co.id/promo/google-play",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-10-31"
+  },
+  {
+    "id": "d8875d6a8898",
+    "aplikasi": "GoPay",
+    "judul": "Cashback 20% hingga Rp50.000 transaksi pertama di Alfagift (GoPay Plus; pengguna lain Rp5.000) — khusus yang hubungkan akun GoPay mulai 16 Sep 2026, 1x/pengguna",
+    "benefit": null,
+    "syarat": "berlaku s/d 31 Okt 2026",
+    "link": "https://gopay.co.id/promo/alfagift",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-31"
   },
@@ -410,32 +420,32 @@
     "ditemukan": "2026-11-16"
   },
   {
-    "id": "71f451c78fef",
+    "id": "b509fbe2f9d9",
     "aplikasi": "Grab",
-    "judul": "Diskon s.d. 55% GrabFood (Puas Kilat akhir bulan) — tanpa kode, klaim langsung di app Grab. 25-31 Okt 2026.",
+    "judul": "Diskon s.d. 55% GrabFood (Puas Kilat akhir bulan) — tanpa kode, klaim langsung di app Grab. 25-31 Okt 2026. https://www.grab.com/id/blog/grabjianoktober2026/",
     "benefit": null,
     "syarat": null,
-    "link": "https://www.grab.com/id/blog/grabjianoktober2026/",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "aaee80bc4375",
+    "id": "e567c406dba5",
     "aplikasi": "Grab",
-    "judul": "Diskon s.d. 63% di resto pilihan Grab Dine Out, plus voucher Rp10.000 tiap selesai reservasi meja (Book Table). 25-31 Okt 2026.",
+    "judul": "Diskon s.d. 63% di resto pilihan Grab Dine Out, plus voucher Rp10.000 tiap selesai reservasi meja (Book Table). 25-31 Okt 2026. https://www.grab.com/id/blog/grabjianoktober2026/",
     "benefit": null,
     "syarat": null,
-    "link": "https://www.grab.com/id/blog/grabjianoktober2026/",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
   {
-    "id": "19bf397341e3",
+    "id": "555f6e1ed158",
     "aplikasi": "Grab",
-    "judul": "Token listrik Rp20.000 jadi Rp9.900 (hemat Rp10.100) dengan kode FLASHTOKEN — khusus pengguna baru Grab Pulsa & Bills. Oktober 2026.",
+    "judul": "Token listrik Rp20.000 jadi Rp9.900 (hemat Rp10.100) dengan kode FLASHTOKEN — khusus pengguna baru Grab Pulsa & Bills. Oktober 2026. https://www.grab.com/id/blog/grabjianoktober2026/",
     "benefit": null,
     "syarat": null,
-    "link": "https://www.grab.com/id/blog/grabjianoktober2026/",
+    "link": "",
     "berlaku_sampai": null,
     "ditemukan": "2026-10-26"
   },
@@ -448,6 +458,16 @@
     "link": "https://www.grab.com/id/en/campaign/diskonpuaskilat11-11/",
     "berlaku_sampai": null,
     "ditemukan": "2026-11-11"
+  },
+  {
+    "id": "97b27f88d381",
+    "aplikasi": "Grab",
+    "judul": "Diskon s.d. 50rb (s.d. 61% member GrabUnlimited) GrabFood Diskon Puas Kilat edisi gajian — min. belanja Rp55.000–69.000 tergantung kota & status member, bayar OVO Cash/Poin, tunai, atau kartu kredit/debit, klaim via My Food Rewards, kuota terbatas",
+    "benefit": null,
+    "syarat": "berlaku 28–30 Nov 2026",
+    "link": "https://www.grab.com/id/campaign/diskon-puas-kilat-november/",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-17"
   },
   {
     "id": "1a3da5b721a9",
@@ -480,22 +500,22 @@
     "ditemukan": "2026-11-08"
   },
   {
-    "id": "d74ba0404207",
-    "aplikasi": "OVO",
-    "judul": "Cashback 50% (maks 5.000) Google Play pengguna baru (min. Rp10.000, 5x), 10.000 game terpilih MLBB/Free Fire (min. Rp75.000, 2x), 10.000 TIX ID (min. Rp150.000) — bayar OVO Cash",
-    "benefit": null,
-    "syarat": "1–30 Nov 2026",
-    "link": "https://www.ovo.id/deals/view/42794",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-11-04"
-  },
-  {
     "id": "f23e5bd115f7",
     "aplikasi": "OVO",
     "judul": "Top Up emoney cuma Rp1 (cashback Rp6.499, min. top up Rp5.000) — khusus pengguna baru OVO (belum pernah transaksi produk digital) atau pengguna pasif (tidak transaksi bulan lalu)",
     "benefit": null,
     "syarat": "berlaku s/d 30 Nov 2026",
     "link": "https://www.ovo.id/deals/view/43138",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-04"
+  },
+  {
+    "id": "d9cbd451ad43",
+    "aplikasi": "OVO",
+    "judul": "Cashback 50% (maks 5.000) Google Play pengguna baru (min. Rp10.000, 5x), 10.000 game terpilih MLBB/Free Fire (min. Rp75.000, 2x), 10.000 TIX ID (min. Rp150.000) — bayar OVO Cash || 1–30 Nov 2026",
+    "benefit": null,
+    "syarat": null,
+    "link": "https://www.ovo.id/deals/view/42794",
     "berlaku_sampai": null,
     "ditemukan": "2026-11-04"
   },
@@ -560,7 +580,7 @@
     "ditemukan": "2026-11-10"
   },
   {
-    "id": "f21a6b0567d0",
+    "id": "d80c6e0a6521",
     "aplikasi": "OVO",
     "judul": "Cashback 50% (s.d. 32.500) langganan Netflix pengguna baru — min. transaksi Rp65.000, bayar OVO Cash, khusus belum pernah bayar Netflix pakai OVO",
     "benefit": null,
@@ -570,22 +590,22 @@
     "ditemukan": "2026-11-14"
   },
   {
-    "id": "7825faf640fa",
-    "aplikasi": "OVO",
-    "judul": "Belanja bulanan: diskon 3% s.d. Rp15.000 di Astro (min. Rp50.000) & cashback 4% s.d. 20.000 OVO Points di Alfagift (min. Rp250.000) — semua pengguna, bayar OVO Cash, kuota terbatas",
-    "benefit": null,
-    "syarat": "1–30 Nov 2026",
-    "link": "https://www.ovo.id/deals/view/42946",
-    "berlaku_sampai": null,
-    "ditemukan": "2026-11-15"
-  },
-  {
     "id": "0f0b6ae6bb43",
     "aplikasi": "OVO",
     "judul": "Cashback 8% s.d. 45.000 OVO Points kategori AI (ChatGPT/Claude) di Google Play — min. transaksi Rp300.000, bayar OVO Cash, 1x/periode/pengguna, kuota terbatas",
     "benefit": null,
     "syarat": "1–30 Nov 2026",
     "link": "https://www.ovo.id/deals/view/42794",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-15"
+  },
+  {
+    "id": "7825faf640fa",
+    "aplikasi": "OVO",
+    "judul": "Belanja bulanan: diskon 3% s.d. Rp15.000 di Astro (min. Rp50.000) & cashback 4% s.d. 20.000 OVO Points di Alfagift (min. Rp250.000) — semua pengguna, bayar OVO Cash, kuota terbatas",
+    "benefit": null,
+    "syarat": "1–30 Nov 2026",
+    "link": "https://www.ovo.id/deals/view/42946",
     "berlaku_sampai": null,
     "ditemukan": "2026-11-15"
   },
@@ -600,6 +620,16 @@
     "ditemukan": "2026-11-01"
   },
   {
+    "id": "3f04d6ae8522",
+    "aplikasi": "Shopee",
+    "judul": "Gajian Sale: gratis ongkir Rp0 + cashback s.d. Rp250.000 + voucher diskon — event bulanan tiap tanggal 25–27, tanpa setoran",
+    "benefit": null,
+    "syarat": "berlaku 25–27 Nov 2026",
+    "link": "https://www.cuponation.co.id/shopee-kode-promo",
+    "berlaku_sampai": null,
+    "ditemukan": "2026-11-17"
+  },
+  {
     "id": "fac8985c74ad",
     "aplikasi": "ShopeePay",
     "judul": "Diskon s.d. 20% paket data & pulsa MyTelkomsel (loyal user) — beli paket min. Rp10.000 via app MyTelkomsel bayar ShopeePay; potongan Rp10.000 min. Rp55.000, Rp4.000 min. Rp20.000, Rp2.000 min. Rp10.000, maks 1x/pengguna",
@@ -610,9 +640,9 @@
     "ditemukan": "2026-11-06"
   },
   {
-    "id": "9e7fa003df87",
+    "id": "a290923d1f02",
     "aplikasi": "ShopeePay",
-    "judul": "Saldo Kaget harian + diskon s.d. 90% produk digital (pulsa & digital) di kampanye Aplikasi ShopeePay 11.11 — klaim amplop Saldo Kaget tiap hari di app ShopeePay selama kuota ada",
+    "judul": "Voucher Paket Super Besar 1 KFC cuma Rp11.000 (kampanye Aplikasi ShopeePay 11.11) — klaim mulai 6 Nov, tukar 11 Nov pukul 14.00 WIB atau 14 Nov pukul 11.00 WIB, kuota 40.000, khusus yang belum dapat voucher KFC periode lalu",
     "benefit": null,
     "syarat": "6–15 Nov 2026",
     "link": "https://shopeepay.co.id/promo",
@@ -620,9 +650,9 @@
     "ditemukan": "2026-11-09"
   },
   {
-    "id": "a290923d1f02",
+    "id": "9e7fa003df87",
     "aplikasi": "ShopeePay",
-    "judul": "Voucher Paket Super Besar 1 KFC cuma Rp11.000 (kampanye Aplikasi ShopeePay 11.11) — klaim mulai 6 Nov, tukar 11 Nov pukul 14.00 WIB atau 14 Nov pukul 11.00 WIB, kuota 40.000, khusus yang belum dapat voucher KFC periode lalu",
+    "judul": "Saldo Kaget harian + diskon s.d. 90% produk digital (pulsa & digital) di kampanye Aplikasi ShopeePay 11.11 — klaim amplop Saldo Kaget tiap hari di app ShopeePay selama kuota ada",
     "benefit": null,
     "syarat": "6–15 Nov 2026",
     "link": "https://shopeepay.co.id/promo",
