@@ -26,7 +26,15 @@ services:
       resources:
         limits:
           memory: 128M
+    networks:
+      - default
+      - shared_bridge
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  shared_bridge:
+    name: ${SHARED_NETWORK:-shared_bridge}
+    external: true

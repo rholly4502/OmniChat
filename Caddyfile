@@ -9,6 +9,12 @@ rhol-ai.tech {
 		flush_interval -1
 	}
 
-	# Everything else -> frontend
+	# ShortLink API (subpath; frontend belakangan) -> shared network
+	reverse_proxy /shortlink/api/* shortlink-api:8080
+
+	# QAnalyzer Web (SPA + API di /analyzer) -> shared network
+	reverse_proxy /analyzer/* qanalyzer-web:8080
+
+	# Everything else -> frontend OmniChat
 	reverse_proxy /* frontend:4173
 }
