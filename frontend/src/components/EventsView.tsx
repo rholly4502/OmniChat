@@ -3,6 +3,7 @@ import {
   createEvent,
   deleteEvent,
   exportEventsCsv,
+  exportEventsPdf,
   updateEvent,
   type EventWritePayload,
   type PromoEvent,
@@ -82,6 +83,28 @@ export function EventsView({ apiKey }: EventsViewProps) {
       setExportError('');
     } catch {
       setExportError('Gagal mengekspor CSV.');
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const blob = await exportEventsPdf(
+        { apiKey },
+        appFilter || undefined,
+        searchQuery.trim() || undefined,
+        hideExpired || undefined,
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `events-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportError('');
+    } catch {
+      setExportError('Gagal mengekspor PDF.');
     }
   };
 
@@ -216,6 +239,18 @@ export function EventsView({ apiKey }: EventsViewProps) {
               <path d="M12 3v11m0 0l-4-4m4 4l4-4M5 19h14" />
             </svg>
             Ekspor CSV
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleExportPdf()}
+            disabled={loading}
+            aria-label="Ekspor PDF"
+            className="inline-flex items-center gap-1.5 rounded-none border border-chill-border bg-chill-surface px-3 py-2 text-xs font-medium text-chill-text transition min-h-[44px] hover:bg-chill-elevated active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" aria-hidden="true" className="shrink-0">
+              <path d="M6 3h9l3 3v15H6V3Z" />
+            </svg>
+            Ekspor PDF
           </button>
           {(exportError || formError) && (
             <p role="alert" className="mt-1 text-xs text-chill-red">{exportError || formError}</p>

@@ -2,11 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { EventsView } from '../components/EventsView';
 import { countdownLabel, eventStatus, sortEventsByUrgency } from '../eventsStatus';
-import { createEvent, deleteEvent, exportEventsCsv, updateEvent, type PromoEvent } from '../eventsApi';
+import { createEvent, deleteEvent, exportEventsCsv, exportEventsPdf, updateEvent, type PromoEvent } from '../eventsApi';
 
 vi.mock('../eventsApi', async () => ({
   ...(await vi.importActual<typeof import('../eventsApi')>('../eventsApi')),
   exportEventsCsv: vi.fn(),
+  exportEventsPdf: vi.fn(),
   createEvent: vi.fn(),
   updateEvent: vi.fn(),
   deleteEvent: vi.fn(),
@@ -239,6 +240,57 @@ describe('EventsView CSV export', () => {
     mockState({ loading: true });
     render(<EventsView />);
     expect(screen.getByRole('button', { name: 'Ekspor CSV' })).toBeDisabled();
+  });
+});
+
+describe('EventsView PDF export', () => {
+  it('downloads the event list as PDF through exportEventsPdf (respects active app filter)', async () => {
+    mockState({ appFilter: 'Gojek' });
+    const exportMock = vi.mocked(exportEventsPdf);
+    exportMock.mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+    const createUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:fake');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {});
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined));
+    expect(click).toHaveBeenCalledTimes(1);
+
+    createUrl.mockRestore();
+    revoke.mockRestore();
+    click.mockRestore();
+  });
+
+  it('forwards the active keyword and hide-expired filters to the PDF export', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsPdf);
+    exportMock.mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Cari event' }), { target: { value: 'cashback' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan kedaluwarsa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true));
+  });
+
+  it('shows an error message when the PDF export fails', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsPdf);
+    exportMock.mockRejectedValue(new Error('fail'));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Gagal mengekspor PDF.'));
+  });
+
+  it('disables the PDF export button while loading', () => {
+    mockState({ loading: true });
+    render(<EventsView />);
+    expect(screen.getByRole('button', { name: 'Ekspor PDF' })).toBeDisabled();
   });
 });
 

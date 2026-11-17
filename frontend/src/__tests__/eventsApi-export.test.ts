@@ -86,3 +86,32 @@ describe('event write transport', () => {
     await expect(import('../eventsApi').then((m) => m.createEvent(payload, { fetchImpl: fetchMock as unknown as typeof fetch }))).rejects.toMatchObject({ status: 401 });
   });
 });
+
+describe('exportEventsPdf', () => {
+  const pdfBlob = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+
+  it('GETs /export?format=pdf with no auth header when no key is set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(pdfBlob) });
+    const out = await import('../eventsApi').then((m) => m.exportEventsPdf({ fetchImpl: fetchMock as unknown as typeof fetch }));
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/export?format=pdf`);
+    expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({});
+    expect(out).toBe(pdfBlob);
+  });
+
+  it('appends filters plus format=pdf and sends the API key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200, blob: () => Promise.resolve(pdfBlob) });
+    await import('../eventsApi').then((m) => m.exportEventsPdf({ apiKey: 'secret-key', fetchImpl: fetchMock as unknown as typeof fetch }, 'OVO', 'cashback', true));
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${EVENTS_URL}/export?aplikasi=OVO&q=cashback&hideExpired=true&format=pdf`);
+    expect((init.headers as Record<string, string>)['X-Api-Key']).toBe('secret-key');
+  });
+
+  it('throws ApiError on a non-OK response', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 401, headers: { get: () => null } });
+    await expect(import('../eventsApi').then((m) => m.exportEventsPdf({ fetchImpl: fetchMock as unknown as typeof fetch }))).rejects.toMatchObject({ status: 401 });
+  });
+});

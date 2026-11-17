@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using OmniChat.Api.Infrastructure;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Models;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
@@ -56,6 +57,7 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
         [FromQuery] string? aplikasi,
         [FromQuery] string? q = null,
         [FromQuery] bool? hideExpired = null,
+        [FromQuery] string? format = null,
         CancellationToken cancellationToken = default)
     {
         var items = await repository.ListAsync(aplikasi, cancellationToken);
@@ -75,6 +77,12 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
              (e.Benefit ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
              (e.Syarat ?? string.Empty).ToLowerInvariant().Contains(keyword)) &&
             (!(hideExpired ?? false) || !IsExpired(e, today))).ToList();
+
+        if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            var pdf = EventsPdfReport.Build(filtered, today);
+            return File(pdf, "application/pdf", $"events-{DateTime.UtcNow:yyyy-MM-dd}.pdf");
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("aplikasi,judul,benefit,syarat,berlakuSampai,ditemukan,link,sourceId");

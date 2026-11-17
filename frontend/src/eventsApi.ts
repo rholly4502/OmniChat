@@ -72,6 +72,32 @@ export async function exportEventsCsv(
   return await res.blob();
 }
 
+/** Download the curated event list as PDF bytes (dependency-free A4 report). */
+export async function exportEventsPdf(
+  options: EventsRequestOptions = {},
+  aplikasi?: string,
+  q?: string,
+  hideExpired?: boolean,
+): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (aplikasi) params.set('aplikasi', aplikasi);
+  if (q) params.set('q', q);
+  if (hideExpired) params.set('hideExpired', 'true');
+  params.set('format', 'pdf');
+  const qs = params.toString();
+  const path = `${EVENTS_URL}/export?${qs}`;
+  const doFetch = options.fetchImpl ?? fetch;
+  const res = await doFetch(path, {
+    method: 'GET',
+    headers: authHeaders(options.apiKey),
+    signal: options.signal,
+  });
+  if (!res.ok) {
+    throw new ApiError(res.status, res.headers?.get?.('Retry-After') ?? null);
+  }
+  return await res.blob();
+}
+
 /** Write payload for creating or updating a promo event. */
 export interface EventWritePayload {
   aplikasi: string;

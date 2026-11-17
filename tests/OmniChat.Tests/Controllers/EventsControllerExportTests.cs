@@ -130,4 +130,30 @@ public class EventsControllerExportTests
         Assert.Contains("Promo Lama", text);
         Assert.Contains("Promo Baru", text);
     }
+
+    [Fact]
+    public async Task Export_FormatPdf_ReturnsPdfFile()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Event() });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(aplikasi: null, format: "pdf"));
+
+        Assert.Equal("application/pdf", file.ContentType);
+        Assert.EndsWith(".pdf", file.FileDownloadName);
+        Assert.StartsWith("%PDF-1.4", Encoding.ASCII.GetString(file.FileContents));
+    }
+
+    [Fact]
+    public async Task Export_FormatPdf_AppliesKeywordFilter()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Event(), Event("DANA", "Voucher 20%", "Tanpa syarat") });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(aplikasi: null, format: "pdf", q: "cashback"));
+        var text = Encoding.ASCII.GetString(file.FileContents);
+
+        Assert.Contains("Cashback 50%", text);
+        Assert.DoesNotContain("Voucher 20%", text);
+    }
 }
