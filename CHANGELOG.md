@@ -4,6 +4,11 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P26 — Jobs: urutkan daftar lowongan per grup (frontend)
+
+#### Added
+- Kontrol "Urutkan" di panel Alat & Filter JobsView — mengubah urutan kartu di dalam tiap grup (tipe lowongan): Skor cocok (tertinggi dulu, tanpa skor di belakang), Follow-up paling dekat (yang terjadwal dulu, tanpa tanggal di belakang), atau Perusahaan A–Z. Default tetap urutan bawaan (prioritas tier).
+- Tests frontend: +4 JobsView (urutan default stabil, sort skor, sort perusahaan, sort follow-up). tsc -b + oxlint hijau, a11y lint lulus.
 ### P25 — Jobs: tandai follow-up selesai langsung dari panel Jadwal (frontend)
 
 #### Added
