@@ -4,6 +4,18 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P25 — Jobs: tandai follow-up selesai langsung dari panel Jadwal (frontend)
+
+#### Added
+- Tombol "Selesai" per baris di panel Jadwal follow-up — sekali klik langsung
+  menghapus tanggal follow-up (`updateFollowUp(id, null)`) sehingga baris itu
+  keluar dari jadwal tanpa perlu membuka kartu lowongan. Nonaktif saat baris
+  sedang diproses; tidak muncul efek tanpa API key.
+- Tests frontend: +4 JobsView (render tombol, klik memanggil updateFollowUp
+  dengan null, state nonaktif saat memproses, tanpa API key tidak memanggil).
+- Full suite hijau: backend 763, tsc -b, vitest JobsView 46 + a11y 5,
+  oxlint tanpa warning.
+
 ### P24 — Expenses: rata-rata harian & proyeksi akhir bulan di Ringkasan (backend + frontend)
 
 #### Added

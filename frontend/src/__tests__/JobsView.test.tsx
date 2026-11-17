@@ -701,3 +701,39 @@ describe('JobsView jadwal follow-up (schedule panel)', () => {
     expect(screen.queryByText('Jadwal follow-up')).toBeNull();
   });
 });
+
+describe('JobsView follow-up quick-complete (Selesai)', () => {
+  const pending: Opportunity = { ...base, id: 20, judul: 'Pending Follow-up Role', status: 'applied', followUpTanggal: '2026-11-18' };
+  const later: Opportunity = { ...base, id: 21, judul: 'Later Follow-up Role', status: 'interview', followUpTanggal: '2099-01-01' };
+
+  it('menampilkan tombol Selesai untuk tiap baris follow-up terjadwal', () => {
+    mockState({ opportunities: [pending, later] });
+    render(<JobsView apiKey="k" />);
+    expect(screen.getByRole('button', { name: /Tandai sudah di-follow-up Pending Follow-up Role/ })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Tandai sudah di-follow-up Later Follow-up Role/ })).toBeTruthy();
+  });
+
+  it('klik Selesai menghapus tanggal follow-up (updateFollowUp dengan null)', () => {
+    const updateFollowUp = vi.fn().mockResolvedValue(undefined);
+    mockState({ opportunities: [pending, later], updateFollowUp, updatingId: null });
+    render(<JobsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: /Tandai sudah di-follow-up Pending Follow-up Role/ }));
+    expect(updateFollowUp).toHaveBeenCalledWith(20, null);
+  });
+
+  it('tombol nonaktif saat baris itu sedang memproses', () => {
+    const updateFollowUp = vi.fn().mockResolvedValue(undefined);
+    mockState({ opportunities: [pending, later], updateFollowUp, updatingId: 20 });
+    render(<JobsView apiKey="k" />);
+    const btn = screen.getByRole('button', { name: /Tandai sudah di-follow-up Pending Follow-up Role/ }) as HTMLButtonElement;
+    expect(btn.disabled).toBe(true);
+  });
+
+  it('tidak memanggil updateFollowUp tanpa apiKey', () => {
+    const updateFollowUp = vi.fn().mockResolvedValue(undefined);
+    mockState({ opportunities: [pending], updateFollowUp, updatingId: null });
+    render(<JobsView />);
+    fireEvent.click(screen.getByRole('button', { name: /Tandai sudah di-follow-up Pending Follow-up Role/ }));
+    expect(updateFollowUp).not.toHaveBeenCalled();
+  });
+});

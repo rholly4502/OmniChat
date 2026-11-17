@@ -165,7 +165,14 @@ const SCHEDULE_BUCKETS: ReadonlyArray<{ key: ScheduleBucket; label: string; tone
  * by urgency (overdue → today → next 7 days → later). Renders nothing when no
  * follow-up is scheduled, so it is additive to the filtered list below.
  */
-function FollowUpSchedule({ opportunities, todayISO }: { opportunities: Opportunity[]; todayISO: string }) {
+function FollowUpSchedule({ opportunities, todayISO, onComplete, busyId }: {
+  opportunities: Opportunity[];
+  todayISO: string;
+  /** Clears the follow-up date (marks the follow-up done) for one opportunity. */
+  onComplete: (id: number) => void;
+  /** The id whose follow-up update is in flight (disables that row's button). */
+  busyId: number | null;
+}) {
   const scheduled = opportunities.filter((o) => o.followUpTanggal != null);
   if (scheduled.length === 0) return null;
 
@@ -193,6 +200,15 @@ function FollowUpSchedule({ opportunities, todayISO }: { opportunities: Opportun
                   <span>{o.perusahaan}</span>
                   <span>· {formatShortDate(o.followUpTanggal as string)}</span>
                   <span className="ml-auto rounded-none border border-chill-border px-1.5 text-xs">{statusLabel(o.status)}</span>
+                  <button
+                    type="button"
+                    onClick={() => onComplete(o.id)}
+                    disabled={busyId === o.id}
+                    aria-label={`Tandai sudah di-follow-up ${o.judul}`}
+                    className="shrink-0 rounded-none border border-chill-accent/40 bg-chill-accent/10 px-2.5 py-1.5 text-xs font-medium text-chill-accent transition hover:bg-chill-accent/20 active:bg-chill-accent/25 active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 disabled:pointer-events-none"
+                  >
+                    {busyId === o.id ? '…' : 'Selesai'}
+                  </button>
                 </li>
               ))}
             </ul>
@@ -225,6 +241,11 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [editingItem, setEditingItem] = useState<Opportunity | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const handleScheduleComplete = (id: number) => {
+    if (!apiKey) return;
+    void updateFollowUp(id, null);
+  };
 
   const handleExportCsv = async () => {
     try {
@@ -818,7 +839,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 pb-6 min-h-0">
-        <FollowUpSchedule opportunities={opportunities} todayISO={todayISO} />
+        <FollowUpSchedule opportunities={opportunities} todayISO={todayISO} onComplete={handleScheduleComplete} busyId={updatingId} />
         {loading ? (
           <p className="flex items-center justify-center gap-2 text-sm text-chill-muted py-10" role="status">
             <ScanLoader />
