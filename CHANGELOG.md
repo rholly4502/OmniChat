@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P22 — Jobs: tambah LinkedIn ke profil draft lamaran (backend)
+
+#### Added
+- Backend `LamaranDraftService.BuildPrompt` — profil kandidat Rholly kini memuat
+  kontak LinkedIn, sehingga draft surat lamaran hasil AI menyertakan akun untuk
+  verifikasi rekruter. Selaras dengan penambahan LinkedIn di form paket lamaran
+  frontend.
+- `LamaranDraftServiceTests.Generate_SendsLinkedInInCandidateProfile` — memastikan
+  prompt yang dikirim ke gateway memuat URL LinkedIn.
+- Full suite backend hijau: 752 test.
+
 ### P21 — Jobs: ekspor PDF pipeline (backend + frontend)
 
 #### Added

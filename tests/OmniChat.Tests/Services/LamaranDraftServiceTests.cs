@@ -71,7 +71,7 @@ public class LamaranDraftServiceTests
         var repo = CreateRepoWithOpportunity(out var id);
         var service = CreateService(repo, _ =>
         {
-            var body = """{"choices":[{"message":{"content":"Subject: Application for .NET Developer at PT Contoh\n\nDear Hiring Manager,\n\nI am...","role":"assistant"}}]}""";
+            var body = "{\"choices\":[{\"message\":{\"content\":\"Subject: Application for .NET Developer at PT Contoh\\n\\nDear Hiring Manager,\\n\\nI am...\",\"role\":\"assistant\"}}]}";
             return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
                 Content = new StringContent(body, System.Text.Encoding.UTF8, "application/json")
@@ -91,7 +91,7 @@ public class LamaranDraftServiceTests
         var service = CreateService(repo, _ =>
             new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
-                Content = new StringContent("""{"choices":[{"message":{"content":"x"}}]}""", System.Text.Encoding.UTF8, "application/json")
+                Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"x\"}}]}", System.Text.Encoding.UTF8, "application/json")
             });
 
         var result = await service.GenerateAsync(9999, CancellationToken.None);
@@ -119,12 +119,32 @@ public class LamaranDraftServiceTests
             authHeader = req.Headers.Authorization?.ToString();
             return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
             {
-                Content = new StringContent("""{"choices":[{"message":{"content":"draft"}}]}""", System.Text.Encoding.UTF8, "application/json")
+                Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"draft\"}}]}", System.Text.Encoding.UTF8, "application/json")
             };
         }, apiKey: "secret-key");
 
         await service.GenerateAsync(id, CancellationToken.None);
 
         Assert.Equal("Bearer secret-key", authHeader);
+    }
+
+    [Fact]
+    public async Task Generate_SendsLinkedInInCandidateProfile()
+    {
+        string? body = null;
+        var repo = CreateRepoWithOpportunity(out var id);
+        var service = CreateService(repo, req =>
+        {
+            body = req.Content?.ReadAsStringAsync().GetAwaiter().GetResult();
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("{\"choices\":[{\"message\":{\"content\":\"draft\"}}]}", System.Text.Encoding.UTF8, "application/json")
+            };
+        });
+
+        await service.GenerateAsync(id, CancellationToken.None);
+
+        Assert.NotNull(body);
+        Assert.Contains("linkedin.com/in/rholly-kurnia-putra-462686298", body);
     }
 }

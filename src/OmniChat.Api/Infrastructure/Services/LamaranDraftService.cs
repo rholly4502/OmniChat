@@ -51,6 +51,7 @@ public sealed class LamaranDraftService : ILamaranDraftService
         // pribadi satu-user milik Rholly sendiri. Jangan di-hardcode ke data sensitif lain.
         var profil = """
             Nama: Rholly
+            Kontak: linkedin.com/in/rholly-kurnia-putra-462686298
             Peran: .NET Developer (Astra / AGIT via vendor), ±2 tahun pengalaman komersial
             di industri otomotif (four-wheeler).
             Stack inti: C#, .NET Framework 4.5, .NET 6, .NET 8, .NET 10, ASP.NET Core
