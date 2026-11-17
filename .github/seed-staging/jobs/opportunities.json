@@ -789,5 +789,29 @@
     "status": "new",
     "ditemukan": "2026-11-15",
     "id": "b5733315fa"
+  },
+  {
+    "id": "7f3b616d90",
+    "judul": ".NET Developer",
+    "perusahaan": "Renous",
+    "lokasi": "Remote (worldwide)",
+    "tipe": "Kontrak",
+    "gaji": "omit (est. kontrak remote)",
+    "link": "https://renous.freshteam.com/jobs/lr60t5r8GOCd/2816-net-developer-1-y-remote-remote",
+    "catatan": "Level 1+ th pas dgn Rholly; stack C#/ASP.NET/MVC/Web API/.NET Core + SQL penuh; kontrak remote worldwide terbuka utk Indonesia; employer jelas (Freshteam ATS). Cocok sbg pengganti penghasilan utama.",
+    "status": "new",
+    "ditemukan": "2026-11-17"
+  },
+  {
+    "id": "30e1d72e5e",
+    "judul": "Fullstack Developer (.NET & Angular)",
+    "perusahaan": "PT Diksha Teknologi Indonesia (Dikshatek)",
+    "lokasi": "Jakarta Selatan (WFO onsite)",
+    "tipe": "Kontrak (3 bulan, project telco/insurance)",
+    "gaji": "Rp7-10jt/bulan (est.)",
+    "link": "https://dikshatek.co.id/en/join-diksha-now/",
+    "catatan": "Posting 5 Nov 2026 (fresh); level junior min 2 th pas dgn Rholly; stack C#/ASP.NET Core (.NET6+) + SQL Server + Angular; perusahaan IT services jelas (dikshatek.co.id). Onsite Jakarta.",
+    "status": "new",
+    "ditemukan": "2026-11-17"
   }
 ]
