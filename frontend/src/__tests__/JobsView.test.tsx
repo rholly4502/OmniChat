@@ -737,3 +737,66 @@ describe('JobsView follow-up quick-complete (Selesai)', () => {
     expect(updateFollowUp).not.toHaveBeenCalled();
   });
 });
+
+describe('JobsView sort control', () => {
+  const mk = (id: number, judul: string, perusahaan: string, skor: number | null, followUp?: string | null): Opportunity =>
+    ({ ...base, id, judul, perusahaan, lokasi: 'Jakarta', tipe: 'FTE', status: 'new', skor, followUpTanggal: followUp });
+
+  const titles = () =>
+    within(screen.getByTestId('jobs-list')).getAllByRole('heading', { level: 3 }).map((n) => n.textContent);
+
+  it('defaults to the server (tier) order within a group', () => {
+    mockState({
+      opportunities: [
+        mk(11, 'Delta Role', 'Zulu Corp', 90),
+        mk(12, 'Alpha Role', 'Alpha Corp', 50),
+        mk(13, 'Milo Role', 'Milo Inc', null),
+      ],
+    });
+    render(<JobsView />);
+    openTools();
+    expect(titles()).toEqual(['Delta Role', 'Alpha Role', 'Milo Role']);
+  });
+
+  it('sorts by score (highest first, nulls last) when chosen', () => {
+    mockState({
+      opportunities: [
+        mk(13, 'Milo Role', 'Milo Inc', null),
+        mk(11, 'Delta Role', 'Zulu Corp', 90),
+        mk(12, 'Alpha Role', 'Alpha Corp', 50),
+      ],
+    });
+    render(<JobsView />);
+    openTools();
+    fireEvent.change(screen.getByLabelText('Urutkan'), { target: { value: 'skor' } });
+    expect(titles()).toEqual(['Delta Role', 'Alpha Role', 'Milo Role']);
+  });
+
+  it('sorts by company A–Z when chosen', () => {
+    mockState({
+      opportunities: [
+        mk(11, 'Delta Role', 'Zulu Corp', 90),
+        mk(12, 'Alpha Role', 'Alpha Corp', 50),
+        mk(13, 'Milo Role', 'Milo Inc', null),
+      ],
+    });
+    render(<JobsView />);
+    openTools();
+    fireEvent.change(screen.getByLabelText('Urutkan'), { target: { value: 'perusahaan' } });
+    expect(titles()).toEqual(['Alpha Role', 'Milo Role', 'Delta Role']);
+  });
+
+  it('sorts by soonest follow-up (nulls last) when chosen', () => {
+    mockState({
+      opportunities: [
+        mk(11, 'Delta Role', 'Zulu Corp', 90, '2026-12-20'),
+        mk(13, 'Milo Role', 'Milo Inc', null, null),
+        mk(12, 'Alpha Role', 'Alpha Corp', 50, '2026-11-30'),
+      ],
+    });
+    render(<JobsView />);
+    openTools();
+    fireEvent.change(screen.getByLabelText('Urutkan'), { target: { value: 'followup' } });
+    expect(titles()).toEqual(['Alpha Role', 'Delta Role', 'Milo Role']);
+  });
+});

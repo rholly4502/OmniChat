@@ -116,6 +116,16 @@ const TYPE_FILTER_KEYS = TYPE_FILTERS.map((f) => f.key);
 const STATUS_FILTER_KEYS = ['', ...OPPORTUNITY_STATUSES];
 const TIER_FILTER_KEYS = TIER_FILTERS.map((f) => f.key);
 
+/** Sort order for the curated list (applied per group). */
+type SortKey = 'default' | 'skor' | 'followup' | 'perusahaan';
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'default', label: 'Urutan bawaan' },
+  { key: 'skor', label: 'Skor cocok (tinggi dulu)' },
+  { key: 'followup', label: 'Follow-up paling dekat' },
+  { key: 'perusahaan', label: 'Perusahaan A–Z' },
+];
+
 function statusTone(status: string): string {
   switch (status) {
     case 'new': return 'bg-chill-accent/15 text-chill-accent border-chill-accent/40';
@@ -236,6 +246,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [exportError, setExportError] = useState('');
   const [cvMenuOpen, setCvMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('default');
   const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Opportunity | null>(null);
@@ -544,6 +555,31 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
       (!followUpOnly || needsFollowUp(o))
   );
 
+  /** Order a group's items by the active sort (pure, stable). */
+  const sortItems = (arr: Opportunity[]): Opportunity[] => {
+    const copy = arr.slice();
+    switch (sortBy) {
+      case 'skor':
+        return copy.sort((a, b) => (b.skor ?? -1) - (a.skor ?? -1));
+      case 'followup':
+        return copy.sort((a, b) => {
+          if (!a.followUpTanggal && !b.followUpTanggal) return 0;
+          if (!a.followUpTanggal) return 1;
+          if (!b.followUpTanggal) return -1;
+          return a.followUpTanggal < b.followUpTanggal ? -1 : a.followUpTanggal > b.followUpTanggal ? 1 : 0;
+        });
+      case 'perusahaan':
+        return copy.sort((a, b) =>
+          a.perusahaan.localeCompare(b.perusahaan) || a.judul.localeCompare(b.judul),
+        );
+      default:
+        return copy.sort(
+          (a, b) =>
+            TIER_ORDER.indexOf(computeTier(a)) - TIER_ORDER.indexOf(computeTier(b)),
+        );
+    }
+  };
+
   const activeSummary =
     [typeFilter, statusFilter ? statusLabel(statusFilter) : null]
       .filter((x): x is string => !!x)
@@ -818,6 +854,19 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
             className="w-full bg-chill-bg border border-chill-border rounded-none px-3 py-2 text-base md:text-sm outline-none hover:border-chill-accent/60 focus:border-chill-accent focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] text-chill-text pixel-shadow-sm [color-scheme:dark]"
           />
         </div>
+        <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
+          <label htmlFor="jobs-sort" className="text-xs text-chill-muted">Urutkan</label>
+          <select
+            id="jobs-sort"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className="rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-base text-chill-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.key} value={o.key}>{o.label}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
         </div>
@@ -861,13 +910,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
         ) : (
           <div data-testid="jobs-list" className="space-y-5">
             {GROUP_ORDER.filter((g) => filtered.some((o) => groupOf(o) === g)).map((g) => {
-              const items = filtered
-                .filter((o) => groupOf(o) === g)
-                .slice()
-                .sort(
-                  (a, b) =>
-                    TIER_ORDER.indexOf(computeTier(a)) - TIER_ORDER.indexOf(computeTier(b))
-                );
+              const items = sortItems(filtered.filter((o) => groupOf(o) === g));
               return (
                 <section key={g} aria-labelledby={`group-${g}`}>
                   <div className="mb-2 border-l-2 border-chill-accent pl-2">
