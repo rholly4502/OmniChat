@@ -4,6 +4,25 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P27 — Events: tandai promo yang sudah dipakai/terklaim (backend + frontend)
+
+#### Added
+- Backend `PATCH /api/events/{id}/dipakai` — toggle `dipakai` (sudah dipakai /
+  terklaim) pada satu promo event, body `{ dipakai: bool }` → 204, 400 saat
+  body invalid (default record), 404 saat id tidak ada. Kolom `Dipakai`
+  (bool, default false) di entity `PromoEvent` + migrasi EF
+  `AddPromoEventDipakai`.
+- `EventsControllerDipakaiTests`: +3 — set true persist, set false clear,
+  id tak dikenal → 404.
+- Frontend: tombol toggle per kartu event — "Tandai sudah dipakai" /
+  "Batal pakai" (aria-pressed, nonaktif saat sedang diproses), plus filter
+  "Sembunyikan yang sudah dipakai" di panel Filter (pola sama persis dengan
+  follow-up di Jobs). `updateEventDipakai()` di eventsApi + `updateDipakai`/
+  `updatingId` di useEvents.
+- Tests frontend: +3 useEvents (PATCH benar + update state lokal, error
+  lokal), +4 EventsView (toggle mark, unmark, filter sembunyikan, nonaktif
+  saat memproses). Full suite hijau: backend 766, tsc -b, vitest event 80 +
+  a11y 5, oxlint tanpa warning.
 ### P26 — Jobs: urutkan daftar lowongan per grup (frontend)
 
 #### Added

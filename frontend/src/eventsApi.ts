@@ -24,6 +24,8 @@ export interface PromoEvent {
   berlakuSampai?: string | null;
   ditemukan: string; // YYYY-MM-DD (WIB)
   sourceId?: string | null;
+  /** True once this promo has been marked as redeemed/used. */
+  dipakai?: boolean;
 }
 
 function authHeaders(apiKey?: string): Record<string, string> {
@@ -111,7 +113,7 @@ export interface EventWritePayload {
 
 async function requestJson(
   path: string,
-  method: 'POST' | 'PUT' | 'DELETE',
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   body: unknown,
   options: EventsRequestOptions = {},
 ): Promise<Response> {
@@ -153,6 +155,15 @@ export async function updateEvent(
 /** Delete a promo event (operator only). */
 export async function deleteEvent(id: number, options: EventsRequestOptions = {}): Promise<void> {
   await requestJson(`${EVENTS_URL}/${id}`, 'DELETE', undefined, options);
+}
+
+/** Mark a promo as redeemed/used, or unmark it (operator only). */
+export async function updateEventDipakai(
+  id: number,
+  dipakai: boolean,
+  options: EventsRequestOptions = {},
+): Promise<void> {
+  await requestJson(`${EVENTS_URL}/${id}/dipakai`, 'PATCH', { dipakai }, options);
 }
 
 /** Digest served by `GET /api/events/summary` for the Ringkasan card (WIB-based). */

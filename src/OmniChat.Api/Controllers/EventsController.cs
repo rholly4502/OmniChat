@@ -218,6 +218,36 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
         return NoContent();
     }
 
+    /// <summary>Sets whether a promo has been redeemed/used (operator only).</summary>
+    /// <param name="id">The event id to update.</param>
+    /// <param name="request">Body with the new dipakai flag.</param>
+    /// <param name="cancellationToken">Cancellation token for client disconnect.</param>
+    /// <response code="204">Flag updated.</response>
+    /// <response code="400">Validation failed.</response>
+    /// <response code="401">Missing or invalid API key.</response>
+    /// <response code="404">No such event.</response>
+    [HttpPatch("{id:long}/dipakai")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetDipakai(long id, [FromBody] DipakaiRequest request, CancellationToken cancellationToken)
+    {
+        var ok = await repository.UpdateDipakaiAsync(id, request.Dipakai, cancellationToken);
+        if (!ok)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Title = "Not Found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = $"No event with id {id} exists.",
+                Instance = HttpContext?.Request.Path,
+            });
+        }
+
+        return NoContent();
+    }
+
     /// <summary>Validates a write request, returning a 400 ProblemDetails or null when valid.</summary>
     /// <summary>Today in WIB (UTC+7) — the timezone the promo expiry buckets use.</summary>
     private static DateOnly TodayWib() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
@@ -257,6 +287,9 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
 
     private static string? TrimOrNull(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    /// <summary>Request body for toggling a promo's "already used" flag.</summary>
+    public sealed record DipakaiRequest(bool Dipakai);
 
     /// <summary>Request body for creating or updating a promo event.</summary>
     public sealed record EventWriteRequest(

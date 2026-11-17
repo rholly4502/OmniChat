@@ -146,15 +146,15 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<int?>("Hari")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("IsUserEdited")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Month")
                         .IsRequired()
                         .HasMaxLength(7)
                         .HasColumnType("TEXT");
 
                     b.Property<long>("TargetNabung")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<bool>("IsUserEdited")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
@@ -327,6 +327,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<string>("BerlakuSampai")
                         .HasMaxLength(64)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("Dipakai")
+                        .HasColumnType("INTEGER");
 
                     b.Property<DateOnly>("Ditemukan")
                         .HasColumnType("TEXT");

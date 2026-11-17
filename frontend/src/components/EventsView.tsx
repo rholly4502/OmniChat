@@ -54,10 +54,11 @@ function wibToday(): string {
 
 /** The curated promo/event page: list grouped by app + platform filter, plus manual curation. */
 export function EventsView({ apiKey }: EventsViewProps) {
-  const { events, loading, error, appFilter, setAppFilter, reload } = useEvents(apiKey);
+  const { events, loading, error, appFilter, setAppFilter, reload, updatingId, updateDipakai } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [hideExpired, setHideExpired] = useState(false);
+  const [hideUsed, setHideUsed] = useState(false);
   const [exportError, setExportError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PromoEvent | null>(null);
@@ -196,9 +197,11 @@ export function EventsView({ apiKey }: EventsViewProps) {
   // When "Sembunyikan kedaluwarsa" is on, drop expired promos entirely instead of
   // only dimming them — an expired promo is not actionable, so it should not
   // occupy space in the list (app/keyword filters still apply first).
-  const visible = hideExpired
-    ? filtered.filter((e) => statusById.get(e.id) !== 'kedaluwarsa')
-    : filtered;
+  const visible = filtered.filter(
+    (e) =>
+      (!hideExpired || statusById.get(e.id) !== 'kedaluwarsa') &&
+      (!hideUsed || !e.dipakai),
+  );
   const groups = [...new Set(visible.map((e) => e.aplikasi))].sort(
     (a, b) => (visible.filter((e) => e.aplikasi === b).length) - (visible.filter((e) => e.aplikasi === a).length),
   );
@@ -357,6 +360,22 @@ export function EventsView({ apiKey }: EventsViewProps) {
               </svg>
               Sembunyikan kedaluwarsa
             </button>
+            <button
+              type="button"
+              onClick={() => setHideUsed((v) => !v)}
+              aria-pressed={hideUsed}
+              className={`inline-flex items-center gap-2 rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 ${
+                hideUsed
+                  ? 'bg-chill-elevated text-chill-text border-chill-accent/50 active:translate-y-[2px]'
+                  : 'bg-chill-surface text-chill-muted border-chill-border hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px]'
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="shrink-0">
+                <path d="M4 12s3-5 8-5 8 5 8 5-3 5-8 5-8-5-8-5Z" />
+                <circle cx="12" cy="12" r="2" />
+              </svg>
+              Sembunyikan yang sudah dipakai
+            </button>
           </div>
         </div>
       )}
@@ -386,7 +405,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
         ) : visible.length === 0 ? (
           <div className="border border-chill-border bg-chill-surface p-6 text-center pixel-shadow rounded-none">
             <p className="text-sm text-chill-muted">
-              Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}{query ? ` cocok “${searchQuery}”` : ''}{hideExpired ? ' yang masih aktif' : ''}.
+              Belum ada event{appFilter ? ` untuk ${appFilter}` : ''}{query ? ` cocok “${searchQuery}”` : ''}{hideExpired ? ' yang masih aktif' : ''}{hideUsed ? ' yang belum dipakai' : ''}.
             </p>
             <p className="text-xs text-chill-muted mt-1">Cron Event Hunter akan mengisinya otomatis tiap hari.</p>
           </div>
@@ -448,6 +467,19 @@ export function EventsView({ apiKey }: EventsViewProps) {
                               className="inline-block rounded-none border border-chill-border px-3 py-1.5 text-xs font-medium text-chill-muted transition hover:bg-chill-elevated active:bg-chill-elevated active:translate-y-[2px] min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
                             >
                               Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void updateDipakai(e.id, !e.dipakai)}
+                              disabled={updatingId === e.id}
+                              aria-pressed={Boolean(e.dipakai)}
+                              className={`inline-block rounded-none border px-3 py-1.5 text-xs font-medium transition min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 disabled:opacity-50 ${
+                                e.dipakai
+                                  ? 'border-chill-emerald/50 bg-chill-emerald/10 text-chill-emerald hover:bg-chill-emerald/20 active:bg-chill-emerald/25'
+                                  : 'border-chill-border text-chill-muted hover:bg-chill-elevated active:bg-chill-elevated'
+                              } active:translate-y-[2px]`}
+                            >
+                              {e.dipakai ? 'Batal pakai' : 'Tandai sudah dipakai'}
                             </button>
                             <button
                               type="button"

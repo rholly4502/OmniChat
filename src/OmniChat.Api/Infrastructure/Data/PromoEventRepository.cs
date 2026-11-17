@@ -140,4 +140,18 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }
+
+    public async Task<bool> UpdateDipakaiAsync(
+        long id, bool dipakai, CancellationToken cancellationToken)
+    {
+        var existing = await db.PromoEvents.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (existing is null)
+        {
+            return false;
+        }
+
+        existing.Dipakai = dipakai;
+        await db.SaveChangesAsync(cancellationToken);
+        return true;
+    }
 }

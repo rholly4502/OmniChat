@@ -107,4 +107,32 @@ describe('useEvents', () => {
     expect(signal).toBeDefined();
     expect(signal?.aborted).toBe(true);
   });
+
+  it('updateDipakai() PATCHes the flag and updates local state', async () => {
+    const { result } = renderHook(() => useEvents(''));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.updateDipakai(9, true);
+    });
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      `${EVENTS_URL}/9/dipakai`,
+      expect.objectContaining({
+        method: 'PATCH',
+        body: JSON.stringify({ dipakai: true }),
+      }),
+    );
+    expect(result.current.events[0].dipakai).toBe(true);
+    expect(result.current.updatingId).toBeNull();
+  });
+
+  it('updateDipakai() clears the pending id when it fails', async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 400, headers: { get: () => null } });
+    const { result } = renderHook(() => useEvents(''));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await act(async () => {
+      await result.current.updateDipakai(9, true);
+    });
+    expect(result.current.updatingId).toBeNull();
+    expect(result.current.error).toBe('Gagal memperbarui event (400).');
+  });
 });

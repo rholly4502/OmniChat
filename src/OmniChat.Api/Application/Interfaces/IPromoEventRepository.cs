@@ -29,4 +29,6 @@ public interface IPromoEventRepository
 
     /// <summary>Deletes an event by id. Returns false when id is absent.</summary>
     Task<bool> DeleteAsync(long id, CancellationToken cancellationToken);
+    /// <summary>Sets whether a promo has been redeemed/used. Returns false when id is absent.</summary>
+    Task<bool> UpdateDipakaiAsync(long id, bool dipakai, CancellationToken cancellationToken);
 }

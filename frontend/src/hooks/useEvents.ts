@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
-import { listEvents, type PromoEvent } from '../eventsApi';
+import { listEvents, updateEventDipakai, type PromoEvent } from '../eventsApi';
 
 export interface UseEventsResult {
   events: PromoEvent[];
@@ -9,6 +9,10 @@ export interface UseEventsResult {
   appFilter: string;
   setAppFilter: (a: string) => void;
   reload: () => void;
+  /** The event id currently toggling its dipakai flag (null when idle). */
+  updatingId: number | null;
+  /** Toggle "already used" on an event; updates local state optimistically. */
+  updateDipakai: (id: number, dipakai: boolean) => Promise<void>;
 }
 
 /** Loads the curated promo/event list, with an optional platform filter. */
@@ -17,6 +21,7 @@ export function useEvents(apiKey?: string): UseEventsResult {
   const [appFilter, setAppFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -47,5 +52,18 @@ export function useEvents(apiKey?: string): UseEventsResult {
 
   const reload = useCallback(() => setReloadKey((k) => k + 1), []);
 
-  return { events, loading, error, appFilter, setAppFilter, reload };
+  const updateDipakai = useCallback(async (id: number, dipakai: boolean) => {
+    setError(null);
+    setUpdatingId(id);
+    try {
+      await updateEventDipakai(id, dipakai, { apiKey });
+      setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, dipakai } : e)));
+    } catch (err) {
+      setError(err instanceof ApiError ? `Gagal memperbarui event (${err.status}).` : 'Gagal memperbarui event.');
+    } finally {
+      setUpdatingId(null);
+    }
+  }, [apiKey]);
+
+  return { events, loading, error, appFilter, setAppFilter, reload, updatingId, updateDipakai };
 }

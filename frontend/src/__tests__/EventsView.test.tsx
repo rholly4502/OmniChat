@@ -43,6 +43,8 @@ interface MockEventsState {
   appFilter: string;
   setAppFilter: (a: string) => void;
   reload: () => void;
+  updatingId: number | null;
+  updateDipakai: (id: number, dipakai: boolean) => Promise<void>;
 }
 
 function mockState(overrides: Partial<MockEventsState> = {}) {
@@ -53,6 +55,8 @@ function mockState(overrides: Partial<MockEventsState> = {}) {
     appFilter: '',
     setAppFilter: vi.fn(),
     reload: vi.fn(),
+    updatingId: null,
+    updateDipakai: vi.fn().mockResolvedValue(undefined),
   };
   useEventsMock.useEvents.mockReturnValue({ ...defaults, ...overrides });
 }
@@ -438,6 +442,45 @@ describe('EventsView keyword search', () => {
     expect(screen.getByText(/cocok “zzzz”/)).toBeTruthy();
   });
 });
+describe('EventsView dipakai (sudah dipakai)', () => {
+  it('toggle button marks an event as used via updateDipakai', async () => {
+    const updateDipakai = vi.fn().mockResolvedValue(undefined);
+    mockState({ updatingId: null, updateDipakai });
+    render(<EventsView />);
+    const toggle = screen.getAllByRole('button', { name: 'Tandai sudah dipakai' })[0];
+    fireEvent.click(toggle);
+    expect(updateDipakai).toHaveBeenCalledWith(1, true);
+  });
+
+  it('renders "Batal pakai" and unmarks a used event', async () => {
+    const used = { ...base, id: 1, dipakai: true };
+    const updateDipakai = vi.fn().mockResolvedValue(undefined);
+    mockState({ events: [used, grab], updatingId: null, updateDipakai });
+    render(<EventsView />);
+    const toggle = screen.getAllByRole('button', { name: 'Batal pakai' })[0];
+    fireEvent.click(toggle);
+    expect(updateDipakai).toHaveBeenCalledWith(1, false);
+  });
+
+  it('"Sembunyikan yang sudah dipakai" hides redeemed events only', () => {
+    const used = { ...grab, id: 2, dipakai: true };
+    mockState({ events: [base, used], updatingId: null, updateDipakai: vi.fn() });
+    render(<EventsView />);
+    expect(screen.getByText('Voucher GrabCar 20%')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan yang sudah dipakai' }));
+    expect(screen.queryByText('Voucher GrabCar 20%')).toBeNull();
+    expect(screen.getByText('Cashback 50% GoFood')).toBeTruthy();
+  });
+
+  it('disables the toggle while that event is being updated', () => {
+    mockState({ updatingId: 1, updateDipakai: vi.fn() });
+    render(<EventsView />);
+    const buttons = screen.getAllByRole('button', { name: 'Tandai sudah dipakai' });
+    expect(buttons[0]).toBeDisabled();
+    expect(buttons[1]).not.toBeDisabled();
+  });
+});
+
 describe('eventStatus', () => {
   it('marks a past end date as expired', () => {
     expect(eventStatus('2026-10-31', '2026-11-15')).toBe('kedaluwarsa');

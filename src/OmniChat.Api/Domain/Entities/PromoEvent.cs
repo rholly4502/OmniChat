@@ -27,6 +27,8 @@ public class PromoEvent
 
     /// <summary>Expiry as free text when known ("31 Okt 2026", "s/d ?").</summary>
     public string? BerlakuSampai { get; set; }
+    /// <summary>True once the promo has been redeemed/used by the user.</summary>
+    public bool Dipakai { get; set; }
 
     /// <summary>When the event was first found (WIB).</summary>
     public DateOnly Ditemukan { get; set; }
