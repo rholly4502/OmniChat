@@ -55,6 +55,7 @@ const APPLICANT_PROFILE: ReadonlyArray<{ label: string; value: string }> = [
   { label: 'Email', value: 'rholly4502@gmail.com' },
   { label: 'No. HP', value: '+62 821-9783-9273' },
   { label: 'GitHub', value: 'github.com/rholly4502' },
+  { label: 'LinkedIn', value: 'linkedin.com/in/rholly-kurnia-putra-462686298' },
   { label: 'Zona waktu', value: 'Indonesia (WIB, UTC+7)' },
 ];
 const GROUP_LABEL: Record<string, string> = {
