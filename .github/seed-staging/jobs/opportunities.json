@@ -813,5 +813,31 @@
     "catatan": "Posting 5 Nov 2026 (fresh); level junior min 2 th pas dgn Rholly; stack C#/ASP.NET Core (.NET6+) + SQL Server + Angular; perusahaan IT services jelas (dikshatek.co.id). Onsite Jakarta.",
     "status": "new",
     "ditemukan": "2026-11-17"
+  },
+  {
+    "id": "143a2cd4f4",
+    "judul": "Software Engineer (.NET)",
+    "perusahaan": "Mesiniaga",
+    "lokasi": "Subang Jaya, Selangor (onsite)",
+    "tipe": "Kontrak",
+    "gaji": "omit",
+    "link": "https://alion.io/job/mesiniaga-software-engineer-net",
+    "catatan": "Junior 2+ th, kontrak; stack .NET/C#/ASP.NET + SQL Server penuh; employer Bursa-listed, board asli 15 Nov (fresh). Onsite MY — perlu hak kerja Malaysia.",
+    "status": "new",
+    "ditemukan": "2026-11-18",
+    "skor": 69
+  },
+  {
+    "id": "b0ca374243",
+    "judul": "Associate Software Engineer (.NET)",
+    "perusahaan": "OR Technologies (ORTECH)",
+    "lokasi": "Kuala Lumpur (onsite)",
+    "tipe": "Kontrak 1 tahun",
+    "gaji": "omit",
+    "link": "https://careers.ortech.com.my/applications/cf3a30f5-1465-4813-ae0c-7a499c1edaa8",
+    "catatan": "Fresh grad s.d. 2 th (pas level); C#/ASP.NET/.NET Core + SQL Server; kontrak 1 th w/ potensi permanen; employer langsung (careers site). Onsite KL — perlu hak kerja Malaysia.",
+    "status": "new",
+    "ditemukan": "2026-11-18",
+    "skor": 71
   }
 ]
