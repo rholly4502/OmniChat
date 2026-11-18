@@ -11,6 +11,7 @@ import {
 } from '../expensesApi';
 import { ApiError } from '../api';
 import { useExpenses, currentMonthKey } from '../hooks/useExpenses';
+import { usePersistedState } from '../hooks/usePersistedState';
 import { useExpenseTrend } from '../hooks/useExpenseTrend';
 import { remainingDailyBudget } from '../expenseBudget';
 import { ExpenseTrendChart } from './ExpenseTrendChart';
@@ -133,8 +134,8 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [query, setQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const [query, setQuery] = usePersistedState('expenses.query', '');
+  const [categoryFilter, setCategoryFilter] = usePersistedState('expenses.categoryFilter', '');
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [savedNote, setSavedNote] = useState<string | null>(null);
   const [dupWarning, setDupWarning] = useState<{ payload: ExpenseWritePayload; match: ExpenseItem } | null>(null);

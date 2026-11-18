@@ -1050,4 +1050,24 @@ describe('ExpensesView budget editor', () => {
     );
     expect(putCall).toBeUndefined();
   });
+
+  it('persists the search query and category filter across reloads', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const first = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByPlaceholderText('Cari transaksi…'), { target: { value: 'warteg' } });
+    fireEvent.change(screen.getByLabelText('Filter kategori'), { target: { value: 'Makan' } });
+
+    expect(window.localStorage.getItem('expenses.query')).toBe(JSON.stringify('warteg'));
+    expect(window.localStorage.getItem('expenses.categoryFilter')).toBe(JSON.stringify('Makan'));
+
+    first.unmount();
+
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    expect((screen.getByPlaceholderText('Cari transaksi…') as HTMLInputElement).value).toBe('warteg');
+    expect((screen.getByLabelText('Filter kategori') as HTMLSelectElement).value).toBe('Makan');
+  });
 });

@@ -4,6 +4,15 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P34 — UI: simpan filter Cari & kategori Pengeluaran (frontend)
+
+#### Added
+- Pencarian teks (`Cari transaksi…`) dan filter kategori di view Pengeluaran kini
+  bertahan di `localStorage` (`expenses.query`, `expenses.categoryFilter`) dan pulih
+  saat reload — selaras dengan persistensi filter Lowongan/Event (P32).
+- Tests: `ExpensesView.test.tsx` +1 (query + kategori ter-persist dan pulih setelah
+  remount); tsc -b, oxlint, vitest ExpensesView/App/Summary/Events/Jobs hijau.
+
 ### P33 — Events: ekspor CSV/PDF sertakan status dipakai (backend)
 
 #### Added
