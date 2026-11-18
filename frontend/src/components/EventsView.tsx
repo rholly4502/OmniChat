@@ -10,6 +10,7 @@ import {
 } from '../eventsApi';
 import { ApiError } from '../api';
 import { useEvents } from '../hooks/useEvents';
+import { usePersistedState } from '../hooks/usePersistedState';
 import { ScanLoader } from './ScanLoader';
 import { PanelFrame } from './PanelFrame';
 import { STATUS_CHIP, countdownLabel, eventStatus, sortEventsByUrgency, type EventStatus } from '../eventsStatus';
@@ -57,8 +58,8 @@ export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload, updatingId, updateDipakai } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [hideExpired, setHideExpired] = useState(false);
-  const [hideUsed, setHideUsed] = useState(false);
+  const [hideExpired, setHideExpired] = usePersistedState('events.hideExpired', false);
+  const [hideUsed, setHideUsed] = usePersistedState('events.hideUsed', false);
   const [exportError, setExportError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<PromoEvent | null>(null);

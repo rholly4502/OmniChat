@@ -2,6 +2,7 @@ import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'reac
 import { OPPORTUNITY_STATUSES, createJob, deleteJob, exportOpportunitiesCsv, exportOpportunitiesPdf, updateJob, type JobWritePayload, type Opportunity } from '../jobsApi';
 import { ApiError } from '../api';
 import { useJobs } from '../hooks/useJobs';
+import { usePersistedState } from '../hooks/usePersistedState';
 import { ScanLoader } from './ScanLoader';
 import { AlertIcon } from './Icons';
 import { PanelFrame } from './PanelFrame';
@@ -248,11 +249,11 @@ function FollowUpSchedule({ opportunities, todayISO, onComplete, busyId }: {
 
 export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const { opportunities, loading, error, statusFilter, setStatusFilter, reload, updateStatus, updateFollowUp, updatingId, generatingId, generateDraft, cvFiles, cvError, downloadCv } = useJobs(apiKey);
-  const [typeFilter, setTypeFilter] = useState('');
+  const [typeFilter, setTypeFilter] = usePersistedState('jobs.typeFilter', '');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [followUpEditing, setFollowUpEditing] = useState<Record<number, boolean>>({});
   const [followUpDraft, setFollowUpDraft] = useState<Record<number, string>>({});
-  const [tierFilter, setTierFilter] = useState<TierKey | ''>('');
+  const [tierFilter, setTierFilter] = usePersistedState<TierKey | ''>('jobs.tierFilter', '');
   const [draftById, setDraftById] = useState<Record<number, string>>({});
   const [draftErrorById, setDraftErrorById] = useState<Record<number, string>>({});
   const [draftOpenById, setDraftOpenById] = useState<Record<number, boolean>>({});
@@ -261,7 +262,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [exportError, setExportError] = useState('');
   const [cvMenuOpen, setCvMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState<SortKey>('default');
+  const [sortBy, setSortBy] = usePersistedState<SortKey>('jobs.sortBy', 'default');
   const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Opportunity | null>(null);

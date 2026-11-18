@@ -4,6 +4,20 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P32 — UI: simpan filter & urutkan Lowongan/Event (frontend)
+
+#### Added
+- Preferensi UI kini bertahan di `localStorage` dan pulih saat reload:
+  - Lowongan: filter status pipeline, filter tipe, filter tier, dan urutkan
+    (`jobs.statusFilter`, `jobs.typeFilter`, `jobs.tierFilter`, `jobs.sortBy`).
+  - Event: toggle "Sembunyikan kedaluwarsa" dan "Sembunyikan dipakai"
+    (`events.hideExpired`, `events.hideUsed`).
+- Hook baru `usePersistedState` (mirip `useState` + persistensi JSON, mendukung
+  updater fungsional) + test unit. `test-setup.ts` membersihkan localStorage
+  antar-test agar tidak bocor.
+- Tests: `usePersistedState.test.tsx` +6; tsc -b, oxlint, vitest
+  JobsView/EventsView/useJobs/useEvents/SummaryView/a11y hijau.
+
 ### P31 — Jobs: tanggal tahap pipeline di ekspor CSV & PDF (backend)
 
 #### Added

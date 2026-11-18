@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError } from '../api';
+import { usePersistedState } from './usePersistedState';
 import { downloadCvFile, generateLamaranDraft, listCvFiles, listOpportunities, updateOpportunityFollowUp, updateOpportunityStatus, type LamaranDraft, type Opportunity } from '../jobsApi';
 
 export interface UseJobsResult {
@@ -23,7 +24,7 @@ export interface UseJobsResult {
 /** Loads the curated job-opportunity list, with an optional pipeline status filter. */
 export function useJobs(apiKey?: string): UseJobsResult {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = usePersistedState('jobs.statusFilter', '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);

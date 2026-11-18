@@ -1,4 +1,12 @@
 import '@testing-library/jest-dom';
+import { beforeEach } from 'vitest';
+
+// Isolate persisted-UI-preference state (usePersistedState) between tests so
+// a filter/sort written by one test can't leak into the next one's initial
+// state. jsdom shares a single localStorage instance within a test file.
+beforeEach(() => {
+  window.localStorage.clear();
+});
 
 // jsdom does not implement Element.scrollTo — the App uses it for
 // auto-scrolling the chat container. Add a no-op so useEffect doesn't throw.
