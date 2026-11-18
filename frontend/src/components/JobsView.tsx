@@ -856,16 +856,21 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 flex-wrap">
           <label htmlFor="jobs-sort" className="text-xs text-chill-muted">Urutkan</label>
-          <select
-            id="jobs-sort"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 text-base text-chill-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px]"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.key} value={o.key}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="jobs-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="appearance-none rounded-none border border-chill-border bg-chill-surface px-2 py-1.5 pr-9 text-base text-chill-text cursor-pointer transition-colors hover:border-chill-accent/60 focus:border-chill-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60 min-h-[44px] [color-scheme:dark]"
+            >
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" shapeRendering="crispEdges" strokeLinejoin="miter" aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-chill-muted">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
         </div>
       </div>
 
