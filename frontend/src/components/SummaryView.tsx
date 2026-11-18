@@ -37,6 +37,14 @@ const GLYPHS = {
   events: 'M8 4v4M16 4v4M4 10h16M6 7h12v13H6V7Z',
 } as const;
 
+/** Active pipeline stages (closed excluded) for the Lowongan funnel bar. */
+const PIPELINE_STAGES = [
+  { key: 'new', label: 'Baru', className: 'bg-chill-accent' },
+  { key: 'applied', label: 'Dilamar', className: 'bg-chill-indigo' },
+  { key: 'interview', label: 'Interview', className: 'bg-chill-emerald' },
+  { key: 'offer', label: 'Tawaran', className: 'bg-chill-sage' },
+] as const;
+
 function Card({ title, glyph, children, tone = 'default' }: {
   title: string; glyph: string; children: ReactNode; tone?: 'default' | 'accent' | 'emerald' | 'red';
 }) {
@@ -265,6 +273,30 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           <StatRow label="Follow-up hari ini" value={String(todayFollowUps)} />
           <StatRow label="Dalam 7 hari" value={String(weekFollowUps)} />
           <StatRow label="Tawaran" value={String(countOffer)} />
+          {statusCounts && activeJobs > 0 && (
+            <div className="pt-1">
+              <p className="text-xs text-chill-muted mb-2">Alur pipeline (aktif)</p>
+              <div
+                role="img"
+                aria-label={`Alur pipeline: ${PIPELINE_STAGES.map(({ key, label }) => `${label} ${statusCounts[key] ?? 0}`).join(', ')}`}
+                className="flex h-2 w-full overflow-hidden border border-chill-border bg-chill-surface"
+              >
+                {PIPELINE_STAGES.map(({ key, className }) => {
+                  const count = statusCounts[key] ?? 0;
+                  if (count <= 0) return null;
+                  return <div key={key} className={`${className} h-full`} style={{ width: `${(count / activeJobs) * 100}%` }} />;
+                })}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                {PIPELINE_STAGES.filter(({ key }) => (statusCounts[key] ?? 0) > 0).map(({ key, label, className }) => (
+                  <span key={key} className="inline-flex items-center gap-1.5 text-xs text-chill-muted">
+                    <span aria-hidden="true" className={`inline-block h-2 w-2 ${className}`} />
+                    {label} · {statusCounts[key]}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
 
         <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">

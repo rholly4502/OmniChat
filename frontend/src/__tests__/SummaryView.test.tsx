@@ -423,4 +423,33 @@ describe('SummaryView', () => {
     expect(screen.queryByText('Proyeksi akhir bulan')).not.toBeInTheDocument();
   });
 
+  it('shows the active pipeline funnel with per-stage legend counts', async () => {
+    const jobsSummary = {
+      perStatus: { new: 2, applied: 1, interview: 3, offer: 1, closed: 2 },
+      total: 9,
+      followUpTerlambat: 0,
+      followUpHariIni: 0,
+      followUp7Hari: 0,
+    };
+    vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.getByText('Alur pipeline (aktif)')).toBeInTheDocument();
+    expect(screen.getByText('Baru · 2')).toBeInTheDocument();
+    expect(screen.getByText('Dilamar · 1')).toBeInTheDocument();
+    expect(screen.getByText('Interview · 3')).toBeInTheDocument();
+    expect(screen.getByText('Tawaran · 1')).toBeInTheDocument();
+    const bar = screen.getByRole('img', { name: /Alur pipeline/ });
+    expect(bar).toHaveAttribute('aria-label', 'Alur pipeline: Baru 2, Dilamar 1, Interview 3, Tawaran 1');
+  });
+
+  it('omits the pipeline funnel when there are no active jobs', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.queryByText('Alur pipeline (aktif)')).not.toBeInTheDocument();
+  });
+
 });

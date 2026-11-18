@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P29 — Jobs: alur pipeline (funnel) di Ringkasan (frontend)
+
+#### Added
+- Kartu Lowongan di Ringkasan kini menampilkan bar alur pipeline horizontal yang
+  menampilkan proporsi tahap aktif (Baru → Dilamar → Interview → Tawaran)
+  terhadap total lowongan yang masih aktif (closed tidak ikut). Legend per tahap
+  ditampilkan di bawah bar dengan jumlah masing-masing. Bar disembunyikan saat
+  tidak ada lowongan aktif.
+- Tests frontend: +2 SummaryView (render funnel + legend per tahap; sembunyikan
+  saat nol aktif). tsc -b hijau, vitest SummaryView 34 + a11y 5 hijau.
+
 ### P28 — Events: sisa promo aktif & sudah dipakai di Ringkasan (backend + frontend)
 
 #### Added
