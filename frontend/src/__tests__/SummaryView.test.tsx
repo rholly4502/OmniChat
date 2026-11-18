@@ -492,4 +492,56 @@ describe('SummaryView', () => {
     expect(screen.queryByText('Top cocok')).not.toBeInTheDocument();
   });
 
+  it('renders the Buka chat button and triggers navigation when clicked', async () => {
+    const onOpenChat = vi.fn();
+    vi.stubGlobal('fetch', fetchStub());
+    render(
+      <SummaryView
+        apiKey="secret"
+        usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }}
+        onOpenChat={onOpenChat}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument());
+    const chatBtn = screen.getByRole('button', { name: /Buka chat/ });
+    expect(chatBtn).toBeInTheDocument();
+    fireEvent.click(chatBtn);
+    expect(onOpenChat).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the Buka chat button when onOpenChat is not passed', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Chat')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Buka chat/ })).not.toBeInTheDocument();
+  });
+
+  it('renders the Lihat semua pengeluaran button and triggers navigation when clicked', async () => {
+    const onOpenExpenses = vi.fn();
+    vi.stubGlobal('fetch', fetchStub());
+    render(
+      <SummaryView
+        apiKey="secret"
+        usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }}
+        onOpenExpenses={onOpenExpenses}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    const expensesBtn = screen.getByRole('button', { name: /Lihat semua pengeluaran/ });
+    expect(expensesBtn).toBeInTheDocument();
+    fireEvent.click(expensesBtn);
+    expect(onOpenExpenses).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the Lihat semua pengeluaran button when onOpenExpenses is not passed', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Pengeluaran (bulan ini)')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Lihat semua pengeluaran/ })).not.toBeInTheDocument();
+  });
+
 });

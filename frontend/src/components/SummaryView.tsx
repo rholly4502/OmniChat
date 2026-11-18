@@ -19,6 +19,10 @@ export interface SummaryViewProps {
   /** When provided, the "Perlu follow-up" stat becomes a button that jumps to the Jobs view filtered to overdue follow-ups. */
   onOpenFollowUps?: () => void;
   onOpenEvents?: () => void;
+  /** When provided, the Chat card shows a button that jumps to the Chat view. */
+  onOpenChat?: () => void;
+  /** When provided, the Pengeluaran card shows a button that jumps to the Expenses view. */
+  onOpenExpenses?: () => void;
 }
 
 /** Pixel glyph set for the four summary cards. */
@@ -125,7 +129,7 @@ function monthCompare(
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
  */
-export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents }: SummaryViewProps) {
+export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents, onOpenChat, onOpenExpenses }: SummaryViewProps) {
   const expenses = useExpenses(apiKey);
   const jobs = useJobsSummary(apiKey);
   const events = useEventsSummary(apiKey);
@@ -209,6 +213,16 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
           {usageSummary?.byModel && Object.keys(usageSummary.byModel).length > 0 && (
             <StatRow label="Model aktif" value={String(Object.keys(usageSummary.byModel).length)} />
           )}
+          {onOpenChat ? (
+            <button
+              type="button"
+              onClick={onOpenChat}
+              className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="text-xs text-chill-muted">Buka chat</span>
+              <span aria-hidden="true" className="text-sm font-medium text-chill-text">→</span>
+            </button>
+          ) : null}
         </Card>
 
         <Card title="Pengeluaran (bulan ini)" glyph={GLYPHS.expenses} tone={expenses.summary && expenses.summary.sisaAnggaran !== null && expenses.summary.sisaAnggaran < 0 ? 'red' : 'emerald'}>
@@ -260,6 +274,16 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               ))}
             </>
           )}
+          {onOpenExpenses ? (
+            <button
+              type="button"
+              onClick={onOpenExpenses}
+              className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="text-xs text-chill-muted">Lihat semua pengeluaran</span>
+              <span aria-hidden="true" className="text-sm font-medium text-chill-text">→</span>
+            </button>
+          ) : null}
         </Card>
 
         <Card title="Lowongan" glyph={GLYPHS.jobs} tone="accent">

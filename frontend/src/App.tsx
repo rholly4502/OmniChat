@@ -467,6 +467,16 @@ export default function App() {
     selectView('events');
   }
 
+  /** Jump from the Ringkasan "Pengeluaran" card into the Expenses view. */
+  function openExpenses() {
+    selectView('expenses');
+  }
+
+  /** Jump from the Ringkasan "Chat" card into the Chat view. */
+  function openChat() {
+    selectView('chat');
+  }
+
   return (
     <div className={`relative flex h-dvh bg-chill-bg text-chill-text overflow-hidden${settings.nightMode ? " night-mode" : ""}${settings.focusMode ? " focus-mode" : ""}`}
       onTouchStart={onTouchStart}
@@ -570,7 +580,7 @@ export default function App() {
         />
 
         {activeView === 'ringkasan' ? (
-          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} onOpenEvents={openEvents} />
+          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} onOpenEvents={openEvents} onOpenChat={openChat} onOpenExpenses={openExpenses} />
         ) : activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (
