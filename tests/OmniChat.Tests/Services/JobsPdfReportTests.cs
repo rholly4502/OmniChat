@@ -71,6 +71,31 @@ public sealed class JobsPdfReportTests
         Assert.Contains("\\)", text);
     }
 
+    [Fact]
+    public void Build_embedsPipelineStageDates()
+    {
+        var text = Encoding.ASCII.GetString(JobsPdfReport.Build(new[]
+        {
+            new Opportunity
+            {
+                Id = 1,
+                Judul = ".NET Developer",
+                Perusahaan = "PT Contoh",
+                Lokasi = "Remote",
+                Tipe = "Kontrak",
+                Status = "offer",
+                Ditemukan = new DateOnly(2026, 11, 5),
+                DilamarPada = new DateOnly(2026, 11, 12),
+                InterviewPada = new DateOnly(2026, 11, 17),
+                TawaranPada = new DateOnly(2026, 11, 22),
+            },
+        }));
+
+        Assert.Contains("Dilamar 2026-11-12", text);
+        Assert.Contains("Interview 2026-11-17", text);
+        Assert.Contains("Tawaran 2026-11-22", text);
+    }
+
     private static int CountOf(string s, string sub)
     {
         var n = 0;

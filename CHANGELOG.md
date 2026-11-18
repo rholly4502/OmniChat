@@ -4,6 +4,19 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P31 — Jobs: tanggal tahap pipeline di ekspor CSV & PDF (backend)
+
+#### Added
+- `GET /api/jobs/export` (CSV) kini mengembalikan kolom `dilamarPada`,
+  `interviewPada`, `tawaranPada` di samping `followUpTanggal`, sehingga riwayat
+  tanggal tiap tahap (Dilamar/Interview/Tawaran) ikut tercatat dalam ekspor.
+- Laporan PDF `JobsPdfReport` menampilkan baris riwayat tanggal tahap di bawah
+  tiap lowongan yang memiliki setidaknya satu tanggal tahap (format "Dilamar
+  YYYY-MM-DD · Interview … · Tawaran …"); paginasi per-baris menjaga baris
+  tetap utuh agar tidak terpotong antar halaman.
+- Tests: `JobsControllerExportTests` +1 (CSV berisi tanggal tahap),
+  `JobsPdfReportTests` +1 (PDF menyematkan tanggal tahap). Backend 774 hijau.
+
 ### P30 — Jobs: top cocok (skor tertinggi) di Ringkasan (backend + frontend)
 
 #### Added

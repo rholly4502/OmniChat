@@ -17,7 +17,10 @@ public class JobsControllerExportTests
         string status = "new",
         string? perusahaan = "PT Contoh, Tbk",
         int? skor = 82,
-        DateOnly? followUp = null) => new()
+        DateOnly? followUp = null,
+        DateOnly? dilamarPada = null,
+        DateOnly? interviewPada = null,
+        DateOnly? tawaranPada = null) => new()
     {
         Id = 1,
         Judul = ".NET Developer",
@@ -28,6 +31,9 @@ public class JobsControllerExportTests
         Skor = skor,
         Status = status,
         FollowUpTanggal = followUp,
+        DilamarPada = dilamarPada,
+        InterviewPada = interviewPada,
+        TawaranPada = tawaranPada,
         Ditemukan = new DateOnly(2026, 11, 5),
         Link = null,
         Catatan = null,
@@ -46,7 +52,7 @@ public class JobsControllerExportTests
 
         var text = Encoding.UTF8.GetString(file.FileContents).Trim('\uFEFF');
         var lines = text.TrimEnd('\n').Split('\n');
-        Assert.StartsWith("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,ditemukan", lines[0]);
+        Assert.StartsWith("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,dilamarPada,interviewPada,tawaranPada,ditemukan", lines[0]);
         Assert.Equal(3, lines.Length); // header + 2 quoted
         Assert.Contains("\"PT Contoh, Tbk\"", text); // comma field is quoted
     }
@@ -84,6 +90,22 @@ public class JobsControllerExportTests
         var text = Encoding.UTF8.GetString(file.FileContents).Trim('\uFEFF');
 
         Assert.Contains("2026-11-20", text);
+    }
+
+    [Fact]
+    public async Task Export_WritesPipelineStageDates_WhenSet()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[] { Opportunity(
+                status: "offer",
+                dilamarPada: new DateOnly(2026, 11, 12),
+                interviewPada: new DateOnly(2026, 11, 17),
+                tawaranPada: new DateOnly(2026, 11, 22)) });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(status: null));
+        var text = Encoding.UTF8.GetString(file.FileContents).Trim('\uFEFF');
+
+        Assert.Contains("2026-11-12,2026-11-17,2026-11-22", text);
     }
 
     [Fact]

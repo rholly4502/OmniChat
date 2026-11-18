@@ -283,7 +283,7 @@ public sealed class JobsController(
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,ditemukan,link,catatan");
+        sb.AppendLine("judul,perusahaan,lokasi,tipe,gaji,skor,status,followUpTanggal,dilamarPada,interviewPada,tawaranPada,ditemukan,link,catatan");
         foreach (var o in filtered)
         {
             sb.Append(Csv(o.Judul)).Append(',');
@@ -294,6 +294,9 @@ public sealed class JobsController(
             sb.Append(o.Skor?.ToString() ?? string.Empty).Append(',');
             sb.Append(Csv(o.Status)).Append(',');
             sb.Append(o.FollowUpTanggal?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
+            sb.Append(o.DilamarPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
+            sb.Append(o.InterviewPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
+            sb.Append(o.TawaranPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
             sb.Append(o.Ditemukan.ToString("yyyy-MM-dd")).Append(',');
             sb.Append(Csv(o.Link ?? string.Empty)).Append(',');
             sb.Append(Csv(o.Catatan ?? string.Empty)).Append('\n');

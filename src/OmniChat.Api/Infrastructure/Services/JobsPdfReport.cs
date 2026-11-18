@@ -59,7 +59,9 @@ public static class JobsPdfReport
 
         foreach (var o in rows)
         {
-            if (y < Margin + 20)
+            var riwayat = PipelineDates(o);
+            var rowHeight = LineHeight + (riwayat.Length > 0 ? LineHeight : 0);
+            if (y - rowHeight < Margin + 20)
             {
                 pages.Add(sb.ToString());
                 sb.Clear();
@@ -75,6 +77,12 @@ public static class JobsPdfReport
             sb.Append(Text(470, y, FontSize, Label(o.Status)));
             sb.Append(Text(525, y, FontSize, o.FollowUpTanggal?.ToString("yyyy-MM-dd") ?? ""));
             y -= LineHeight;
+
+            if (riwayat.Length > 0)
+            {
+                sb.Append(Text(50, y, FontSize - 1, Truncate(riwayat, 62)));
+                y -= LineHeight;
+            }
         }
 
         pages.Add(sb.ToString());
@@ -133,6 +141,16 @@ public static class JobsPdfReport
 
     private static string Label(string status) =>
         StatusLabels.TryGetValue(status, out var l) ? l : status;
+
+    /// <summary>Renders the pipeline stage dates as a compact single-line history.</summary>
+    private static string PipelineDates(Opportunity o)
+    {
+        var parts = new List<string>();
+        if (o.DilamarPada.HasValue) parts.Add($"Dilamar {o.DilamarPada:yyyy-MM-dd}");
+        if (o.InterviewPada.HasValue) parts.Add($"Interview {o.InterviewPada:yyyy-MM-dd}");
+        if (o.TawaranPada.HasValue) parts.Add($"Tawaran {o.TawaranPada:yyyy-MM-dd}");
+        return string.Join(" · ", parts);
+    }
 
     private static string Text(float x, int y, int size, string s) =>
         $"BT /F1 {size} Tf 1 0 0 1 {x:0.0} {y} Tm ({Escape(s)}) Tj ET\n";
