@@ -103,4 +103,20 @@ public sealed class EventsPdfReportTests
         }
         return n;
     }
+
+    [Fact]
+    public void Build_marksUsedPromos()
+    {
+        var text = Encoding.ASCII.GetString(EventsPdfReport.Build(
+            new[]
+            {
+                new PromoEvent { Id = 1, Aplikasi = "GoPay", Judul = "Promo Dipakai", Benefit = "Maks Rp20.000", Syarat = "Min. transaksi Rp50.000", BerlakuSampai = "2026-12-31", Ditemukan = new DateOnly(2026, 11, 14), Dipakai = true },
+                Event("Promo Belum"),
+            },
+            Today));
+
+        Assert.Contains("Dipakai", text);
+        Assert.Contains("Ya", text);
+    }
+
 }

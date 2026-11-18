@@ -47,10 +47,11 @@ public static class EventsPdfReport
         void AddHeader()
         {
             sb.Append(Text(50, y, FontSize, "Judul"));
-            sb.Append(Text(220, y, FontSize, "Aplikasi"));
-            sb.Append(Text(320, y, FontSize, "Benefit"));
-            sb.Append(Text(440, y, FontSize, "Berlaku s/d"));
-            sb.Append(Text(510, y, FontSize, "Status"));
+            sb.Append(Text(180, y, FontSize, "Aplikasi"));
+            sb.Append(Text(265, y, FontSize, "Benefit"));
+            sb.Append(Text(375, y, FontSize, "Berlaku s/d"));
+            sb.Append(Text(450, y, FontSize, "Status"));
+            sb.Append(Text(520, y, FontSize, "Dipakai"));
             y -= LineHeight + 6;
         }
 
@@ -67,10 +68,11 @@ public static class EventsPdfReport
             }
 
             sb.Append(Text(50, y, FontSize, Truncate(e.Judul, 22)));
-            sb.Append(Text(220, y, FontSize, Truncate(e.Aplikasi, 12)));
-            sb.Append(Text(320, y, FontSize, Truncate(e.Benefit ?? string.Empty, 15)));
-            sb.Append(Text(440, y, FontSize, Truncate(e.BerlakuSampai ?? string.Empty, 9)));
-            sb.Append(Text(510, y, FontSize, StatusLabel(e, today)));
+            sb.Append(Text(180, y, FontSize, Truncate(e.Aplikasi, 12)));
+            sb.Append(Text(265, y, FontSize, Truncate(e.Benefit ?? string.Empty, 15)));
+            sb.Append(Text(375, y, FontSize, Truncate(e.BerlakuSampai ?? string.Empty, 9)));
+            sb.Append(Text(450, y, FontSize, StatusLabel(e, today)));
+            sb.Append(Text(520, y, FontSize, e.Dipakai ? "Ya" : string.Empty));
             y -= LineHeight;
         }
 

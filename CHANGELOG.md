@@ -4,6 +4,16 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P33 — Events: ekspor CSV/PDF sertakan status dipakai (backend)
+
+#### Added
+- Ekspor event kini membawa kolom `dipakai` (`true`/`false`) — menandai promo yang
+  sudah dipakai/diklaim, sehingga arsip eksternal mencerminkan status klaim di UI.
+- Laporan PDF `EventsPdfReport` menampilkan kolom baru "Dipakai" (`Ya` untuk yang
+  sudah dipakai) di samping kolom Status; posisi kolom digeser agar muat.
+- Tests: `EventsControllerExportTests` +1 (CSV berisi kolom `dipakai`),
+  `EventsPdfReportTests` +1 (PDF menyematkan kolom Dipakai). Backend 776 hijau.
+
 ### P32 — UI: simpan filter & urutkan Lowongan/Event (frontend)
 
 #### Added

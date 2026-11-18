@@ -85,7 +85,7 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
         }
 
         var sb = new StringBuilder();
-        sb.AppendLine("aplikasi,judul,benefit,syarat,berlakuSampai,ditemukan,link,sourceId");
+        sb.AppendLine("aplikasi,judul,benefit,syarat,berlakuSampai,ditemukan,link,sourceId,dipakai");
         foreach (var e in filtered)
         {
             sb.Append(Csv(e.Aplikasi)).Append(',');
@@ -95,7 +95,8 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
             sb.Append(Csv(e.BerlakuSampai ?? string.Empty)).Append(',');
             sb.Append(e.Ditemukan.ToString("yyyy-MM-dd")).Append(',');
             sb.Append(Csv(e.Link ?? string.Empty)).Append(',');
-            sb.Append(Csv(e.SourceId ?? string.Empty)).Append('\n');
+            sb.Append(Csv(e.SourceId ?? string.Empty)).Append(',');
+            sb.Append(e.Dipakai ? "true" : "false").Append('\n');
         }
 
         // UTF-8 BOM so Excel renders the CSV as UTF-8 rather than ANSI.

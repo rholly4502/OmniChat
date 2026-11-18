@@ -156,4 +156,23 @@ public class EventsControllerExportTests
         Assert.Contains("Cashback 50%", text);
         Assert.DoesNotContain("Voucher 20%", text);
     }
+
+    [Fact]
+    public async Task Export_WritesDipakaiColumn()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new PromoEvent { Id = 1, Aplikasi = "OVO", Judul = "Promo Terpakai", Benefit = "Maks Rp20.000", Syarat = "Min. transaksi Rp50.000", BerlakuSampai = "31 Des 2026", Ditemukan = new DateOnly(2026, 11, 14), Dipakai = true },
+                Event("DANA", "Promo Baru"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(aplikasi: null));
+        var text = Encoding.UTF8.GetString(file.FileContents).Trim('\uFEFF');
+
+        Assert.Contains("dipakai", text.Split('\n')[0]);
+        Assert.Contains(",true", text);
+        Assert.Contains(",false", text);
+    }
+
 }
