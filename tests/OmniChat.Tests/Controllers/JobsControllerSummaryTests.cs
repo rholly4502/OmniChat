@@ -24,7 +24,7 @@ public class JobsControllerSummaryTests
         FollowUp7Hari: 2,
         TopCocok: new[]
         {
-            new TopOpportunity(4, ".NET Developer", "PT Contoh", 88),
+            new TopOpportunity(4, ".NET Developer", "PT Contoh", 88, "applied"),
         });
 
     [Fact]
@@ -43,5 +43,6 @@ public class JobsControllerSummaryTests
         var top = Assert.Single(body.TopCocok);
         Assert.Equal(88, top.Skor);
         Assert.Equal(".NET Developer", top.Judul);
+        Assert.Equal("applied", top.Status);
     }
 }

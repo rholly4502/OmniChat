@@ -13,7 +13,9 @@ public sealed record TopOpportunity(
     /// <summary>Company / hiring organization.</summary>
     string Perusahaan,
     /// <summary>Fit score 0-100 (agent rubric).</summary>
-    int Skor);
+    int Skor,
+    /// <summary>Current pipeline status (new/applied/interview/offer/closed).</summary>
+    string Status);
 
 /// <summary>
 /// Pipeline overview for the curated job list: counts per status plus

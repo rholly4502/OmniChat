@@ -120,6 +120,9 @@ public sealed class OpportunityRepositorySummaryTests : IDisposable
         Assert.Equal(5, tops[1].Id);
         Assert.Equal(88, tops[2].Skor);
         Assert.Equal(3, tops[2].Id);
+        Assert.Equal("applied", tops[0].Status);
+        Assert.Equal("new", tops[1].Status);
+        Assert.Equal("new", tops[2].Status);
     }
 
     [Fact]

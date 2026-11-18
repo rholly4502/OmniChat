@@ -465,8 +465,8 @@ describe('SummaryView', () => {
       followUpHariIni: 0,
       followUp7Hari: 0,
       topCocok: [
-        { id: 2, judul: '.NET Developer', perusahaan: 'PT Alpha', skor: 95 },
-        { id: 5, judul: 'Backend Engineer', perusahaan: 'PT Beta', skor: 91 },
+        { id: 2, judul: '.NET Developer', perusahaan: 'PT Alpha', skor: 95, status: 'new' },
+        { id: 5, judul: 'Backend Engineer', perusahaan: 'PT Beta', skor: 91, status: 'applied' },
       ],
     };
     vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
@@ -479,6 +479,9 @@ describe('SummaryView', () => {
     expect(screen.getByText('95')).toBeInTheDocument();
     expect(screen.getByText('Backend Engineer')).toBeInTheDocument();
     expect(screen.getByText('91')).toBeInTheDocument();
+    // Status badge per top match: Baru (new) & Dilamar (applied).
+    expect(screen.getAllByText('Baru').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Dilamar')).toBeInTheDocument();
   });
 
   it('hides the top-match list when no scored active roles exist', async () => {

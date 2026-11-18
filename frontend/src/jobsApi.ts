@@ -192,6 +192,8 @@ export interface TopOpportunity {
   perusahaan: string;
   /** Fit score 0-100. */
   skor: number;
+  /** Current pipeline status (new/applied/interview/offer/closed). */
+  status: string;
 }
 
 export interface JobsSummary {

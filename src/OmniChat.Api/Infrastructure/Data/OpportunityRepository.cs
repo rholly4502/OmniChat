@@ -211,7 +211,7 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
             .OrderByDescending(r => r.Skor)
             .ThenByDescending(r => r.Ditemukan)
             .Take(3)
-            .Select(r => new TopOpportunity(r.Id, r.Judul, r.Perusahaan, r.Skor!.Value))
+            .Select(r => new TopOpportunity(r.Id, r.Judul, r.Perusahaan, r.Skor!.Value, r.Status))
             .ToList();
 
         return new JobsSummary(

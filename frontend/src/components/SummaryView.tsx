@@ -45,6 +45,15 @@ const PIPELINE_STAGES = [
   { key: 'offer', label: 'Tawaran', className: 'bg-chill-sage' },
 ] as const;
 
+/** Small status badge tone mapping for top-match rows (mirrors the jobs view). */
+const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
+  new: { label: 'Baru', cls: 'bg-chill-accent/15 text-chill-accent border-chill-accent/40' },
+  applied: { label: 'Dilamar', cls: 'bg-chill-sage/15 text-chill-sage border-chill-sage/40' },
+  interview: { label: 'Interview', cls: 'bg-chill-indigo/15 text-chill-indigo border-chill-indigo/40' },
+  offer: { label: 'Tawaran', cls: 'bg-chill-emerald/15 text-chill-emerald border-chill-emerald/40' },
+  closed: { label: 'Tutup', cls: 'bg-chill-red/10 text-chill-muted border-chill-border' },
+};
+
 function Card({ title, glyph, children, tone = 'default' }: {
   title: string; glyph: string; children: ReactNode; tone?: 'default' | 'accent' | 'emerald' | 'red';
 }) {
@@ -302,15 +311,21 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               <div className="h-px bg-chill-surface my-2" aria-hidden="true" />
               <p className="text-xs text-chill-muted mb-2">Top cocok</p>
               <ul className="space-y-1.5">
-                {summary.topCocok.map((t) => (
-                  <li key={t.id} className="flex items-center justify-between gap-2 text-xs">
-                    <span className="truncate text-chill-text">
-                      <span className="font-medium">{t.judul}</span>
-                      <span className="text-chill-muted"> · {t.perusahaan}</span>
-                    </span>
-                    <span className="shrink-0 tabular-nums text-chill-accent">{t.skor}</span>
-                  </li>
-                ))}
+                {summary.topCocok.map((t) => {
+                  const badge = STATUS_BADGE[t.status] ?? { label: t.status, cls: 'bg-chill-surface text-chill-muted border-chill-border' };
+                  return (
+                    <li key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="truncate text-chill-text">
+                        <span className="font-medium">{t.judul}</span>
+                        <span className="text-chill-muted"> · {t.perusahaan}</span>
+                      </span>
+                      <span className="shrink-0 flex items-center gap-2">
+                        <span className={`inline-block border px-1.5 py-0.5 text-xs leading-none ${badge.cls}`}>{badge.label}</span>
+                        <span className="tabular-nums text-chill-accent">{t.skor}</span>
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
