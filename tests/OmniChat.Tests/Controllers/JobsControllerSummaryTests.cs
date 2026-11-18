@@ -21,7 +21,11 @@ public class JobsControllerSummaryTests
         Total: 5,
         FollowUpTerlambat: 1,
         FollowUpHariIni: 1,
-        FollowUp7Hari: 2);
+        FollowUp7Hari: 2,
+        TopCocok: new[]
+        {
+            new TopOpportunity(4, ".NET Developer", "PT Contoh", 88),
+        });
 
     [Fact]
     public async Task Summary_ReturnsOk_WithRepositorySummary()
@@ -36,5 +40,8 @@ public class JobsControllerSummaryTests
         Assert.Equal(5, body.Total);
         Assert.Equal(2, body.PerStatus["applied"]);
         Assert.Equal(2, body.FollowUp7Hari);
+        var top = Assert.Single(body.TopCocok);
+        Assert.Equal(88, top.Skor);
+        Assert.Equal(".NET Developer", top.Judul);
     }
 }

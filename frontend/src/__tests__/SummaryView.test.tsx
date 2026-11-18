@@ -31,6 +31,7 @@ const defaultJobsSummary = {
   followUpTerlambat: 0,
   followUpHariIni: 0,
   followUp7Hari: 0,
+      topCocok: [],
 };
 
 const defaultEventsSummary = {
@@ -112,6 +113,7 @@ describe('SummaryView', () => {
       followUpTerlambat: 0,
       followUpHariIni: 0,
       followUp7Hari: 0,
+      topCocok: [],
     };
     vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
@@ -133,6 +135,7 @@ describe('SummaryView', () => {
       followUpTerlambat: 2,
       followUpHariIni: 0,
       followUp7Hari: 0,
+      topCocok: [],
     };
     vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
@@ -309,6 +312,7 @@ describe('SummaryView', () => {
       followUpTerlambat: 0,
       followUpHariIni: 1,
       followUp7Hari: 2,
+      topCocok: [],
     };
     vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
@@ -430,6 +434,7 @@ describe('SummaryView', () => {
       followUpTerlambat: 0,
       followUpHariIni: 0,
       followUp7Hari: 0,
+      topCocok: [],
     };
     vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
     render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
@@ -450,6 +455,38 @@ describe('SummaryView', () => {
 
     await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
     expect(screen.queryByText('Alur pipeline (aktif)')).not.toBeInTheDocument();
+  });
+
+  it('shows the top-fit active opportunities in the Lowongan card', async () => {
+    const jobsSummary = {
+      perStatus: { new: 2, applied: 1, interview: 0, offer: 0, closed: 0 },
+      total: 3,
+      followUpTerlambat: 0,
+      followUpHariIni: 0,
+      followUp7Hari: 0,
+      topCocok: [
+        { id: 2, judul: '.NET Developer', perusahaan: 'PT Alpha', skor: 95 },
+        { id: 5, judul: 'Backend Engineer', perusahaan: 'PT Beta', skor: 91 },
+      ],
+    };
+    vi.stubGlobal('fetch', fetchStub({ jobsSummary }));
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.getByText('Top cocok')).toBeInTheDocument();
+    expect(screen.getByText('.NET Developer')).toBeInTheDocument();
+    expect(screen.getByText('· PT Alpha')).toBeInTheDocument();
+    expect(screen.getByText('95')).toBeInTheDocument();
+    expect(screen.getByText('Backend Engineer')).toBeInTheDocument();
+    expect(screen.getByText('91')).toBeInTheDocument();
+  });
+
+  it('hides the top-match list when no scored active roles exist', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.queryByText('Top cocok')).not.toBeInTheDocument();
   });
 
 });

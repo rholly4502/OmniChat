@@ -182,6 +182,18 @@ export async function exportOpportunitiesPdf(
  * Pipeline overview as served by `GET /api/jobs/summary`: per-status counts
  * plus follow-up urgency buckets relative to the server's WIB day.
  */
+/** One active opportunity surfaced on the digest as a top match. */
+export interface TopOpportunity {
+  /** Opportunity id. */
+  id: number;
+  /** Job title. */
+  judul: string;
+  /** Company / hiring organization. */
+  perusahaan: string;
+  /** Fit score 0-100. */
+  skor: number;
+}
+
 export interface JobsSummary {
   /** Count of opportunities per pipeline status (key = status name). */
   perStatus: Record<string, number>;
@@ -193,6 +205,8 @@ export interface JobsSummary {
   followUpHariIni: number;
   /** Active-stage follow-ups targeted within the next 7 days. */
   followUp7Hari: number;
+  /** Top 3 active opportunities by fit score, best first. */
+  topCocok: TopOpportunity[];
 }
 
 /** Fetch the pipeline overview (per-status counts + follow-up urgency buckets). */

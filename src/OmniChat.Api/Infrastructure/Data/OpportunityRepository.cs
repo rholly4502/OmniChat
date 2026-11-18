@@ -177,7 +177,16 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         // Only the fields we need — avoids loading full rows for an aggregate.
         var rows = await db.Opportunities
             .AsNoTracking()
-            .Select(o => new { o.Status, o.FollowUpTanggal })
+            .Select(o => new
+            {
+                o.Id,
+                o.Status,
+                o.FollowUpTanggal,
+                o.Skor,
+                o.Judul,
+                o.Perusahaan,
+                o.Ditemukan,
+            })
             .ToListAsync(cancellationToken);
 
         var perStatus = rows
@@ -194,11 +203,23 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
             .Select(d => d!.Value)
             .ToList();
 
+        // Top matches: active (non-closed), scored opportunities, best fit first.
+        // Closed roles are out of the running; unscored rows are not a prioritised
+        // match. Ties break on more recently found first.
+        var topCocok = rows
+            .Where(r => r.Status != "closed" && r.Skor.HasValue)
+            .OrderByDescending(r => r.Skor)
+            .ThenByDescending(r => r.Ditemukan)
+            .Take(3)
+            .Select(r => new TopOpportunity(r.Id, r.Judul, r.Perusahaan, r.Skor!.Value))
+            .ToList();
+
         return new JobsSummary(
             perStatus,
             rows.Count,
             activeFollowUps.Count(d => d < today),
             activeFollowUps.Count(d => d == today),
-            activeFollowUps.Count(d => d > today && d <= today.AddDays(7)));
+            activeFollowUps.Count(d => d > today && d <= today.AddDays(7)),
+            topCocok);
     }
 }

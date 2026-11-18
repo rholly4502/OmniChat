@@ -297,6 +297,23 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               </div>
             </div>
           )}
+          {summary?.topCocok && summary.topCocok.length > 0 && (
+            <div className="pt-1">
+              <div className="h-px bg-chill-surface my-2" aria-hidden="true" />
+              <p className="text-xs text-chill-muted mb-2">Top cocok</p>
+              <ul className="space-y-1.5">
+                {summary.topCocok.map((t) => (
+                  <li key={t.id} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="truncate text-chill-text">
+                      <span className="font-medium">{t.judul}</span>
+                      <span className="text-chill-muted"> · {t.perusahaan}</span>
+                    </span>
+                    <span className="shrink-0 tabular-nums text-chill-accent">{t.skor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
 
         <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">

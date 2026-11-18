@@ -33,7 +33,7 @@ public sealed class OpportunityRepositorySummaryTests : IDisposable
     }
 
     private static Opportunity NewOpportunity(
-        long id, string status, DateOnly? followUp = null) => new()
+        long id, string status, DateOnly? followUp = null, int? skor = null) => new()
     {
         Id = id,
         Judul = $".NET Developer {id}",
@@ -42,6 +42,7 @@ public sealed class OpportunityRepositorySummaryTests : IDisposable
         Tipe = "Kontrak",
         Status = status,
         FollowUpTanggal = followUp,
+        Skor = skor,
         Ditemukan = new DateOnly(2026, 11, 1),
     };
 
@@ -91,5 +92,45 @@ public sealed class OpportunityRepositorySummaryTests : IDisposable
         Assert.Equal(0, summary.FollowUpTerlambat);
         Assert.Equal(0, summary.FollowUpHariIni);
         Assert.Equal(0, summary.FollowUp7Hari);
+        Assert.Empty(summary.TopCocok);
+    }
+
+    [Fact]
+    public async Task Summary_returns_top_scored_active_opportunities()
+    {
+        var today = new DateOnly(2026, 11, 16);
+        await SeedAsync(
+            NewOpportunity(1, "new", skor: 70),
+            NewOpportunity(2, "applied", skor: 95),   // best active
+            NewOpportunity(3, "new", skor: 88),        // second
+            NewOpportunity(4, "interview", skor: 82),  // third
+            NewOpportunity(5, "new", skor: 91),        // would be 2nd, but 3 slots: still included (top3)
+            NewOpportunity(6, "closed", skor: 99),     // excluded: closed
+            NewOpportunity(7, "applied", skor: null)); // excluded: unscored
+
+        var summary = await _repository.JobsSummaryAsync(today, CancellationToken.None);
+
+        // Closed (99) and unscored are excluded; top 3 active by score desc:
+        // 95 (id 2), 91 (id 5), 88 (id 3).
+        var tops = summary.TopCocok;
+        Assert.Equal(3, tops.Count);
+        Assert.Equal(95, tops[0].Skor);
+        Assert.Equal(2, tops[0].Id);
+        Assert.Equal(91, tops[1].Skor);
+        Assert.Equal(5, tops[1].Id);
+        Assert.Equal(88, tops[2].Skor);
+        Assert.Equal(3, tops[2].Id);
+    }
+
+    [Fact]
+    public async Task Summary_top_matches_empty_when_all_closed_or_unscored()
+    {
+        await SeedAsync(
+            NewOpportunity(1, "closed", skor: 90),
+            NewOpportunity(2, "new", skor: null));
+
+        var summary = await _repository.JobsSummaryAsync(new DateOnly(2026, 11, 16), CancellationToken.None);
+
+        Assert.Empty(summary.TopCocok);
     }
 }

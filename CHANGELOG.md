@@ -4,6 +4,22 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P30 — Jobs: top cocok (skor tertinggi) di Ringkasan (backend + frontend)
+
+#### Added
+- Backend `GET /api/jobs/summary` kini mengembalikan `topCocok` — 3 lowongan
+  aktif (non-closed) dengan `skor` tertinggi, diurutkan menurun (imbang diputus
+  oleh yang lebih baru ditemukan). `JobsSummary` diperluas field `TopCocok`
+  (record `TopOpportunity`: id, judul, perusahaan, skor).
+- `OpportunityRepositorySummaryTests`: +2 — top matches memilih skored aktif
+  dan mengeluarkan closed/unscored, serta kosong saat semua closed/unscored.
+  `JobsControllerSummaryTests` diverifikasi field baru.
+- Frontend: kartu Lowongan Ringkasan menampilkan daftar "Top cocok" (judul ·
+  perusahaan, skor) saat ada lowongan aktif yang diskor; disembunyikan bila
+  kosong. Interface `JobsSummary` diperluas `topCocok`.
+- Tests frontend: +2 SummaryView (render daftar top cocok; sembunyikan saat
+  kosong). Backend 768, tsc -b, vitest SummaryView 33 + a11y, oxlint hijau.
+
 ### P29 — Jobs: alur pipeline (funnel) di Ringkasan (frontend)
 
 #### Added
