@@ -25,7 +25,7 @@ public interface IOpportunityRepository
     /// Sets the pipeline status of one opportunity. Returns false when the id is
     /// unknown (404). The status value must already be normalized by the caller.
     /// </summary>
-    Task<bool> UpdateStatusAsync(long id, string status, CancellationToken cancellationToken);
+    Task<bool> UpdateStatusAsync(long id, string status, DateOnly today, CancellationToken cancellationToken);
 
     /// <summary>
     /// Sets or clears the follow-up target date of one opportunity. Returns false

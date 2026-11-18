@@ -40,6 +40,21 @@ function statusLabel(status: string): string {
   }
 }
 
+function formatTanggalSingkat(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+}
+
+/** Chips of the pipeline-stage dates (kapan masing-masing tahap pertama kali dicapai). */
+function stageDates(o: Opportunity): { label: string; tanggal: string }[] {
+  const out: { label: string; tanggal: string }[] = [];
+  if (o.dilamarPada) out.push({ label: 'Dilamar', tanggal: o.dilamarPada });
+  if (o.interviewPada) out.push({ label: 'Interview', tanggal: o.interviewPada });
+  if (o.tawaranPada) out.push({ label: 'Tawaran', tanggal: o.tawaranPada });
+  return out;
+}
+
 function groupOf(o: Opportunity): string {
   const t = (o.tipe || '').trim().toLowerCase();
   if (t.includes('full') || t === 'fte') return 'FTE';
@@ -1111,6 +1126,14 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
                   </div>
                 )}
                 <div className="mt-3 border-t border-chill-border pt-2 flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {stageDates(o).map((s) => (
+                    <span
+                      key={s.label}
+                      className="inline-flex items-center gap-1 rounded-none border border-chill-border bg-chill-elevated px-2 py-0.5 text-xs text-chill-muted"
+                    >
+                      {s.label} {formatTanggalSingkat(s.tanggal)}
+                    </span>
+                  ))}
                   {needsFollowUp(o) && (
                     <span
                       className="inline-flex items-center gap-1 rounded-none border border-chill-red/50 bg-chill-red/15 px-2 py-0.5 text-xs font-semibold text-chill-red"

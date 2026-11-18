@@ -258,11 +258,17 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<DateOnly>("Ditemukan")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateOnly?>("DilamarPada")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateOnly?>("FollowUpTanggal")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Gaji")
                         .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("InterviewPada")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Judul")
@@ -293,6 +299,9 @@ namespace OmniChat.Api.Infrastructure.Data.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly?>("TawaranPada")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Tipe")

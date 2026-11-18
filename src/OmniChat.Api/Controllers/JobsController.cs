@@ -74,7 +74,7 @@ public sealed class JobsController(
             return BadRequest(new { message = $"Status '{request.Status}' tidak dikenal." });
         }
 
-        var updated = await repository.UpdateStatusAsync(id, request.Status, cancellationToken);
+        var updated = await repository.UpdateStatusAsync(id, request.Status, TodayWib(), cancellationToken);
         return updated ? NoContent() : NotFound(new { message = $"Lowongan {id} tidak ditemukan." });
     }
 

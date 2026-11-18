@@ -48,4 +48,12 @@ public class Opportunity
 
     /// <summary>Source dedup id from the agent's seen-jobs.json; unique when present.</summary>
     public string? SourceId { get; set; }
+    /// <summary>Date (WIB) this opportunity was moved to pipeline status applied.</summary>
+    public DateOnly? DilamarPada { get; set; }
+
+    /// <summary>Date (WIB) this opportunity was moved to pipeline status interview.</summary>
+    public DateOnly? InterviewPada { get; set; }
+
+    /// <summary>Date (WIB) this opportunity was moved to pipeline status offer.</summary>
+    public DateOnly? TawaranPada { get; set; }
 }

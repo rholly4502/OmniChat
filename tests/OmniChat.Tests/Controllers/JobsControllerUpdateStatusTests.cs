@@ -41,6 +41,8 @@ public class JobsControllerUpdateStatusTests
         Assert.IsType<NoContentResult>(result);
         var updated = await db.Opportunities.Where(o => o.Id == id).Select(o => o.Status).FirstAsync();
         Assert.Equal("applied", updated);
+        var dilamar = await db.Opportunities.Where(o => o.Id == id).Select(o => o.DilamarPada).FirstAsync();
+        Assert.NotNull(dilamar);
         db.Dispose(); if (File.Exists(path)) File.Delete(path);
     }
 

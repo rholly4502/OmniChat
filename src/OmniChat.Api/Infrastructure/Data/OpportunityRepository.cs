@@ -94,7 +94,7 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
     }
 
     public async Task<bool> UpdateStatusAsync(
-        long id, string status, CancellationToken cancellationToken)
+        long id, string status, DateOnly today, CancellationToken cancellationToken)
     {
         var opp = await db.Opportunities
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
@@ -104,6 +104,21 @@ public sealed class OpportunityRepository(ChatDbContext db) : IOpportunityReposi
         }
 
         opp.Status = status;
+        // Stamp the date each pipeline stage was first reached (WIB), without
+        // overwriting an earlier date when the card moves backward or sideways.
+        switch (status)
+        {
+            case "applied" when opp.DilamarPada is null:
+                opp.DilamarPada = today;
+                break;
+            case "interview" when opp.InterviewPada is null:
+                opp.InterviewPada = today;
+                break;
+            case "offer" when opp.TawaranPada is null:
+                opp.TawaranPada = today;
+                break;
+        }
+
         await db.SaveChangesAsync(cancellationToken);
         return true;
     }

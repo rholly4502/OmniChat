@@ -28,6 +28,9 @@ export interface Opportunity {
   ditemukan: string; // YYYY-MM-DD (WIB)
   sourceId?: string | null;
   skor?: number | null;
+  dilamarPada?: string | null; // YYYY-MM-DD (WIB) — first reached "applied"
+  interviewPada?: string | null; // YYYY-MM-DD (WIB) — first reached "interview"
+  tawaranPada?: string | null; // YYYY-MM-DD (WIB) — first reached "offer"
 }
 
 /** Pipeline filter values shown to the user. */

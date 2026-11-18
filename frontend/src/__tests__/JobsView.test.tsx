@@ -77,6 +77,36 @@ function openTools() {
 
 
 describe('JobsView', () => {
+  it('renders pipeline-stage date chips when present', () => {
+    mockState({
+      opportunities: [
+        {
+          ...base,
+          id: 5,
+          judul: 'Stage Role',
+          perusahaan: 'Stage Corp',
+          tipe: 'FTE',
+          status: 'interview',
+          dilamarPada: '2026-11-12',
+          interviewPada: '2026-11-17',
+        },
+      ],
+    });
+    render(<JobsView />);
+    openTools();
+    expect(screen.getByText('Dilamar 12 Nov')).toBeTruthy();
+    expect(screen.getByText('Interview 17 Nov')).toBeTruthy();
+  });
+
+  it('hides stage-date chips when none are present', () => {
+    mockState({ opportunities: [base] });
+    render(<JobsView />);
+    openTools();
+    expect(screen.queryByText('Dilamar 12 Nov')).toBeNull();
+    expect(screen.queryByText('Interview 17 Nov')).toBeNull();
+    expect(screen.queryAllByText(/^Dilamar /)).toHaveLength(0);
+  });
+
   it('groups opportunities by type with labeled headers and counts', () => {
     mockState();
     render(<JobsView />);
