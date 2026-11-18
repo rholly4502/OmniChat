@@ -23,6 +23,8 @@ export interface SummaryViewProps {
   onOpenChat?: () => void;
   /** When provided, the Pengeluaran card shows a button that jumps to the Expenses view. */
   onOpenExpenses?: () => void;
+  /** When provided, the Lowongan card shows a button that jumps to the Jobs view. */
+  onOpenJobs?: () => void;
 }
 
 /** Pixel glyph set for the four summary cards. */
@@ -129,7 +131,7 @@ function monthCompare(
  * monthly expenses, job pipeline, and active promo events. Each card is a
  * read-only digest that links back into its full view via the sidebar tabs.
  */
-export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents, onOpenChat, onOpenExpenses }: SummaryViewProps) {
+export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvents, onOpenChat, onOpenExpenses, onOpenJobs }: SummaryViewProps) {
   const expenses = useExpenses(apiKey);
   const jobs = useJobsSummary(apiKey);
   const events = useEventsSummary(apiKey);
@@ -353,9 +355,19 @@ export function SummaryView({ apiKey, usageSummary, onOpenFollowUps, onOpenEvent
               </ul>
             </div>
           )}
+          {onOpenJobs ? (
+            <button
+              type="button"
+              onClick={onOpenJobs}
+              className="w-full flex items-center justify-between gap-2 rounded-none text-left bg-transparent min-h-[44px] px-0 transition hover:bg-chill-surface/60 active:translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-chill-accent/60"
+            >
+              <span className="text-xs text-chill-muted">Lihat semua lowongan</span>
+              <span aria-hidden="true" className="text-sm font-medium text-chill-text">→</span>
+            </button>
+          ) : null}
         </Card>
 
-        <Card title="Promo / Event" glyph={GLYPHS.events} tone="emerald">
+        <Card title="Promo / Event"  glyph={GLYPHS.events} tone="emerald">
           <StatRow label="Total terdokumentasi" value={String(eventsSummary?.total ?? 0)} />
           <StatRow label="Sumber unik" value={String(eventsSummary?.sumberUnik ?? 0)} />
           {hasExpiringSoon && eventsSummary && (

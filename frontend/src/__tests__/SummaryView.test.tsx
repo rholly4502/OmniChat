@@ -322,6 +322,32 @@ describe('SummaryView', () => {
     expect(screen.getByText('Dalam 7 hari').parentElement).toHaveTextContent('2');
   });
 
+  it('renders the Lihat semua lowongan button and triggers navigation when clicked', async () => {
+    const onOpenJobs = vi.fn();
+    vi.stubGlobal('fetch', fetchStub());
+    render(
+      <SummaryView
+        apiKey="secret"
+        usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }}
+        onOpenJobs={onOpenJobs}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    const jobsBtn = screen.getByRole('button', { name: /Lihat semua lowongan/ });
+    expect(jobsBtn).toBeInTheDocument();
+    fireEvent.click(jobsBtn);
+    expect(onOpenJobs).toHaveBeenCalledTimes(1);
+  });
+
+  it('omits the Lihat semua lowongan button when onOpenJobs is not passed', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    render(<SummaryView apiKey="secret" usageSummary={{ conversationCount: 0, totalTokens: 0, byModel: {} }} />);
+
+    await waitFor(() => expect(screen.getByText('Lowongan')).toBeInTheDocument());
+    expect(screen.queryByRole('button', { name: /Lihat semua lowongan/ })).not.toBeInTheDocument();
+  });
+
   it('shows promo expiry urgency buckets from the summary endpoint', async () => {
     const eventsSummary = { total: 5, sumberUnik: 2, berakhirHariIni: 1, besokBerakhir: 1, dalam7Hari: 1, sudahBerakhir: 0, totalDipakai: 1, sisaAktif: 4 };
     vi.stubGlobal('fetch', fetchStub({ eventsSummary }));

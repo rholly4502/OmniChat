@@ -472,6 +472,11 @@ export default function App() {
     selectView('expenses');
   }
 
+  /** Jump from the Ringkasan "Lowongan" card into the Jobs view. */
+  function openJobs() {
+    selectView('jobs');
+  }
+
   /** Jump from the Ringkasan "Chat" card into the Chat view. */
   function openChat() {
     selectView('chat');
@@ -580,7 +585,7 @@ export default function App() {
         />
 
         {activeView === 'ringkasan' ? (
-          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} onOpenEvents={openEvents} onOpenChat={openChat} onOpenExpenses={openExpenses} />
+          <SummaryView apiKey={apiKey} usageSummary={usageSummary} onOpenFollowUps={openJobFollowUps} onOpenEvents={openEvents} onOpenChat={openChat} onOpenExpenses={openExpenses} onOpenJobs={openJobs} />
         ) : activeView === 'expenses' ? (
           <ExpensesView apiKey={apiKey} />
         ) : activeView === 'jobs' ? (
