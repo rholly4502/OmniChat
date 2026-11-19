@@ -101,4 +101,38 @@ public sealed class ExpensePdfReportTests
         Assert.DoesNotContain("🌶️", text);
         Assert.Contains("nasi goreng siang ???", text);
     }
+
+    [Fact]
+    public void Build_withBudgetRendersRingkasanBlock()
+    {
+        var bytes = ExpensePdfReport.Build("2026-10", SampleRows,
+            new ExpensePdfReport.ExpenseBudgetSummary(1_500_000, 1_180_000, 500_000, 200_000, 3_250_000));
+        var text = Encoding.ASCII.GetString(bytes);
+
+        Assert.Contains("Ringkasan bulan", text);
+        Assert.Contains("Anggaran: 1,500,000", text);
+        Assert.Contains("Sisa anggaran: 1,180,000", text);
+        Assert.Contains("Target nabung: 500,000", text);
+        Assert.Contains("Ditabung bulan ini: 200,000", text);
+        Assert.Contains("Dana PC terkumpul: 3,250,000", text);
+
+        // Transactions and grand total still present.
+        Assert.Contains("Warteg", text);
+        Assert.Contains("Total", text);
+        Assert.Contains("320,000", text);
+    }
+
+    [Fact]
+    public void Build_withNullBudgetFieldsOmitsThem()
+    {
+        // A month without a target: Anggaran/Sisa/Target are null, so only the
+        // always-present fund row is printed.
+        var bytes = ExpensePdfReport.Build("2026-10", SampleRows,
+            new ExpensePdfReport.ExpenseBudgetSummary(null, null, null, 0, 1_250_000));
+        var text = Encoding.ASCII.GetString(bytes);
+
+        Assert.DoesNotContain("Anggaran:", text);
+        Assert.DoesNotContain("Target nabung:", text);
+        Assert.Contains("Dana PC terkumpul: 1,250,000", text);
+    }
 }

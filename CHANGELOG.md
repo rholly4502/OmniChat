@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P36 — Laporan bulanan: PDF sertakan ringkasan anggaran & nabung (backend)
+
+#### Added
+- `GET /api/expenses/export/pdf` kini mencetak blok "Ringkasan bulan" di atas
+  tabel transaksi — anggaran, sisa anggaran, target nabung, ditabung bulan ini,
+  dan dana PC terkumpul (kumulatif). Bulan tanpa target melewati baris yang null,
+  sehingga laporan tetap rapi. Laporan cetak kini mengikat transaksi ke anggaran
+  bulan itu dan ke dana goal part PC.
+- Tests: `ExpensePdfReportTests` +2 (blok ringkasan tampil dengan nilai terformat;
+  field null dihilangkan). Backend 778 hijau.
+
 ### P35 — UI: persistensi state pencarian & bulan yang konsisten (frontend)
 
 #### Added

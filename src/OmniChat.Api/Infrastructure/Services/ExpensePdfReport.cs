@@ -17,9 +17,21 @@ public static class ExpensePdfReport
     private const int FontSize = 9;
     private const int LineHeight = 14;
 
-    public static byte[] Build(string month, IReadOnlyList<Expense> rows)
+    /// <summary>
+    /// Optional monthly budget/savings figures printed as a "Ringkasan bulan"
+    /// block above the transaction table. Null fields are omitted so a report
+    /// for a month without a target still renders cleanly.
+    /// </summary>
+    public sealed record ExpenseBudgetSummary(
+        long? Anggaran,
+        long? SisaAnggaran,
+        long? TargetNabung,
+        long Ditabung,
+        long DanaNabungKumulatif);
+
+    public static byte[] Build(string month, IReadOnlyList<Expense> rows, ExpenseBudgetSummary? budget = null)
     {
-        var content = BuildContent(month, rows);
+        var content = BuildContent(month, rows, budget);
         var contentBytes = Encoding.ASCII.GetBytes(content);
 
         var objects = new List<string>
@@ -56,7 +68,7 @@ public static class ExpensePdfReport
         return Encoding.ASCII.GetBytes(sb.ToString());
     }
 
-    private static string BuildContent(string month, IReadOnlyList<Expense> rows)
+    private static string BuildContent(string month, IReadOnlyList<Expense> rows, ExpenseBudgetSummary? budget)
     {
         var sb = new StringBuilder();
         var y = PageHeight - 42;
@@ -64,6 +76,31 @@ public static class ExpensePdfReport
         // Title.
         sb.Append(Text(50, y, 13, $"Laporan Pengeluaran {month}"));
         y -= 22;
+
+        // Budget/savings digest (optional). Printed before the table so a printed
+        // report ties the transactions to the month's budget and the PC-goal fund.
+        if (budget is not null)
+        {
+            sb.Append(Text(50, y, 10, "Ringkasan bulan"));
+            y -= 16;
+
+            if (budget.Anggaran is not null)
+            {
+                sb.Append(Text(50, y, FontSize, $"Anggaran: {budget.Anggaran:N0}"));
+                sb.Append(Text(300, y, FontSize, $"Sisa anggaran: {budget.SisaAnggaran:N0}"));
+                y -= LineHeight;
+            }
+
+            if (budget.TargetNabung is not null)
+            {
+                sb.Append(Text(50, y, FontSize, $"Target nabung: {budget.TargetNabung:N0}"));
+                sb.Append(Text(300, y, FontSize, $"Ditabung bulan ini: {budget.Ditabung:N0}"));
+                y -= LineHeight;
+            }
+
+            sb.Append(Text(50, y, FontSize, $"Dana PC terkumpul: {budget.DanaNabungKumulatif:N0}"));
+            y -= 20;
+        }
 
         // Column headers (bold via larger size is skipped; base font only).
         sb.Append(Text(50, y, FontSize, "Tanggal"));

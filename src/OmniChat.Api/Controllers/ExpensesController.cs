@@ -301,7 +301,21 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
         var rows = ApplyExportFilter(
             await repository.ListAllForMonthAsync(month, cancellationToken), kategori, q);
-        var bytes = ExpensePdfReport.Build(month, rows);
+
+        // Print the month's budget/savings digest on the report so a PDF ties the
+        // transactions to the anggaran, target nabung, and the PC-goal fund.
+        var (total, perKategori) = await repository.GetTotalsAsync(month, cancellationToken);
+        var budgetTarget = await repository.GetTargetAsync(month, cancellationToken);
+        var danaNabungKumulatif = await repository.GetCumulativeNabungAsync(month, cancellationToken);
+        var ditabung = perKategori.TryGetValue("Nabung", out var nabung) ? nabung : 0L;
+        var budget = new ExpensePdfReport.ExpenseBudgetSummary(
+            budgetTarget?.Anggaran,
+            budgetTarget is null ? null : budgetTarget.Anggaran - total,
+            budgetTarget?.TargetNabung,
+            ditabung,
+            danaNabungKumulatif);
+
+        var bytes = ExpensePdfReport.Build(month, rows, budget);
         return File(bytes, "application/pdf", $"expenses-{month}.pdf");
     }
 
