@@ -364,7 +364,7 @@ export function ExpensesView({ apiKey }: ExpensesViewProps) {
     setSelectedDay(null);
   };
   const showSummary = summary !== null;
-  const [allTime, setAllTime] = useState(false);
+  const [allTime, setAllTime] = usePersistedState('expenses.allTime', false);
 
   return (
     <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overscroll-y-contain text-chill-text pixel-grid-page pixel-reveal">

@@ -4,6 +4,17 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P39 — UI: pertahankan toggle "Semua Waktu" di view Pengeluaran (frontend)
+
+#### Added
+- Toggle rentang waktu **Semua Waktu** (vs **Bulan Ini**) pada ringkasan Sisa
+  Uang kini bertahan di `localStorage` (`expenses.allTime`) dan pulih saat
+  reload/sesuai — menutup satu-satunya kontrol scope-view Pengeluaran yang
+  belum ter-persist, sehingga pola persistensi P34/P35/P38 kini seragam di
+  ketiga view data.
+- Tests: `ExpensesView.test.tsx` +1 (toggle tersimpan & pulih setelah remount).
+  Frontend vitest 50 hijau; `tsc -b` & oxlint bersih.
+
 ### P38 — UI: persist filter aplikasi pada view Events (frontend)
 
 #### Added

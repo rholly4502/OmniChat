@@ -45,6 +45,7 @@ function fetchStub() {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  window.localStorage.clear();
 });
 
 /** Today's WIB date as YYYY-MM-DD (mirrors the ExpensesView default). */
@@ -1084,5 +1085,30 @@ describe('ExpensesView budget editor', () => {
     await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
 
     expect((screen.getByLabelText('Bulan pengeluaran') as HTMLInputElement).value).toBe('2026-09');
+  });
+
+  it('persists the "Semua Waktu" toggle across reloads', async () => {
+    const sisa = { totalPemasukan: 7400000, totalPengeluaran: 372000, sisaUang: 7028000, totalNabung: 500000 };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url.includes('/summary')
+          ? jsonResponse(summaryPayload)
+          : url.includes('/sisa')
+            ? jsonResponse(sisa)
+            : jsonResponse(pagePayload),
+      ),
+    );
+    const first = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Semua Waktu' }));
+    await waitFor(() => expect(window.localStorage.getItem('expenses.allTime')).toBe(JSON.stringify(true)));
+
+    first.unmount();
+
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pemasukan')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Semua Waktu' })).toHaveAttribute('aria-pressed', 'true');
   });
 });
