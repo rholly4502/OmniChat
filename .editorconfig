@@ -1,8 +1,21 @@
 root = true
 
 [*.cs]
+# Master lint rules — DL100 & DL101
 dotnet_diagnostic.DL100.severity = error
 dotnet_diagnostic.DL101.severity = error
+
+# Step 2 — Fondasi Linter Terpusat.
+# CA2007/CA1515/CA1062 adalah noise untuk aplikasi ASP.NET Core (bukan library):
+# ConfigureAwait tidak relevan di kode app, tipe publik tidak bisa internal tanpa
+# memecah DI, dan validasi null parameter framework sudah ditangani runtime.
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1515.severity = none
+dotnet_diagnostic.CA1062.severity = none
+
+# Kategori penting dinaikkan jadi error — menemukan kode yang berisiko.
+dotnet_analyzer_diagnostic.category-Security.severity = error
+dotnet_analyzer_diagnostic.category-Reliability.severity = error
 
 # Lokasi test: DL100/DL101 dimatikan — method test xUnit tidak meneruskan
 # CancellationToken; menambah CT di test tidak memberi nilai (test runner tidak
@@ -10,3 +23,7 @@ dotnet_diagnostic.DL101.severity = error
 [tests/**/*.cs]
 dotnet_diagnostic.DL100.severity = none
 dotnet_diagnostic.DL101.severity = none
+# Test juga dibebaskan dari aturan Security/Reliability yang menuntut konteks
+# produksi (mis. CA3062 / CA5350 di fixture & mock).
+dotnet_analyzer_diagnostic.category-Security.severity = none
+dotnet_analyzer_diagnostic.category-Reliability.severity = none

@@ -1,8 +1,27 @@
 <Project>
+  <!-- ============================================================
+       Fondasi Linter Terpusat — Step 2
+       Berlaku otomatis untuk semua project di bawah repo ini
+       ============================================================ -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- latest-recommended: set default analyzer yang direkomendasikan MS.
+         (Untuk latest-all + triage via .editorconfig, bisa di-override.) -->
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
   <!-- LINT MASTER (shared): analyzer DL100/DL101 dari /root/lint-rules.
        Edit di /root/lint-rules langsung berdampak ke semua repo yang me-reference ini. -->
   <ItemGroup>
     <ProjectReference Include="/root/lint-rules/LintRuleDemo.Analyzers/LintRuleDemo.Analyzers.csproj"
                       OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <!-- NuGet analyzers tambahan (PrivateAssets agar tidak bocor ke konsumen). -->
+  <ItemGroup>
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" PrivateAssets="all" />
+    <PackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
   </ItemGroup>
 </Project>
