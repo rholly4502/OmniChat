@@ -4,6 +4,20 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P37 — Events: ekspor CSV/PDF hormati filter "Sembunyikan yang sudah dipakai" (backend + frontend)
+
+#### Added
+- Endpoint `GET /api/events/export` kini menerima parameter `hideUsed=true` dan
+  menghapus promo yang sudah dipakai/diklaim dari hasil CSV maupun PDF — selaras
+  dengan toggle di UI Events yang sebelumnya hanya memengaruhi tampilan layar.
+- Frontend: `exportEventsCsv`/`exportEventsPdf` meneruskan `hideUsed`; tombol
+  ekspor di `EventsView` kini menghasilkan baris persis yang terlihat di layar
+  (mengikuti toggle "Sembunyikan yang sudah dipakai").
+- Tests: `EventsControllerExportTests` +2 (sembunyikan/simpan yang dipakai),
+  `EventsView.test.tsx` +2 (CSV & PDF meneruskan `hideUsed`). Backend 780 hijau,
+  frontend vitest 183 hijau.
+
+
 ### P36 — Laporan bulanan: PDF sertakan ringkasan anggaran & nabung (backend)
 
 #### Added
