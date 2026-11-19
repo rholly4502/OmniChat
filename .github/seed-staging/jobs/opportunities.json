@@ -839,5 +839,29 @@
     "status": "new",
     "ditemukan": "2026-11-18",
     "skor": 71
+  },
+  {
+    "id": "008d39da2d",
+    "judul": "Contract Software Developer (C# / .NET / Full Stack)",
+    "perusahaan": "Decision Software (via Upwork)",
+    "lokasi": "Remote Worldwide",
+    "tipe": "Kontrak/Freelance (hourly, <30 jam/mgg)",
+    "gaji": "$15-32/jam",
+    "link": "https://www.upwork.com/freelance-jobs/apply/Contract-Software-Developer-NET-Full-Stack_~022122433010770122382/",
+    "catatan": "Kontrak remote worldwide termasuk offshore/Indonesia; <30 jam/mgg (ramah part-time); stack C#/.NET8+/ASP.NET MVC + SQL Server lengkap; level intermediate; employer langsung di Upwork (escrow). Quick-win pelengkap/pengganti.",
+    "status": "new",
+    "ditemukan": "2026-11-19"
+  },
+  {
+    "id": "48ce318079",
+    "judul": "Junior .NET Programmer",
+    "perusahaan": "Trinerva (subsidiary RES Malaysia)",
+    "lokasi": "Kuala Lumpur (onsite MY)",
+    "tipe": "FTE",
+    "gaji": "omit",
+    "link": "https://trinerva.com/junior-net-programmer",
+    "catatan": "Level 1-2 th pas; stack C#/.NET + SQL Server + ASP.NET inti; employer langsung (web perusahaan), lamar via email; onsite MY perlu hak kerja Malaysia.",
+    "status": "new",
+    "ditemukan": "2026-11-19"
   }
 ]
