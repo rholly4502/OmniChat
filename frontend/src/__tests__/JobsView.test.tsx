@@ -829,4 +829,18 @@ describe('JobsView sort control', () => {
     fireEvent.change(screen.getByLabelText('Urutkan'), { target: { value: 'followup' } });
     expect(titles()).toEqual(['Alpha Role', 'Delta Role', 'Milo Role']);
   });
+
+  it('persists the search query across reloads', () => {
+    mockState();
+    const first = render(<JobsView />);
+    openTools();
+    fireEvent.change(screen.getByLabelText('Cari lowongan'), { target: { value: 'blazor' } });
+    expect(window.localStorage.getItem('jobs.query')).toBe(JSON.stringify('blazor'));
+
+    first.unmount();
+    mockState();
+    render(<JobsView />);
+    openTools();
+    expect((screen.getByLabelText('Cari lowongan') as HTMLInputElement).value).toBe('blazor');
+  });
 });

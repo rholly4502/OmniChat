@@ -31,8 +31,8 @@ export interface UseExpensesResult {
  * Loads the Pengeluaran summary and all transaction pages for a month. Re-fetches
  * when the month, API key, or a manual `reload()` changes.
  */
-export function useExpenses(apiKey?: string): UseExpensesResult {
-  const [month, setMonth] = useState(currentMonthKey);
+export function useExpenses(apiKey?: string, initialMonth?: string): UseExpensesResult {
+  const [month, setMonth] = useState(initialMonth ?? currentMonthKey);
   const [summary, setSummary] = useState<ExpenseSummary | null>(null);
   const [sisa, setSisa] = useState<ExpenseSisa | null>(null);
   const [items, setItems] = useState<ExpenseItem[]>([]);

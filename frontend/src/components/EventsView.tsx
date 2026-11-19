@@ -57,7 +57,7 @@ function wibToday(): string {
 export function EventsView({ apiKey }: EventsViewProps) {
   const { events, loading, error, appFilter, setAppFilter, reload, updatingId, updateDipakai } = useEvents(apiKey);
   const [open, setOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = usePersistedState('events.query', '');
   const [hideExpired, setHideExpired] = usePersistedState('events.hideExpired', false);
   const [hideUsed, setHideUsed] = usePersistedState('events.hideUsed', false);
   const [exportError, setExportError] = useState('');

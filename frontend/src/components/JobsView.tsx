@@ -261,7 +261,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [paketConfirmedById, setPaketConfirmedById] = useState<Record<number, boolean>>({});
   const [exportError, setExportError] = useState('');
   const [cvMenuOpen, setCvMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = usePersistedState('jobs.query', '');
   const [sortBy, setSortBy] = usePersistedState<SortKey>('jobs.sortBy', 'default');
   const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
   const [showForm, setShowForm] = useState(false);

@@ -124,7 +124,11 @@ function HeaderDivider() {
 
 /** The Pengeluaran page: month picker, summary cards, per-category totals, transactions. */
 export function ExpensesView({ apiKey }: ExpensesViewProps) {
-  const { month, setMonth, summary, sisa, items, total, loading, error, reload } = useExpenses(apiKey);
+  const [persistedMonth, setPersistedMonth] = usePersistedState('expenses.month', '');
+  const { month, setMonth, summary, sisa, items, total, loading, error, reload } = useExpenses(apiKey, persistedMonth || undefined);
+  useEffect(() => {
+    if (month) setPersistedMonth(month);
+  }, [month, setPersistedMonth]);
   const trend = useExpenseTrend(apiKey);
 
   const [exporting, setExporting] = useState(false);

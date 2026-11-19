@@ -1070,4 +1070,19 @@ describe('ExpensesView budget editor', () => {
     expect((screen.getByPlaceholderText('Cari transaksi…') as HTMLInputElement).value).toBe('warteg');
     expect((screen.getByLabelText('Filter kategori') as HTMLSelectElement).value).toBe('Makan');
   });
+
+  it('persists the viewed month across reloads', async () => {
+    vi.stubGlobal('fetch', fetchStub());
+    const first = render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    fireEvent.change(screen.getByLabelText('Bulan pengeluaran'), { target: { value: '2026-09' } });
+    await waitFor(() => expect(window.localStorage.getItem('expenses.month')).toBe(JSON.stringify('2026-09')));
+
+    first.unmount();
+    render(<ExpensesView apiKey="secret" />);
+    await waitFor(() => expect(screen.getByText('Total Pengeluaran')).toBeInTheDocument());
+
+    expect((screen.getByLabelText('Bulan pengeluaran') as HTMLInputElement).value).toBe('2026-09');
+  });
 });

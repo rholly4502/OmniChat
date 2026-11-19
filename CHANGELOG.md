@@ -4,6 +4,21 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P35 — UI: persistensi state pencarian & bulan yang konsisten (frontend)
+
+#### Added
+- Lengkapi pola persistensi P32/P34 secara seragam di ketiga view utama:
+  - Lowongan: teks pencarian (`Cari lowongan…`) kini bertahan di `localStorage`
+    (`jobs.query`) dan pulih saat reload — selaras dengan filter status/tipe/tier.
+  - Event: teks pencarian (`Cari promo…`) kini bertahan (`events.query`) dan pulih.
+  - Pengeluaran: bulan aktif di month-picker kini bertahan (`expenses.month`) dan
+    pulih, sehingga review bulan sebelumnya tidak hilang saat reload. Ringkasan
+    tetap selalu menampilkan bulan berjalan (pakai `useExpenses(apiKey)` tanpa
+    `initialMonth`).
+- Tests: `JobsView.test.tsx` +1, `EventsView.test.tsx` +1 (pencarian ter-persist &
+  pulih setelah remount), `ExpensesView.test.tsx` +1 (bulan ter-persist & pulih);
+  tsc -b, oxlint, vitest 183 hijau.
+
 ### P34 — UI: simpan filter Cari & kategori Pengeluaran (frontend)
 
 #### Added

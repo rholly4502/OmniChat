@@ -649,6 +649,18 @@ describe('EventsView hide-expired toggle', () => {
     expect(btn.getAttribute('aria-pressed')).toBe('true');
     expect(btn.className).toContain('min-h-[44px]');
   });
+
+  it('persists the search query across reloads', () => {
+    mockState();
+    const first = render(<EventsView />);
+    fireEvent.change(screen.getByLabelText('Cari event'), { target: { value: 'grab' } });
+    expect(window.localStorage.getItem('events.query')).toBe(JSON.stringify('grab'));
+
+    first.unmount();
+    mockState();
+    render(<EventsView />);
+    expect((screen.getByLabelText('Cari event') as HTMLInputElement).value).toBe('grab');
+  });
 });
 
 describe('EventsView urgency ordering', () => {
