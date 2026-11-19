@@ -1,0 +1,8 @@
+<Project>
+  <!-- LINT MASTER (shared): analyzer DL100/DL101 dari /root/lint-rules.
+       Edit di /root/lint-rules langsung berdampak ke semua repo yang me-reference ini. -->
+  <ItemGroup>
+    <ProjectReference Include="/root/lint-rules/LintRuleDemo.Analyzers/LintRuleDemo.Analyzers.csproj"
+                      OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>
