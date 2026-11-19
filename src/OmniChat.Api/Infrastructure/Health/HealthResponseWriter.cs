@@ -11,6 +11,8 @@ namespace OmniChat.Api.Infrastructure.Health;
 /// </summary>
 public static class HealthResponseWriter
 {
+    // HealthResponseWriter delegate (ASP.NET health check) mematok signature; CT disalurkan via context.RequestAborted.
+    #pragma warning disable DL100
     public static async Task WriteAsync(HttpContext context, HealthReport report)
     {
         var startTime = context.RequestServices.GetService<ServiceStartTime>();
@@ -28,6 +30,7 @@ public static class HealthResponseWriter
         };
 
         context.Response.ContentType = "application/json";
-        await context.Response.WriteAsJsonAsync(payload);
+        await context.Response.WriteAsJsonAsync(payload, context.RequestAborted);
     }
+    #pragma warning restore DL100
 }

@@ -19,6 +19,8 @@ public class RequestLoggingMiddleware
         _logger = logger;
     }
 
+    // ASP.NET Core middleware contract: signature dipatok; CT via context.RequestAborted.
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -38,4 +40,5 @@ public class RequestLoggingMiddleware
                 context.TraceIdentifier);
         }
     }
+    #pragma warning restore DL100
 }

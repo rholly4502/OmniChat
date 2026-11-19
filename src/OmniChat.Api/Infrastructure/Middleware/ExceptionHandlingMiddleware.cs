@@ -15,6 +15,8 @@ public sealed class ExceptionHandlingMiddleware
         _logger = logger;
     }
 
+    // ASP.NET Core middleware contract: signature dipatok; CT via context.RequestAborted (dipakai di WriteAsync).
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         try
@@ -50,4 +52,5 @@ public sealed class ExceptionHandlingMiddleware
                 context.RequestAborted);
         }
     }
+    #pragma warning restore DL100
 }

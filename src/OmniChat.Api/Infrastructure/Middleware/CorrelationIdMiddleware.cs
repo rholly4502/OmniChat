@@ -19,6 +19,8 @@ public class CorrelationIdMiddleware
         _logger = logger;
     }
 
+    // ASP.NET Core middleware contract: signature dipatok; CT via context.RequestAborted.
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         var correlationId = context.Request.Headers.TryGetValue(HeaderName, out var incoming)
@@ -34,4 +36,5 @@ public class CorrelationIdMiddleware
             await _next(context);
         }
     }
+    #pragma warning restore DL100
 }

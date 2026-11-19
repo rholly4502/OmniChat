@@ -44,6 +44,8 @@ public sealed class ApiKeyMiddleware
         _env = env;
     }
 
+    // ASP.NET Core middleware contract: signature dhInvokeAsync(HttpContext) dipatok framework; CT disalurkan via context.RequestAborted.
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         // A valid JWT (see JwtAuthenticationMiddleware) already authenticated this request.
@@ -109,6 +111,7 @@ public sealed class ApiKeyMiddleware
         await ProblemDetailsResponse.WriteUnauthorizedAsync(
             context, "Missing or invalid API key.", context.RequestAborted);
     }
+    #pragma warning restore DL100
 
     private static bool FixedTimeEquals(string provided, string expected)
     {

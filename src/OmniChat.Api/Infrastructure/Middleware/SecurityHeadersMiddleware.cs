@@ -14,6 +14,8 @@ public sealed class SecurityHeadersMiddleware
         _next = next;
     }
 
+    // ASP.NET Core middleware contract: signature InvokeAsync(HttpContext) dipatok framework; CT via context.RequestAborted.
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         var headers = context.Response.Headers;
@@ -34,4 +36,5 @@ public sealed class SecurityHeadersMiddleware
 
         await _next(context);
     }
+    #pragma warning restore DL100
 }

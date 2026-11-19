@@ -3,3 +3,10 @@ root = true
 [*.cs]
 dotnet_diagnostic.DL100.severity = error
 dotnet_diagnostic.DL101.severity = error
+
+# Lokasi test: DL100/DL101 dimatikan — method test xUnit tidak meneruskan
+# CancellationToken; menambah CT di test tidak memberi nilai (test runner tidak
+# mengirim CT). Rule tetap aktif penuh untuk kode produksi.
+[tests/**/*.cs]
+dotnet_diagnostic.DL100.severity = none
+dotnet_diagnostic.DL101.severity = none

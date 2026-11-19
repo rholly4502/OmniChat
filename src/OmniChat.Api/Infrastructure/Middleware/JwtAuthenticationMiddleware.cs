@@ -42,6 +42,8 @@ public sealed class JwtAuthenticationMiddleware
         _apiKeyConfigured = !string.IsNullOrEmpty(configuration["Security:ApiKey"]);
     }
 
+    // ASP.NET Core middleware contract: signature dipatok; CT via context.RequestAborted (dipakai di RejectAsync).
+    #pragma warning disable DL100
     public async Task InvokeAsync(HttpContext context)
     {
         if (!_validator.IsEnabled || AuthExemptPaths.IsExempt(context.Request.Path))
@@ -89,6 +91,7 @@ public sealed class JwtAuthenticationMiddleware
             context.Request.Method, context.Request.Path);
         await RejectAsync(context);
     }
+    #pragma warning restore DL100
 
     /// <summary>True when a prior middleware validated a JWT for this request.</summary>
     public static bool IsAuthenticated(HttpContext context) =>
