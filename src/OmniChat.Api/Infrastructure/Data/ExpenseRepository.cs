@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 
@@ -264,7 +265,7 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
             var byCategory = new Dictionary<string, long>();
             foreach (var r in rows.Where(r => r.Year == m.Year && r.Month == m.Month))
                 byCategory[r.Kategori] = r.Total;
-            result.Add((m.ToString("yyyy-MM"), byCategory.Values.Sum(), byCategory));
+            result.Add((m.ToString("yyyy-MM", CultureInfo.InvariantCulture), byCategory.Values.Sum(), byCategory));
         }
 
         return result;
@@ -328,7 +329,7 @@ public sealed class ExpenseRepository(ChatDbContext db) : IExpenseRepository
     /// <summary>Turns a YYYY-MM key into an inclusive start and exclusive end DateOnly.</summary>
     private static (DateOnly From, DateOnly ToExclusive) MonthRange(string month)
     {
-        if (!DateOnly.TryParseExact(month, "yyyy-MM", out var parsed))
+        if (!DateOnly.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
         {
             throw new ArgumentOutOfRangeException(nameof(month), month, "Expected a YYYY-MM month key.");
         }

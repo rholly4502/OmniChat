@@ -23,5 +23,13 @@
   <ItemGroup>
     <PackageReference Include="SonarAnalyzer.CSharp" Version="10.36.0.15337" PrivateAssets="all" />
     <PackageReference Include="AsyncFixer" Version="2.1.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- BannedApiAnalyzers: daftar API terlarang (lihat BannedSymbols.txt).
+       RS0030 di-set error untuk kode produksi di .editorconfig;
+       dikecualikan untuk [tests/**/*.cs]. -->
+  <ItemGroup>
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.txt" />
   </ItemGroup>
 </Project>

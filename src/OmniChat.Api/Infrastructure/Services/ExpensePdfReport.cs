@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
@@ -47,12 +48,12 @@ public static class ExpensePdfReport
         }
 
         var xrefStart = offset;
-        sb.Append($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n");
+        sb.Append(FormattableString.Invariant($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n"));
         foreach (var off in offsets)
         {
-            sb.Append($"{off:D10} 00000 n \n");
+            sb.Append(FormattableString.Invariant($"{off:D10} 00000 n \n"));
         }
-        sb.Append($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n");
+        sb.Append(FormattableString.Invariant($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n"));
 
         return Encoding.ASCII.GetBytes(sb.ToString());
     }
@@ -102,11 +103,11 @@ public static class ExpensePdfReport
         long total = 0;
         foreach (var e in rows)
         {
-            sb.Append(Text(50, y, FontSize, e.Tanggal.ToString("yyyy-MM-dd")));
+            sb.Append(Text(50, y, FontSize, e.Tanggal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
             sb.Append(Text(Margin + 95, y, FontSize, Escape(e.Waktu)));
             sb.Append(Text(Margin + 155, y, FontSize, Escape(e.Kategori)));
             sb.Append(Text(Margin + 250, y, FontSize, Escape(Truncate(e.Keterangan, 38))));
-            sb.Append(Text(490, y, FontSize, e.Nominal.ToString("N0")));
+            sb.Append(Text(490, y, FontSize, e.Nominal.ToString("N0", CultureInfo.InvariantCulture)));
             total += e.Nominal;
             y -= LineHeight;
 
@@ -117,7 +118,7 @@ public static class ExpensePdfReport
         }
 
         y -= 10;
-        sb.Append(Text(50, y, 11, $"Total : {total.ToString("N0")}"));
+        sb.Append(Text(50, y, 11, FormattableString.Invariant($"Total : {total.ToString("N0", CultureInfo.InvariantCulture)}")));
 
         return sb.ToString();
     }

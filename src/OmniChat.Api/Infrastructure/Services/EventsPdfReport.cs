@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using OmniChat.Domain.Entities;
 
@@ -21,7 +22,7 @@ public static class EventsPdfReport
 
     private static string StatusLabel(PromoEvent e, DateOnly today)
     {
-        if (e.BerlakuSampai is string s && DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end))
+        if (e.BerlakuSampai is string s && DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
         {
             return end < today ? "Kedaluwarsa" : "Berlaku";
         }
@@ -91,7 +92,7 @@ public static class EventsPdfReport
         for (var p = 0; p < pageContents.Count; p++)
         {
             if (p > 0) kids.Append(' ');
-            kids.Append($"{3 + p * 2} 0 R");
+            kids.Append(FormattableString.Invariant($"{3 + p * 2} 0 R"));
         }
         objects.Add($"<< /Type /Pages /Kids [{kids}] /Count {pageContents.Count} >>");
 
@@ -120,13 +121,13 @@ public static class EventsPdfReport
         }
 
         var xrefStart = offset;
-        sb.Append($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n");
+        sb.Append(FormattableString.Invariant($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n"));
         foreach (var off in offsets)
         {
-            sb.Append($"{off:D10} 00000 n \n");
+            sb.Append(FormattableString.Invariant($"{off:D10} 00000 n \n"));
         }
 
-        sb.Append($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n");
+        sb.Append(FormattableString.Invariant($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n"));
         return Encoding.ASCII.GetBytes(sb.ToString());
     }
 

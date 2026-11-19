@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
@@ -55,7 +56,7 @@ public sealed class OpportunityImporter(IOpportunityRepository repository)
             }
 
             var ditemukan = DateOnly.TryParse(item.TryGetProperty("ditemukan", out var d) ? d.GetString() : null,
-                out var ditemukanParsed) ? ditemukanParsed : DateOnly.FromDateTime(DateTime.Today);
+                CultureInfo.InvariantCulture, out var ditemukanParsed) ? ditemukanParsed : DateOnly.FromDateTime(DateTime.Today);
 
             opportunities.Add(new Opportunity
             {

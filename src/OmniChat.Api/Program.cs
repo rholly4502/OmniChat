@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -178,7 +179,7 @@ builder.Services.AddRateLimiter(options =>
         // Tell the client how many seconds to wait before retrying.
         if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
         {
-            context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("F0");
+            context.HttpContext.Response.Headers.RetryAfter = retryAfter.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
         }
 
         await ProblemDetailsResponse.WriteAsync(

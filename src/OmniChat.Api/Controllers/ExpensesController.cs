@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Application.Interfaces;
@@ -85,7 +86,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         int? hariBerjalan = null;
         long? rata2Harian = null;
         long? proyeksiAkhirBulan = null;
-        if (today.ToString("yyyy-MM") == month)
+        if (today.ToString("yyyy-MM", CultureInfo.InvariantCulture) == month)
         {
             hariBulanIni = DateTime.DaysInMonth(today.Year, today.Month);
             hariBerjalan = Math.Clamp(today.Day, 1, hariBulanIni.Value);
@@ -217,7 +218,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     private static DateOnly TodayWib() => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
 
     private static bool TryMonth(string month, out DateOnly parsed) =>
-        DateOnly.TryParseExact(month, "yyyy-MM", out parsed);
+        DateOnly.TryParseExact(month, "yyyy-MM", CultureInfo.InvariantCulture, DateTimeStyles.None, out parsed);
 
     private ObjectResult InvalidMonth(string month) => new(new ProblemDetails
     {
@@ -261,7 +262,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         sb.AppendLine("tanggal,waktu,kategori,keterangan,nominal");
         foreach (var e in rows)
         {
-            sb.Append(e.Tanggal.ToString("yyyy-MM-dd")).Append(',');
+            sb.Append(e.Tanggal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(',');
             sb.Append(Csv(e.Waktu)).Append(',');
             sb.Append(Csv(e.Kategori)).Append(',');
             sb.Append(Csv(e.Keterangan)).Append(',');
@@ -347,7 +348,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
             };
         }
 
-        var endMonth = TodayWib().ToString("yyyy-MM");
+        var endMonth = TodayWib().ToString("yyyy-MM", CultureInfo.InvariantCulture);
         var points = await repository.GetMonthlyTrendAsync(endMonth, months, cancellationToken);
 
         return Ok(new
@@ -381,7 +382,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     {
         var day = string.IsNullOrWhiteSpace(date)
             ? TodayWib()
-            : (DateOnly.TryParseExact(date, "yyyy-MM-dd", out var parsed) ? parsed : (DateOnly?)null);
+            : (DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed) ? parsed : (DateOnly?)null);
 
         if (day is null)
         {
@@ -430,7 +431,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
 
         var expense = new Expense
         {
-            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd"),
+            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd", CultureInfo.InvariantCulture),
             Waktu = string.IsNullOrWhiteSpace(request.Waktu) ? string.Empty : request.Waktu.Trim(),
             Kategori = request.Kategori.Trim(),
             Keterangan = request.Keterangan.Trim(),
@@ -441,7 +442,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         };
 
         var created = await repository.AddAsync(expense, cancellationToken);
-        return CreatedAtAction(nameof(List), new { month = expense.Tanggal.ToString("yyyy-MM") }, ExpenseDto.From(created));
+        return CreatedAtAction(nameof(List), new { month = expense.Tanggal.ToString("yyyy-MM", CultureInfo.InvariantCulture) }, ExpenseDto.From(created));
     }
 
     /// <summary>Updates an existing expense row from the web UI (operator only, key required).</summary>
@@ -468,7 +469,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         var expense = new Expense
         {
             Id = id,
-            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd"),
+            Tanggal = DateOnly.ParseExact(request.Tanggal, "yyyy-MM-dd", CultureInfo.InvariantCulture),
             Waktu = string.IsNullOrWhiteSpace(request.Waktu) ? string.Empty : request.Waktu.Trim(),
             Kategori = request.Kategori.Trim(),
             Keterangan = request.Keterangan.Trim(),
@@ -521,7 +522,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     /// <summary>Validates a write request, returning a 400 ProblemDetails or null when valid.</summary>
     private ObjectResult? Validate(ExpenseWriteRequest request)
     {
-        if (!DateOnly.TryParseExact(request.Tanggal, "yyyy-MM-dd", out _))
+        if (!DateOnly.TryParseExact(request.Tanggal, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
             return new ObjectResult(new ProblemDetails
             {
@@ -661,7 +662,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
             rows = rows.Where(e =>
                 e.Keterangan.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
                 e.Kategori.Contains(needle, StringComparison.OrdinalIgnoreCase) ||
-                e.Tanggal.ToString("yyyy-MM-dd").Contains(needle, StringComparison.OrdinalIgnoreCase) ||
+                e.Tanggal.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture).Contains(needle, StringComparison.OrdinalIgnoreCase) ||
                 e.Waktu.Contains(needle, StringComparison.OrdinalIgnoreCase));
         }
         return rows.ToList();

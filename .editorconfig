@@ -17,6 +17,21 @@ dotnet_diagnostic.CA1062.severity = none
 dotnet_analyzer_diagnostic.category-Security.severity = error
 dotnet_analyzer_diagnostic.category-Reliability.severity = error
 
+# Step 2 — Cleanup Correctness: rule localization/perbandingan string.
+# CA1305 (ToString tanpa IFormatProvider), S6580 (parse tanpa provider),
+# CA1862 (banding string tanpa StringComparison) sudah diperbaiki seluruhnya.
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.S6580.severity = error
+dotnet_diagnostic.CA1862.severity = error
+# CA1716 (nama anggota mirip keyword) tidak relevan di sini.
+dotnet_diagnostic.CA1716.severity = none
+# CA1848 (LoggerMessage delegates) hanya saran — bukan kegagalan build.
+dotnet_diagnostic.CA1848.severity = suggestion
+
+# Step 3 — BannedApiAnalyzers: API terlarang (lihat BannedSymbols.txt)
+# jadi error di kode produksi.
+dotnet_diagnostic.RS0030.severity = error
+
 # Lokasi test: DL100/DL101 dimatikan — method test xUnit tidak meneruskan
 # CancellationToken; menambah CT di test tidak memberi nilai (test runner tidak
 # mengirim CT). Rule tetap aktif penuh untuk kode produksi.
@@ -27,3 +42,11 @@ dotnet_diagnostic.DL101.severity = none
 # produksi (mis. CA3062 / CA5350 di fixture & mock).
 dotnet_analyzer_diagnostic.category-Security.severity = none
 dotnet_analyzer_diagnostic.category-Reliability.severity = none
+# RS0030 (banned API) dikecualikan di test — fixture/mock boleh memakai mocks
+# dan helper yang tidak mengikuti pembatasan produksi.
+dotnet_diagnostic.RS0030.severity = none
+# Rule localization/perbandingan string juga dikecualikan di test — string
+# fixture & helper tidak memerlukan invariant culture yang sama dengan produksi.
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.S6580.severity = none
+dotnet_diagnostic.CA1862.severity = none

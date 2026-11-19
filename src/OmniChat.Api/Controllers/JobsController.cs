@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
@@ -99,7 +100,7 @@ public sealed class JobsController(
         DateOnly? tanggal = null;
         if (!string.IsNullOrWhiteSpace(request.Tanggal))
         {
-            if (!DateOnly.TryParse(request.Tanggal, out var parsed))
+            if (!DateOnly.TryParse(request.Tanggal, CultureInfo.InvariantCulture, out var parsed))
             {
                 return BadRequest(new { message = $"Tanggal '{request.Tanggal}' tidak valid." });
             }
@@ -141,7 +142,7 @@ public sealed class JobsController(
             Catatan = TrimOrNull(request.Catatan),
             Status = (request.Status ?? "new").ToLowerInvariant(),
             FollowUpTanggal = ParseDateOrNull(request.FollowUpTanggal),
-            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture),
             // Manual rows get a distinct SourceId prefix so the seeder's dedup can
             // never mistake them for an auto-imported row.
             SourceId = "web-" + Guid.NewGuid().ToString("N")[..8],
@@ -188,7 +189,7 @@ public sealed class JobsController(
             Catatan = TrimOrNull(request.Catatan),
             Status = (request.Status ?? "new").ToLowerInvariant(),
             FollowUpTanggal = ParseDateOrNull(request.FollowUpTanggal),
-            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture),
         };
 
         var updated = await repository.UpdateAsync(opportunity, cancellationToken);
@@ -268,7 +269,7 @@ public sealed class JobsController(
     {
         var items = await repository.ListAsync(status, cancellationToken);
 
-        var todayDate = DateOnly.TryParse(today, out var parsedToday) ? parsedToday : DateOnly.FromDateTime(DateTime.UtcNow);
+        var todayDate = DateOnly.TryParse(today, CultureInfo.InvariantCulture, out var parsedToday) ? parsedToday : DateOnly.FromDateTime(DateTime.UtcNow);
         var followUpOnlyFilter = followUpOnly ?? false;
         var filtered = items.Where(o =>
             MatchesType(o, tipe) &&
@@ -291,13 +292,13 @@ public sealed class JobsController(
             sb.Append(Csv(o.Lokasi)).Append(',');
             sb.Append(Csv(o.Tipe)).Append(',');
             sb.Append(Csv(o.Gaji ?? string.Empty)).Append(',');
-            sb.Append(o.Skor?.ToString() ?? string.Empty).Append(',');
+            sb.Append(o.Skor?.ToString(CultureInfo.InvariantCulture) ?? string.Empty).Append(',');
             sb.Append(Csv(o.Status)).Append(',');
-            sb.Append(o.FollowUpTanggal?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
-            sb.Append(o.DilamarPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
-            sb.Append(o.InterviewPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
-            sb.Append(o.TawaranPada?.ToString("yyyy-MM-dd") ?? string.Empty).Append(',');
-            sb.Append(o.Ditemukan.ToString("yyyy-MM-dd")).Append(',');
+            sb.Append(o.FollowUpTanggal?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty).Append(',');
+            sb.Append(o.DilamarPada?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty).Append(',');
+            sb.Append(o.InterviewPada?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty).Append(',');
+            sb.Append(o.TawaranPada?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty).Append(',');
+            sb.Append(o.Ditemukan.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(',');
             sb.Append(Csv(o.Link ?? string.Empty)).Append(',');
             sb.Append(Csv(o.Catatan ?? string.Empty)).Append('\n');
         }
@@ -330,12 +331,12 @@ public sealed class JobsController(
         {
             return BadRequest(new { message = $"Status '{request.Status}' tidak dikenal." });
         }
-        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", out _))
+        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
             return BadRequest(new { message = "'ditemukan' must be a valid YYYY-MM-DD date." });
         }
         if (!string.IsNullOrWhiteSpace(request.FollowUpTanggal) &&
-            !DateOnly.TryParse(request.FollowUpTanggal, out _))
+            !DateOnly.TryParse(request.FollowUpTanggal, CultureInfo.InvariantCulture, out _))
         {
             return BadRequest(new { message = "'followUpTanggal' must be a valid YYYY-MM-DD date or null." });
         }
@@ -350,7 +351,7 @@ public sealed class JobsController(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static DateOnly? ParseDateOrNull(string? value) =>
-        string.IsNullOrWhiteSpace(value) ? null : DateOnly.Parse(value);
+        string.IsNullOrWhiteSpace(value) ? null : DateOnly.Parse(value, CultureInfo.InvariantCulture);
 
     private static string Csv(string value)
     {
@@ -387,12 +388,12 @@ public sealed class JobsController(
     {
         if (string.IsNullOrWhiteSpace(q)) return true;
         var query = q.Trim().ToLowerInvariant();
-        return o.Judul.ToLowerInvariant().Contains(query)
-            || o.Perusahaan.ToLowerInvariant().Contains(query)
-            || o.Lokasi.ToLowerInvariant().Contains(query)
-            || (o.Tipe ?? string.Empty).ToLowerInvariant().Contains(query)
-            || (o.Gaji ?? string.Empty).ToLowerInvariant().Contains(query)
-            || (o.Catatan ?? string.Empty).ToLowerInvariant().Contains(query);
+        return o.Judul.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || o.Perusahaan.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || o.Lokasi.Contains(query, StringComparison.OrdinalIgnoreCase)
+            || (o.Tipe ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase)
+            || (o.Gaji ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase)
+            || (o.Catatan ?? string.Empty).Contains(query, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool NeedsFollowUp(Opportunity o, DateOnly today)

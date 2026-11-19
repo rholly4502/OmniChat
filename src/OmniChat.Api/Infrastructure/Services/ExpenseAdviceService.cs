@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using System.Globalization;
 using OmniChat.Api.Infrastructure.Options;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
@@ -16,7 +17,7 @@ public sealed class ExpenseAdviceService(
 {
     public async Task<ExpenseAdvice> BuildAsync(DateOnly date, CancellationToken ct)
     {
-        var month = date.ToString("yyyy-MM");
+        var month = date.ToString("yyyy-MM", CultureInfo.InvariantCulture);
         var daysInMonth = DateTime.DaysInMonth(date.Year, date.Month);
 
         var target = await repository.GetTargetAsync(month, ct);
@@ -55,7 +56,7 @@ public sealed class ExpenseAdviceService(
 
         // Load the prior month before building the trend: each spending category's
         // comparison needs it, and the pace block below reuses the same rows.
-        var prevMonth = date.AddMonths(-1).ToString("yyyy-MM");
+        var prevMonth = date.AddMonths(-1).ToString("yyyy-MM", CultureInfo.InvariantCulture);
         var prevRows = await repository.ListAllForMonthAsync(prevMonth, ct);
 
         // Per-category spend last month (same month-prefix guard as the pace block so
@@ -63,7 +64,7 @@ public sealed class ExpenseAdviceService(
         // requested month). Shows how each spending category is tracking against the
         // user's own history — not just the aggregate pace.
         var prevPerKategori = prevRows
-            .Where(r => r.Tanggal.ToString("yyyy-MM") == prevMonth && r.Kategori != "Nabung")
+            .Where(r => r.Tanggal.ToString("yyyy-MM", CultureInfo.InvariantCulture) == prevMonth && r.Kategori != "Nabung")
             .GroupBy(r => r.Kategori)
             .ToDictionary(g => g.Key, g => g.Sum(r => r.Nominal));
 
@@ -114,10 +115,10 @@ public sealed class ExpenseAdviceService(
         // this month vs last month. Filtered by month prefix so the comparison stays
         // correct even if a repository returns rows outside the requested month.
         var currentThroughDay = rows
-            .Where(r => r.Tanggal.ToString("yyyy-MM") == month && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
+            .Where(r => r.Tanggal.ToString("yyyy-MM", CultureInfo.InvariantCulture) == month && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
             .Sum(r => r.Nominal);
         var previousThroughDay = prevRows
-            .Where(r => r.Tanggal.ToString("yyyy-MM") == prevMonth && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
+            .Where(r => r.Tanggal.ToString("yyyy-MM", CultureInfo.InvariantCulture) == prevMonth && r.Tanggal.Day <= date.Day && r.Kategori != "Nabung")
             .Sum(r => r.Nominal);
         var delta = currentThroughDay - previousThroughDay;
         double? percentChange = previousThroughDay > 0
@@ -178,7 +179,7 @@ public sealed class ExpenseAdviceService(
             : 0;
 
         return new ExpenseAdvice(
-            date.ToString("yyyy-MM-dd"),
+            date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             month,
             dayTotal,
             dailyBudget,

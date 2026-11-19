@@ -1,0 +1,19 @@
+# BannedApiAnalyzers (RS0030) — API terlarang di kode produksi OmniChat.
+# Format: <symbol>;<pesan pengganti>  (baris kosong & komentar diabaikan)
+#
+# Blocking (synchronous) — selalu gunakan varian async.
+
+M:System.Threading.Tasks.Task.Wait;Gunakan `await` alih-alih blocking .Wait()
+P:System.Threading.Tasks.Task`1.Result;Gunakan `await` alih-alih membaca .Result
+M:System.Threading.Thread.Sleep(System.Int32);Gunakan `await Task.Delay(...)` alih-alih Thread.Sleep
+
+# Waktu lokal & mutable — pakai UtcNow / TimeProvider.
+
+P:System.DateTime.Now;Gunakan DateTime.UtcNow atau TimeProvider (hindari waktu lokal non-deterministik)
+
+# Klien HTTP — buat lewat IHttpClientFactory (DI), jangan `new HttpClient()`.
+# `new HttpClient()` per-panggilan menghabiskan socket (socket exhaustion).
+# Catatan: ban diarahkan ke CONSTRUCTOR (#ctor), bukan tipe — pemakaian
+# HttpClient via IHttpClientFactory (CreateClient/sendAsync) tetap sah.
+
+M:System.Net.Http.HttpClient.#ctor;Gunakan IHttpClientFactory (terdaftar di DI), jangan new HttpClient()

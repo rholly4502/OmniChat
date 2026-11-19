@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using OmniChat.Domain.Entities;
 
@@ -73,9 +74,9 @@ public static class JobsPdfReport
             sb.Append(Text(160, y, FontSize, Truncate(o.Perusahaan, 20)));
             sb.Append(Text(275, y, FontSize, Truncate(o.Lokasi, 14)));
             sb.Append(Text(365, y, FontSize, Truncate(o.Tipe, 10)));
-            sb.Append(Text(435, y, FontSize, o.Skor?.ToString() ?? ""));
+            sb.Append(Text(435, y, FontSize, o.Skor?.ToString(CultureInfo.InvariantCulture) ?? ""));
             sb.Append(Text(470, y, FontSize, Label(o.Status)));
-            sb.Append(Text(525, y, FontSize, o.FollowUpTanggal?.ToString("yyyy-MM-dd") ?? ""));
+            sb.Append(Text(525, y, FontSize, o.FollowUpTanggal?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? ""));
             y -= LineHeight;
 
             if (riwayat.Length > 0)
@@ -100,7 +101,7 @@ public static class JobsPdfReport
         for (var p = 0; p < pageContents.Count; p++)
         {
             if (p > 0) kids.Append(' ');
-            kids.Append($"{3 + p * 2} 0 R");
+            kids.Append(FormattableString.Invariant($"{3 + p * 2} 0 R"));
         }
         objects.Add($"<< /Type /Pages /Kids [{kids}] /Count {pageContents.Count} >>");
 
@@ -129,13 +130,13 @@ public static class JobsPdfReport
         }
 
         var xrefStart = offset;
-        sb.Append($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n");
+        sb.Append(FormattableString.Invariant($"xref\n0 {objects.Count + 1}\n0000000000 65535 f \n"));
         foreach (var off in offsets)
         {
-            sb.Append($"{off:D10} 00000 n \n");
+            sb.Append(FormattableString.Invariant($"{off:D10} 00000 n \n"));
         }
 
-        sb.Append($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n");
+        sb.Append(FormattableString.Invariant($"trailer\n<< /Size {objects.Count + 1} /Root 1 0 R >>\nstartxref\n{xrefStart}\n%%EOF\n"));
         return Encoding.ASCII.GetBytes(sb.ToString());
     }
 

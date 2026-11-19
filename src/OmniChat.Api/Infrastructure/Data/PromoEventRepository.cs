@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
@@ -40,7 +41,7 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
         foreach (var row in rows)
         {
             if (row.BerlakuSampai is string s &&
-                DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end))
+                DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end))
             {
                 ends.Add(end);
             }
@@ -63,7 +64,7 @@ public sealed class PromoEventRepository(ChatDbContext db) : IPromoEventReposito
     /// <summary>True when a promo's end date parses as YYYY-MM-DD and is before `today`.</summary>
     private static bool IsExpiredRow(string? berlakuSampai, DateOnly today)
         => berlakuSampai is string s &&
-           DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end) &&
+           DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end) &&
            end < today;
 
     public async Task<int> InsertMissingAsync(

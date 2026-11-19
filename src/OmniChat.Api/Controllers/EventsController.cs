@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
 using System.Text;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Infrastructure.Services;
@@ -74,10 +75,10 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
         var keyword = string.IsNullOrWhiteSpace(q) ? null : q!.Trim().ToLowerInvariant();
         var filtered = items.Where(e =>
             (keyword == null ||
-             e.Judul.ToLowerInvariant().Contains(keyword) ||
-             e.Aplikasi.ToLowerInvariant().Contains(keyword) ||
-             (e.Benefit ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
-             (e.Syarat ?? string.Empty).ToLowerInvariant().Contains(keyword)) &&
+             e.Judul.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+             e.Aplikasi.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+             (e.Benefit ?? string.Empty).Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+             (e.Syarat ?? string.Empty).Contains(keyword, StringComparison.OrdinalIgnoreCase)) &&
             (!(hideExpired ?? false) || !IsExpired(e, today)) &&
             (!(hideUsed ?? false) || !e.Dipakai)).ToList();
 
@@ -96,7 +97,7 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
             sb.Append(Csv(e.Benefit ?? string.Empty)).Append(',');
             sb.Append(Csv(e.Syarat ?? string.Empty)).Append(',');
             sb.Append(Csv(e.BerlakuSampai ?? string.Empty)).Append(',');
-            sb.Append(e.Ditemukan.ToString("yyyy-MM-dd")).Append(',');
+            sb.Append(e.Ditemukan.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)).Append(',');
             sb.Append(Csv(e.Link ?? string.Empty)).Append(',');
             sb.Append(Csv(e.SourceId ?? string.Empty)).Append(',');
             sb.Append(e.Dipakai ? "true" : "false").Append('\n');
@@ -136,7 +137,7 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
             Syarat = TrimOrNull(request.Syarat),
             Link = TrimOrNull(request.Link),
             BerlakuSampai = TrimOrNull(request.BerlakuSampai),
-            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture),
             // Manual rows get a distinct SourceId prefix so the seeder's dedup can
             // never mistake them for an auto-imported (platform|judul) row.
             SourceId = "web-" + Guid.NewGuid().ToString("N")[..8],
@@ -176,7 +177,7 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
             Syarat = TrimOrNull(request.Syarat),
             Link = TrimOrNull(request.Link),
             BerlakuSampai = TrimOrNull(request.BerlakuSampai),
-            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd"),
+            Ditemukan = DateOnly.ParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture),
         };
 
         var ok = await repository.UpdateAsync(@event, cancellationToken);
@@ -268,7 +269,7 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
             return BadRequest("'judul' wajib diisi.");
         }
 
-        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", out _))
+        if (!DateOnly.TryParseExact(request.Ditemukan, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
         {
             return BadRequest("'ditemukan' must be a valid YYYY-MM-DD date.");
         }
@@ -309,7 +310,7 @@ public sealed class EventsController(IPromoEventRepository repository, IEventsPd
     private static bool IsExpired(PromoEvent e, DateOnly today)
     {
         return e.BerlakuSampai is string s
-            && DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", out var end)
+            && DateOnly.TryParseExact(s.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var end)
             && end < today;
     }
 
