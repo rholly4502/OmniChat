@@ -1055,7 +1055,7 @@ public class DeploymentConfigTests
         // to CSV-only.
         var controller = Read("src/OmniChat.Api/Controllers/ExpensesController.cs");
         Assert.Contains("[HttpGet(\"export/pdf\")]", controller);
-        Assert.Contains("ExpensePdfReport.Build", controller);
+        Assert.Contains("IExpensePdfReport", controller);
 
         var report = Read("src/OmniChat.Api/Infrastructure/Services/ExpensePdfReport.cs");
         Assert.Contains("%PDF-1.4", report);

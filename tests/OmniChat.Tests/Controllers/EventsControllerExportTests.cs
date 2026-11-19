@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Application.Interfaces;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Entities;
 using System.Text;
 
@@ -11,7 +12,7 @@ public class EventsControllerExportTests
 {
     private readonly Mock<IPromoEventRepository> _repository = new();
 
-    private EventsController CreateController() => new(_repository.Object);
+    private EventsController CreateController() => new(_repository.Object, new EventsPdfReportAdapter());
 
     private static PromoEvent Event(
         string aplikasi = "OVO",

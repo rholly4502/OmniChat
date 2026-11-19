@@ -21,7 +21,8 @@ public class ControllerNullHttpContextTests
     {
         var controller = new ExpensesController(
             new Mock<IExpenseRepository>().Object,
-            new Mock<IExpenseAdviceService>().Object);
+            new Mock<IExpenseAdviceService>().Object,
+            new Mock<IExpensePdfReport>().Object);
 
         // Deliberately no ControllerContext -> HttpContext is null.
         var result = await controller.List("bukan-bulan", cancellationToken: CancellationToken.None);
@@ -35,7 +36,8 @@ public class ControllerNullHttpContextTests
     {
         var controller = new ExpensesController(
             new Mock<IExpenseRepository>().Object,
-            new Mock<IExpenseAdviceService>().Object);
+            new Mock<IExpenseAdviceService>().Object,
+            new Mock<IExpensePdfReport>().Object);
 
         var result = await controller.Target("bukan-bulan", CancellationToken.None);
 
@@ -50,7 +52,9 @@ public class ControllerNullHttpContextTests
         var accessPolicy = new Mock<IChatAccessPolicy>();
         accessPolicy.Setup(p => p.Resolve(It.IsAny<Microsoft.AspNetCore.Http.HttpContext>()))
             .Returns(ChatAccess.Admin);
-        var controller = new ConversationsController(repository.Object, accessPolicy.Object)
+        var identity = new Mock<IChatIdentity>();
+        identity.Setup(i => i.ResolveUserId(It.IsAny<Microsoft.AspNetCore.Http.HttpContext>())).Returns("admin");
+        var controller = new ConversationsController(repository.Object, accessPolicy.Object, identity.Object)
         {
             ControllerContext = new ControllerContext
             {

@@ -1,4 +1,4 @@
-namespace OmniChat.Infrastructure.Services;
+namespace OmniChat.Domain.Models;
 
 /// <summary>One category with its month total (trend block of the advice).</summary>
 public sealed record CategoryTrendItem(

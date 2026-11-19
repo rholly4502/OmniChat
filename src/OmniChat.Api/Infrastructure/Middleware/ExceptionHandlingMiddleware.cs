@@ -1,3 +1,4 @@
+using OmniChat.Api.Http;
 namespace OmniChat.Api.Infrastructure.Middleware;
 
 /// <summary>

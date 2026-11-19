@@ -2,6 +2,7 @@ using OmniChat.Api.Infrastructure.Auth;
 using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
 using System.Text;
+using OmniChat.Api.Http;
 
 namespace OmniChat.Api.Infrastructure.Middleware;
 

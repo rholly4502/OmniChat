@@ -3,7 +3,6 @@ using System.Text;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
-using OmniChat.Infrastructure.Services;
 
 namespace OmniChat.Api.Controllers;
 
@@ -18,7 +17,8 @@ namespace OmniChat.Api.Controllers;
 [Tags("Jobs")]
 public sealed class JobsController(
     IOpportunityRepository repository,
-    ILamaranDraftService lamaranDraftService) : ControllerBase
+    ILamaranDraftService lamaranDraftService,
+    IJobsPdfReport pdfReport) : ControllerBase
 {
     /// <summary>All curated opportunities (newest first), optionally filtered by status.</summary>
     /// <param name="status">Optional pipeline filter: new, applied, interview, offer, closed.</param>
@@ -278,7 +278,7 @@ public sealed class JobsController(
 
         if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
         {
-            var pdf = JobsPdfReport.Build(filtered.ToList());
+            var pdf = pdfReport.Build(filtered.ToList());
             return File(pdf, "application/pdf", $"jobs-{DateTime.UtcNow:yyyy-MM-dd}.pdf");
         }
 

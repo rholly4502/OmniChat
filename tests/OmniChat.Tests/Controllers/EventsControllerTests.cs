@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Api.Controllers;
+using Moq;
 using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Data;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Entities;
 
 namespace OmniChat.Tests.Controllers;
@@ -19,7 +21,7 @@ public class EventsControllerTests
         }
         var db2 = new ChatDbContext(options);
         var repo = new PromoEventRepository(db2);
-        return (new EventsController(repo), repo);
+        return (new EventsController(repo, new EventsPdfReportAdapter()), repo);
     }
 
     [Fact]

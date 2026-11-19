@@ -14,6 +14,7 @@ using OmniChat.Api.Infrastructure.Options;
 using OmniChat.Application.Interfaces;
 using OmniChat.Infrastructure.Data;
 using OmniChat.Infrastructure.Services;
+using OmniChat.Api.Http;
 
 // Name of the CORS policy applied to every request (must match app.UseCors below).
 const string CorsPolicyName = "AppPolicy";
@@ -152,6 +153,10 @@ builder.Services.AddScoped<ICvService, CvService>();
 builder.Services.AddSingleton<IModelCatalogService, ModelCatalogService>();
 builder.Services.Configure<ExpenseAdviceOptions>(builder.Configuration.GetSection(ExpenseAdviceOptions.SectionName));
 builder.Services.AddScoped<IExpenseAdviceService, ExpenseAdviceService>();
+builder.Services.AddScoped<IExpensePdfReport, ExpensePdfReportAdapter>();
+builder.Services.AddScoped<IJobsPdfReport, JobsPdfReportAdapter>();
+builder.Services.AddScoped<IChatIdentity, ChatIdentityAdapter>();
+builder.Services.AddScoped<IEventsPdfReport, EventsPdfReportAdapter>();
 
 // Chat-history persistence (SQLite via EF Core). Registration only: nothing opens a
 // connection until a repository method runs, so an unwritable volume or a disabled

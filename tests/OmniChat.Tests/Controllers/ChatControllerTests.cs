@@ -21,6 +21,7 @@ public class ChatControllerTests
     private readonly Mock<IChatService> _chatServiceMock;
     private readonly Mock<IChatTurnRecorder> _turnRecorderMock;
     private readonly Mock<IChatAccessPolicy> _accessPolicyMock;
+    private readonly Mock<IChatIdentity> _identityMock;
     private readonly ChatController _controller;
 
     public ChatControllerTests()
@@ -28,7 +29,9 @@ public class ChatControllerTests
         _chatServiceMock = new Mock<IChatService>();
         _turnRecorderMock = new Mock<IChatTurnRecorder>();
         _accessPolicyMock = new Mock<IChatAccessPolicy>();
+        _identityMock = new Mock<IChatIdentity>();
         _accessPolicyMock.Setup(p => p.Resolve(It.IsAny<HttpContext>())).Returns(ChatAccess.Admin);
+        _identityMock.Setup(i => i.ResolveUserId(It.IsAny<HttpContext>())).Returns("admin");
         var catalogService = new ModelCatalogService(
             new ConfigurationBuilder().Build());
         _controller = new ChatController(
@@ -36,6 +39,7 @@ public class ChatControllerTests
             catalogService,
             _turnRecorderMock.Object,
             _accessPolicyMock.Object,
+            _identityMock.Object,
             NullLogger<ChatController>.Instance);
 
         // Set up a real HttpContext for SSE streaming

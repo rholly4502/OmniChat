@@ -1,3 +1,4 @@
+using OmniChat.Domain.Models;
 using System.Text;
 using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Services;
@@ -106,7 +107,7 @@ public sealed class ExpensePdfReportTests
     public void Build_withBudgetRendersRingkasanBlock()
     {
         var bytes = ExpensePdfReport.Build("2026-10", SampleRows,
-            new ExpensePdfReport.ExpenseBudgetSummary(1_500_000, 1_180_000, 500_000, 200_000, 3_250_000));
+            new ExpenseBudgetSummary(1_500_000, 1_180_000, 500_000, 200_000, 3_250_000));
         var text = Encoding.ASCII.GetString(bytes);
 
         Assert.Contains("Ringkasan bulan", text);
@@ -128,7 +129,7 @@ public sealed class ExpensePdfReportTests
         // A month without a target: Anggaran/Sisa/Target are null, so only the
         // always-present fund row is printed.
         var bytes = ExpensePdfReport.Build("2026-10", SampleRows,
-            new ExpensePdfReport.ExpenseBudgetSummary(null, null, null, 0, 1_250_000));
+            new ExpenseBudgetSummary(null, null, null, 0, 1_250_000));
         var text = Encoding.ASCII.GetString(bytes);
 
         Assert.DoesNotContain("Anggaran:", text);

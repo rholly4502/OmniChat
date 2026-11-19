@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace OmniChat.Api.Infrastructure;
+namespace OmniChat.Api.Http;
 
 /// <summary>
 /// Shared JSON serializer options for ProblemDetails responses.

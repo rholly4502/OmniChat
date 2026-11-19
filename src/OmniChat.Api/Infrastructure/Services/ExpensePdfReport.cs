@@ -1,5 +1,6 @@
 using System.Text;
 using OmniChat.Domain.Entities;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Infrastructure.Services;
 
@@ -16,18 +17,6 @@ public static class ExpensePdfReport
     private const int Margin = 40;
     private const int FontSize = 9;
     private const int LineHeight = 14;
-
-    /// <summary>
-    /// Optional monthly budget/savings figures printed as a "Ringkasan bulan"
-    /// block above the transaction table. Null fields are omitted so a report
-    /// for a month without a target still renders cleanly.
-    /// </summary>
-    public sealed record ExpenseBudgetSummary(
-        long? Anggaran,
-        long? SisaAnggaran,
-        long? TargetNabung,
-        long Ditabung,
-        long DanaNabungKumulatif);
 
     public static byte[] Build(string month, IReadOnlyList<Expense> rows, ExpenseBudgetSummary? budget = null)
     {

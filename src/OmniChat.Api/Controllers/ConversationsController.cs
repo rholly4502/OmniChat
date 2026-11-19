@@ -3,6 +3,7 @@ using OmniChat.Api.Infrastructure;
 using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
+using OmniChat.Api.Http;
 
 namespace OmniChat.Api.Controllers;
 
@@ -23,11 +24,13 @@ public sealed class ConversationsController : ControllerBase
 {
     private readonly IChatHistoryRepository _repository;
     private readonly IChatAccessPolicy _accessPolicy;
+    private readonly IChatIdentity _identity;
 
-    public ConversationsController(IChatHistoryRepository repository, IChatAccessPolicy accessPolicy)
+    public ConversationsController(IChatHistoryRepository repository, IChatAccessPolicy accessPolicy, IChatIdentity identity)
     {
         _repository = repository;
         _accessPolicy = accessPolicy;
+        _identity = identity;
     }
 
     /// <summary>
@@ -484,7 +487,7 @@ public sealed class ConversationsController : ControllerBase
     /// first instead of relying on the query to come back empty.
     /// </remarks>
     private string? AdminOwnerId() =>
-        _accessPolicy.Resolve(HttpContext) == ChatAccess.Admin ? ChatIdentity.ResolveUserId(HttpContext) : null;
+        _accessPolicy.Resolve(HttpContext) == ChatAccess.Admin ? _identity.ResolveUserId(HttpContext) : null;
 
     /// <summary>
     /// A 404 in <c>application/problem+json</c>. Built as an <see cref="ObjectResult"/> rather than

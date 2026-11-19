@@ -10,7 +10,7 @@ public class JobsControllerSummaryTests
 {
     private readonly Mock<IOpportunityRepository> _repository = new();
 
-    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object);
+    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object, new Mock<IJobsPdfReport>().Object);
 
     private static JobsSummary Summary() => new(
         PerStatus: new Dictionary<string, int>

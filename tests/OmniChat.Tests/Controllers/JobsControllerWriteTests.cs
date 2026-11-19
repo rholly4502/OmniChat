@@ -10,7 +10,7 @@ public class JobsControllerWriteTests
 {
     private readonly Mock<IOpportunityRepository> _repository = new();
 
-    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object);
+    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object, new Mock<IJobsPdfReport>().Object);
 
     private static JobWriteRequest Req(
         string judul = ".NET Developer",

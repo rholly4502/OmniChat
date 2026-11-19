@@ -2,9 +2,9 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Application.Interfaces;
-using OmniChat.Infrastructure.Data;
-using OmniChat.Infrastructure.Services;
+using OmniChat.Domain.Models;
 using OmniChat.Domain.Entities;
+using OmniChat.Api.Http;
 
 namespace OmniChat.Api.Controllers;
 
@@ -16,7 +16,7 @@ namespace OmniChat.Api.Controllers;
 [ApiController]
 [Route("api/expenses")]
 [Tags("Expenses")]
-public sealed class ExpensesController(IExpenseRepository repository, IExpenseAdviceService advice) : ControllerBase
+public sealed class ExpensesController(IExpenseRepository repository, IExpenseAdviceService advice, IExpensePdfReport pdfReport) : ControllerBase
 {
     /// <summary>Paged transaction list for a month, newest first.</summary>
     /// <param name="month">Month key <c>YYYY-MM</c>, e.g. <c>2026-10</c>.</param>
@@ -33,7 +33,7 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
     public async Task<IActionResult> List(
         [FromQuery] string month,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = ExpenseRepository.DefaultPageSize,
+        [FromQuery] int pageSize = IExpenseRepository.DefaultPageSize,
         CancellationToken cancellationToken = default)
     {
         if (!TryMonth(month, out _))
@@ -308,14 +308,14 @@ public sealed class ExpensesController(IExpenseRepository repository, IExpenseAd
         var budgetTarget = await repository.GetTargetAsync(month, cancellationToken);
         var danaNabungKumulatif = await repository.GetCumulativeNabungAsync(month, cancellationToken);
         var ditabung = perKategori.TryGetValue("Nabung", out var nabung) ? nabung : 0L;
-        var budget = new ExpensePdfReport.ExpenseBudgetSummary(
+        var budget = new ExpenseBudgetSummary(
             budgetTarget?.Anggaran,
             budgetTarget is null ? null : budgetTarget.Anggaran - total,
             budgetTarget?.TargetNabung,
             ditabung,
             danaNabungKumulatif);
 
-        var bytes = ExpensePdfReport.Build(month, rows, budget);
+        var bytes = pdfReport.Build(month, rows, budget);
         return File(bytes, "application/pdf", $"expenses-{month}.pdf");
     }
 

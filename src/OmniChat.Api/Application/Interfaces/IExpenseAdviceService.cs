@@ -1,4 +1,4 @@
-using OmniChat.Infrastructure.Services;
+using OmniChat.Domain.Models;
 
 namespace OmniChat.Application.Interfaces;
 

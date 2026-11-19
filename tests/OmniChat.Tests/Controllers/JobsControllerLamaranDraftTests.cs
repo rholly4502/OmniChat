@@ -32,7 +32,7 @@ public class JobsControllerLamaranDraftTests
         }
         db = new ChatDbContext(options);
         var service = new Mock<ILamaranDraftService>();
-        return (new JobsController(new OpportunityRepository(db), service.Object), db, dbPath, service);
+        return (new JobsController(new OpportunityRepository(db), service.Object, new Mock<IJobsPdfReport>().Object), db, dbPath, service);
     }
 
     [Fact]

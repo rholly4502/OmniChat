@@ -4,6 +4,7 @@
     <Project Path="src/OmniChat.Seeder/OmniChat.Seeder.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OmniChat.ArchitectureTests/OmniChat.ArchitectureTests.csproj" />
     <Project Path="tests/OmniChat.Tests/OmniChat.Tests.csproj" />
   </Folder>
 </Solution>

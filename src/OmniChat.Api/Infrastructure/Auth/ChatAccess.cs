@@ -1,4 +1,4 @@
-namespace OmniChat.Api.Infrastructure.Auth;
+namespace OmniChat.Domain.Models;
 
 /// <summary>
 /// How much of the stored chat history a caller may read.

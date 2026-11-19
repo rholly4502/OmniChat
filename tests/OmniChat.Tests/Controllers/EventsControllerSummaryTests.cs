@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Application.Interfaces;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Models;
 
 namespace OmniChat.Tests.Controllers;
@@ -10,7 +11,7 @@ public class EventsControllerSummaryTests
 {
     private readonly Mock<IPromoEventRepository> _repository = new();
 
-    private EventsController CreateController() => new(_repository.Object);
+    private EventsController CreateController() => new(_repository.Object, new EventsPdfReportAdapter());
 
     private static EventsSummary Summary() => new(
         Total: 7,

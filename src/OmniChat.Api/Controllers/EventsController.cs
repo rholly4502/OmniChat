@@ -5,6 +5,7 @@ using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Models;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
+using OmniChat.Api.Http;
 
 namespace OmniChat.Api.Controllers;
 
@@ -15,7 +16,7 @@ namespace OmniChat.Api.Controllers;
 [ApiController]
 [Route("api/events")]
 [Tags("Events")]
-public sealed class EventsController(IPromoEventRepository repository) : ControllerBase
+public sealed class EventsController(IPromoEventRepository repository, IEventsPdfReport pdfReport) : ControllerBase
 {
     /// <summary>All curated events (newest first), optionally filtered by platform.</summary>
     /// <param name="aplikasi">Optional platform filter (GoPay, OVO, DANA, …).</param>
@@ -82,7 +83,7 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
 
         if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
         {
-            var pdf = EventsPdfReport.Build(filtered, today);
+            var pdf = pdfReport.Build(filtered, today);
             return File(pdf, "application/pdf", $"events-{DateTime.UtcNow:yyyy-MM-dd}.pdf");
         }
 

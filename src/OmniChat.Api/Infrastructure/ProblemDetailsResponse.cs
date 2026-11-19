@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace OmniChat.Api.Infrastructure;
+namespace OmniChat.Api.Http;
 
 /// <summary>
 /// Writes RFC 7807 <see cref="ProblemDetails"/> responses from middleware, where the MVC

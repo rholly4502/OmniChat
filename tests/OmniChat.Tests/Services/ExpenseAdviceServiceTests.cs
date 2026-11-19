@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Options;
 using OmniChat.Api.Infrastructure.Options;
+using OmniChat.Domain.Models;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Services;

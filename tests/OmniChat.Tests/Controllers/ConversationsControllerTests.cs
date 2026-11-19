@@ -4,6 +4,7 @@ using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Api.Infrastructure;
 using OmniChat.Api.Infrastructure.Auth;
+using OmniChat.Api.Http;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Domain.Models;
@@ -19,12 +20,14 @@ public class ConversationsControllerTests
 {
     private readonly Mock<IChatHistoryRepository> _repository = new();
     private readonly Mock<IChatAccessPolicy> _accessPolicy = new();
+    private readonly Mock<IChatIdentity> _identity = new();
 
     private ConversationsController CreateController(ChatAccess access)
     {
         _accessPolicy.Setup(policy => policy.Resolve(It.IsAny<HttpContext>())).Returns(access);
+        _identity.Setup(i => i.ResolveUserId(It.IsAny<HttpContext>())).Returns("admin");
 
-        return new ConversationsController(_repository.Object, _accessPolicy.Object)
+        return new ConversationsController(_repository.Object, _accessPolicy.Object, _identity.Object)
         {
             ControllerContext = new ControllerContext
             {

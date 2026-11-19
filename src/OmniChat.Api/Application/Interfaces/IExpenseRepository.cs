@@ -8,6 +8,9 @@ namespace OmniChat.Application.Interfaces;
 /// </summary>
 public interface IExpenseRepository
 {
+    /// <summary>Default page size for list endpoints.</summary>
+    const int DefaultPageSize = 50;
+
     /// <summary>Transactions for <paramref name="month"/> (YYYY-MM), newest first.</summary>
     Task<IReadOnlyList<Expense>> ListAsync(string month, int page, int pageSize, CancellationToken cancellationToken);
 

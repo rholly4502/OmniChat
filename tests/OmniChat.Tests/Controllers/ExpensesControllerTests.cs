@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using OmniChat.Api.Controllers;
 using OmniChat.Api.Infrastructure.Options;
+using Moq;
+using OmniChat.Domain.Models;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Entities;
 using OmniChat.Infrastructure.Data;
@@ -23,7 +25,7 @@ public class ExpensesControllerTests
         var db2 = new ChatDbContext(options);
         var repo = new ExpenseRepository(db2);
         var advice = new ExpenseAdviceService(repo, Options.Create(new ExpenseAdviceOptions()));
-        return (new ExpensesController(repo, advice), repo, dbPath);
+        return (new ExpensesController(repo, advice, new ExpensePdfReportAdapter()), repo, dbPath);
     }
 
     private static T Get<T>(object? o, string name) => (T)o!.GetType().GetProperty(name)!.GetValue(o)!;

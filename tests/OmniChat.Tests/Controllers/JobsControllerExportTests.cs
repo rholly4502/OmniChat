@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using OmniChat.Api.Controllers;
 using OmniChat.Application.Interfaces;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Entities;
 using System.Text;
 
@@ -11,7 +12,7 @@ public class JobsControllerExportTests
 {
     private readonly Mock<IOpportunityRepository> _repository = new();
 
-    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object);
+    private JobsController CreateController() => new(_repository.Object, new Mock<ILamaranDraftService>().Object, new JobsPdfReportAdapter());
 
     private static Opportunity Opportunity(
         string status = "new",

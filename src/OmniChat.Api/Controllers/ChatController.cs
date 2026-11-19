@@ -6,6 +6,7 @@ using OmniChat.Api.Infrastructure;
 using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
+using OmniChat.Api.Http;
 
 namespace OmniChat.Api.Controllers;
 
@@ -22,6 +23,7 @@ public sealed class ChatController : ControllerBase
     private readonly IModelCatalogService _modelCatalogService;
     private readonly IChatTurnRecorder _turnRecorder;
     private readonly IChatAccessPolicy _accessPolicy;
+    private readonly IChatIdentity _identity;
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
@@ -29,12 +31,14 @@ public sealed class ChatController : ControllerBase
         IModelCatalogService modelCatalogService,
         IChatTurnRecorder turnRecorder,
         IChatAccessPolicy accessPolicy,
+        IChatIdentity identity,
         ILogger<ChatController> logger)
     {
         _chatService = chatService;
         _modelCatalogService = modelCatalogService;
         _turnRecorder = turnRecorder;
         _accessPolicy = accessPolicy;
+        _identity = identity;
         _logger = logger;
     }
 
@@ -115,7 +119,7 @@ public sealed class ChatController : ControllerBase
 
         // History is best-effort by contract: the recorder swallows storage failures, so a
         // locked or missing database cannot cost the user an answer that would have streamed.
-        var userId = ChatIdentity.ResolveUserId(HttpContext);
+        var userId = _identity.ResolveUserId(HttpContext);
         var conversationId = await _turnRecorder.StartTurnAsync(
             new ChatTurn(
                 request.ConversationId,

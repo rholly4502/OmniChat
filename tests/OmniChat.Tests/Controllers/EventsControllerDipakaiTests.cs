@@ -2,7 +2,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OmniChat.Api.Controllers;
 using OmniChat.Infrastructure.Data;
+using Moq;
+using OmniChat.Infrastructure.Services;
 using OmniChat.Domain.Entities;
+using OmniChat.Application.Interfaces;
 
 namespace OmniChat.Tests.Controllers;
 
@@ -26,7 +29,7 @@ public class EventsControllerDipakaiTests
             seed.SaveChanges();
         }
         db = new ChatDbContext(options);
-        return (new EventsController(new PromoEventRepository(db)), db, dbPath);
+        return (new EventsController(new PromoEventRepository(db), new EventsPdfReportAdapter()), db, dbPath);
     }
 
     [Fact]

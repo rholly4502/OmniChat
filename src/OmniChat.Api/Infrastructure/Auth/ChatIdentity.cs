@@ -3,6 +3,8 @@ using OmniChat.Api.Infrastructure.Middleware;
 
 namespace OmniChat.Api.Infrastructure.Auth;
 
+using OmniChat.Domain.Models;
+
 /// <summary>
 /// Turns the validated credentials on a request into the owner tag conversations are filed under,
 /// and into the access level that decides whether stored history can be read back.

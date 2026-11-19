@@ -27,7 +27,7 @@ public class JobsControllerUpdateStatusTests
             seed.SaveChanges();
         }
         db = new ChatDbContext(options);
-        return (new JobsController(new OpportunityRepository(db), new Mock<ILamaranDraftService>().Object), db, dbPath);
+        return (new JobsController(new OpportunityRepository(db), new Mock<ILamaranDraftService>().Object, new Mock<IJobsPdfReport>().Object), db, dbPath);
     }
 
     [Fact]
