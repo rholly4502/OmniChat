@@ -115,6 +115,38 @@ public class EventsControllerExportTests
     }
 
     [Fact]
+    public async Task Export_HidesUsed_WhenRequested()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new PromoEvent { Id = 1, Aplikasi = "OVO", Judul = "Promo Dipakai", Benefit = "Maks Rp20.000", Syarat = "Min. transaksi Rp50.000", BerlakuSampai = "31 Des 2026", Ditemukan = new DateOnly(2026, 11, 14), Dipakai = true },
+                Event("DANA", "Promo Masih Aktif", "Tanpa syarat"),
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(aplikasi: null, hideUsed: true));
+        var text = Encoding.UTF8.GetString(file.FileContents).Trim('﻿');
+
+        Assert.Contains("Promo Masih Aktif", text);
+        Assert.DoesNotContain("Promo Dipakai", text);
+    }
+
+    [Fact]
+    public async Task Export_KeepsUsed_WhenNotRequested()
+    {
+        _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new[]
+            {
+                new PromoEvent { Id = 1, Aplikasi = "OVO", Judul = "Promo Dipakai", Benefit = "Maks Rp20.000", Syarat = "Min. transaksi Rp50.000", BerlakuSampai = "31 Des 2026", Ditemukan = new DateOnly(2026, 11, 14), Dipakai = true },
+            });
+
+        var file = Assert.IsType<FileContentResult>(await CreateController().Export(aplikasi: null));
+        var text = Encoding.UTF8.GetString(file.FileContents).Trim('﻿');
+
+        Assert.Contains("Promo Dipakai", text);
+    }
+
+    [Fact]
     public async Task Export_KeepsExpired_WhenNotRequested()
     {
         _repository.Setup(r => r.ListAsync(null, It.IsAny<CancellationToken>()))

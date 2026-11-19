@@ -73,6 +73,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
         appFilter || undefined,
         searchQuery.trim() || undefined,
         hideExpired || undefined,
+        hideUsed || undefined,
       );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -95,6 +96,7 @@ export function EventsView({ apiKey }: EventsViewProps) {
         appFilter || undefined,
         searchQuery.trim() || undefined,
         hideExpired || undefined,
+        hideUsed || undefined,
       );
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');

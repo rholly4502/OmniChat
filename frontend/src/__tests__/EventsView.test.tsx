@@ -208,7 +208,7 @@ describe('EventsView CSV export', () => {
     render(<EventsView apiKey="k" />);
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined, undefined));
     expect(click).toHaveBeenCalledTimes(1);
 
     createUrl.mockRestore();
@@ -226,7 +226,19 @@ describe('EventsView CSV export', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan kedaluwarsa' }));
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true, undefined));
+  });
+
+  it('forwards hide-used filter to the CSV export', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsCsv);
+    exportMock.mockResolvedValue(new Blob(['aplikasi,judul'], { type: 'text/csv; charset=utf-8' }));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan yang sudah dipakai' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor CSV' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, undefined, undefined, true));
   });
 
   it('shows an error message when the export fails', async () => {
@@ -259,7 +271,7 @@ describe('EventsView PDF export', () => {
     render(<EventsView apiKey="k" />);
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, 'Gojek', undefined, undefined, undefined));
     expect(click).toHaveBeenCalledTimes(1);
 
     createUrl.mockRestore();
@@ -277,7 +289,19 @@ describe('EventsView PDF export', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan kedaluwarsa' }));
     fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
 
-    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true));
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, 'cashback', true, undefined));
+  });
+
+  it('forwards hide-used filter to the PDF export', async () => {
+    mockState();
+    const exportMock = vi.mocked(exportEventsPdf);
+    exportMock.mockResolvedValue(new Blob(['%PDF-1.4'], { type: 'application/pdf' }));
+
+    render(<EventsView apiKey="k" />);
+    fireEvent.click(screen.getByRole('button', { name: 'Sembunyikan yang sudah dipakai' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ekspor PDF' }));
+
+    await waitFor(() => expect(exportMock).toHaveBeenCalledWith({ apiKey: 'k' }, undefined, undefined, undefined, true));
   });
 
   it('shows an error message when the PDF export fails', async () => {

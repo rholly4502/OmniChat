@@ -58,6 +58,7 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
         [FromQuery] string? q = null,
         [FromQuery] bool? hideExpired = null,
         [FromQuery] string? format = null,
+        [FromQuery] bool? hideUsed = null,
         CancellationToken cancellationToken = default)
     {
         var items = await repository.ListAsync(aplikasi, cancellationToken);
@@ -76,7 +77,8 @@ public sealed class EventsController(IPromoEventRepository repository) : Control
              e.Aplikasi.ToLowerInvariant().Contains(keyword) ||
              (e.Benefit ?? string.Empty).ToLowerInvariant().Contains(keyword) ||
              (e.Syarat ?? string.Empty).ToLowerInvariant().Contains(keyword)) &&
-            (!(hideExpired ?? false) || !IsExpired(e, today))).ToList();
+            (!(hideExpired ?? false) || !IsExpired(e, today)) &&
+            (!(hideUsed ?? false) || !e.Dipakai)).ToList();
 
         if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
         {

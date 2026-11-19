@@ -55,11 +55,13 @@ export async function exportEventsCsv(
   aplikasi?: string,
   q?: string,
   hideExpired?: boolean,
+  hideUsed?: boolean,
 ): Promise<Blob> {
   const params = new URLSearchParams();
   if (aplikasi) params.set('aplikasi', aplikasi);
   if (q) params.set('q', q);
   if (hideExpired) params.set('hideExpired', 'true');
+  if (hideUsed) params.set('hideUsed', 'true');
   const qs = params.toString();
   const path = qs ? `${EVENTS_URL}/export?${qs}` : `${EVENTS_URL}/export`;
   const doFetch = options.fetchImpl ?? fetch;
@@ -80,11 +82,13 @@ export async function exportEventsPdf(
   aplikasi?: string,
   q?: string,
   hideExpired?: boolean,
+  hideUsed?: boolean,
 ): Promise<Blob> {
   const params = new URLSearchParams();
   if (aplikasi) params.set('aplikasi', aplikasi);
   if (q) params.set('q', q);
   if (hideExpired) params.set('hideExpired', 'true');
+  if (hideUsed) params.set('hideUsed', 'true');
   params.set('format', 'pdf');
   const qs = params.toString();
   const path = `${EVENTS_URL}/export?${qs}`;
