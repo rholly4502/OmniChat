@@ -23,6 +23,7 @@ describe('useEvents', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    window.localStorage.clear();
     fetchMock = vi.fn().mockResolvedValue(okResponse([EVENT]));
     vi.stubGlobal('fetch', fetchMock);
   });
@@ -89,6 +90,22 @@ describe('useEvents', () => {
     const { result } = renderHook(() => useEvents(''));
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.error).toBe('Gagal memuat event.');
+  });
+
+  it('persists the app filter to localStorage and restores it on remount', async () => {
+    const first = renderHook(() => useEvents(''));
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    act(() => first.result.current.setAppFilter('OVO'));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(window.localStorage.getItem('events.appFilter')).toBe(JSON.stringify('OVO'));
+    first.unmount();
+
+    // A fresh mount restores the persisted filter and refetches with it.
+    fetchMock.mockClear();
+    const second = renderHook(() => useEvents(''));
+    await waitFor(() => expect(second.result.current.loading).toBe(false));
+    expect(second.result.current.appFilter).toBe('OVO');
+    expect(fetchMock).toHaveBeenCalledWith(`${EVENTS_URL}?aplikasi=OVO`, expect.anything());
   });
 
   it('reload() forces a fresh fetch of the full list', async () => {

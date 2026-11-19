@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { usePersistedState } from './usePersistedState';
 import { ApiError } from '../api';
 import { listEvents, updateEventDipakai, type PromoEvent } from '../eventsApi';
 
@@ -18,7 +19,7 @@ export interface UseEventsResult {
 /** Loads the curated promo/event list, with an optional platform filter. */
 export function useEvents(apiKey?: string): UseEventsResult {
   const [events, setEvents] = useState<PromoEvent[]>([]);
-  const [appFilter, setAppFilter] = useState('');
+  const [appFilter, setAppFilter] = usePersistedState('events.appFilter', '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingId, setUpdatingId] = useState<number | null>(null);

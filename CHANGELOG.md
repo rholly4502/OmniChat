@@ -4,6 +4,16 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P38 — UI: persist filter aplikasi pada view Events (frontend)
+
+#### Added
+- Filter platform/aplikasi (`appFilter`) kini bertahan di `localStorage`
+  (`events.appFilter`) dan pulih saat reload — selaras dengan persistensi
+  pencarian & toggle `hideExpired`/`hideUsed` yang sudah ada (P34/P35),
+  sehingga tidak ada lagi bagian state view Events yang hilang saat reload.
+- Tests: `useEvents.test.tsx` +1 (filter tersimpan & pulih setelah remount).
+  Frontend vitest 1303 hijau; `tsc -b` & oxlint bersih.
+
 ### P37 — Events: ekspor CSV/PDF hormati filter "Sembunyikan yang sudah dipakai" (backend + frontend)
 
 #### Added
