@@ -614,6 +614,22 @@ describe('JobsView overdue follow-up filter', () => {
     expect(list.queryByText('Upcoming Interview Role')).toBeNull();
     expect(list.queryByText('Backend .NET Developer')).toBeNull();
   });
+
+  it('persist toggle "Perlu follow-up" ke localStorage & pulih saat remount', () => {
+    mockState({ opportunities: [overdue, upcoming, base] });
+    const { unmount } = render(<JobsView />);
+    openTools();
+    const toggle = screen.getByRole('button', { name: 'Perlu follow-up (1)' });
+    fireEvent.click(toggle); // aktifkan filter
+    expect(window.localStorage.getItem('jobs.followUpOnly')).toBe(JSON.stringify(true));
+
+    unmount();
+    render(<JobsView />);
+    openTools();
+    const list = within(screen.getByTestId('jobs-list'));
+    expect(list.queryByText('Upcoming Interview Role')).toBeNull();
+    expect(list.getByText('Overdue Applied Role')).toBeTruthy();
+  });
   it('mobile: tombol Download CV besar membuka dropdown daftar file', async () => {
     const mockDownload = vi.fn();
     mockState({ cvFiles: ['Rholly-CV-A.pdf', 'Rholly-CV-B.pdf'], downloadCv: mockDownload });

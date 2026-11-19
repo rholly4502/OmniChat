@@ -263,7 +263,7 @@ export function JobsView({ apiKey, initialFollowUpOnly }: JobsViewProps) {
   const [cvMenuOpen, setCvMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = usePersistedState('jobs.query', '');
   const [sortBy, setSortBy] = usePersistedState<SortKey>('jobs.sortBy', 'default');
-  const [followUpOnly, setFollowUpOnly] = useState(initialFollowUpOnly ?? false);
+  const [followUpOnly, setFollowUpOnly] = usePersistedState('jobs.followUpOnly', initialFollowUpOnly ?? false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<Opportunity | null>(null);
   const [formError, setFormError] = useState<string | null>(null);

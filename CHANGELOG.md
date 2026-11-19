@@ -4,6 +4,16 @@ All notable changes to OmniChat are documented here.
 The project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
 
 ## [Unreleased]
+### P40 — UI: pertahankan filter "Perlu follow-up" di view Lowongan (frontend)
+
+#### Added
+- Toggle **Perlu follow-up** pada view Lowongan kini bertahan di `localStorage`
+  (`jobs.followUpOnly`) dan pulih saat reload — menutup satu-satunya kontrol
+  filter view Lowongan yang belum ter-persist, sehingga pola persistensi P34/P35/
+  P38/P39 kini seragam di keempat view data (Lowongan/Event/Pengeluaran).
+- Tests: `JobsView.test.tsx` +1 (toggle tersimpan & pulih setelah remount).
+  Frontend vitest ~1305 hijau; `tsc -b` & oxlint bersih.
+
 ### P39 — UI: pertahankan toggle "Semua Waktu" di view Pengeluaran (frontend)
 
 #### Added
