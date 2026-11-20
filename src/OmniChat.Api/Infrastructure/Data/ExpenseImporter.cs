@@ -149,7 +149,7 @@ public sealed class ExpenseImporter(IExpenseRepository repository)
     private async Task<int> ImportTargetsAsync(string path, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(path);
-        var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        using var document = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         var count = 0;
 
         foreach (var property in document.RootElement.EnumerateObject())

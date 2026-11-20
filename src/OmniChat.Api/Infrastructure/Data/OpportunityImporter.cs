@@ -31,8 +31,8 @@ public sealed class OpportunityImporter(IOpportunityRepository repository)
         var skipped = new List<string>();
         var opportunities = new List<Opportunity>();
 
-        using var stream = File.OpenRead(path);
-        var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        await using var stream = File.OpenRead(path);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         var root = doc.RootElement;
 
         IEnumerable<JsonElement> items = root.ValueKind == JsonValueKind.Array
