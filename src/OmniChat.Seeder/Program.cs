@@ -25,28 +25,26 @@ static async Task<int> RunAsync(string[] args)
     };
     var ct = cts.Token;
 
-    var cliArgs = args.Skip(1).ToArray();
-
     string? connectionString = null;
     string? directory = null;
     string? jobsDirectory = null;
     string? eventsDirectory = null;
 
-    for (var i = 0; i < cliArgs.Length; i++)
+    for (var i = 0; i < args.Length; i++)
     {
-        switch (cliArgs[i])
+        switch (args[i])
         {
             case "--db" when i + 1 < args.Length:
-                connectionString = cliArgs[++i];
+                connectionString = args[++i];
                 break;
             case "--path" when i + 1 < args.Length:
-                directory = cliArgs[++i];
+                directory = args[++i];
                 break;
             case "--jobs-path" when i + 1 < args.Length:
-                jobsDirectory = cliArgs[++i];
+                jobsDirectory = args[++i];
                 break;
             case "--events-path" when i + 1 < args.Length:
-                eventsDirectory = cliArgs[++i];
+                eventsDirectory = args[++i];
                 break;
             default:
                 Console.Error.WriteLine($"Unknown or incomplete argument: {args[i]}");
