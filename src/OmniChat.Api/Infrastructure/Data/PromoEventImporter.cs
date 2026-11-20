@@ -30,8 +30,8 @@ public sealed class PromoEventImporter(IPromoEventRepository repository)
         var skipped = new List<string>();
         var events = new List<PromoEvent>();
 
-        using var stream = File.OpenRead(path);
-        var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+        await using var stream = File.OpenRead(path);
+        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
         var root = doc.RootElement;
 
         IEnumerable<JsonElement> items = root.ValueKind == JsonValueKind.Array
