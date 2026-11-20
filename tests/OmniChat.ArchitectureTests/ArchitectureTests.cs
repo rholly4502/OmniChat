@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Mvc;
 using NetArchTest.Rules;
 using Xunit;
 
@@ -12,10 +13,13 @@ public class ArchitectureTests
 {
     private const string DomainNamespace = "OmniChat.Domain";
     private const string ApplicationNamespace = "OmniChat.Application";
+    private const string ApplicationInterfacesNamespace = "OmniChat.Application.Interfaces";
     private const string ControllersNamespace = "OmniChat.Api.Controllers";
     private const string InfrastructureApiNamespace = "OmniChat.Api.Infrastructure";
     private const string InfrastructureNamespace = "OmniChat.Infrastructure";
     private const string EfNamespace = "Microsoft.EntityFrameworkCore";
+    private const string AspNetCoreNamespace = "Microsoft.AspNetCore";
+    private const string HttpNamespace = "System.Net.Http";
 
     private static System.Reflection.Assembly ServiceAssembly
         => typeof(OmniChat.Api.Controllers.ChatController).Assembly;
@@ -90,6 +94,70 @@ public class ArchitectureTests
         if (!controllers.IsSuccessful) messages.Add(DescribeFailures(controllers, "Controllers"));
 
         Assert.True(messages.Count == 0, string.Join("\n", messages));
+    }
+
+    // 5. Application tidak boleh bergantung pada layer Controllers (presentasi).
+    [Fact]
+    public void Application_ShouldNotDependOn_Controllers()
+    {
+        var result = Types
+            .InAssembly(ServiceAssembly)
+            .That()
+            .ResideInNamespace(ApplicationNamespace)
+            .ShouldNot()
+            .HaveDependencyOnAny(ControllersNamespace)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, DescribeFailures(result, "Application"));
+    }
+
+    // 6. Domain harus bebas dari dependensi framework web dan klien HTTP.
+    [Fact]
+    public void Domain_ShouldNotDependOn_AspNetCore_Or_Http()
+    {
+        var result = Types
+            .InAssembly(ServiceAssembly)
+            .That()
+            .ResideInNamespace(DomainNamespace)
+            .ShouldNot()
+            .HaveDependencyOnAny(AspNetCoreNamespace, HttpNamespace)
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, DescribeFailures(result, "Domain"));
+    }
+
+    // 7. Setiap ControllerBase harus sealed dan berakhiran "Controller".
+    [Fact]
+    public void Controllers_ShouldBeSealed_And_HaveControllerSuffix()
+    {
+        var result = Types
+            .InAssembly(ServiceAssembly)
+            .That()
+            .Inherit(typeof(ControllerBase))
+            .Should()
+            .BeSealed()
+            .And()
+            .HaveNameEndingWith("Controller")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, DescribeFailures(result, "Controllers"));
+    }
+
+    // 8. Seluruh kontrak di Application.Interfaces harus berupa interface berawalan "I".
+    [Fact]
+    public void ApplicationInterfaces_ShouldBeInterfaces_And_StartWithI()
+    {
+        var result = Types
+            .InAssembly(ServiceAssembly)
+            .That()
+            .ResideInNamespace(ApplicationInterfacesNamespace)
+            .Should()
+            .BeInterfaces()
+            .And()
+            .HaveNameStartingWith("I")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, DescribeFailures(result, "Application.Interfaces"));
     }
 
     private static string DescribeFailures(TestResult result, string layer)
