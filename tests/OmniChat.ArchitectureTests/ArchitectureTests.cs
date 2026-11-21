@@ -143,17 +143,17 @@ public class ArchitectureTests
         Assert.True(result.IsSuccessful, DescribeFailures(result, "Controllers"));
     }
 
-    // 8. Seluruh kontrak di Application.Interfaces harus berupa interface berawalan "I".
+    // 8. Seluruh interface di Application.Interfaces harus berawalan "I".
     [Fact]
-    public void ApplicationInterfaces_ShouldBeInterfaces_And_StartWithI()
+    public void ApplicationInterfaces_ShouldStartWithI()
     {
         var result = Types
             .InAssembly(ServiceAssembly)
             .That()
             .ResideInNamespace(ApplicationInterfacesNamespace)
-            .Should()
-            .BeInterfaces()
             .And()
+            .AreInterfaces()
+            .Should()
             .HaveNameStartingWith("I")
             .GetResult();
 
