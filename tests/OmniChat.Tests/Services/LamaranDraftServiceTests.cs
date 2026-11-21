@@ -15,10 +15,16 @@ public class LamaranDraftServiceTests
 
     private sealed class TestableHttpMessageHandler : HttpMessageHandler
     {
-        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handler;
-        public TestableHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler) => _handler = handler;
+        private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _handler;
+
+        public TestableHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handler)
+            => _handler = (req, _) => Task.FromResult(handler(req));
+
+        public TestableHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handler)
+            => _handler = handler;
+
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-            => Task.FromResult(_handler(request));
+            => _handler(request, cancellationToken);
     }
 
     private static OpportunityRepository CreateRepoWithOpportunity(out long id)
@@ -51,7 +57,8 @@ public class LamaranDraftServiceTests
     private static LamaranDraftService CreateService(
         OpportunityRepository repo,
         Func<HttpRequestMessage, HttpResponseMessage> handler,
-        string? apiKey = null)
+        string? apiKey = null,
+        int draftTimeoutSeconds = HermesOptions.DefaultDraftTimeoutSeconds)
     {
         var httpFactory = new Mock<IHttpClientFactory>();
         httpFactory
@@ -61,7 +68,33 @@ public class LamaranDraftServiceTests
         return new LamaranDraftService(
             repo,
             httpFactory.Object,
-            Options.Create(new HermesOptions { Endpoint = HermesEndpoint, ApiKey = apiKey }),
+            Options.Create(new HermesOptions
+            {
+                Endpoint = HermesEndpoint,
+                ApiKey = apiKey,
+                DraftTimeoutSeconds = draftTimeoutSeconds,
+            }),
+            NullLogger<LamaranDraftService>.Instance);
+    }
+
+    private static LamaranDraftService CreateAsyncService(
+        OpportunityRepository repo,
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handler,
+        int draftTimeoutSeconds = HermesOptions.DefaultDraftTimeoutSeconds)
+    {
+        var httpFactory = new Mock<IHttpClientFactory>();
+        httpFactory
+            .Setup(f => f.CreateClient("LLMClient"))
+            .Returns(new HttpClient(new TestableHttpMessageHandler(handler)) { Timeout = Timeout.InfiniteTimeSpan });
+
+        return new LamaranDraftService(
+            repo,
+            httpFactory.Object,
+            Options.Create(new HermesOptions
+            {
+                Endpoint = HermesEndpoint,
+                DraftTimeoutSeconds = draftTimeoutSeconds,
+            }),
             NullLogger<LamaranDraftService>.Instance);
     }
 
@@ -146,5 +179,52 @@ public class LamaranDraftServiceTests
 
         Assert.NotNull(body);
         Assert.Contains("linkedin.com/in/rholly-kurnia-putra-462686298", body);
+    }
+
+    [Fact]
+    public void HermesOptions_DraftTimeout_IsDisabledWhenSecondsAreNonPositive()
+    {
+        Assert.Equal(90, HermesOptions.DefaultDraftTimeoutSeconds);
+        Assert.Equal(TimeSpan.FromSeconds(90), new HermesOptions().DraftTimeout);
+        Assert.Null(new HermesOptions { DraftTimeoutSeconds = 0 }.DraftTimeout);
+        Assert.Null(new HermesOptions { DraftTimeoutSeconds = -5 }.DraftTimeout);
+    }
+
+    [Fact]
+    public async Task Generate_ThrowsInvalidOperationException_WhenGatewayTimesOut()
+    {
+        var repo = CreateRepoWithOpportunity(out var id);
+        var service = CreateAsyncService(
+            repo,
+            async (_, ct) =>
+            {
+                await Task.Delay(TimeSpan.FromSeconds(10), ct);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            },
+            draftTimeoutSeconds: 1);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => service.GenerateAsync(id, CancellationToken.None));
+
+        Assert.Contains("tepat waktu", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Generate_PropagatesOperationCanceledException_WhenCallerCancels()
+    {
+        var repo = CreateRepoWithOpportunity(out var id);
+        using var callerCts = new CancellationTokenSource();
+        var service = CreateAsyncService(
+            repo,
+            async (_, ct) =>
+            {
+                await callerCts.CancelAsync();
+                ct.ThrowIfCancellationRequested();
+                return await Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK));
+            },
+            draftTimeoutSeconds: 30);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(
+            () => service.GenerateAsync(id, callerCts.Token));
     }
 }

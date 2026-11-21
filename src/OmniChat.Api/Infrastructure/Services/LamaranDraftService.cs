@@ -126,13 +126,50 @@ public sealed class LamaranDraftService : ILamaranDraftService
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", _hermes.ApiKey);
         }
 
-        using var response = await client.SendAsync(httpRequest, cancellationToken);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken);
-
-        if (!response.IsSuccessStatusCode)
+        // The named "LLMClient" uses Timeout.InfiniteTimeSpan for long SSE streams, so bound
+        // this single-shot request with a linked deadline to prevent an unresponsive gateway
+        // from hanging the HTTP request indefinitely.
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        if (_hermes.DraftTimeout is { } deadline)
         {
-            _logger.LogError("Lamaran draft gateway error: {StatusCode}", response.StatusCode);
-            throw new InvalidOperationException("Gateway AI sedang tidak tersedia.");
+            timeoutCts.CancelAfter(deadline);
+        }
+
+        HttpResponseMessage response;
+        string body;
+        try
+        {
+            response = await client.SendAsync(httpRequest, timeoutCts.Token);
+        }
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogWarning(
+                "Lamaran draft gateway timed out after {TimeoutSeconds}s at {Endpoint}.",
+                _hermes.DraftTimeoutSeconds,
+                _hermes.Endpoint);
+            throw new InvalidOperationException("Gateway AI tidak merespons tepat waktu.", ex);
+        }
+
+        using (response)
+        {
+            try
+            {
+                body = await response.Content.ReadAsStringAsync(timeoutCts.Token);
+            }
+            catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogWarning(
+                    "Lamaran draft gateway body read timed out after {TimeoutSeconds}s at {Endpoint}.",
+                    _hermes.DraftTimeoutSeconds,
+                    _hermes.Endpoint);
+                throw new InvalidOperationException("Gateway AI tidak merespons tepat waktu.", ex);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError("Lamaran draft gateway error: {StatusCode}", response.StatusCode);
+                throw new InvalidOperationException("Gateway AI sedang tidak tersedia.");
+            }
         }
 
         try
