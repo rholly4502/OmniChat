@@ -2,8 +2,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using OmniChat.Api.Infrastructure;
-using OmniChat.Api.Infrastructure.Auth;
 using OmniChat.Application.Interfaces;
 using OmniChat.Domain.Models;
 using OmniChat.Api.Http;
@@ -109,17 +107,30 @@ public sealed class ChatController : ControllerBase
         Response.Headers.Connection = "keep-alive";
         Response.Headers["X-Accel-Buffering"] = "no";
 
-        // Security boundary: an anonymous guest must never reach the Hermes agent gateway, which
+        var access = _accessPolicy.Resolve(HttpContext);
+
+        // Security boundary: a guest must never reach the Hermes agent gateway, which
         // proxies the operator's credentials and tools (GitHub, terminal, memory). Force guests
         // onto the direct LLM provider, which carries no agent tools.
-        if (_accessPolicy.Resolve(HttpContext) == ChatAccess.Guest)
+        if (access == ChatAccess.Guest)
         {
             request.UseHermesBridge = false;
         }
 
         // History is best-effort by contract: the recorder swallows storage failures, so a
         // locked or missing database cannot cost the user an answer that would have streamed.
+        // Security boundary: a guest must never write under the operator's "admin" namespace
+        // (which anonymous callers and subject-less JWTs fall back to in ResolveUserId), or an
+        // unauthenticated caller could pollute operator history/usage or mutate operator
+        // conversations via ConversationId/Rewind. Keep distinct JWT subjects intact for audit.
         var userId = _identity.ResolveUserId(HttpContext);
+        if (access == ChatAccess.Guest &&
+            (string.IsNullOrWhiteSpace(userId) ||
+             string.Equals(userId, IChatIdentity.AdminUserId, StringComparison.OrdinalIgnoreCase)))
+        {
+            userId = IChatIdentity.GuestUserId;
+        }
+
         var conversationId = await _turnRecorder.StartTurnAsync(
             new ChatTurn(
                 request.ConversationId,
@@ -235,17 +246,6 @@ public sealed class ChatController : ControllerBase
     /// </summary>
     private static string LastUserPrompt(ChatRequest request) =>
         request.Messages.LastOrDefault(message => message.Role == "user")?.Content ?? string.Empty;
-
-    /// <summary>
-    /// Reads an upstream status frame out of a streamed token, or <c>null</c> when the token is
-    /// assistant text.
-    /// </summary>
-    /// <remarks>
-    /// A plain string comparison rather than a JSON parse: token-level parsing would run for
-    /// every chunk of every answer, and the only statuses that exist come from
-    /// <see cref="ProgressMessages"/>.
-    /// </remarks>
-    private static string? TryReadProgressPhase(string token) => ProgressPhase.TryRead(token);
 
     /// <summary>Serialises <paramref name="payload"/> as one SSE <c>data:</c> frame and flushes it.</summary>
     private async Task WriteEventAsync(object payload, CancellationToken cancellationToken)
