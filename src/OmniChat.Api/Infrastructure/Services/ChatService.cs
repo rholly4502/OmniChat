@@ -44,8 +44,9 @@ public sealed class ChatService : IChatService
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var channel = Channel.CreateUnbounded<string>();
+        using var producerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var producer = Task.Run(
-            () => ProduceTokensAsync(channel.Writer, request, cancellationToken),
+            () => ProduceTokensAsync(channel.Writer, request, producerCts.Token),
             cancellationToken);
 
         try
@@ -57,9 +58,18 @@ public sealed class ChatService : IChatService
         }
         finally
         {
+            await producerCts.CancelAsync();
             // Observe the producer so an exception it raised is not swallowed as an
             // unobserved task exception, and so the channel is always completed.
-            await producer;
+            try
+            {
+                await producer;
+            }
+            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+            {
+                // Consumer stopped enumerating early; aborting the upstream producer via
+                // the linked token is expected and must not throw on break/DisposeAsync.
+            }
         }
     }
 
@@ -100,21 +110,41 @@ public sealed class ChatService : IChatService
                 httpRequest.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
             }
 
-            using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
+            var idleTimeout = _streaming.IdleTimeout;
+            var progressInterval = _streaming.ProgressInterval;
+
+            // The named "LLMClient" uses Timeout.InfiniteTimeSpan so long SSE streams are
+            // never cut short by HttpClient.Timeout. Arm the idle deadline before SendAsync
+            // so an upstream that accepts TCP but stalls before writing HTTP response headers
+            // — or stalls mid-error-body — still aborts within IdleTimeout instead of hanging.
+            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            if (idleTimeout is { } initialIdle)
+            {
+                idleCts.CancelAfter(initialIdle);
+            }
+
+            using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, idleCts.Token);
+
+            // Headers arrived, proving the upstream is alive. Renew the idle deadline so
+            // reading either an error body or the first SSE line gets a full window.
+            if (idleTimeout is { } postHeadersIdle)
+            {
+                idleCts.CancelAfter(postHeadersIdle);
+            }
 
             // The connection is live but no content has been produced yet: this is the
             // window where Agent mode spends most of its wall-clock time. Announce it so
             // the client can show progress instead of a frozen placeholder.
             if (!response.IsSuccessStatusCode)
             {
-                var errorContent = await response.Content.ReadAsStringAsync(ct);
+                var errorContent = await response.Content.ReadAsStringAsync(idleCts.Token);
                 _logger.LogError("LLM API error: {StatusCode} - {Content}", response.StatusCode, errorContent);
                 // Sanitize: don't reveal the upstream provider's HTTP status to the client.
                 await writer.WriteAsync("[Error: The AI provider returned an error. Please try again.]", ct);
                 return;
             }
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            await using var stream = await response.Content.ReadAsStreamAsync(idleCts.Token);
             using var reader = new StreamReader(stream);
 
             // The pre-token window is announced as thinking: until the first final-content
@@ -122,9 +152,6 @@ public sealed class ChatService : IChatService
             // model is still working. Agent loop steps and model reasoning are this window.
             var phase = ProgressMessages.Thinking;
             await WriteProgressAsync(writer, phase, ct);
-
-                        var idleTimeout = _streaming.IdleTimeout;
-            var progressInterval = _streaming.ProgressInterval;
 
             // Two independent liveness timers govern the read, because a single token that
             // serves both would let one mask the other:
@@ -134,15 +161,7 @@ public sealed class ChatService : IChatService
             //   - idle deadline: aborts the read after IdleTimeout with no bytes at all. It
             //     is reset on every real byte, so a stream that keeps producing is never cut
             //     short.
-            using var idleCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct, idleCts.Token);
-
-            // Arm the idle deadline up front: a silent upstream must abort even if it never
-            // sends the first byte. It is re-armed below on every byte read.
-            if (idleTimeout is { } initialIdle)
-            {
-                idleCts.CancelAfter(initialIdle);
-            }
 
             long lastDataTicks = Environment.TickCount64;
             Task? heartbeatTask = null;
@@ -178,13 +197,14 @@ public sealed class ChatService : IChatService
                     {
                         line = await reader.ReadLineAsync(idleCts.Token);
                     }
-                    catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+                    catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
                     {
                         // Only the idle deadline fired — the caller is still connected. The
                         // upstream accepted the request and then went quiet, so report it
                         // rather than hang. A client-disconnect cancellation falls through to
                         // the outer handler below and is simply rethrown.
                         _logger.LogWarning(
+                            ex,
                             "Upstream {Mode} endpoint at {Endpoint} sent no data for {TimeoutSeconds}s; aborting the stream.",
                             mode, endpoint, _streaming.IdleTimeoutSeconds);
                         // Stop the heartbeat before reporting the terminal error, so the
@@ -192,10 +212,17 @@ public sealed class ChatService : IChatService
                         // landing right after the idle deadline appends a stray progress
                         // frame after it (regression caught by
                         // StreamChatResponseAsync_SilentUpstreamWithHeartbeat_StillAbortsAfterIdle).
-                        heartbeatCts.Cancel();
+                        await heartbeatCts.CancelAsync();
                         if (heartbeatTask is not null)
                         {
-                            try { await heartbeatTask; } catch (OperationCanceledException) { }
+                            try
+                            {
+                                await heartbeatTask;
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                // Heartbeat cancellation is expected when aborting the stream.
+                            }
                         }
                         await writer.WriteAsync(
                             "[Error: The AI provider stopped responding. Please try again.]",
@@ -215,7 +242,7 @@ public sealed class ChatService : IChatService
                     }
 
                     if (string.IsNullOrWhiteSpace(line)) continue;
-                    if (!line.StartsWith("data: ")) continue;
+                    if (!line.StartsWith("data: ", StringComparison.Ordinal)) continue;
 
                     var data = line["data: ".Length..].Trim();
                     if (data == "[DONE]") break;
@@ -260,19 +287,27 @@ public sealed class ChatService : IChatService
             }
             finally
             {
-                heartbeatCts.Cancel();
+                await heartbeatCts.CancelAsync();
                 if (heartbeatTask is not null)
                 {
-                    try { await heartbeatTask; } catch (OperationCanceledException) { }
+                    try
+                    {
+                        await heartbeatTask;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // Heartbeat cancellation is expected when closing the stream.
+                    }
                 }
-                idleCts.Cancel();
+                await idleCts.CancelAsync();
             }
         }
-        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
         {
             // Only the idle deadline fired — the caller is still connected. The upstream
             // accepted the request and then went quiet, so report that rather than hang.
             _logger.LogWarning(
+                ex,
                 "Upstream {Mode} endpoint at {Endpoint} sent no data for {TimeoutSeconds}s; aborting the stream.",
                 mode, endpoint, _streaming.IdleTimeoutSeconds);
 

@@ -38,6 +38,17 @@ public class ChatServiceTests
         string? hermesApiKey = null,
         StreamingOptions? streaming = null)
     {
+        return CreateAsyncService(
+            (req, _) => Task.FromResult(handlerFunc(req)),
+            hermesApiKey,
+            streaming);
+    }
+
+    private ChatService CreateAsyncService(
+        Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc,
+        string? hermesApiKey = null,
+        StreamingOptions? streaming = null)
+    {
         var handler = new TestableHttpMessageHandler(handlerFunc);
         var client = new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
         _httpClientFactoryMock
@@ -767,6 +778,192 @@ public class ChatServiceTests
         Assert.True(sw.Elapsed >= deadline, $"stream finished in {sw.ElapsedMilliseconds} ms, inside the {deadline.TotalSeconds} s deadline — renewal was not exercised");
     }
 
+    [Fact]
+    public async Task StreamChatResponseAsync_HangingBeforeResponseHeaders_AbortsAfterIdleTimeout()
+    {
+        // Regression: LLMClient uses Timeout.InfiniteTimeSpan, so an upstream that accepts TCP
+        // and stalls before writing HTTP response headers must still abort at IdleTimeoutSeconds
+        // instead of hanging indefinitely.
+        var service = CreateAsyncService(
+            async (_, ct) =>
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 1, ProgressIntervalSeconds = 1 });
+
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest(), guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Single(tokens);
+        Assert.Equal("[Error: The AI provider stopped responding. Please try again.]", tokens[0]);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_HangingErrorBody_AbortsAfterIdleTimeout()
+    {
+        // A non-success upstream response whose error body stalls must not hang indefinitely.
+        var service = CreateService(
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.BadGateway) { Content = new StreamContent(new HangingStream()) },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 1, ProgressIntervalSeconds = 0 });
+
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest(), guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Single(tokens);
+        Assert.Equal("[Error: The AI provider stopped responding. Please try again.]", tokens[0]);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_CallerCancelsDuringSendAsync_PropagatesCancellation()
+    {
+        using var callerCts = new CancellationTokenSource();
+        var service = CreateAsyncService(
+            async (_, ct) =>
+            {
+                await callerCts.CancelAsync();
+                ct.ThrowIfCancellationRequested();
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK);
+            },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 30, ProgressIntervalSeconds = 0 });
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var _ in service.StreamChatResponseAsync(NewRequest(), callerCts.Token)) { }
+        });
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_EarlyConsumerBreak_CancelsUpstreamRequest()
+    {
+        // If the consumer stops enumerating early without cancelling its CancellationToken,
+        // the linked producer token must still abort the upstream read instead of waiting for
+        // the upstream stream to finish or hit IdleTimeout.
+        var upstreamCancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var segments = new List<(int DelayMs, byte[] Bytes)>
+        {
+            (0, System.Text.Encoding.UTF8.GetBytes("data: {\"choices\":[{\"delta\":{\"content\":\"first\"}}]}\n\n")),
+            (30_000, System.Text.Encoding.UTF8.GetBytes("data: {\"choices\":[{\"delta\":{\"content\":\"second\"}}]}\n\n")),
+        };
+
+        var service = CreateService(
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new CallbackCancelPacedHttpContent(segments, () => upstreamCancelled.TrySetResult())
+            },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = 30, ProgressIntervalSeconds = 0 });
+
+        var received = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest()))
+        {
+            received.Add(token);
+            break;
+        }
+
+        Assert.Equal(["first"], received);
+        var completed = await Task.WhenAny(upstreamCancelled.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+        Assert.Same(upstreamCancelled.Task, completed);
+    }
+
+    [Fact]
+    public async Task StreamChatResponseAsync_SlowHeadersThenSlowFirstChunk_RenewsIdleDeadlineAfterHeaders()
+    {
+        // Both stages (waiting for headers, then waiting for the first SSE chunk) stay below
+        // the 3s deadline individually, while their sum (~3.2s) exceeds it — verifying that
+        // receiving HTTP headers renews the idle window for the body read.
+        var deadline = TimeSpan.FromSeconds(3);
+        var sseChunk = System.Text.Encoding.UTF8.GetBytes(
+            "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"}}]}\n\ndata: [DONE]\n\n");
+
+        var service = CreateAsyncService(
+            async (_, ct) =>
+            {
+                await Task.Delay(1600, ct);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new PacedHttpContent([(1600, sseChunk)])
+                };
+            },
+            streaming: new StreamingOptions { IdleTimeoutSeconds = (int)deadline.TotalSeconds, ProgressIntervalSeconds = 0 });
+
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+
+        var tokens = new List<string>();
+        await foreach (var token in service.StreamChatResponseAsync(NewRequest(), guard.Token))
+        {
+            tokens.Add(token);
+        }
+
+        Assert.Equal(["ok"], tokens);
+        Assert.True(sw.Elapsed >= deadline, $"stream finished in {sw.ElapsedMilliseconds} ms, inside the {deadline.TotalSeconds} s deadline");
+    }
+
+    private sealed class CallbackCancelPacedHttpContent : HttpContent
+    {
+        private readonly IReadOnlyList<(int DelayMs, byte[] Bytes)> _segments;
+        private readonly Action _onCanceled;
+
+        public CallbackCancelPacedHttpContent(IReadOnlyList<(int DelayMs, byte[] Bytes)> segments, Action onCanceled)
+        {
+            _segments = segments;
+            _onCanceled = onCanceled;
+        }
+
+        protected override Task<Stream> CreateContentReadStreamAsync() =>
+            Task.FromResult<Stream>(new CallbackCancelPacedStream(_segments, _onCanceled));
+
+        protected override Task SerializeToStreamAsync(Stream stream, System.Net.TransportContext? context) =>
+            throw new NotSupportedException("CallbackCancelPacedHttpContent is streamed, not serialized.");
+
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    private sealed class CallbackCancelPacedStream : Stream
+    {
+        private readonly PacedStream _inner;
+        private readonly Action _onCanceled;
+
+        public CallbackCancelPacedStream(IReadOnlyList<(int DelayMs, byte[] Bytes)> segments, Action onCanceled)
+        {
+            _inner = new PacedStream(segments);
+            _onCanceled = onCanceled;
+        }
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            using var reg = cancellationToken.Register(_onCanceled);
+            return await _inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override void Flush() { }
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     /// <summary>
     /// A body whose stream never produces a byte: an upstream that accepted the request and then
     /// black-holed it. The only way out of a read is cancellation by the stream's own deadline.
@@ -894,25 +1091,18 @@ public class ChatServiceTests
     /// <summary>
     /// Custom HttpMessageHandler that delegates to a function for testing.
     /// </summary>
-    private class TestableHttpMessageHandler : HttpMessageHandler
+    private sealed class TestableHttpMessageHandler : HttpMessageHandler
     {
-        private readonly Func<HttpRequestMessage, HttpResponseMessage> _handlerFunc;
+        private readonly Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> _handlerFunc;
 
-        public TestableHttpMessageHandler(Func<HttpRequestMessage, HttpResponseMessage> handlerFunc)
+        public TestableHttpMessageHandler(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> handlerFunc)
         {
             _handlerFunc = handlerFunc;
         }
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            try
-            {
-                return Task.FromResult(_handlerFunc(request));
-            }
-            catch (Exception ex)
-            {
-                return Task.FromException<HttpResponseMessage>(ex);
-            }
+            return await _handlerFunc(request, cancellationToken).ConfigureAwait(false);
         }
     }
 }
