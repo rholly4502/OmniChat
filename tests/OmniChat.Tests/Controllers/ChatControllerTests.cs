@@ -500,6 +500,90 @@ public class ChatControllerTests
         Assert.True(seen?.UseHermesBridge ?? false, "Admin agent request must stay on the Hermes bridge.");
     }
 
+    [Theory]
+    [InlineData("admin")]
+    [InlineData("ADMIN")]
+    public async Task StreamChat_ForGuestWithAdminFallbackIdentity_RecordsTurnUnderGuestUserId(string resolvedIdentity)
+    {
+        _accessPolicyMock.Setup(p => p.Resolve(It.IsAny<HttpContext>())).Returns(ChatAccess.Guest);
+        _identityMock.Setup(i => i.ResolveUserId(It.IsAny<HttpContext>())).Returns(resolvedIdentity);
+
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true,
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.StartTurnAsync(
+                It.Is<ChatTurn>(t => t.UserId == IChatIdentity.GuestUserId && t.Mode == "direct"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(
+                conversationId,
+                IChatIdentity.GuestUserId,
+                "Hello",
+                0,
+                0,
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task StreamChat_ForJwtGuestWithDistinctSubject_PreservesSubjectUserId()
+    {
+        _accessPolicyMock.Setup(p => p.Resolve(It.IsAny<HttpContext>())).Returns(ChatAccess.Guest);
+        _identityMock.Setup(i => i.ResolveUserId(It.IsAny<HttpContext>())).Returns("jwt-guest-42");
+
+        var conversationId = Guid.CreateVersion7();
+        _turnRecorderMock
+            .Setup(r => r.StartTurnAsync(It.IsAny<ChatTurn>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(conversationId);
+        _chatServiceMock
+            .Setup(s => s.StreamChatResponseAsync(It.IsAny<ChatRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(new[] { "Hello" }.ToAsyncEnumerable());
+
+        var request = new ChatRequest
+        {
+            Model = "test",
+            Messages = [new ChatMessage("user", "hi")],
+            UseHermesBridge = true,
+        };
+
+        await _controller.StreamChat(request, CancellationToken.None);
+
+        _turnRecorderMock.Verify(
+            r => r.StartTurnAsync(
+                It.Is<ChatTurn>(t => t.UserId == "jwt-guest-42" && t.Mode == "direct"),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _turnRecorderMock.Verify(
+            r => r.CompleteTurnAsync(
+                conversationId,
+                "jwt-guest-42",
+                "Hello",
+                0,
+                0,
+                It.IsAny<string?>(),
+                It.IsAny<string?>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     private ChatRequest NewRequest() => new()
     {
         Model = "test",

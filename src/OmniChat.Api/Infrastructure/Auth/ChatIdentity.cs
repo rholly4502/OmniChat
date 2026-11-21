@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using OmniChat.Api.Infrastructure.Middleware;
+using OmniChat.Application.Interfaces;
 
 namespace OmniChat.Api.Infrastructure.Auth;
 
@@ -25,7 +26,10 @@ using OmniChat.Domain.Models;
 public static class ChatIdentity
 {
     /// <summary>Owner tag used for callers authenticated by the shared API key.</summary>
-    public const string AdminUserId = "admin";
+    public const string AdminUserId = IChatIdentity.AdminUserId;
+
+    /// <summary>Owner tag used when a guest caller has no distinct subject of its own.</summary>
+    public const string GuestUserId = IChatIdentity.GuestUserId;
 
     /// <summary>Claim carrying the subject, kept verbatim because the validator disables claim mapping.</summary>
     private const string SubjectClaim = "sub";
@@ -64,8 +68,8 @@ public static class ChatIdentity
             if (string.IsNullOrWhiteSpace(subject))
             {
                 // A token with no subject cannot be matched against the admin list. Guest is the
-                // safe answer, and it is consistent with ResolveUserId filing such turns under
-                // AdminUserId: the row is stored, but this caller is not allowed to read it back.
+                // safe answer; ChatController isolates such guest turns under GuestUserId instead
+                // of AdminUserId so they never enter the operator's history or usage totals.
                 return ChatAccess.Guest;
             }
 
